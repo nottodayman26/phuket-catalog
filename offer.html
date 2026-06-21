@@ -221,6 +221,24 @@ function fmtTHBshort(n){
 }
 let OFFER = null;
 
+// Защита: если конкретный запрос вернул не список (например, таблица ещё
+// не создана в базе), не роняем всю страницу, а считаем список пустым —
+// и пишем явную причину в консоль браузера для отладки.
+async function fetchArray(url){
+  try {
+    const res = await fetch(url, {headers: SB_HEADERS});
+    const data = await res.json();
+    if(!Array.isArray(data)){
+      console.error('Ожидался список из Supabase, получено:', data, 'URL:', url);
+      return [];
+    }
+    return data;
+  } catch(e){
+    console.error('Ошибка запроса', url, e);
+    return [];
+  }
+}
+
 async function loadOffer(){
   const slug = new URLSearchParams(location.search).get('slug');
   if(!slug) throw new Error('В ссылке не хватает кода подборки.');
@@ -241,12 +259,10 @@ async function loadOffer(){
     units = await unitsRes.json();
   }
 
-  const [bookingsRes, viewingsRes] = await Promise.all([
-    fetch(`${SUPABASE_URL}/offer_bookings?offer_id=eq.${offer.id}&select=unit_id`, {headers: SB_HEADERS}),
-    fetch(`${SUPABASE_URL}/offer_viewing_requests?offer_id=eq.${offer.id}&select=unit_id,requested_date`, {headers: SB_HEADERS}),
+  const [bookings, viewings] = await Promise.all([
+    fetchArray(`${SUPABASE_URL}/offer_bookings?offer_id=eq.${offer.id}&select=unit_id`),
+    fetchArray(`${SUPABASE_URL}/offer_viewing_requests?offer_id=eq.${offer.id}&select=unit_id,requested_date`),
   ]);
-  const bookings = await bookingsRes.json();
-  const viewings = await viewingsRes.json();
 
   // каждое открытие ссылки — отдельная запись, агент узнаёт про каждый визит,
   // а не только про самый первый

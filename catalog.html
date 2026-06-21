@@ -316,6 +316,24 @@ const SB_HEADERS = {
 
 let CURRENT_AGENT = null; // {id, full_name, agency, telegram_id, is_founding_agent}
 
+// Защита: если конкретный запрос вернул не список (например, таблица ещё
+// не создана в базе), не роняем всю страницу, а считаем список пустым —
+// и пишем явную причину в консоль браузера для отладки.
+async function fetchArray(url){
+  try {
+    const res = await fetch(url, {headers: SB_HEADERS});
+    const data = await res.json();
+    if(!Array.isArray(data)){
+      console.error('Ожидался список из Supabase, получено:', data, 'URL:', url);
+      return [];
+    }
+    return data;
+  } catch(e){
+    console.error('Ошибка запроса', url, e);
+    return [];
+  }
+}
+
 // ── кто открыл приложение ───────────────────────────────────
 // Узнаём агента по его Telegram-аккаунту автоматически — без анкеты.
 // Если такого агента ещё нет в базе, регистрируем его на лету
@@ -588,14 +606,11 @@ async function openHistory(){
       return;
     }
     const ids = offers.map(o=>o.id).join(',');
-    const [viewsRes, bookingsRes, viewingsRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id`, {headers: SB_HEADERS}),
-      fetch(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`, {headers: SB_HEADERS}),
-      fetch(`${SUPABASE_URL}/offer_viewing_requests?offer_id=in.(${ids})&select=offer_id,requested_date,units(room_no)`, {headers: SB_HEADERS}),
+    const [views, bookings, viewings] = await Promise.all([
+      fetchArray(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id`),
+      fetchArray(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`),
+      fetchArray(`${SUPABASE_URL}/offer_viewing_requests?offer_id=in.(${ids})&select=offer_id,requested_date,units(room_no)`),
     ]);
-    const views = await viewsRes.json();
-    const bookings = await bookingsRes.json();
-    const viewings = await viewingsRes.json();
 
     wrap.innerHTML = offers.map(o=>{
       // считаем по новым таблицам; если предложение совсем старое (создано
