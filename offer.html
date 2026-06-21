@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Подборка объектов — Пхукет</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap&subset=cyrillic" rel="stylesheet">
+<style>
+  :root{
+    --night:#0F2B28;
+    --night-2:#163934;
+    --sand:#F5EFE2;
+    --ink:#1C2622;
+    --muted:#5C6B63;
+    --coral:#E8714A;
+    --coral-deep:#C85A36;
+    --seafoam:#8FBCAE;
+    --line:rgba(28,38,34,.12);
+    --line-dark:rgba(245,239,226,.16);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--sand);color:var(--ink);
+    font-family:'Manrope',system-ui,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;}
+  .display{font-family:'Fraunces',Georgia,serif;}
+
+  /* ── волна-разделитель (фирменный элемент) ───────────────── */
+  .tide{width:100%;height:34px;display:block;}
+
+  /* ── шапка от агента ──────────────────────────────────────── */
+  .agent-bar{
+    background:var(--night);color:var(--sand);
+    padding:18px 20px 30px;
+  }
+  .agent-row{display:flex;align-items:center;gap:12px;}
+  .agent-avatar{
+    width:46px;height:46px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,var(--coral),var(--coral-deep));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:16px;color:var(--sand);
+    background-size:cover;background-position:center;
+  }
+  .agent-info .label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--seafoam);font-weight:600;}
+  .agent-info .name{font-size:16px;font-weight:700;margin-top:2px;}
+  .agent-info .agency{font-size:12.5px;color:rgba(245,239,226,.65);margin-top:1px;}
+
+  .hero{padding:26px 20px 6px;background:var(--night);color:var(--sand);}
+  .hero h1{
+    font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:27px;line-height:1.18;
+    margin:0 0 8px;letter-spacing:-.01em;
+  }
+  .hero p{margin:0;color:rgba(245,239,226,.7);font-size:13.5px;line-height:1.5;max-width:30em;}
+
+  /* ── список объектов ──────────────────────────────────────── */
+  .section{padding:0 18px;}
+  .section-label{
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin:26px 2px 12px;
+  }
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:18px;
+    padding:18px 18px 16px;margin-bottom:14px;
+    box-shadow:0 1px 2px rgba(28,38,34,.04);
+  }
+  .card.sold{opacity:.5;}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .card-proj{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--coral-deep);font-weight:700;}
+  .card-loc{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .card-code{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0;}
+  .card-type{
+    font-family:'Fraunces',Georgia,serif;font-size:19px;font-weight:500;margin:10px 0 2px;
+  }
+  .card-specs{display:flex;gap:14px;font-size:12.5px;color:var(--muted);margin-bottom:14px;}
+  .card-specs b{color:var(--ink);font-family:'IBM Plex Mono',monospace;font-weight:500;}
+  .card-bottom{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding-top:13px;border-top:1px dashed var(--line);
+  }
+  .card-price{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;}
+  .card-ppsqm{font-size:11.5px;color:var(--muted);}
+  .sold-pill{
+    font-size:10.5px;font-weight:700;letter-spacing:.04em;color:#fff;
+    background:var(--muted);border-radius:6px;padding:3px 8px;
+  }
+
+  /* ── финальный блок брони ─────────────────────────────────── */
+  .cta-wrap{background:var(--night);color:var(--sand);padding:8px 20px 34px;margin-top:18px;}
+  .cta-wrap h2{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:21px;margin:0 0 8px;}
+  .cta-wrap p{font-size:13px;color:rgba(245,239,226,.65);line-height:1.5;margin:0 0 18px;max-width:30em;}
+  .cta-btn{
+    width:100%;background:var(--coral);color:#fff;border:none;border-radius:14px;
+    padding:16px;font-size:15.5px;font-weight:800;font-family:'Manrope',sans-serif;
+    box-shadow:0 8px 20px rgba(232,113,74,.32);
+  }
+  .cta-btn:active{transform:scale(.98);}
+  .cta-done{
+    width:100%;background:var(--night-2);border:1px solid var(--line-dark);color:var(--sand);
+    border-radius:14px;padding:16px;text-align:center;font-size:14px;font-weight:600;
+  }
+  .agent-contact{
+    display:flex;gap:10px;margin-top:18px;
+  }
+  .agent-contact a{
+    flex:1;text-align:center;padding:12px;border-radius:12px;font-size:13.5px;font-weight:700;
+    text-decoration:none;border:1px solid var(--line-dark);color:var(--sand);
+  }
+  .agent-contact a.primary{background:var(--seafoam);color:var(--night);border-color:var(--seafoam);}
+
+  .foot-note{
+    text-align:center;padding:18px 20px 30px;font-size:11px;color:var(--muted);
+  }
+
+  .empty{padding:60px 24px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.5;}
+</style>
+</head>
+<body>
+
+  <div class="agent-bar">
+    <div class="agent-row">
+      <div class="agent-avatar" id="agentAvatar">—</div>
+      <div class="agent-info">
+        <div class="label">Подборка собрана для вас</div>
+        <div class="name" id="agentName">Загрузка…</div>
+        <div class="agency" id="agentAgency"></div>
+      </div>
+    </div>
+  </div>
+
+  <svg class="tide" viewBox="0 0 400 34" preserveAspectRatio="none"><path d="M0 14 Q 50 30 100 14 T 200 14 T 300 14 T 400 14 V34 H0 Z" fill="#0F2B28"/><path d="M0 14 Q 50 30 100 14 T 200 14 T 300 14 T 400 14" fill="none" stroke="#8FBCAE" stroke-width="1.5" opacity=".5"/></svg>
+
+  <div class="hero">
+    <h1 id="heroTitle">Несколько объектов, которые стоит увидеть</h1>
+    <p id="heroSub">Подобрано под ваш запрос — актуальные цены и наличие на сегодня.</p>
+  </div>
+
+  <svg class="tide" viewBox="0 0 400 34" preserveAspectRatio="none" style="transform:scaleY(-1);"><path d="M0 14 Q 50 30 100 14 T 200 14 T 300 14 T 400 14 V34 H0 Z" fill="#0F2B28"/></svg>
+
+  <div class="section">
+    <div class="section-label" id="sectionLabel">Объекты в подборке</div>
+    <div id="cards"></div>
+  </div>
+
+  <div class="cta-wrap">
+    <h2>Готовы посмотреть вживую?</h2>
+    <p>Нажмите ниже — агент свяжется с вами, чтобы согласовать просмотр и ответить на вопросы.</p>
+    <button class="cta-btn" id="bookBtn">Забронировать просмотр</button>
+    <div id="bookDone" style="display:none;" class="cta-done">Заявка отправлена агенту ✓</div>
+    <div class="agent-contact">
+      <a id="callLink" href="#">Позвонить</a>
+      <a id="waLink" href="#" class="primary">WhatsApp</a>
+    </div>
+  </div>
+
+  <div class="foot-note">Цены и наличие могут измениться — актуальность уточняйте у агента.</div>
+
+<script>
+const SUPABASE_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
+const SB_HEADERS = {
+  apikey: SUPABASE_ANON_KEY,
+  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+  'Content-Type': 'application/json',
+};
+
+const PROJ_LABEL = {VIK:'Vivana Kamala',KAT:'KataBello',BAN:'Balcony Naiyang',OLN:'Olive Naiyang'};
+
+function fmtTHB(n){ return new Intl.NumberFormat('ru-RU').format(Math.round(n)) + ' ฿'; }
+function fmtTHBshort(n){
+  if(n>=1_000_000) return (n/1_000_000).toFixed(1).replace('.0','') + 'М ฿';
+  return new Intl.NumberFormat('ru-RU').format(n) + ' ฿';
+}
+function phoneToWa(phone){ return (phone||'').replace(/[^\d]/g,''); }
+
+let OFFER = null;
+
+async function loadOffer(){
+  const slug = new URLSearchParams(location.search).get('slug');
+  if(!slug) throw new Error('В ссылке не хватает кода подборки.');
+
+  const offerRes = await fetch(`${SUPABASE_URL}/offers?slug=eq.${encodeURIComponent(slug)}&select=*`, {headers: SB_HEADERS});
+  const offerRows = await offerRes.json();
+  if(!offerRows.length) throw new Error('Эта ссылка больше не действует.');
+  const offer = offerRows[0];
+
+  const agentRes = await fetch(`${SUPABASE_URL}/agents?id=eq.${offer.agent_id}&select=full_name,agency,phone,avatar_url`, {headers: SB_HEADERS});
+  const agentRows = await agentRes.json();
+  const agent = agentRows[0] || {};
+
+  let units = [];
+  if((offer.unit_ids||[]).length){
+    const ids = offer.unit_ids.join(',');
+    const unitsRes = await fetch(`${SUPABASE_URL}/units?id=in.(${ids})&select=room_no,tower,floor,room_type,area_sqm,price_per_sqm,selling_price,status,projects(code,name)`, {headers: SB_HEADERS});
+    units = await unitsRes.json();
+  }
+
+  // отмечаем первый просмотр — не блокируя отрисовку
+  if(!offer.first_viewed_at){
+    fetch(`${SUPABASE_URL}/offers?slug=eq.${encodeURIComponent(slug)}`, {
+      method:'PATCH', headers: SB_HEADERS,
+      body: JSON.stringify({first_viewed_at: new Date().toISOString()}),
+    }).catch(()=>{});
+  }
+
+  return {offer, agent, units, slug};
+}
+
+function renderAgent(agent){
+  const initials = (agent.full_name||'А').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const avEl = document.getElementById('agentAvatar');
+  if(agent.avatar_url){ avEl.style.backgroundImage = `url(${agent.avatar_url})`; avEl.textContent=''; }
+  else { avEl.textContent = initials; }
+  document.getElementById('agentName').textContent = agent.full_name || 'Ваш агент';
+  document.getElementById('agentAgency').textContent = agent.agency || 'Недвижимость на Пхукете';
+
+  const phone = agent.phone || '';
+  document.getElementById('callLink').href = phone ? `tel:${phone}` : '#';
+  document.getElementById('waLink').href = phone ? `https://wa.me/${phoneToWa(phone)}` : '#';
+}
+
+function renderCards(units){
+  document.getElementById('sectionLabel').textContent =
+    units.length === 1 ? '1 объект в подборке' : `${units.length} объект(ов) в подборке`;
+
+  if(!units.length){
+    document.getElementById('cards').innerHTML = '<div class="empty">Агент пока не добавил объекты в эту подборку.</div>';
+    return;
+  }
+
+  document.getElementById('cards').innerHTML = units.map(u=>{
+    const sold = u.status === 'sold';
+    const proj = u.projects ? (PROJ_LABEL[u.projects.code] || u.projects.name) : '';
+    return `<div class="card ${sold?'sold':''}">
+      <div class="card-top">
+        <div><div class="card-proj">${proj}</div><div class="card-loc">Башня ${u.tower}, ${u.floor} этаж</div></div>
+        ${sold ? '<span class="sold-pill">ПРОДАН</span>' : `<span class="card-code">${u.room_no}</span>`}
+      </div>
+      <div class="card-type">${u.room_type}</div>
+      <div class="card-specs">Площадь <b>${u.area_sqm} м²</b></div>
+      <div class="card-bottom">
+        <span class="card-price">${fmtTHB(u.selling_price)}</span>
+        <span class="card-ppsqm">${fmtTHBshort(u.price_per_sqm)}/м²</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('bookBtn').onclick = async ()=>{
+  const btn = document.getElementById('bookBtn');
+  btn.disabled = true; btn.textContent = 'Отправляем…';
+  try {
+    await fetch(`${SUPABASE_URL}/offers?slug=eq.${encodeURIComponent(OFFER.slug)}`, {
+      method:'PATCH', headers: SB_HEADERS,
+      body: JSON.stringify({booking_clicked_at: new Date().toISOString()}),
+    });
+    btn.style.display = 'none';
+    document.getElementById('bookDone').style.display = 'block';
+  } catch(e){
+    btn.disabled = false; btn.textContent = 'Забронировать просмотр';
+    alert('Не получилось отправить заявку, попробуйте ещё раз.');
+  }
+};
+
+(async function init(){
+  try {
+    OFFER = await loadOffer();
+    renderAgent(OFFER.agent);
+    renderCards(OFFER.units);
+    if(OFFER.offer.client_name){
+      document.getElementById('heroTitle').textContent = `Подборка для ${OFFER.offer.client_name}`;
+    }
+    if(OFFER.offer.booking_clicked_at){
+      document.getElementById('bookBtn').style.display = 'none';
+      document.getElementById('bookDone').style.display = 'block';
+    }
+  } catch(e) {
+    document.querySelector('.hero').innerHTML = `<div class="empty" style="color:rgba(245,239,226,.7);">${e.message}</div>`;
+    document.querySelector('.section').style.display = 'none';
+    document.querySelector('.cta-wrap').style.display = 'none';
+  }
+})();
+</script>
+</body>
+</html>
