@@ -568,6 +568,10 @@ document.getElementById('cartIcon').onclick = ()=>{ if(state.selected.size) docu
 
 // ── история предложений ─────────────────────────────────────
 
+function fmtDateRu(d){
+  return new Date(d+'T00:00:00').toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+}
+
 async function openHistory(){
   const wrap = document.getElementById('historyList');
   wrap.innerHTML = '<div class="empty" style="padding:30px 10px;">Загружаем…</div>';
@@ -583,14 +587,41 @@ async function openHistory(){
       wrap.innerHTML = '<div class="empty" style="padding:30px 10px;">Пока нет ни одного отправленного предложения.</div>';
       return;
     }
+    const ids = offers.map(o=>o.id).join(',');
+    const [viewsRes, bookingsRes, viewingsRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id`, {headers: SB_HEADERS}),
+      fetch(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`, {headers: SB_HEADERS}),
+      fetch(`${SUPABASE_URL}/offer_viewing_requests?offer_id=in.(${ids})&select=offer_id,requested_date,units(room_no)`, {headers: SB_HEADERS}),
+    ]);
+    const views = await viewsRes.json();
+    const bookings = await bookingsRes.json();
+    const viewings = await viewingsRes.json();
+
     wrap.innerHTML = offers.map(o=>{
+      // считаем по новым таблицам; если предложение совсем старое (создано
+      // до этого обновления) — подстраховываемся старым флагом first_viewed_at
+      const viewCount = views.filter(v=>v.offer_id===o.id).length || (o.first_viewed_at ? 1 : 0);
+      const myBookings = bookings.filter(b=>b.offer_id===o.id);
+      const myViewings = viewings.filter(v=>v.offer_id===o.id);
+
       let statusClass='sent', statusText='Отправлено, ещё не открыто';
-      if(o.booking_clicked_at){ statusClass='booked'; statusText='Клиент нажал «Забронировать»'; }
-      else if(o.first_viewed_at){ statusClass='viewed'; statusText='Клиент открыл ссылку'; }
+      if(viewCount > 0){ statusClass='viewed'; statusText = `Открыто ${viewCount} ${pluralRu(viewCount,'раз','раза','раз')}`; }
+
+      const extra = [];
+      if(myBookings.length){
+        const rooms = myBookings.map(b=>(b.units||{}).room_no).filter(Boolean).join(', ');
+        extra.push(`<div class="hist-status booked"><span class="dot"></span>Забронировал: ${rooms}</div>`);
+      }
+      if(myViewings.length){
+        const list = myViewings.map(v=>`${(v.units||{}).room_no} — ${fmtDateRu(v.requested_date)}`).join('; ');
+        extra.push(`<div class="hist-status booked"><span class="dot"></span>Запись на просмотр: ${list}</div>`);
+      }
+
       return `<div class="hist-row">
         <div class="hist-top"><span class="hist-name">${o.client_name}</span><span class="hist-when">${timeAgo(o.created_at)}</span></div>
         <div class="hist-meta">${(o.unit_ids||[]).length} объект(ов) в подборке</div>
         <div class="hist-status ${statusClass}"><span class="dot"></span>${statusText}</div>
+        ${extra.join('')}
       </div>`;
     }).join('');
   } catch(e) {

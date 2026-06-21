@@ -97,28 +97,30 @@
   }
 
   /* ── финальный блок брони ─────────────────────────────────── */
-  .cta-wrap{background:var(--night);color:var(--sand);padding:8px 20px 34px;margin-top:18px;}
-  .cta-wrap h2{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:21px;margin:0 0 8px;}
-  .cta-wrap p{font-size:13px;color:rgba(245,239,226,.65);line-height:1.5;margin:0 0 18px;max-width:30em;}
   .cta-btn{
     width:100%;background:var(--coral);color:#fff;border:none;border-radius:14px;
     padding:16px;font-size:15.5px;font-weight:800;font-family:'Manrope',sans-serif;
     box-shadow:0 8px 20px rgba(232,113,74,.32);
   }
   .cta-btn:active{transform:scale(.98);}
+  .cta-btn-outline{
+    width:100%;background:transparent;color:var(--night);border:1.5px solid var(--night-2);
+    border-radius:14px;padding:14.5px;font-size:14.5px;font-weight:700;font-family:'Manrope',sans-serif;
+    margin-top:10px;
+  }
+  .cta-btn-outline:active{transform:scale(.98);}
+  .um-date-label{display:block;font-size:12.5px;color:var(--muted);margin:14px 0 6px;}
+  .um-date-input{
+    width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 13px;
+    font-family:'Manrope',sans-serif;font-size:14px;color:var(--ink);margin-bottom:10px;background:#fff;
+  }
   .cta-done{
     width:100%;background:var(--night-2);border:1px solid var(--line-dark);color:var(--sand);
-    border-radius:14px;padding:16px;text-align:center;font-size:14px;font-weight:600;
+    border-radius:14px;padding:16px;text-align:center;font-size:14px;font-weight:600;margin-top:10px;
   }
-  .agent-contact{
-    display:flex;gap:10px;margin-top:18px;
+  .foot-note-cta{
+    text-align:center;padding:4px 24px 6px;font-size:12.5px;color:var(--muted);line-height:1.5;
   }
-  .agent-contact a{
-    flex:1;text-align:center;padding:12px;border-radius:12px;font-size:13.5px;font-weight:700;
-    text-decoration:none;border:1px solid var(--line-dark);color:var(--sand);
-  }
-  .agent-contact a.primary{background:var(--seafoam);color:var(--night);border-color:var(--seafoam);}
-
   /* ── модалка брони конкретного лота ───────────────────────── */
   .um-bg{
     position:fixed;inset:0;background:rgba(15,43,40,.55);
@@ -169,16 +171,11 @@
 
   <div class="section">
     <div class="section-label" id="sectionLabel">Объекты в подборке</div>
-    <div class="section-hint" id="sectionHint">Нажмите на понравившийся объект, чтобы забронировать именно его</div>
+    <div class="section-hint" id="sectionHint">Нажмите на понравившийся объект — забронируете его или запишетесь на просмотр</div>
     <div id="cards"></div>
   </div>
 
-  <div class="cta-wrap">
-    <h2>Готовы посмотреть вживую?</h2>
-    <p>Нажмите ниже — агент свяжется с вами, чтобы согласовать просмотр и ответить на вопросы.</p>
-    <button class="cta-btn" id="bookBtn">Записаться на просмотр</button>
-    <div id="bookDone" style="display:none;" class="cta-done">Заявка отправлена агенту ✓</div>
-  </div>
+  <div class="foot-note-cta">Нажмите на понравившийся объект выше, чтобы забронировать его или записаться на просмотр</div>
 
   <div class="um-bg" id="umBg">
     <div class="um-sheet">
@@ -186,8 +183,20 @@
       <div class="um-type" id="umType"></div>
       <div class="um-specs" id="umSpecs"></div>
       <div class="um-price" id="umPrice"></div>
+
       <button class="cta-btn" id="umBookBtn">Забронировать</button>
       <div id="umBookDone" style="display:none;" class="cta-done">Заявка на бронь отправлена ✓</div>
+
+      <button class="cta-btn-outline" id="umViewingBtn">Записаться на просмотр</button>
+
+      <div id="umDatePick" style="display:none;">
+        <label class="um-date-label" for="umDateInput">Когда вам удобно посмотреть?</label>
+        <input type="date" id="umDateInput" class="um-date-input">
+        <button class="cta-btn" id="umDateConfirm">Подтвердить дату</button>
+      </div>
+
+      <div id="umViewingDone" style="display:none;" class="cta-done">Поздравляем с успешной записью! Агент свяжется с Вами для уточнения удобного времени просмотра на ваши даты.</div>
+
       <button class="um-close" id="umClose">Закрыть</button>
     </div>
   </div>
@@ -232,7 +241,22 @@ async function loadOffer(){
     units = await unitsRes.json();
   }
 
-  // отмечаем первый просмотр — не блокируя отрисовку
+  const [bookingsRes, viewingsRes] = await Promise.all([
+    fetch(`${SUPABASE_URL}/offer_bookings?offer_id=eq.${offer.id}&select=unit_id`, {headers: SB_HEADERS}),
+    fetch(`${SUPABASE_URL}/offer_viewing_requests?offer_id=eq.${offer.id}&select=unit_id,requested_date`, {headers: SB_HEADERS}),
+  ]);
+  const bookings = await bookingsRes.json();
+  const viewings = await viewingsRes.json();
+
+  // каждое открытие ссылки — отдельная запись, агент узнаёт про каждый визит,
+  // а не только про самый первый
+  fetch(`${SUPABASE_URL}/offer_views`, {
+    method:'POST', headers: SB_HEADERS,
+    body: JSON.stringify({offer_id: offer.id}),
+  }).catch(()=>{});
+
+  // оставляем и старое поле — для обратной совместимости со старыми
+  // предложениями, у которых ещё нет записей в offer_views
   if(!offer.first_viewed_at){
     fetch(`${SUPABASE_URL}/offers?slug=eq.${encodeURIComponent(slug)}`, {
       method:'PATCH', headers: SB_HEADERS,
@@ -240,7 +264,7 @@ async function loadOffer(){
     }).catch(()=>{});
   }
 
-  return {offer, agent, units, slug};
+  return {offer, agent, units, slug, bookings, viewings};
 }
 
 function renderAgent(agent){
@@ -250,6 +274,10 @@ function renderAgent(agent){
   else { avEl.textContent = initials; }
   document.getElementById('agentName').textContent = agent.full_name || 'Ваш агент';
   document.getElementById('agentAgency').textContent = agent.agency || 'Недвижимость на Пхукете';
+}
+
+function fmtDate(d){
+  return new Date(d+'T00:00:00').toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
 }
 
 function renderCards(units){
@@ -264,11 +292,15 @@ function renderCards(units){
 
   document.getElementById('cards').innerHTML = units.map(u=>{
     const sold = u.status === 'sold';
-    const booked = OFFER.offer.booked_unit_id === u.id;
+    const booked = OFFER.bookings.some(b=>b.unit_id===u.id);
+    const viewing = OFFER.viewings.find(v=>v.unit_id===u.id);
     const proj = u.projects ? (PROJ_LABEL[u.projects.code] || u.projects.name) : '';
+
     let pill = `<span class="card-code">${u.room_no}</span>`;
     if(sold) pill = '<span class="sold-pill">ПРОДАН</span>';
     else if(booked) pill = '<span class="booked-pill">ЗАБРОНИРОВАНО</span>';
+    else if(viewing) pill = `<span class="booked-pill">ПРОСМОТР ${fmtDate(viewing.requested_date)}</span>`;
+
     return `<div class="card ${sold?'sold':''} ${booked?'booked':''}" data-unit-id="${u.id}">
       <div class="card-top">
         <div><div class="card-proj">${proj}</div><div class="card-loc">Башня ${u.tower}, ${u.floor} этаж</div></div>
@@ -292,7 +324,7 @@ function renderCards(units){
   });
 }
 
-// ── модалка брони конкретного лота ──────────────────────────
+// ── модалка брони / записи на просмотр конкретного лота ─────
 let MODAL_UNIT = null;
 
 function openUnitModal(unit){
@@ -303,12 +335,27 @@ function openUnitModal(unit){
   document.getElementById('umSpecs').textContent = `Башня ${unit.tower}, ${unit.floor} этаж · ${unit.area_sqm} м²`;
   document.getElementById('umPrice').textContent = fmtTHB(unit.selling_price);
 
-  const alreadyBooked = OFFER.offer.booked_unit_id === unit.id;
-  const btn = document.getElementById('umBookBtn');
-  const done = document.getElementById('umBookDone');
-  btn.style.display = alreadyBooked ? 'none' : 'block';
-  done.style.display = alreadyBooked ? 'block' : 'none';
-  btn.disabled = false; btn.textContent = 'Забронировать';
+  const alreadyBooked = OFFER.bookings.some(b=>b.unit_id===unit.id);
+  const existingViewing = OFFER.viewings.find(v=>v.unit_id===unit.id);
+
+  const bookBtn = document.getElementById('umBookBtn');
+  const bookDone = document.getElementById('umBookDone');
+  bookBtn.style.display = alreadyBooked ? 'none' : 'block';
+  bookDone.style.display = alreadyBooked ? 'block' : 'none';
+  bookBtn.disabled = false; bookBtn.textContent = 'Забронировать';
+
+  const viewBtn = document.getElementById('umViewingBtn');
+  const viewDone = document.getElementById('umViewingDone');
+  const datePick = document.getElementById('umDatePick');
+  datePick.style.display = 'none';
+  viewBtn.style.display = existingViewing ? 'none' : 'block';
+  viewDone.style.display = existingViewing ? 'block' : 'none';
+
+  const dateInput = document.getElementById('umDateInput');
+  dateInput.min = new Date().toISOString().slice(0,10);
+  dateInput.value = '';
+  document.getElementById('umDateConfirm').disabled = false;
+  document.getElementById('umDateConfirm').textContent = 'Подтвердить дату';
 
   document.getElementById('umBg').classList.add('show');
 }
@@ -316,36 +363,53 @@ function openUnitModal(unit){
 document.getElementById('umClose').onclick = ()=> document.getElementById('umBg').classList.remove('show');
 document.getElementById('umBg').onclick = (e)=>{ if(e.target.id==='umBg') e.target.classList.remove('show'); };
 
+// «Забронировать» — отдельная запись на каждый лот, можно сколько угодно
 document.getElementById('umBookBtn').onclick = async ()=>{
   const btn = document.getElementById('umBookBtn');
   btn.disabled = true; btn.textContent = 'Отправляем…';
   try {
-    await fetch(`${SUPABASE_URL}/offers?slug=eq.${encodeURIComponent(OFFER.slug)}`, {
-      method:'PATCH', headers: SB_HEADERS,
-      body: JSON.stringify({booked_unit_id: MODAL_UNIT.id, unit_booked_at: new Date().toISOString()}),
+    const res = await fetch(`${SUPABASE_URL}/offer_bookings?on_conflict=offer_id,unit_id`, {
+      method:'POST',
+      headers: {...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal'},
+      body: JSON.stringify({offer_id: OFFER.offer.id, unit_id: MODAL_UNIT.id}),
     });
-    OFFER.offer.booked_unit_id = MODAL_UNIT.id;
+    if(!res.ok) throw new Error(String(res.status));
+    if(!OFFER.bookings.some(b=>b.unit_id===MODAL_UNIT.id)) OFFER.bookings.push({unit_id: MODAL_UNIT.id});
     btn.style.display = 'none';
     document.getElementById('umBookDone').style.display = 'block';
-    renderCards(OFFER.units); // обновляем плашку на карточке
+    renderCards(OFFER.units);
   } catch(e){
     btn.disabled = false; btn.textContent = 'Забронировать';
     alert('Не получилось отправить заявку, попробуйте ещё раз.');
   }
 };
 
-document.getElementById('bookBtn').onclick = async ()=>{
-  const btn = document.getElementById('bookBtn');
+// «Записаться на просмотр» — раскрывает выбор даты для этого лота
+document.getElementById('umViewingBtn').onclick = ()=>{
+  document.getElementById('umDatePick').style.display = 'block';
+  document.getElementById('umViewingBtn').style.display = 'none';
+};
+
+document.getElementById('umDateConfirm').onclick = async ()=>{
+  const dateVal = document.getElementById('umDateInput').value;
+  if(!dateVal){ alert('Выберите дату просмотра.'); return; }
+  const btn = document.getElementById('umDateConfirm');
   btn.disabled = true; btn.textContent = 'Отправляем…';
   try {
-    await fetch(`${SUPABASE_URL}/offers?slug=eq.${encodeURIComponent(OFFER.slug)}`, {
-      method:'PATCH', headers: SB_HEADERS,
-      body: JSON.stringify({booking_clicked_at: new Date().toISOString()}),
+    const res = await fetch(`${SUPABASE_URL}/offer_viewing_requests?on_conflict=offer_id,unit_id`, {
+      method:'POST',
+      headers: {...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal'},
+      body: JSON.stringify({offer_id: OFFER.offer.id, unit_id: MODAL_UNIT.id, requested_date: dateVal}),
     });
-    btn.style.display = 'none';
-    document.getElementById('bookDone').style.display = 'block';
+    if(!res.ok) throw new Error(String(res.status));
+    const existing = OFFER.viewings.find(v=>v.unit_id===MODAL_UNIT.id);
+    if(existing) existing.requested_date = dateVal;
+    else OFFER.viewings.push({unit_id: MODAL_UNIT.id, requested_date: dateVal});
+    document.getElementById('umDatePick').style.display = 'none';
+    document.getElementById('umViewingDone').style.display = 'block';
+    renderCards(OFFER.units);
   } catch(e){
-    btn.disabled = false; btn.textContent = 'Забронировать просмотр';
+    btn.disabled = false; btn.textContent = 'Подтвердить дату';
     alert('Не получилось отправить заявку, попробуйте ещё раз.');
   }
 };
@@ -358,14 +422,10 @@ document.getElementById('bookBtn').onclick = async ()=>{
     if(OFFER.offer.client_name){
       document.getElementById('heroTitle').textContent = `Подборка для ${OFFER.offer.client_name}`;
     }
-    if(OFFER.offer.booking_clicked_at){
-      document.getElementById('bookBtn').style.display = 'none';
-      document.getElementById('bookDone').style.display = 'block';
-    }
   } catch(e) {
     document.querySelector('.hero').innerHTML = `<div class="empty" style="color:rgba(245,239,226,.7);">${e.message}</div>`;
     document.querySelector('.section').style.display = 'none';
-    document.querySelector('.cta-wrap').style.display = 'none';
+    document.querySelector('.foot-note-cta').style.display = 'none';
   }
 })();
 </script>
