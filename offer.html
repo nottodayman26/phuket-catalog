@@ -60,14 +60,18 @@
   .section{padding:0 18px;}
   .section-label{
     font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
-    font-weight:700;margin:26px 2px 12px;
+    font-weight:700;margin:26px 2px 4px;
   }
+  .section-hint{font-size:12px;color:var(--muted);margin:0 2px 14px;}
   .card{
     background:#fff;border:1px solid var(--line);border-radius:18px;
     padding:18px 18px 16px;margin-bottom:14px;
     box-shadow:0 1px 2px rgba(28,38,34,.04);
+    cursor:pointer;transition:box-shadow .15s,border-color .15s;
   }
-  .card.sold{opacity:.5;}
+  .card:active{box-shadow:0 1px 2px rgba(28,38,34,.04);transform:scale(.99);}
+  .card.sold{opacity:.5;cursor:default;}
+  .card.booked{border-color:var(--seafoam);box-shadow:0 0 0 1px var(--seafoam);}
   .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
   .card-proj{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--coral-deep);font-weight:700;}
   .card-loc{font-size:11.5px;color:var(--muted);margin-top:2px;}
@@ -86,6 +90,10 @@
   .sold-pill{
     font-size:10.5px;font-weight:700;letter-spacing:.04em;color:#fff;
     background:var(--muted);border-radius:6px;padding:3px 8px;
+  }
+  .booked-pill{
+    font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--night);
+    background:var(--seafoam);border-radius:6px;padding:3px 8px;
   }
 
   /* ── финальный блок брони ─────────────────────────────────── */
@@ -110,6 +118,25 @@
     text-decoration:none;border:1px solid var(--line-dark);color:var(--sand);
   }
   .agent-contact a.primary{background:var(--seafoam);color:var(--night);border-color:var(--seafoam);}
+
+  /* ── модалка брони конкретного лота ───────────────────────── */
+  .um-bg{
+    position:fixed;inset:0;background:rgba(15,43,40,.55);
+    display:none;align-items:flex-end;z-index:30;
+  }
+  .um-bg.show{display:flex;}
+  .um-sheet{
+    background:var(--sand);width:100%;border-radius:20px 20px 0 0;
+    padding:22px 20px 28px;
+  }
+  .um-proj{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--coral-deep);font-weight:700;}
+  .um-type{font-family:'Fraunces',Georgia,serif;font-size:21px;font-weight:500;margin:6px 0 4px;}
+  .um-specs{font-size:13px;color:var(--muted);margin-bottom:14px;}
+  .um-price{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;margin-bottom:18px;}
+  .um-close{
+    width:100%;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;
+    font-family:'Manrope',sans-serif;padding:12px;margin-top:6px;
+  }
 
   .foot-note{
     text-align:center;padding:18px 20px 30px;font-size:11px;color:var(--muted);
@@ -142,17 +169,26 @@
 
   <div class="section">
     <div class="section-label" id="sectionLabel">Объекты в подборке</div>
+    <div class="section-hint" id="sectionHint">Нажмите на понравившийся объект, чтобы забронировать именно его</div>
     <div id="cards"></div>
   </div>
 
   <div class="cta-wrap">
     <h2>Готовы посмотреть вживую?</h2>
     <p>Нажмите ниже — агент свяжется с вами, чтобы согласовать просмотр и ответить на вопросы.</p>
-    <button class="cta-btn" id="bookBtn">Забронировать просмотр</button>
+    <button class="cta-btn" id="bookBtn">Записаться на просмотр</button>
     <div id="bookDone" style="display:none;" class="cta-done">Заявка отправлена агенту ✓</div>
-    <div class="agent-contact">
-      <a id="callLink" href="#">Позвонить</a>
-      <a id="waLink" href="#" class="primary">WhatsApp</a>
+  </div>
+
+  <div class="um-bg" id="umBg">
+    <div class="um-sheet">
+      <div class="um-proj" id="umProj"></div>
+      <div class="um-type" id="umType"></div>
+      <div class="um-specs" id="umSpecs"></div>
+      <div class="um-price" id="umPrice"></div>
+      <button class="cta-btn" id="umBookBtn">Забронировать</button>
+      <div id="umBookDone" style="display:none;" class="cta-done">Заявка на бронь отправлена ✓</div>
+      <button class="um-close" id="umClose">Закрыть</button>
     </div>
   </div>
 
@@ -174,8 +210,6 @@ function fmtTHBshort(n){
   if(n>=1_000_000) return (n/1_000_000).toFixed(1).replace('.0','') + 'М ฿';
   return new Intl.NumberFormat('ru-RU').format(n) + ' ฿';
 }
-function phoneToWa(phone){ return (phone||'').replace(/[^\d]/g,''); }
-
 let OFFER = null;
 
 async function loadOffer(){
@@ -194,7 +228,7 @@ async function loadOffer(){
   let units = [];
   if((offer.unit_ids||[]).length){
     const ids = offer.unit_ids.join(',');
-    const unitsRes = await fetch(`${SUPABASE_URL}/units?id=in.(${ids})&select=room_no,tower,floor,room_type,area_sqm,price_per_sqm,selling_price,status,projects(code,name)`, {headers: SB_HEADERS});
+    const unitsRes = await fetch(`${SUPABASE_URL}/units?id=in.(${ids})&select=id,room_no,tower,floor,room_type,area_sqm,price_per_sqm,selling_price,status,projects(code,name)`, {headers: SB_HEADERS});
     units = await unitsRes.json();
   }
 
@@ -216,10 +250,6 @@ function renderAgent(agent){
   else { avEl.textContent = initials; }
   document.getElementById('agentName').textContent = agent.full_name || 'Ваш агент';
   document.getElementById('agentAgency').textContent = agent.agency || 'Недвижимость на Пхукете';
-
-  const phone = agent.phone || '';
-  document.getElementById('callLink').href = phone ? `tel:${phone}` : '#';
-  document.getElementById('waLink').href = phone ? `https://wa.me/${phoneToWa(phone)}` : '#';
 }
 
 function renderCards(units){
@@ -228,16 +258,21 @@ function renderCards(units){
 
   if(!units.length){
     document.getElementById('cards').innerHTML = '<div class="empty">Агент пока не добавил объекты в эту подборку.</div>';
+    document.getElementById('sectionHint').style.display = 'none';
     return;
   }
 
   document.getElementById('cards').innerHTML = units.map(u=>{
     const sold = u.status === 'sold';
+    const booked = OFFER.offer.booked_unit_id === u.id;
     const proj = u.projects ? (PROJ_LABEL[u.projects.code] || u.projects.name) : '';
-    return `<div class="card ${sold?'sold':''}">
+    let pill = `<span class="card-code">${u.room_no}</span>`;
+    if(sold) pill = '<span class="sold-pill">ПРОДАН</span>';
+    else if(booked) pill = '<span class="booked-pill">ЗАБРОНИРОВАНО</span>';
+    return `<div class="card ${sold?'sold':''} ${booked?'booked':''}" data-unit-id="${u.id}">
       <div class="card-top">
         <div><div class="card-proj">${proj}</div><div class="card-loc">Башня ${u.tower}, ${u.floor} этаж</div></div>
-        ${sold ? '<span class="sold-pill">ПРОДАН</span>' : `<span class="card-code">${u.room_no}</span>`}
+        ${pill}
       </div>
       <div class="card-type">${u.room_type}</div>
       <div class="card-specs">Площадь <b>${u.area_sqm} м²</b></div>
@@ -247,7 +282,57 @@ function renderCards(units){
       </div>
     </div>`;
   }).join('');
+
+  document.querySelectorAll('.card').forEach(el=>{
+    if(el.classList.contains('sold')) return;
+    el.onclick = ()=>{
+      const unit = units.find(u=>u.id===el.dataset.unitId);
+      if(unit) openUnitModal(unit);
+    };
+  });
 }
+
+// ── модалка брони конкретного лота ──────────────────────────
+let MODAL_UNIT = null;
+
+function openUnitModal(unit){
+  MODAL_UNIT = unit;
+  const proj = unit.projects ? (PROJ_LABEL[unit.projects.code] || unit.projects.name) : '';
+  document.getElementById('umProj').textContent = `${proj} · ${unit.room_no}`;
+  document.getElementById('umType').textContent = unit.room_type;
+  document.getElementById('umSpecs').textContent = `Башня ${unit.tower}, ${unit.floor} этаж · ${unit.area_sqm} м²`;
+  document.getElementById('umPrice').textContent = fmtTHB(unit.selling_price);
+
+  const alreadyBooked = OFFER.offer.booked_unit_id === unit.id;
+  const btn = document.getElementById('umBookBtn');
+  const done = document.getElementById('umBookDone');
+  btn.style.display = alreadyBooked ? 'none' : 'block';
+  done.style.display = alreadyBooked ? 'block' : 'none';
+  btn.disabled = false; btn.textContent = 'Забронировать';
+
+  document.getElementById('umBg').classList.add('show');
+}
+
+document.getElementById('umClose').onclick = ()=> document.getElementById('umBg').classList.remove('show');
+document.getElementById('umBg').onclick = (e)=>{ if(e.target.id==='umBg') e.target.classList.remove('show'); };
+
+document.getElementById('umBookBtn').onclick = async ()=>{
+  const btn = document.getElementById('umBookBtn');
+  btn.disabled = true; btn.textContent = 'Отправляем…';
+  try {
+    await fetch(`${SUPABASE_URL}/offers?slug=eq.${encodeURIComponent(OFFER.slug)}`, {
+      method:'PATCH', headers: SB_HEADERS,
+      body: JSON.stringify({booked_unit_id: MODAL_UNIT.id, unit_booked_at: new Date().toISOString()}),
+    });
+    OFFER.offer.booked_unit_id = MODAL_UNIT.id;
+    btn.style.display = 'none';
+    document.getElementById('umBookDone').style.display = 'block';
+    renderCards(OFFER.units); // обновляем плашку на карточке
+  } catch(e){
+    btn.disabled = false; btn.textContent = 'Забронировать';
+    alert('Не получилось отправить заявку, попробуйте ещё раз.');
+  }
+};
 
 document.getElementById('bookBtn').onclick = async ()=>{
   const btn = document.getElementById('bookBtn');

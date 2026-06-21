@@ -66,14 +66,18 @@
   }
 
   /* ── живой тикер продаж (signature element) ─────────────── */
+  .sticky-head{position:sticky;top:0;z-index:6;background:var(--bg);}
   .ticker-wrap{
     border-top:1px solid var(--line);border-bottom:1px solid var(--line);
     background:var(--surface);overflow:hidden;white-space:nowrap;
-    padding:7px 0;
+    padding:7px 0;height:34px;
   }
-  .ticker-track{display:inline-flex;gap:28px;animation:scrollTicker 26s linear infinite;padding-left:16px;}
+  .ticker-track{
+    display:inline-flex;gap:28px;animation:scrollTicker 26s linear infinite;padding-left:16px;
+    will-change:transform;
+  }
   .ticker-wrap:hover .ticker-track{animation-play-state:paused;}
-  @keyframes scrollTicker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  @keyframes scrollTicker{from{transform:translate3d(0,0,0);}to{transform:translate3d(-50%,0,0);}}
   .tick{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);white-space:nowrap;}
   .tick .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
   .tick b{color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:500;}
@@ -81,7 +85,6 @@
 
   /* ── фильтры ─────────────────────────────────────────────── */
   .filters{
-    position:sticky;top:0;z-index:5;background:var(--bg);
     padding:12px 0 8px;border-bottom:1px solid var(--line);
   }
   .chip-row{display:flex;gap:7px;overflow-x:auto;padding:0 16px 9px;scrollbar-width:none;}
@@ -226,16 +229,18 @@
     </button>
   </div>
 
-  <div class="ticker-wrap"><div class="ticker-track" id="ticker"></div></div>
+  <div class="sticky-head">
+    <div class="ticker-wrap"><div class="ticker-track" id="ticker"></div></div>
 
-  <div class="filters">
-    <div class="chip-row" id="projChips"></div>
-    <div class="row2">
-      <div class="chip-row" id="typeChips" style="padding:0;"></div>
-    </div>
-    <div class="row2" style="margin-top:7px;">
-      <div class="chip" id="budgetChip">Бюджет: любой</div>
-      <div class="chip sort-btn" id="sortChip">Цена ↑</div>
+    <div class="filters">
+      <div class="chip-row" id="projChips"></div>
+      <div class="row2">
+        <div class="chip-row" id="typeChips" style="padding:0;"></div>
+      </div>
+      <div class="row2" style="margin-top:7px;">
+        <div class="chip" id="budgetChip">Бюджет: любой</div>
+        <div class="chip sort-btn" id="sortChip">Цена ↑</div>
+      </div>
     </div>
   </div>
 
@@ -244,7 +249,7 @@
   <div class="list" id="list"></div>
 
   <div class="cartbar" id="cartbar">
-    <div class="l">Выбрано <b id="cartCount">0</b><br><span class="sum" id="cartSum">0 THB</span></div>
+    <div class="l">Выбрано <b id="cartCount">0</b></div>
     <button id="makeOfferBtn">Сформировать предложение</button>
   </div>
 
@@ -296,9 +301,7 @@ async function loadUnitsFromSupabase(){
     pricePerSqm: r.price_per_sqm,
     price: r.selling_price,
     status: r.status === 'sold' ? 'Sold' : 'Available',
-    minutesAgo: r.status === 'sold'
-      ? Math.max(1, Math.round((Date.now() - new Date(r.status_updated_at).getTime()) / 60000))
-      : null,
+    statusUpdatedAt: r.status_updated_at,
   }));
 }
 
@@ -384,15 +387,49 @@ function fmtTHBshort(n){
   return new Intl.NumberFormat('ru-RU').format(n) + ' ฿';
 }
 
+// ── правильное склонение времени по-русски ──────────────────
+function pluralRu(n, one, few, many){
+  const mod100 = Math.abs(n) % 100, mod10 = mod100 % 10;
+  if(mod100 > 10 && mod100 < 20) return many;
+  if(mod10 > 1 && mod10 < 5) return few;
+  if(mod10 === 1) return one;
+  return many;
+}
+function timeAgo(iso){
+  const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if(mins < 60) return `${mins} ${pluralRu(mins,'минуту','минуты','минут')} назад`;
+  const hours = Math.floor(mins/60);
+  if(hours < 24) return `${hours} ${pluralRu(hours,'час','часа','часов')} назад`;
+  const days = Math.floor(hours/24);
+  if(days < 7) return `${days} ${pluralRu(days,'день','дня','дней')} назад`;
+  const weeks = Math.floor(days/7);
+  if(weeks < 5) return `${weeks} ${pluralRu(weeks,'неделю','недели','недель')} назад`;
+  const months = Math.floor(days/30);
+  return `${months} ${pluralRu(months,'месяц','месяца','месяцев')} назад`;
+}
+
 // ── тикер ────────────────────────────────────────────────────
 function buildTicker(){
-  const sold = UNITS.filter(u=>u.status==='Sold').sort((a,b)=>a.minutesAgo-b.minutesAgo);
+  const sold = UNITS.filter(u=>u.status==='Sold').sort((a,b)=> new Date(b.statusUpdatedAt) - new Date(a.statusUpdatedAt));
+  const wrap = document.querySelector('.ticker-wrap');
+  if(!sold.length){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
   const items = sold.map(u=>`
     <span class="tick"><span class="dot" style="background:${PROJ_VAR[u.project]}"></span>
-      ПРОДАНО <b>${u.id}</b> · ${PROJ_LABEL[u.project]} <span class="ago">· ${u.minutesAgo} мин назад</span>
+      ПРОДАНО <b>${u.id}</b> · ${PROJ_LABEL[u.project]} <span class="ago">· ${timeAgo(u.statusUpdatedAt)}</span>
     </span>`).join('');
-  document.getElementById('ticker').innerHTML = items + items; // дублируем для бесшовной прокрутки
+  const track = document.getElementById('ticker');
+  track.innerHTML = items + items; // дублируем для бесшовной прокрутки
+
+  // одинаковый темп ленты независимо от ширины экрана (раньше на ПК "летело")
+  requestAnimationFrame(()=>{
+    const singleWidth = track.scrollWidth / 2;
+    const pxPerSecond = 38;
+    track.style.animationDuration = Math.max(10, singleWidth / pxPerSecond) + 's';
+  });
 }
+setInterval(()=>{ if(UNITS.length) buildTicker(); }, 60000); // держим "N минут назад" свежим
 
 // ── фильтры (чипы) ──────────────────────────────────────────
 function buildProjChips(){
@@ -468,14 +505,18 @@ function render(){
 }
 
 function updateCartbar(){
-  const sel = [...state.selected].map(id=>UNITS.find(u=>u.id===id));
+  const sel = [...state.selected];
   const bar = document.getElementById('cartbar');
-  if(sel.length===0){ bar.classList.remove('show'); return; }
+  const badge = document.getElementById('cartBadge');
+  if(sel.length===0){
+    bar.classList.remove('show');
+    badge.style.display='none';
+    return;
+  }
   bar.classList.add('show');
   document.getElementById('cartCount').textContent = sel.length;
-  document.getElementById('cartSum').textContent = fmtTHB(sel.reduce((s,u)=>s+u.price,0));
-  document.getElementById('cartBadge').style.display = 'flex';
-  document.getElementById('cartBadge').textContent = sel.length;
+  badge.style.display = 'flex';
+  badge.textContent = sel.length;
 }
 
 // ── модалка предложения ────────────────────────────────────
@@ -526,13 +567,6 @@ document.getElementById('copyLink').onclick = ()=>{
 document.getElementById('cartIcon').onclick = ()=>{ if(state.selected.size) document.getElementById('makeOfferBtn').click(); };
 
 // ── история предложений ─────────────────────────────────────
-function timeAgo(iso){
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime())/60000));
-  if(mins < 60) return `${mins} мин назад`;
-  const hrs = Math.round(mins/60);
-  if(hrs < 24) return `${hrs} ч назад`;
-  return `${Math.round(hrs/24)} дн назад`;
-}
 
 async function openHistory(){
   const wrap = document.getElementById('historyList');
