@@ -9,23 +9,41 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root{
-    --bg:#1C1C2E;
-    --surface:#252538;
-    --surface-2:#2e2e48;
-    --line:rgba(155,127,212,0.18);
-    --text:#F7F3FF;
-    --muted:#9B7FD4;
-    --muted-2:#6B5A9E;
+    --bg:#111118;
+    --surface:#1a1a24;
+    --surface-2:#1e1e2a;
+    --line:rgba(255,255,255,0.07);
+    --text:#ffffff;
+    --muted:#555566;
+    --muted-2:#333344;
     --accent:#5E17EB;
     --accent-2:#7B3FF5;
-    --accent-text:#F7F3FF;
+    --accent-text:#fff;
     --red:#FF6B6B;
-    --sold:#6B5A9E;
-    --vik:#9B7FD4;
-    --kat:#7B3FF5;
-    --ban:#FF6B6B;
-    --oln:#5E17EB;
+    --sold:#444455;
+    --vik:#C9A84C;
+    --kat:#7BAF6E;
+    --ban:#6B9BC2;
+    --oln:#8FAB5F;
     --radius:14px;
+  }
+  body.light{
+    --bg:#F5F5F7;
+    --surface:#ffffff;
+    --surface-2:#f0f0f4;
+    --line:rgba(0,0,0,0.08);
+    --text:#111118;
+    --muted:#999aaa;
+    --muted-2:#bbbccc;
+    --accent:#5E17EB;
+    --accent-2:#7B3FF5;
+    --accent-text:#fff;
+    --red:#FF6B6B;
+    --sold:#bbbccc;
+    --vik:#C9A84C;
+    --kat:#7BAF6E;
+    --ban:#6B9BC2;
+    --oln:#8FAB5F;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
@@ -43,7 +61,7 @@
   }
   .logo{
     font-family:'Inter',sans-serif;font-weight:700;font-size:20px;
-    letter-spacing:-1px;color:#fff;flex:1;
+    letter-spacing:-1px;color:var(--text);flex:1;
   }
   .logo span{color:var(--accent);}
   .logo-dot{
@@ -260,6 +278,10 @@
     </div>
     <button class="cart-btn" id="historyIcon" style="margin-right:6px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-7 3L3 8"/><path d="M3 4v4h4"/><path d="M12 7v5l3 3"/></svg>
+    </button>
+    <button class="cart-btn" id="themeToggle" style="margin-right:6px;" title="Тема">
+      <svg id="themeIconDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="themeIconLight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
     </button>
     <button class="cart-btn" id="mapIcon" style="margin-right:6px;" title="Карта">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
@@ -796,6 +818,19 @@ async function openHistory(){
 }
 document.getElementById('historyIcon').onclick = openHistory;
 document.getElementById('historyBg').onclick = (e)=>{ if(e.target.id==='historyBg') e.target.classList.remove('show'); };
+
+// ── переключение темы ────────────────────────────────────────
+(function(){
+  const saved = localStorage.getItem('flox-theme');
+  if(saved === 'light') document.body.classList.add('light');
+})();
+
+document.getElementById('themeToggle').onclick = ()=>{
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('flox-theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeIconDark').style.display = isLight ? 'none' : 'block';
+  document.getElementById('themeIconLight').style.display = isLight ? 'block' : 'none';
+};
 
 async function init(){
   document.getElementById('list').innerHTML = '<div class="empty">Загружаем актуальный каталог со склада…</div>';
