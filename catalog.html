@@ -210,6 +210,50 @@
   .hist-status.sent .dot{background:var(--muted-2);}
   .hist-status.viewed .dot{background:#7aa6c2;}
   .hist-status.booked .dot{background:#7fae6a;}
+
+  /* ── шторка корзины ─────────────────────────────────────── */
+  .cart-item{
+    display:flex;align-items:center;gap:10px;
+    background:var(--surface);border:1px solid var(--line);border-radius:11px;
+    padding:10px 12px;margin-bottom:8px;
+  }
+  .cart-item .bar{width:4px;align-self:stretch;border-radius:4px;flex-shrink:0;}
+  .cart-item .ci-info{flex:1;min-width:0;}
+  .cart-item .ci-code{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;}
+  .cart-item .ci-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .cart-item .ci-price{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;margin-top:3px;}
+  .ci-rm{background:none;border:none;color:var(--muted-2);font-size:18px;line-height:1;padding:4px;flex-shrink:0;cursor:pointer;}
+  .cart-total{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:12px 0 16px;border-top:1px solid var(--line);margin-top:4px;
+    font-size:13px;color:var(--muted);
+  }
+  .cart-total b{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text);}
+
+  /* ── вкладка карты ───────────────────────────────────────── */
+  .map-tab-btn{
+    flex-shrink:0;padding:7px 13px;border-radius:20px;font-size:12.5px;font-weight:700;
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;
+  }
+  .map-sheet{
+    background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
+    padding:18px 18px 28px;max-height:90vh;overflow-y:auto;
+  }
+  .map-sheet h3{margin:0 0 14px;font-size:16px;}
+  .map-embed{
+    width:100%;height:320px;border:none;border-radius:12px;display:block;
+  }
+  .map-legend{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+  .map-pin{
+    display:flex;align-items:center;gap:10px;
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  }
+  .map-pin .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .map-pin .mp-info{flex:1;min-width:0;}
+  .map-pin .mp-name{font-weight:700;font-size:13px;}
+  .map-pin .mp-loc{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .map-pin .mp-cnt{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted-2);flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -222,6 +266,9 @@
     </div>
     <button class="cart-btn" id="historyIcon" style="margin-right:6px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-7 3L3 8"/><path d="M3 4v4h4"/><path d="M12 7v5l3 3"/></svg>
+    </button>
+    <button class="cart-btn" id="mapIcon" style="margin-right:6px;" title="Карта">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
     </button>
     <button class="cart-btn" id="cartIcon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h2l2.4 12.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6"/><circle cx="9" cy="21" r="1.4"/><circle cx="17" cy="21" r="1.4"/></svg>
@@ -258,10 +305,9 @@
       <h3>Предложение клиенту</h3>
       <p id="sheetSub">0 объектов выбрано</p>
       <input type="text" id="clientName" placeholder="Имя клиента (для ссылки)">
-      <button class="go" id="genLink">Создать ссылку</button>
+      <button class="go" id="genLink" data-mode="create">Создать ссылку</button>
       <div class="link-box" id="linkBox">
         <span id="linkText"></span>
-        <button id="copyLink">Скопировать</button>
       </div>
     </div>
   </div>
@@ -271,6 +317,30 @@
       <h3>Мои предложения</h3>
       <p style="margin-bottom:12px;">Статус ссылок, которые ты отправлял клиентам</p>
       <div id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- шторка корзины -->
+  <div class="sheet-bg" id="cartSheetBg">
+    <div class="sheet" style="max-height:80vh;overflow-y:auto;">
+      <h3>Выбранные объекты</h3>
+      <div id="cartItemsList"></div>
+      <div class="cart-total">
+        <span>Итого</span>
+        <b id="cartTotalPrice">0 ฿</b>
+      </div>
+      <button class="go" id="makeOfferFromCart">Сформировать предложение</button>
+    </div>
+  </div>
+
+  <!-- шторка карты -->
+  <div class="sheet-bg" id="mapSheetBg">
+    <div class="map-sheet">
+      <h3>Карта проектов</h3>
+      <iframe class="map-embed" id="mapEmbed"
+        src="https://maps.google.com/maps?q=8.1731,98.2996&z=12&output=embed"
+        loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div class="map-legend" id="mapLegend"></div>
     </div>
   </div>
 
@@ -539,25 +609,42 @@ function updateCartbar(){
 
 // ── модалка предложения ────────────────────────────────────
 const sheetBg = document.getElementById('sheetBg');
-document.getElementById('makeOfferBtn').onclick = ()=>{
+
+// Открыть модалку предложения (вызывается из корзины или напрямую)
+function openOfferSheet(){
   document.getElementById('sheetSub').textContent = `${state.selected.size} объект(ов) выбрано`;
-  document.getElementById('linkBox').classList.remove('show');
+  // сбрасываем кнопку в исходное состояние
+  const btn = document.getElementById('genLink');
+  btn.textContent = 'Создать ссылку';
+  btn.dataset.mode = 'create';
+  btn.disabled = false;
   document.getElementById('clientName').value='';
   sheetBg.classList.add('show');
-};
+}
+
+document.getElementById('makeOfferBtn').onclick = openOfferSheet;
 sheetBg.onclick = (e)=>{ if(e.target===sheetBg) sheetBg.classList.remove('show'); };
 
 document.getElementById('genLink').onclick = async ()=>{
+  const btn = document.getElementById('genLink');
+  // если кнопка уже в режиме "скопировать" — копируем
+  if(btn.dataset.mode === 'copy'){
+    const link = document.getElementById('linkText').textContent;
+    navigator.clipboard?.writeText(link);
+    btn.textContent = 'Скопировано ✓';
+    setTimeout(()=>{ btn.textContent = 'Скопировать'; }, 1400);
+    return;
+  }
+  // иначе — создаём ссылку
   if(!CURRENT_AGENT){
     alert('Открой каталог через Telegram-бота — без этого нельзя узнать, от чьего имени делать предложение.');
     return;
   }
-  const btn = document.getElementById('genLink');
-  const prevLabel = btn.textContent;
   btn.disabled = true; btn.textContent = 'Создаю…';
   try {
     const name = document.getElementById('clientName').value.trim() || 'клиент';
-    const slug = name.toLowerCase().replace(/[^a-zа-я0-9]+/gi,'-').slice(0,16) + '-' + Math.random().toString(36).slice(2,7);
+    // рандомный slug без github и username: буквенно-цифровой, 12 символов
+    const slug = Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4);
     const unitDbIds = [...state.selected].map(roomNo => UNITS.find(u=>u.id===roomNo)?.dbId).filter(Boolean);
 
     const res = await fetch(`${SUPABASE_URL}/offers`, {
@@ -567,22 +654,91 @@ document.getElementById('genLink').onclick = async ()=>{
     });
     if(!res.ok) throw new Error(`Не удалось сохранить (${res.status})`);
 
-    const base = location.href.split('/').slice(0,-1).join('/');
-    const link = `${base}/offer.html?slug=${slug}`;
+    // формируем ссылку через короткий путь без раскрытия репозитория
+    const link = `${location.origin}/offer?s=${slug}`;
     document.getElementById('linkText').textContent = link;
     document.getElementById('linkBox').classList.add('show');
+    // переключаем кнопку в режим копирования
+    btn.disabled = false;
+    btn.textContent = 'Скопировать';
+    btn.dataset.mode = 'copy';
   } catch(e) {
     alert('Не получилось создать ссылку: ' + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = prevLabel;
+    btn.disabled = false; btn.textContent = 'Создать ссылку';
+    btn.dataset.mode = 'create';
   }
 };
 
-document.getElementById('copyLink').onclick = ()=>{
-  navigator.clipboard?.writeText(document.getElementById('linkText').textContent);
-  const b=document.getElementById('copyLink'); b.textContent='Скопировано'; setTimeout(()=>b.textContent='Скопировать',1400);
+// ── шторка корзины ──────────────────────────────────────────
+const cartSheetBg = document.getElementById('cartSheetBg');
+cartSheetBg.onclick = (e)=>{ if(e.target===cartSheetBg) cartSheetBg.classList.remove('show'); };
+
+document.getElementById('makeOfferFromCart').onclick = ()=>{
+  cartSheetBg.classList.remove('show');
+  openOfferSheet();
 };
-document.getElementById('cartIcon').onclick = ()=>{ if(state.selected.size) document.getElementById('makeOfferBtn').click(); };
+
+document.getElementById('cartIcon').onclick = ()=>{
+  if(!state.selected.size) return;
+  renderCartSheet();
+  cartSheetBg.classList.add('show');
+};
+
+function renderCartSheet(){
+  const items = [...state.selected].map(id => UNITS.find(u=>u.id===id)).filter(Boolean);
+  const total = items.reduce((s,u)=>s+u.price, 0);
+  document.getElementById('cartTotalPrice').textContent = fmtTHB(total);
+  document.getElementById('cartItemsList').innerHTML = items.map(u=>`
+    <div class="cart-item">
+      <div class="bar" style="background:${PROJ_VAR[u.project]}"></div>
+      <div class="ci-info">
+        <div class="ci-code">${u.id}</div>
+        <div class="ci-sub">${PROJ_LABEL[u.project]} · ${u.roomType} · ${u.area} м²</div>
+        <div class="ci-price">${fmtTHB(u.price)}</div>
+      </div>
+      <button class="ci-rm" data-id="${u.id}" title="Убрать">×</button>
+    </div>
+  `).join('');
+  document.querySelectorAll('.ci-rm').forEach(btn=>{
+    btn.onclick = ()=>{
+      state.selected.delete(btn.dataset.id);
+      render();
+      if(!state.selected.size){ cartSheetBg.classList.remove('show'); return; }
+      renderCartSheet();
+    };
+  });
+}
+
+// ── карта ───────────────────────────────────────────────────
+const MAP_PROJECTS = [
+  {code:'OLN', name:'The Olive Naiyang',   lat:8.1843, lng:98.2983, units:222, color:'var(--oln)'},
+  {code:'BAN', name:'The Balcony Naiyang', lat:8.1814, lng:98.2971, units:138, color:'var(--ban)'},
+  {code:'VIK', name:'Vivana Kamala',       lat:7.9729, lng:98.2948, units:194, color:'var(--vik)'},
+  {code:'KAT', name:'KataBello',           lat:7.8267, lng:98.3068, units:188, color:'var(--kat)'},
+];
+
+const mapSheetBg = document.getElementById('mapSheetBg');
+mapSheetBg.onclick = (e)=>{ if(e.target===mapSheetBg) mapSheetBg.classList.remove('show'); };
+
+document.getElementById('mapIcon').onclick = ()=>{
+  // легенда
+  document.getElementById('mapLegend').innerHTML = MAP_PROJECTS.map(p=>`
+    <div class="map-pin">
+      <div class="dot" style="background:${p.color}"></div>
+      <div class="mp-info">
+        <div class="mp-name">${p.name}</div>
+        <div class="mp-loc">${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</div>
+      </div>
+      <div class="mp-cnt">${p.units} юн.</div>
+    </div>
+  `).join('');
+  // центр карты — между всеми 4 проектами
+  const avgLat = MAP_PROJECTS.reduce((s,p)=>s+p.lat,0)/MAP_PROJECTS.length;
+  const avgLng = MAP_PROJECTS.reduce((s,p)=>s+p.lng,0)/MAP_PROJECTS.length;
+  document.getElementById('mapEmbed').src =
+    `https://maps.google.com/maps?q=${avgLat},${avgLng}&z=11&output=embed`;
+  mapSheetBg.classList.add('show');
+};
 
 // ── история предложений ─────────────────────────────────────
 
