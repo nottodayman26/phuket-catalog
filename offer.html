@@ -133,25 +133,32 @@
   .um-bg{
     position:fixed;inset:0;background:rgba(28,28,46,.6);
     display:none;align-items:flex-end;z-index:30;
-    opacity:0;transition:opacity 0.22s ease;
+    opacity:0;transition:opacity 0.28s ease;
   }
   .um-bg.show{display:flex;opacity:1;}
   .um-bg.hiding{opacity:0;}
   .um-sheet{
     background:var(--sand);width:100%;border-radius:20px 20px 0 0;
     padding:22px 20px 28px;
-    opacity:0;transform:translateY(40px) scale(0.97);
-    transition:opacity 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    opacity:0;transform:translateY(60px) scale(0.95);
+    transition:opacity 0.32s cubic-bezier(0.22,1,0.36,1),
+               transform 0.38s cubic-bezier(0.34,1.4,0.64,1);
   }
   .um-bg.show .um-sheet{opacity:1;transform:translateY(0) scale(1);}
-  .um-bg.hiding .um-sheet{opacity:0;transform:translateY(40px) scale(0.97);}
+  .um-bg.hiding .um-sheet{
+    opacity:0;transform:translateY(60px) scale(0.95);
+    transition:opacity 0.22s ease, transform 0.22s ease;
+  }
   .um-proj{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700;}
   .um-type{font-family:'Inter',sans-serif;font-size:21px;font-weight:700;margin:6px 0 4px;letter-spacing:-.02em;}
   .um-specs{font-size:13px;color:var(--muted);margin-bottom:14px;}
   .um-price{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-bottom:18px;}
   .um-close{
-    width:100%;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;
-    font-family:'Inter',sans-serif;padding:12px;margin-top:6px;
+    position:absolute;top:14px;right:14px;
+    width:28px;height:28px;border-radius:50%;
+    background:rgba(28,28,46,0.08);border:none;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:#888;font-size:16px;line-height:1;
   }
   .foot-note{
     text-align:center;padding:18px 20px 30px;font-size:11px;color:var(--muted);
@@ -183,8 +190,8 @@
   </div>
 
   <div class="um-bg" id="umBg">
-    <div class="um-sheet">
-      <div class="um-proj" id="umProj"></div>
+    <div class="um-sheet" style="position:relative;">
+      <button class="um-close" id="umClose">×</button>      <div class="um-proj" id="umProj"></div>
       <div class="um-type" id="umType"></div>
       <div class="um-specs" id="umSpecs"></div>
       <div class="um-price" id="umPrice"></div>
