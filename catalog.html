@@ -195,8 +195,7 @@
     display:none;align-items:flex-end;z-index:20;
     opacity:0;transition:opacity 0.28s ease;
   }
-  .sheet-bg.show{display:flex;opacity:1;}
-  .sheet-bg.hiding{opacity:0;}
+  .sheet-bg.show{opacity:1;}
   .sheet{
     background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
     padding:20px 18px 26px;position:relative;
@@ -231,15 +230,16 @@
 
   /* кнопка наверх */
   .scroll-top{
-    position:fixed;right:16px;bottom:90px;width:40px;height:40px;border-radius:50%;
+    position:fixed;right:14px;bottom:88px;width:52px;height:52px;border-radius:50%;
     background:var(--surface-2);border:1px solid var(--line);
     display:flex;align-items:center;justify-content:center;
     color:var(--muted);z-index:9;
     opacity:0;pointer-events:none;
-    transition:opacity 0.2s ease;
+    transition:opacity 0.2s ease, background 0.4s ease;
+    box-shadow:0 4px 16px rgba(0,0,0,0.25);
   }
   .scroll-top.show{opacity:1;pointer-events:auto;}
-  .scroll-top svg{width:18px;height:18px;}
+  .scroll-top svg{width:22px;height:22px;stroke-width:2.5;}
   .sheet h3{margin:0 0 4px;font-size:16px;font-weight:700;}
   .sheet p{margin:0 0 16px;color:var(--muted);font-size:12.5px;line-height:1.4;}
   .sheet input{
@@ -670,9 +670,17 @@ function updateCartbar(){
 }
 
 // ── анимированное закрытие шторок ───────────────────────────
+function openSheet(bg){
+  bg.style.display = 'flex';
+  requestAnimationFrame(()=> requestAnimationFrame(()=> bg.classList.add('show')));
+}
+
 function closeSheet(bg){
   bg.classList.add('hiding');
-  setTimeout(()=>{ bg.classList.remove('show','hiding'); }, 240);
+  setTimeout(()=>{
+    bg.classList.remove('show','hiding');
+    bg.style.display = '';
+  }, 260);
 }
 
 document.getElementById('closeSheetBg').onclick    = ()=> closeSheet(document.getElementById('sheetBg'));
@@ -702,7 +710,7 @@ function openOfferSheet(){
   btn.dataset.mode = 'create';
   btn.disabled = false;
   document.getElementById('clientName').value='';
-  sheetBg.classList.add('show');
+  openSheet(sheetBg);
 }
 
 document.getElementById('genLink').onclick = async ()=>{
@@ -762,7 +770,7 @@ document.getElementById('makeOfferFromCart').onclick = ()=>{
 
 document.getElementById('cartIcon').onclick = ()=>{
   renderCartSheet();
-  cartSheetBg.classList.add('show');
+  openSheet(cartSheetBg);
 };
 
 function renderCartSheet(){
@@ -805,7 +813,6 @@ const MAP_PROJECTS = [
 ];
 
 const mapSheetBg = document.getElementById('mapSheetBg');
-mapSheetBg.classList.add('show');
 document.getElementById('mapIcon').onclick = ()=>{
   // легенда
   document.getElementById('mapLegend').innerHTML = MAP_PROJECTS.map(p=>`
@@ -823,7 +830,7 @@ document.getElementById('mapIcon').onclick = ()=>{
   const avgLng = MAP_PROJECTS.reduce((s,p)=>s+p.lng,0)/MAP_PROJECTS.length;
   document.getElementById('mapEmbed').src =
     `https://maps.google.com/maps?q=${avgLat},${avgLng}&z=11&output=embed`;
-  mapSheetBg.classList.add('show');
+  openSheet(mapSheetBg);
 };
 
 // ── история предложений ─────────────────────────────────────
@@ -835,7 +842,7 @@ function fmtDateRu(d){
 async function openHistory(){
   const wrap = document.getElementById('historyList');
   wrap.innerHTML = '<div class="empty" style="padding:30px 10px;">Загружаем…</div>';
-  document.getElementById('historyBg').classList.add('show');
+  openSheet(document.getElementById('historyBg'));
   if(!CURRENT_AGENT){
     wrap.innerHTML = '<div class="empty" style="padding:30px 10px;">Открой каталог через Telegram-бота, чтобы видеть свои предложения.</div>';
     return;
