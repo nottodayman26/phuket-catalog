@@ -341,11 +341,7 @@
     <div class="sheet" style="max-height:80vh;overflow-y:auto;">
       <h3>Выбранные объекты</h3>
       <div id="cartItemsList"></div>
-      <div class="cart-total">
-        <span>Итого</span>
-        <b id="cartTotalPrice">0 ฿</b>
-      </div>
-      <button class="go" id="makeOfferFromCart">Сформировать предложение</button>
+      <button class="go" id="makeOfferFromCart" style="display:none;">Сформировать предложение</button>
     </div>
   </div>
 
@@ -696,15 +692,20 @@ document.getElementById('makeOfferFromCart').onclick = ()=>{
 };
 
 document.getElementById('cartIcon').onclick = ()=>{
-  if(!state.selected.size) return;
   renderCartSheet();
   cartSheetBg.classList.add('show');
 };
 
 function renderCartSheet(){
   const items = [...state.selected].map(id => UNITS.find(u=>u.id===id)).filter(Boolean);
-  const total = items.reduce((s,u)=>s+u.price, 0);
-  document.getElementById('cartTotalPrice').textContent = fmtTHB(total);
+  const offerBtn = document.getElementById('makeOfferFromCart');
+  if(!items.length){
+    document.getElementById('cartItemsList').innerHTML =
+      '<div class="empty" style="padding:30px 10px;">Вы не добавили ни одного юнита.<br>Выберите объекты в каталоге.</div>';
+    offerBtn.style.display = 'none';
+    return;
+  }
+  offerBtn.style.display = 'block';
   document.getElementById('cartItemsList').innerHTML = items.map(u=>`
     <div class="cart-item">
       <div class="bar" style="background:${PROJ_VAR[u.project]}"></div>

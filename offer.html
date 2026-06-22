@@ -159,7 +159,6 @@
     <div class="agent-row">
       <div class="agent-avatar" id="agentAvatar">—</div>
       <div class="agent-info">
-        <div class="label">Подборка собрана для вас</div>
         <div class="name" id="agentName">Загрузка…</div>
         <div class="agency" id="agentAgency"></div>
       </div>
@@ -167,8 +166,8 @@
   </div>
 
   <div class="hero">
-    <h1 id="heroTitle">Несколько объектов, которые стоит увидеть</h1>
-    <p id="heroSub">Подобрано под ваш запрос — актуальные цены и наличие на сегодня.</p>
+    <h1 id="heroTitle">Подборка для вас</h1>
+    <p id="heroSub">Актуальные цены и наличие на сегодня.</p>
   </div>
 
   <div class="section">
@@ -435,9 +434,6 @@ document.getElementById('umDateConfirm').onclick = async ()=>{
     OFFER = await loadOffer();
     renderAgent(OFFER.agent);
     renderCards(OFFER.units);
-    if(OFFER.offer.client_name){
-      document.getElementById('heroTitle').textContent = `Подборка для ${OFFER.offer.client_name}`;
-    }
   } catch(e) {
     document.querySelector('.hero').innerHTML = `<div class="empty" style="color:rgba(245,239,226,.7);">${e.message}</div>`;
     document.querySelector('.section').style.display = 'none';
