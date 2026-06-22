@@ -135,7 +135,7 @@
     display:none;align-items:flex-end;z-index:30;
     opacity:0;transition:opacity 0.28s ease;
   }
-  .um-bg.show{display:flex;opacity:1;}
+  .um-bg.show{opacity:1;}
   .um-bg.hiding{opacity:0;}
   .um-sheet{
     background:var(--sand);width:100%;border-radius:20px 20px 0 0;
@@ -361,6 +361,18 @@ function renderCards(units){
 // ── модалка брони / записи на просмотр конкретного лота ─────
 let MODAL_UNIT = null;
 
+const umBg = document.getElementById('umBg');
+function openModal(){
+  umBg.style.display = 'flex';
+  requestAnimationFrame(()=> requestAnimationFrame(()=> umBg.classList.add('show')));
+}
+function closeModal(){
+  umBg.classList.add('hiding');
+  setTimeout(()=>{ umBg.classList.remove('show','hiding'); umBg.style.display=''; }, 260);
+}
+document.getElementById('umClose').onclick = closeModal;
+umBg.onclick = (e)=>{ if(e.target===umBg) closeModal(); };
+
 function openUnitModal(unit){
   MODAL_UNIT = unit;
   const proj = unit.projects ? (PROJ_LABEL[unit.projects.code] || unit.projects.name) : '';
@@ -391,13 +403,8 @@ function openUnitModal(unit){
   document.getElementById('umDateConfirm').disabled = false;
   document.getElementById('umDateConfirm').textContent = 'Подтвердить дату';
 
-  document.getElementById('umBg').classList.add('show');
+  openModal();
 }
-
-  const umBg = document.getElementById('umBg');
-  function closeModal(){ umBg.classList.add('hiding'); setTimeout(()=> umBg.classList.remove('show','hiding'), 240); }
-  document.getElementById('umClose').onclick = closeModal;
-  umBg.onclick = (e)=>{ if(e.target===umBg) closeModal(); };
 
 // «Забронировать» — отдельная запись на каждый лот, можно сколько угодно
 document.getElementById('umBookBtn').onclick = async ()=>{

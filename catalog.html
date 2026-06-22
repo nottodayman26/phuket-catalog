@@ -841,10 +841,12 @@ function fmtDateRu(d){
 
 async function openHistory(){
   const wrap = document.getElementById('historyList');
-  wrap.innerHTML = '<div class="empty" style="padding:30px 10px;">Загружаем…</div>';
-  openSheet(document.getElementById('historyBg'));
+  const bg = document.getElementById('historyBg');
+  wrap.innerHTML = '';
+
   if(!CURRENT_AGENT){
     wrap.innerHTML = '<div class="empty" style="padding:30px 10px;">Открой каталог через Telegram-бота, чтобы видеть свои предложения.</div>';
+    openSheet(bg);
     return;
   }
   try {
@@ -852,6 +854,7 @@ async function openHistory(){
     const offers = await res.json();
     if(!offers.length){
       wrap.innerHTML = '<div class="empty" style="padding:30px 10px;">Пока нет ни одного отправленного предложения.</div>';
+      openSheet(bg);
       return;
     }
     const ids = offers.map(o=>o.id).join(',');
@@ -862,8 +865,6 @@ async function openHistory(){
     ]);
 
     wrap.innerHTML = offers.map(o=>{
-      // считаем по новым таблицам; если предложение совсем старое (создано
-      // до этого обновления) — подстраховываемся старым флагом first_viewed_at
       const viewCount = views.filter(v=>v.offer_id===o.id).length || (o.first_viewed_at ? 1 : 0);
       const myBookings = bookings.filter(b=>b.offer_id===o.id);
       const myViewings = viewings.filter(v=>v.offer_id===o.id);
@@ -891,6 +892,7 @@ async function openHistory(){
   } catch(e) {
     wrap.innerHTML = `<div class="empty" style="padding:30px 10px;">Не удалось загрузить: ${e.message}</div>`;
   }
+  openSheet(bg);
 }
 document.getElementById('historyIcon').onclick = openHistory;
 document.getElementById('historyBg').onclick = (e)=>{ if(e.target.id==='historyBg') e.target.classList.remove('show'); };
