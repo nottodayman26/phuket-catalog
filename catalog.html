@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Каталог — Phuket PropTech</title>
@@ -655,7 +655,8 @@ document.getElementById('genLink').onclick = async ()=>{
     if(!res.ok) throw new Error(`Не удалось сохранить (${res.status})`);
 
     // формируем ссылку через короткий путь без раскрытия репозитория
-    const link = `${location.origin}/offer?s=${slug}`;
+    const base = location.href.split('/').slice(0,-1).join('/');
+    const link = `${base}/offer.html?slug=${slug}`;
     document.getElementById('linkText').textContent = link;
     document.getElementById('linkBox').classList.add('show');
     // переключаем кнопку в режим копирования
