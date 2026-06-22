@@ -192,10 +192,12 @@
   /* ── модалка предложения ─────────────────────────────────── */
   .sheet-bg{
     position:fixed;inset:0;background:rgba(10,8,20,.7);
-    display:none;align-items:flex-end;z-index:20;
-    opacity:0;transition:opacity 0.28s ease;
+    display:flex;align-items:flex-end;z-index:20;
+    opacity:0;pointer-events:none;
+    transition:opacity 0.28s ease;
   }
-  .sheet-bg.show{opacity:1;}
+  .sheet-bg.show{opacity:1;pointer-events:auto;}
+  .sheet-bg.hiding{opacity:0;pointer-events:none;}
   .sheet{
     background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
     padding:20px 18px 26px;position:relative;
@@ -286,7 +288,12 @@
   .cart-item .ci-code{font-weight:700;font-size:13px;letter-spacing:-0.02em;}
   .cart-item .ci-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
   .cart-item .ci-price{font-size:12.5px;font-weight:600;margin-top:3px;}
-  .ci-rm{background:none;border:none;color:var(--muted-2);font-size:18px;line-height:1;padding:4px;flex-shrink:0;cursor:pointer;}
+  .cart-clear-all{
+    font-size:11px;color:var(--muted-2);background:none;border:1px solid var(--line);
+    border-radius:8px;padding:4px 10px;cursor:pointer;margin-right:6px;
+    font-family:'Inter',sans-serif;
+  }
+  .cart-clear-all:active{color:var(--red);border-color:var(--red);}
   .cart-total{
     display:flex;justify-content:space-between;align-items:baseline;
     padding:12px 0 16px;border-top:1px solid var(--line);margin-top:4px;
@@ -379,11 +386,15 @@
     </div>
   </div>
 
-  <!-- шторка корзины -->
   <div class="sheet-bg" id="cartSheetBg">
     <div class="sheet" style="max-height:80vh;overflow-y:auto;">
-      <button class="sheet-close" id="closeCartSheetBg">×</button>
-      <h3>Выбранные объекты</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h3 style="margin:0;">Выбранные объекты</h3>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button class="cart-clear-all" id="clearAllCart">Удалить все</button>
+          <button class="sheet-close" id="closeCartSheetBg" style="position:static;">×</button>
+        </div>
+      </div>
       <div id="cartItemsList"></div>
       <button class="go" id="makeOfferFromCart" style="display:none;">Сформировать предложение</button>
     </div>
@@ -671,16 +682,13 @@ function updateCartbar(){
 
 // ── анимированное закрытие шторок ───────────────────────────
 function openSheet(bg){
-  bg.style.display = 'flex';
-  requestAnimationFrame(()=> requestAnimationFrame(()=> bg.classList.add('show')));
+  bg.classList.remove('hiding');
+  requestAnimationFrame(()=> bg.classList.add('show'));
 }
 
 function closeSheet(bg){
   bg.classList.add('hiding');
-  setTimeout(()=>{
-    bg.classList.remove('show','hiding');
-    bg.style.display = '';
-  }, 260);
+  setTimeout(()=> bg.classList.remove('show','hiding'), 280);
 }
 
 document.getElementById('closeSheetBg').onclick    = ()=> closeSheet(document.getElementById('sheetBg'));
@@ -762,6 +770,13 @@ document.getElementById('genLink').onclick = async ()=>{
 document.getElementById('makeOfferBtn').onclick = openOfferSheet;
 
 const cartSheetBg = document.getElementById('cartSheetBg');
+
+document.getElementById('clearAllCart').onclick = ()=>{
+  if(!state.selected.size) return;
+  state.selected.clear();
+  render();
+  closeSheet(cartSheetBg);
+};
 
 document.getElementById('makeOfferFromCart').onclick = ()=>{
   closeSheet(cartSheetBg);
