@@ -189,12 +189,45 @@
   .sheet-bg{
     position:fixed;inset:0;background:rgba(10,8,20,.7);
     display:none;align-items:flex-end;z-index:20;
+    opacity:0;transition:opacity 0.22s ease;
   }
-  .sheet-bg.show{display:flex;}
+  .sheet-bg.show{display:flex;opacity:1;}
+  .sheet-bg.hiding{opacity:0;}
   .sheet{
     background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
-    padding:20px 18px 26px;
+    padding:20px 18px 26px;position:relative;
+    opacity:0;transform:translateY(40px) scale(0.97);
+    transition:opacity 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
   }
+  .sheet-bg.show .sheet{opacity:1;transform:translateY(0) scale(1);}
+  .sheet-bg.hiding .sheet{opacity:0;transform:translateY(40px) scale(0.97);}
+  .sheet-close{
+    position:absolute;top:14px;right:14px;
+    width:28px;height:28px;border-radius:50%;
+    background:var(--surface);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--muted);font-size:16px;line-height:1;
+  }
+  .map-sheet{
+    background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
+    padding:18px 18px 28px;max-height:90vh;overflow-y:auto;position:relative;
+    opacity:0;transform:translateY(40px) scale(0.97);
+    transition:opacity 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .sheet-bg.show .map-sheet{opacity:1;transform:translateY(0) scale(1);}
+  .sheet-bg.hiding .map-sheet{opacity:0;transform:translateY(40px) scale(0.97);}
+
+  /* кнопка наверх */
+  .scroll-top{
+    position:fixed;right:16px;bottom:90px;width:40px;height:40px;border-radius:50%;
+    background:var(--surface-2);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--muted);z-index:9;
+    opacity:0;pointer-events:none;
+    transition:opacity 0.2s ease;
+  }
+  .scroll-top.show{opacity:1;pointer-events:auto;}
+  .scroll-top svg{width:18px;height:18px;}
   .sheet h3{margin:0 0 4px;font-size:16px;font-weight:700;}
   .sheet p{margin:0 0 16px;color:var(--muted);font-size:12.5px;line-height:1.4;}
   .sheet input{
@@ -250,10 +283,6 @@
   .cart-total b{font-size:14px;font-weight:700;color:var(--text);}
 
   /* ── вкладка карты ───────────────────────────────────────── */
-  .map-sheet{
-    background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
-    padding:18px 18px 28px;max-height:90vh;overflow-y:auto;
-  }
   .map-sheet h3{margin:0 0 14px;font-size:16px;font-weight:700;}
   .map-embed{width:100%;height:320px;border:none;border-radius:12px;display:block;}
   .map-legend{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
@@ -318,6 +347,7 @@
 
   <div class="sheet-bg" id="sheetBg">
     <div class="sheet">
+      <button class="sheet-close" id="closeSheetBg">×</button>
       <h3>Предложение клиенту</h3>
       <p id="sheetSub">0 объектов выбрано</p>
       <input type="text" id="clientName" placeholder="Имя клиента (для ссылки)">
@@ -330,6 +360,7 @@
 
   <div class="sheet-bg" id="historyBg">
     <div class="sheet" style="max-height:75vh;overflow-y:auto;">
+      <button class="sheet-close" id="closeHistoryBg">×</button>
       <h3>Мои предложения</h3>
       <p style="margin-bottom:12px;">Статус ссылок, которые ты отправлял клиентам</p>
       <div id="historyList"></div>
@@ -339,6 +370,7 @@
   <!-- шторка корзины -->
   <div class="sheet-bg" id="cartSheetBg">
     <div class="sheet" style="max-height:80vh;overflow-y:auto;">
+      <button class="sheet-close" id="closeCartSheetBg">×</button>
       <h3>Выбранные объекты</h3>
       <div id="cartItemsList"></div>
       <button class="go" id="makeOfferFromCart" style="display:none;">Сформировать предложение</button>
@@ -348,6 +380,7 @@
   <!-- шторка карты -->
   <div class="sheet-bg" id="mapSheetBg">
     <div class="map-sheet">
+      <button class="sheet-close" id="closeMapSheetBg">×</button>
       <h3>Карта проектов</h3>
       <iframe class="map-embed" id="mapEmbed"
         src="https://maps.google.com/maps?q=8.1731,98.2996&z=12&output=embed"
@@ -355,6 +388,11 @@
       <div class="map-legend" id="mapLegend"></div>
     </div>
   </div>
+
+  <!-- кнопка наверх -->
+  <button class="scroll-top" id="scrollTopBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
 
 <script>
 const SUPABASE_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
@@ -619,13 +657,34 @@ function updateCartbar(){
   badge.textContent = sel.length;
 }
 
-// ── модалка предложения ────────────────────────────────────
-const sheetBg = document.getElementById('sheetBg');
+// ── анимированное закрытие шторок ───────────────────────────
+function closeSheet(bg){
+  bg.classList.add('hiding');
+  setTimeout(()=>{ bg.classList.remove('show','hiding'); }, 240);
+}
 
-// Открыть модалку предложения (вызывается из корзины или напрямую)
+document.getElementById('closeSheetBg').onclick    = ()=> closeSheet(document.getElementById('sheetBg'));
+document.getElementById('closeHistoryBg').onclick  = ()=> closeSheet(document.getElementById('historyBg'));
+document.getElementById('closeCartSheetBg').onclick= ()=> closeSheet(document.getElementById('cartSheetBg'));
+document.getElementById('closeMapSheetBg').onclick = ()=> closeSheet(document.getElementById('mapSheetBg'));
+
+// закрытие по клику на фон
+['sheetBg','historyBg','cartSheetBg','mapSheetBg'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('click', e=>{ if(e.target===el) closeSheet(el); });
+});
+
+// ── кнопка наверх ────────────────────────────────────────────
+const scrollTopBtn = document.getElementById('scrollTopBtn');
+window.addEventListener('scroll', ()=>{
+  scrollTopBtn.classList.toggle('show', window.scrollY > 300);
+}, {passive:true});
+scrollTopBtn.onclick = ()=> window.scrollTo({top:0, behavior:'smooth'});
+
+// ── модалка предложения ────────────────────────────────────
 function openOfferSheet(){
+  const sheetBg = document.getElementById('sheetBg');
   document.getElementById('sheetSub').textContent = `${state.selected.size} объект(ов) выбрано`;
-  // сбрасываем кнопку в исходное состояние
   const btn = document.getElementById('genLink');
   btn.textContent = 'Создать ссылку';
   btn.dataset.mode = 'create';
@@ -633,9 +692,6 @@ function openOfferSheet(){
   document.getElementById('clientName').value='';
   sheetBg.classList.add('show');
 }
-
-document.getElementById('makeOfferBtn').onclick = openOfferSheet;
-sheetBg.onclick = (e)=>{ if(e.target===sheetBg) sheetBg.classList.remove('show'); };
 
 document.getElementById('genLink').onclick = async ()=>{
   const btn = document.getElementById('genLink');
@@ -684,11 +740,10 @@ document.getElementById('genLink').onclick = async ()=>{
 
 // ── шторка корзины ──────────────────────────────────────────
 const cartSheetBg = document.getElementById('cartSheetBg');
-cartSheetBg.onclick = (e)=>{ if(e.target===cartSheetBg) cartSheetBg.classList.remove('show'); };
 
 document.getElementById('makeOfferFromCart').onclick = ()=>{
-  cartSheetBg.classList.remove('show');
-  openOfferSheet();
+  closeSheet(cartSheetBg);
+  setTimeout(openOfferSheet, 260);
 };
 
 document.getElementById('cartIcon').onclick = ()=>{
@@ -721,7 +776,7 @@ function renderCartSheet(){
     btn.onclick = ()=>{
       state.selected.delete(btn.dataset.id);
       render();
-      if(!state.selected.size){ cartSheetBg.classList.remove('show'); return; }
+      if(!state.selected.size){ closeSheet(cartSheetBg); return; }
       renderCartSheet();
     };
   });
@@ -736,8 +791,7 @@ const MAP_PROJECTS = [
 ];
 
 const mapSheetBg = document.getElementById('mapSheetBg');
-mapSheetBg.onclick = (e)=>{ if(e.target===mapSheetBg) mapSheetBg.classList.remove('show'); };
-
+mapSheetBg.classList.add('show');
 document.getElementById('mapIcon').onclick = ()=>{
   // легенда
   document.getElementById('mapLegend').innerHTML = MAP_PROJECTS.map(p=>`
