@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flox — Каталог Пхукет</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#0d0d18;
+  --surface:#111118;
+  --surface-2:#1a1a26;
+  --surface-3:#222232;
+  --line:rgba(255,255,255,0.06);
+  --line-2:rgba(255,255,255,0.1);
+  --text:#ffffff;
+  --muted:rgba(255,255,255,0.45);
+  --muted-2:rgba(255,255,255,0.2);
+  --accent:#5E17EB;
+  --accent-soft:rgba(94,23,235,0.18);
+  --red:#FF6B6B;
+  --red-soft:rgba(255,107,107,0.14);
+  --green:#7BAF6E;
+  --vik:#C9A84C;
+  --kat:#7BAF6E;
+  --ban:#6B9BC2;
+  --oln:#8FAB5F;
+  --sidebar:200px;
+}
+body.light{
+  --bg:#F5F5F7;
+  --surface:#ffffff;
+  --surface-2:#f0f0f4;
+  --surface-3:#e8e8ee;
+  --line:rgba(0,0,0,0.07);
+  --line-2:rgba(0,0,0,0.12);
+  --text:#111118;
+  --muted:rgba(0,0,0,0.45);
+  --muted-2:rgba(0,0,0,0.22);
+  --accent:#5E17EB;
+  --accent-soft:rgba(94,23,235,0.1);
+  --red:#e05555;
+  --red-soft:rgba(224,85,85,0.1);
+  --green:#5a9050;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-tap-highlight-color:transparent;}
+body{transition:background .35s,color .35s;}
+
+/* ── Layout ─────────────────────────────────────── */
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── Sidebar ─────────────────────────────────────── */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--surface);border-right:0.5px solid var(--line);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:background .35s,border-color .35s;
+}
+.s-logo{
+  padding:18px 16px 14px;
+  display:flex;align-items:center;gap:5px;
+  border-bottom:0.5px solid var(--line);
+}
+.s-logo-text{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-0.05em;}
+.s-logo-dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-bottom:10px;flex-shrink:0;}
+.s-agent{
+  padding:12px 16px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:0.5px solid var(--line);
+}
+.s-av{
+  width:30px;height:30px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#7B3FF5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;flex-shrink:0;
+  background-size:cover;background-position:center;
+}
+.s-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.s-nav{padding:10px 8px;flex:1;overflow-y:auto;}
+.s-item{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:8px;
+  cursor:pointer;color:var(--muted);font-size:12.5px;
+  margin-bottom:2px;user-select:none;
+  transition:background .15s,color .15s;
+}
+.s-item:hover:not(.act){background:var(--surface-2);}
+.s-item.act{background:var(--accent-soft);color:var(--accent);}
+.s-item svg{width:15px;height:15px;flex-shrink:0;}
+.s-badge{
+  margin-left:auto;background:var(--red);color:#fff;
+  font-size:9px;font-weight:700;border-radius:8px;padding:1px 5px;
+}
+.s-bottom{padding:12px 16px;border-top:0.5px solid var(--line);}
+.theme-toggle-row{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.theme-label{font-size:11px;color:var(--muted);}
+.toggle{
+  width:30px;height:17px;border-radius:9px;
+  background:var(--surface-3);border:0.5px solid var(--line-2);
+  position:relative;transition:background .25s;flex-shrink:0;
+}
+.toggle.on{background:var(--accent);}
+.toggle-thumb{
+  width:13px;height:13px;border-radius:50%;background:#fff;
+  position:absolute;top:2px;left:2px;
+  transition:left .22s cubic-bezier(0.34,1.56,0.64,1);
+}
+.toggle.on .toggle-thumb{left:15px;}
+
+/* ── Main ─────────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+
+.topbar{
+  padding:13px 20px;
+  display:flex;align-items:center;gap:12px;
+  border-bottom:0.5px solid var(--line);
+  background:var(--surface);flex-shrink:0;
+  transition:background .35s,border-color .35s;
+}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text);flex:1;}
+.tb-search{
+  flex:0 0 240px;height:32px;
+  background:var(--surface-2);border:0.5px solid var(--line-2);
+  border-radius:8px;display:flex;align-items:center;padding:0 10px;gap:7px;
+  transition:border-color .15s;
+}
+.tb-search:focus-within{border-color:var(--accent);}
+.tb-search svg{width:13px;height:13px;color:var(--muted);flex-shrink:0;}
+.tb-search input{
+  border:none;background:none;color:var(--text);font-size:12px;
+  font-family:'Inter',sans-serif;width:100%;outline:none;
+}
+.tb-search input::placeholder{color:var(--muted-2);}
+.tb-btn{
+  height:32px;padding:0 14px;border-radius:8px;
+  background:var(--accent);font-size:12px;font-weight:600;color:#fff;
+  border:none;cursor:pointer;white-space:nowrap;
+  transition:opacity .15s;
+}
+.tb-btn:hover{opacity:.88;}
+
+/* ── Dashboard ─────────────────────────────────── */
+.dashboard{
+  padding:16px 20px;
+  border-bottom:0.5px solid var(--line);
+  flex-shrink:0;
+}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+.stat{
+  background:var(--surface-2);border-radius:10px;
+  padding:12px 14px;border:0.5px solid var(--line);
+  transition:background .35s;
+}
+.stat-val{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.03em;}
+.stat-label{font-size:10px;color:var(--muted);margin-top:3px;}
+.stat-sub{font-size:10px;margin-top:4px;font-weight:500;}
+.green{color:var(--green);}
+.red-c{color:var(--red);}
+.purple{color:#9B7FD4;}
+.activity-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.act-card{
+  background:var(--surface-2);border-radius:10px;
+  padding:12px 14px;border:0.5px solid var(--line);
+  transition:background .35s;
+}
+.act-card-title{font-size:10px;color:var(--muted-2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;}
+.act-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--line);}
+.act-item:last-child{border-bottom:none;}
+.act-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.act-text{font-size:11.5px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.act-time{font-size:10px;color:var(--muted-2);flex-shrink:0;}
+.offer-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--line);}
+.offer-row:last-child{border-bottom:none;}
+.offer-name{font-size:11.5px;color:var(--text);font-weight:500;width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.offer-track{flex:1;height:4px;background:var(--surface-3);border-radius:2px;overflow:hidden;}
+.offer-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .4s;}
+.offer-tag{font-size:10px;color:var(--muted);width:58px;text-align:right;white-space:nowrap;}
+.offer-tag.viewed{color:var(--accent);}
+.offer-tag.booked{color:var(--red);}
+
+/* ── Catalog ─────────────────────────────────────── */
+.catalog{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+.cat-header{
+  padding:10px 20px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:0.5px solid var(--line);flex-shrink:0;
+  background:var(--surface);transition:background .35s;
+}
+.chips{display:flex;gap:6px;flex:1;overflow-x:auto;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{
+  flex-shrink:0;height:26px;padding:0 11px;border-radius:13px;
+  font-size:11.5px;font-weight:500;border:0.5px solid var(--line-2);
+  background:var(--surface-2);color:var(--muted);cursor:pointer;white-space:nowrap;
+  display:flex;align-items:center;gap:5px;
+  transition:background .15s,color .15s,border-color .15s;
+}
+.chip:hover:not(.active){background:var(--surface-3);}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.chip .dot{width:7px;height:7px;border-radius:50%;}
+.cat-count{font-size:11.5px;color:var(--muted-2);flex-shrink:0;white-space:nowrap;}
+
+.table-wrap{flex:1;overflow-y:auto;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:680px;}
+thead{position:sticky;top:0;z-index:2;background:var(--surface);transition:background .35s;}
+th{
+  padding:9px 14px;font-size:10px;color:var(--muted-2);
+  font-weight:500;text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:0.5px solid var(--line);text-align:left;white-space:nowrap;
+  cursor:pointer;user-select:none;
+}
+th:hover{color:var(--muted);}
+th.sorted{color:var(--accent);}
+td{
+  padding:10px 14px;font-size:12px;color:var(--text);
+  border-bottom:0.5px solid var(--line);vertical-align:middle;
+}
+tr:hover td{background:var(--surface-2);}
+tr.selected td{background:var(--accent-soft);}
+tr.sold td{opacity:.5;}
+.unit-code{font-weight:700;display:flex;align-items:center;gap:7px;}
+.unit-bar{width:3px;height:22px;border-radius:2px;flex-shrink:0;}
+.unit-type{color:var(--muted);}
+.unit-area{color:var(--muted);}
+.unit-price{font-weight:600;white-space:nowrap;}
+.status-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:6px;
+  background:var(--accent-soft);color:var(--accent);
+}
+.status-pill.sold{background:var(--red-soft);color:var(--red);}
+.row-check{
+  width:17px;height:17px;border-radius:50%;
+  border:1.5px solid var(--line-2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,border-color .15s;flex-shrink:0;
+}
+.row-check.sel{background:var(--accent);border-color:var(--accent);}
+.row-check.sel::after{content:'';width:7px;height:7px;border-radius:50%;background:#fff;}
+.empty{padding:60px 20px;text-align:center;color:var(--muted);font-size:13px;}
+.loader{padding:40px;text-align:center;color:var(--muted);font-size:12px;}
+
+/* ── Cart bar ─────────────────────────────────────── */
+.cart-bar{
+  padding:10px 20px;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+  transform:translateY(100%);
+  transition:transform .28s cubic-bezier(0.32,0.72,0,1);
+}
+.cart-bar.show{transform:translateY(0);}
+.cart-info{font-size:12.5px;color:rgba(255,255,255,.8);}
+.cart-info b{color:#fff;font-weight:700;}
+.cart-total{font-size:15px;font-weight:700;color:#fff;margin-left:10px;}
+.cart-actions{display:flex;gap:8px;}
+.cart-clear{
+  height:30px;padding:0 14px;border-radius:8px;
+  background:rgba(255,255,255,.18);border:none;
+  font-size:12px;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;
+}
+.cart-offer{
+  height:30px;padding:0 16px;border-radius:8px;
+  background:#fff;border:none;
+  font-size:12px;font-weight:700;color:var(--accent);
+  cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;
+}
+
+/* ── Modal offer ─────────────────────────────────── */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(10,8,20,.65);
+  display:none;align-items:center;justify-content:center;
+  z-index:50;opacity:0;transition:opacity .25s;
+}
+.modal-bg.show{display:flex;opacity:1;}
+.modal{
+  background:var(--surface);border:0.5px solid var(--line-2);
+  border-radius:16px;padding:28px;width:460px;max-width:95vw;
+  transform:translateY(20px) scale(.97);
+  transition:transform .28s cubic-bezier(0.34,1.4,0.64,1);
+}
+.modal-bg.show .modal{transform:translateY(0) scale(1);}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:4px;}
+.modal-sub{font-size:12.5px;color:var(--muted);margin-bottom:18px;}
+.modal input{
+  width:100%;background:var(--surface-2);border:0.5px solid var(--line-2);
+  color:var(--text);border-radius:9px;padding:11px 13px;
+  font-size:14px;font-family:'Inter',sans-serif;margin-bottom:12px;outline:none;
+  transition:border-color .15s;
+}
+.modal input:focus{border-color:var(--accent);}
+.modal-units{margin-bottom:14px;max-height:200px;overflow-y:auto;}
+.modal-unit{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface-2);border-radius:8px;padding:8px 10px;margin-bottom:6px;
+  font-size:12px;
+}
+.modal-unit .bar{width:3px;height:20px;border-radius:2px;flex-shrink:0;}
+.modal-unit .code{font-weight:700;flex:1;}
+.modal-unit .price{color:var(--muted);font-size:11.5px;}
+.modal-btn{
+  width:100%;background:var(--accent);color:#fff;border:none;
+  border-radius:10px;padding:13px;font-size:14px;font-weight:700;
+  font-family:'Inter',sans-serif;cursor:pointer;
+  transition:opacity .15s;
+}
+.modal-btn:disabled{opacity:.5;cursor:default;}
+.modal-close{
+  position:absolute;top:16px;right:16px;
+  width:26px;height:26px;border-radius:50%;
+  background:var(--surface-2);border:0.5px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;color:var(--muted);
+}
+.modal{position:relative;}
+.link-box{
+  background:var(--surface-2);border:0.5px dashed var(--line-2);
+  border-radius:9px;padding:11px 13px;margin-top:8px;
+  display:none;align-items:center;gap:8px;
+}
+.link-box.show{display:flex;}
+.link-text{flex:1;font-size:12px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.copy-btn{
+  flex-shrink:0;background:var(--accent-soft);border:none;
+  color:var(--accent);font-size:11px;font-weight:600;
+  padding:5px 10px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;
+  white-space:nowrap;
+}
+
+/* ── Telegram login ─────────────────────────────── */
+.login-screen{
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  height:100vh;gap:20px;padding:40px;
+}
+.login-screen.show{display:flex;}
+.login-logo{font-size:32px;font-weight:700;letter-spacing:-0.05em;}
+.login-logo span{color:var(--red);}
+.login-sub{font-size:14px;color:var(--muted);text-align:center;max-width:320px;line-height:1.6;}
+#tg-login-widget{margin-top:8px;}
+
+/* ── Scrollbar ─────────────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- Login screen (если нет сессии) -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo">flox<span>·</span></div>
+  <div class="login-sub">Войди через Telegram чтобы получить доступ к каталогу Пхукета</div>
+  <div id="tg-login-widget"></div>
+</div>
+
+<!-- Main App -->
+<div class="app" id="appRoot" style="display:none;">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="s-logo">
+      <div class="s-logo-text">flox</div>
+      <div class="s-logo-dot"></div>
+    </div>
+    <div class="s-agent">
+      <div class="s-av" id="sidebarAvatar">…</div>
+      <div>
+        <div class="s-name" id="sidebarName">Загрузка…</div>
+        <div class="s-role" id="sidebarRole"></div>
+      </div>
+    </div>
+    <div class="s-nav">
+      <div class="s-item act" data-page="dashboard" onclick="setPage('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Дашборд
+      </div>
+      <div class="s-item" data-page="catalog" onclick="setPage('catalog')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        Каталог
+      </div>
+      <div class="s-item" data-page="offers" onclick="setPage('offers')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Предложения
+        <div class="s-badge" id="offersBadge" style="display:none;">0</div>
+      </div>
+      <div class="s-item" data-page="map" onclick="setPage('map')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        Карта
+      </div>
+    </div>
+    <div class="s-bottom">
+      <div class="theme-toggle-row" onclick="toggleTheme()">
+        <div class="toggle" id="themeToggle"><div class="toggle-thumb"></div></div>
+        <div class="theme-label" id="themeLabel">Тёмная тема</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">Дашборд</div>
+      <div class="tb-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="searchInput" placeholder="Поиск по коду, проекту…" oninput="onSearch()">
+      </div>
+      <button class="tb-btn" onclick="openOfferModal()">+ Предложение</button>
+    </div>
+
+    <!-- Dashboard page -->
+    <div id="pageDashboard">
+      <div class="dashboard">
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-val" id="statAvail">—</div>
+            <div class="stat-label">Доступно юнитов</div>
+            <div class="stat-sub purple" id="statTotal"></div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statOffers">—</div>
+            <div class="stat-label">Моих предложений</div>
+            <div class="stat-sub green" id="statOffersViewed"></div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statBookings">—</div>
+            <div class="stat-label">Активных броней</div>
+            <div class="stat-sub red-c" id="statBookingsSub"></div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statSold">—</div>
+            <div class="stat-label">Продано (все)</div>
+            <div class="stat-sub purple" id="statSoldSub">за всё время</div>
+          </div>
+        </div>
+        <div class="activity-row">
+          <div class="act-card">
+            <div class="act-card-title">Последняя активность</div>
+            <div id="activityList"><div class="loader">Загрузка…</div></div>
+          </div>
+          <div class="act-card">
+            <div class="act-card-title">Мои предложения</div>
+            <div id="offersList"><div class="loader">Загрузка…</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Compact catalog in dashboard -->
+      <div class="catalog">
+        <div class="cat-header">
+          <div class="chips" id="dashChips"></div>
+          <div class="cat-count" id="dashCount"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortBy('room_no')">Код</th>
+                <th>Проект</th>
+                <th onclick="sortBy('room_type')">Тип</th>
+                <th onclick="sortBy('area_sqm')">Площадь</th>
+                <th onclick="sortBy('selling_price')">Цена</th>
+                <th>Статус</th>
+                <th style="width:44px;"></th>
+              </tr>
+            </thead>
+            <tbody id="unitsTable"></tbody>
+          </table>
+          <div id="tableLoader" class="loader">Загрузка каталога…</div>
+          <div id="tableEmpty" class="empty" style="display:none;">Нет юнитов по выбранным фильтрам</div>
+        </div>
+        <div class="cart-bar" id="cartBar">
+          <div class="cart-info">
+            Выбрано <b id="cartCount">0</b> юнитов
+            <span class="cart-total" id="cartTotal"></span>
+          </div>
+          <div class="cart-actions">
+            <button class="cart-clear" onclick="clearCart()">Очистить</button>
+            <button class="cart-offer" onclick="openOfferModal()">Сформировать предложение →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offers page -->
+    <div id="pageOffers" style="display:none;flex:1;overflow-y:auto;padding:20px;">
+      <div id="offersPageList"><div class="loader">Загрузка…</div></div>
+    </div>
+
+    <!-- Map page -->
+    <div id="pageMap" style="display:none;flex:1;">
+      <iframe id="mapFrame" style="width:100%;height:100%;border:none;" loading="lazy"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- Offer modal -->
+<div class="modal-bg" id="offerModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeOfferModal()">×</button>
+    <h3>Предложение клиенту</h3>
+    <div class="modal-sub" id="modalSub"></div>
+    <div class="modal-units" id="modalUnits"></div>
+    <input type="text" id="clientNameInput" placeholder="Имя клиента">
+    <button class="modal-btn" id="modalBtn" onclick="createOffer()">Создать ссылку</button>
+    <div class="link-box" id="linkBox">
+      <span class="link-text" id="linkText"></span>
+      <button class="copy-btn" id="copyBtn" onclick="copyLink()">Скопировать</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────
+const SUPABASE_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
+const SB = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+const PROJ_LABEL = {VIK:'Vivana Kamala',KAT:'KataBello',BAN:'Balcony Naiyang',OLN:'Olive Naiyang'};
+const PROJ_COLOR = {VIK:'#C9A84C',KAT:'#7BAF6E',BAN:'#6B9BC2',OLN:'#8FAB5F'};
+const CATALOG_PAGE = 'https://nottodayman26.github.io/phuket-catalog/catalog.html';
+
+// ── State ─────────────────────────────────────────
+let AGENT = null;
+let UNITS = [];
+let FILTERED = [];
+let SELECTED = new Set();
+let sortCol = 'selling_price', sortDir = 1;
+let filterProj = 'ALL', filterType = null, searchQ = '';
+
+// ── Utilities ─────────────────────────────────────
+const h = (url, extra={}) => fetch(url, {headers:{...SB,...extra}});
+const fmt = n => new Intl.NumberFormat('ru-RU').format(Math.round(n)) + ' ฿';
+function timeAgo(iso){
+  const d=(Date.now()-new Date(iso))/1000, m=d/60, hr=m/60, dy=hr/24;
+  if(d<120) return 'только что';
+  if(m<60) return `${Math.round(m)} мин назад`;
+  if(hr<24) return `${Math.round(hr)} ч назад`;
+  return `${Math.round(dy)} дн назад`;
+}
+function projCode(roomNo){ return ['VIK','KAT','BAN','OLN'].find(c=>['VK','KK','BN','ON'].find((p,i)=>roomNo.startsWith(p)&&['VIK','KAT','BAN','OLN'][i]===c))||'?'; }
+const prefToCode = {VK:'VIK',KK:'KAT',BN:'BAN',ON:'OLN'};
+function getProj(roomNo){ return prefToCode[roomNo.slice(0,2)]||'VIK'; }
+
+// ── Theme ─────────────────────────────────────────
+function toggleTheme(){
+  const isLight = document.body.classList.toggle('light');
+  document.getElementById('themeToggle').classList.toggle('on', isLight);
+  document.getElementById('themeLabel').textContent = isLight ? 'Светлая тема' : 'Тёмная тема';
+  localStorage.setItem('flox-theme', isLight ? 'light' : 'dark');
+}
+(function(){
+  const saved = localStorage.getItem('flox-theme');
+  if(saved === 'light'){
+    document.body.classList.add('light');
+    document.getElementById('themeToggle')?.classList.add('on');
+  }
+})();
+
+// ── Auth via Telegram Login Widget ────────────────
+function onTelegramAuth(user){
+  initAgent(user.id, user.first_name + (user.last_name ? ' '+user.last_name : ''), user.username);
+}
+
+async function initAgent(tgId, tgName, tgUsername){
+  let res = await h(`${SUPABASE_URL}/agents?telegram_id=eq.${tgId}&select=*`);
+  let rows = await res.json();
+  if(!rows.length){
+    // авто-регистрация
+    const cr = await fetch(`${SUPABASE_URL}/agents`, {
+      method:'POST', headers:{...SB,'Content-Type':'application/json','Prefer':'return=representation'},
+      body: JSON.stringify({telegram_id:tgId, full_name:tgName, agency:'Независимый', commission_rate_pct:10})
+    });
+    rows = await cr.json();
+  }
+  AGENT = rows[0];
+  showApp();
+}
+
+function showApp(){
+  document.getElementById('loginScreen').classList.remove('show');
+  document.getElementById('appRoot').style.display = 'flex';
+  const name = AGENT?.full_name || 'Агент';
+  const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('sidebarAvatar').textContent = initials;
+  document.getElementById('sidebarName').textContent = name;
+  document.getElementById('sidebarRole').textContent = AGENT?.agency || '';
+  loadUnits();
+  loadDashboard();
+}
+
+// ── Telegram Login Widget ─────────────────────────
+function loadTelegramWidget(){
+  const script = document.createElement('script');
+  script.src = 'https://telegram.org/js/telegram-widget.js?22';
+  script.setAttribute('data-telegram-login', 'phuket_proptech_bot');
+  script.setAttribute('data-size', 'large');
+  script.setAttribute('data-radius', '8');
+  script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+  script.setAttribute('data-request-access', 'write');
+  document.getElementById('tg-login-widget').appendChild(script);
+}
+
+// ── Init ──────────────────────────────────────────
+async function init(){
+  // Попробуем автовход через Telegram WebApp
+  const tg = window.Telegram?.WebApp;
+  const tgUser = tg?.initDataUnsafe?.user;
+  if(tgUser){
+    await initAgent(tgUser.id, [tgUser.first_name,tgUser.last_name].filter(Boolean).join(' '), tgUser.username);
+    return;
+  }
+  // Проверим сохранённый агент (упрощённая сессия)
+  const saved = localStorage.getItem('flox-agent');
+  if(saved){
+    try{
+      AGENT = JSON.parse(saved);
+      showApp();
+      return;
+    }catch(e){}
+  }
+  // Показываем экран логина
+  document.getElementById('loginScreen').classList.add('show');
+  loadTelegramWidget();
+}
+
+// ── Navigation ────────────────────────────────────
+function setPage(page){
+  const pages = ['dashboard','offers','map'];
+  pages.forEach(p=>{
+    const el = document.getElementById('page'+p.charAt(0).toUpperCase()+p.slice(1));
+    if(el) el.style.display = p===page ? (p==='dashboard'?'flex':'block') : 'none';
+    if(p==='dashboard') el && (el.style.display = p===page ? 'contents' : 'none');
+  });
+  document.querySelectorAll('.s-item').forEach(el=>{
+    el.classList.toggle('act', el.dataset.page===page);
+  });
+  const titles = {dashboard:'Дашборд',catalog:'Каталог',offers:'Предложения',map:'Карта'};
+  document.getElementById('pageTitle').textContent = titles[page]||page;
+  if(page==='offers') loadOffersPage();
+  if(page==='map') loadMap();
+}
+
+function loadMap(){
+  const f = document.getElementById('mapFrame');
+  if(!f.src) f.src = 'https://maps.google.com/maps?q=7.98,98.30&z=11&output=embed';
+}
+
+// ── Load Units ────────────────────────────────────
+async function loadUnits(){
+  document.getElementById('tableLoader').style.display='block';
+  const res = await h(`${SUPABASE_URL}/units?select=id,room_no,room_type,area_sqm,selling_price,status,projects(name,code)&order=selling_price.asc&limit=2000`);
+  const data = await res.json();
+  UNITS = data.map(u=>({
+    id: u.id,
+    roomNo: u.room_no,
+    type: u.room_type,
+    area: u.area_sqm,
+    price: u.selling_price,
+    status: u.status,
+    proj: u.projects?.code || getProj(u.room_no),
+    projName: u.projects?.name || PROJ_LABEL[getProj(u.room_no)] || '',
+  }));
+  document.getElementById('tableLoader').style.display='none';
+  buildChips();
+  applyFilters();
+  updateStats();
+}
+
+// ── Chips ─────────────────────────────────────────
+function buildChips(){
+  const container = document.getElementById('dashChips');
+  const projs = ['ALL','VIK','KAT','BAN','OLN'];
+  container.innerHTML = projs.map(p=>{
+    const label = p==='ALL' ? 'Все проекты' : PROJ_LABEL[p];
+    const dot = p!=='ALL' ? `<span class="dot" style="background:${PROJ_COLOR[p]};"></span>` : '';
+    return `<div class="chip ${filterProj===p?'active':''}" onclick="setProj('${p}')">${dot}${label}</div>`;
+  }).join('');
+}
+
+function setProj(p){
+  filterProj = p;
+  buildChips();
+  applyFilters();
+}
+
+function onSearch(){
+  searchQ = document.getElementById('searchInput').value.trim().toLowerCase();
+  applyFilters();
+}
+
+// ── Filter & Sort ─────────────────────────────────
+function applyFilters(){
+  FILTERED = UNITS.filter(u=>{
+    if(filterProj!=='ALL' && u.proj!==filterProj) return false;
+    if(searchQ && !u.roomNo.toLowerCase().includes(searchQ) && !u.projName.toLowerCase().includes(searchQ) && !u.type.toLowerCase().includes(searchQ)) return false;
+    return true;
+  });
+  FILTERED.sort((a,b)=>{
+    let av=a[sortCol]||0, bv=b[sortCol]||0;
+    if(typeof av==='string') return sortDir*av.localeCompare(bv);
+    return sortDir*(av-bv);
+  });
+  document.getElementById('dashCount').textContent = `${FILTERED.filter(u=>u.status==='available').length} свободных`;
+  renderTable();
+}
+
+function sortBy(col){
+  if(sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+  document.querySelectorAll('th').forEach(th=>th.classList.remove('sorted'));
+  applyFilters();
+}
+
+// ── Render Table ──────────────────────────────────
+function renderTable(){
+  const tbody = document.getElementById('unitsTable');
+  const empty = document.getElementById('tableEmpty');
+  if(!FILTERED.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = FILTERED.map(u=>`
+    <tr class="${u.status==='sold'?'sold':''} ${SELECTED.has(u.id)?'selected':''}" onclick="toggleUnit('${u.id}')">
+      <td><div class="unit-code"><div class="unit-bar" style="background:${PROJ_COLOR[u.proj]||'#888'};"></div>${u.roomNo}</div></td>
+      <td class="unit-type">${u.projName}</td>
+      <td class="unit-type">${u.type}</td>
+      <td class="unit-area">${u.area ? u.area+' м²' : '—'}</td>
+      <td class="unit-price">${fmt(u.price)}</td>
+      <td><span class="status-pill ${u.status==='sold'?'sold':''}">${u.status==='sold'?'Продан':'Своб.'}</span></td>
+      <td><div class="row-check ${SELECTED.has(u.id)?'sel':''}" onclick="e=>e.stopPropagation()"></div></td>
+    </tr>
+  `).join('');
+}
+
+// ── Cart ──────────────────────────────────────────
+function toggleUnit(id){
+  const unit = UNITS.find(u=>u.id===id);
+  if(!unit || unit.status==='sold') return;
+  if(SELECTED.has(id)) SELECTED.delete(id); else SELECTED.add(id);
+  renderTable();
+  updateCartBar();
+}
+
+function updateCartBar(){
+  const count = SELECTED.size;
+  const total = [...SELECTED].reduce((s,id)=>{ const u=UNITS.find(u=>u.id===id); return s+(u?.price||0); },0);
+  document.getElementById('cartCount').textContent = count;
+  document.getElementById('cartTotal').textContent = count ? fmt(total) : '';
+  document.getElementById('cartBar').classList.toggle('show', count>0);
+}
+
+function clearCart(){ SELECTED.clear(); renderTable(); updateCartBar(); }
+
+// ── Dashboard stats ────────────────────────────────
+function updateStats(){
+  const avail = UNITS.filter(u=>u.status==='available').length;
+  const sold = UNITS.filter(u=>u.status==='sold').length;
+  document.getElementById('statAvail').textContent = avail;
+  document.getElementById('statTotal').textContent = `из ${UNITS.length} всего`;
+  document.getElementById('statSold').textContent = sold;
+}
+
+async function loadDashboard(){
+  if(!AGENT) return;
+  // offers
+  const r = await h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at&order=created_at.desc&limit=50`);
+  const offers = await r.json();
+  document.getElementById('statOffers').textContent = offers.length;
+  // views
+  if(offers.length){
+    const ids = offers.map(o=>o.id).join(',');
+    const vr = await h(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id`);
+    const views = await vr.json();
+    const viewed = new Set(views.map(v=>v.offer_id));
+    const br = await h(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`);
+    const bookings = await br.json();
+    document.getElementById('statOffersViewed').textContent = `${viewed.size} открыто`;
+    document.getElementById('statBookings').textContent = bookings.length;
+    document.getElementById('statBookingsSub').textContent = bookings.length ? `${bookings.length} ждут` : 'нет активных';
+    if(offers.length>0) document.getElementById('offersBadge').textContent=viewed.size, document.getElementById('offersBadge').style.display = viewed.size?'':'none';
+
+    // offers list widget
+    document.getElementById('offersList').innerHTML = offers.slice(0,5).map(o=>{
+      const hasView = viewed.has(o.id);
+      const hasBook = bookings.some(b=>b.offer_id===o.id);
+      const pct = hasBook ? 100 : hasView ? 60 : 15;
+      const tag = hasBook ? `<span class="offer-tag booked">Бронь</span>` : hasView ? `<span class="offer-tag viewed">Открыто</span>` : `<span class="offer-tag">Отправлено</span>`;
+      return `<div class="offer-row">
+        <div class="offer-name">${o.client_name||'—'}</div>
+        <div class="offer-track"><div class="offer-fill" style="width:${pct}%;${hasBook?'background:var(--red);':''}"></div></div>
+        ${tag}
+      </div>`;
+    }).join('') || '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Нет предложений</div>';
+  } else {
+    document.getElementById('offersList').innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Нет предложений</div>';
+  }
+
+  // activity — last sold units
+  const sr = await h(`${SUPABASE_URL}/units?status=eq.sold&select=room_no,status_updated_at,projects(name)&order=status_updated_at.desc&limit=6`);
+  const sold = await sr.json();
+  document.getElementById('activityList').innerHTML = [
+    ...offers.slice(0,2).map(o=>`<div class="act-item"><div class="act-dot" style="background:var(--accent);"></div><div class="act-text">Подборка для ${o.client_name||'клиента'}</div><div class="act-time">${timeAgo(o.created_at)}</div></div>`),
+    ...sold.slice(0,4).map(u=>`<div class="act-item"><div class="act-dot" style="background:var(--red);"></div><div class="act-text">${u.room_no} продан</div><div class="act-time">${timeAgo(u.status_updated_at)}</div></div>`)
+  ].slice(0,5).join('') || '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Нет активности</div>';
+}
+
+// ── Offers page ────────────────────────────────────
+async function loadOffersPage(){
+  if(!AGENT){ document.getElementById('offersPageList').innerHTML='<div class="empty">Войдите чтобы видеть предложения</div>'; return; }
+  document.getElementById('offersPageList').innerHTML='<div class="loader">Загрузка…</div>';
+  const r = await h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,slug,unit_ids&order=created_at.desc`);
+  const offers = await r.json();
+  if(!offers.length){ document.getElementById('offersPageList').innerHTML='<div class="empty">Нет предложений. Выберите юниты в каталоге и нажмите «+ Предложение»</div>'; return; }
+  const ids = offers.map(o=>o.id).join(',');
+  const [vr, br] = await Promise.all([
+    h(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id`).then(r=>r.json()),
+    h(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`).then(r=>r.json()),
+  ]);
+  const viewed = new Set(vr.map(v=>v.offer_id));
+  document.getElementById('offersPageList').innerHTML = `<div style="display:grid;gap:10px;">` + offers.map(o=>{
+    const link = `${location.origin}${location.pathname.split('/').slice(0,-1).join('/')}/offer.html?slug=${o.slug}`;
+    const books = br.filter(b=>b.offer_id===o.id);
+    const statusText = books.length ? `🔒 Бронь: ${books.map(b=>b.units?.room_no).join(', ')}` : viewed.has(o.id) ? '👀 Открыто' : '📤 Отправлено';
+    return `<div style="background:var(--surface-2);border:0.5px solid var(--line);border-radius:12px;padding:14px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-weight:600;font-size:14px;">${o.client_name||'Клиент'}</div>
+        <div style="font-size:11px;color:var(--muted);">${timeAgo(o.created_at)}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${statusText} · ${(o.unit_ids||[]).length} объект(ов)</div>
+      <div style="display:flex;align-items:center;gap:8px;background:var(--surface-3);border-radius:8px;padding:8px 10px;">
+        <span style="flex:1;font-size:11px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${link}</span>
+        <button onclick="navigator.clipboard?.writeText('${link}');this.textContent='✓';setTimeout(()=>this.textContent='Копировать',1500);" style="flex-shrink:0;background:var(--accent-soft);border:none;color:var(--accent);font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;">Копировать</button>
+      </div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+// ── Offer modal ────────────────────────────────────
+function openOfferModal(){
+  if(!SELECTED.size){ alert('Выберите хотя бы один юнит'); return; }
+  const units = [...SELECTED].map(id=>UNITS.find(u=>u.id===id)).filter(Boolean);
+  document.getElementById('modalSub').textContent = `${units.length} объект(ов) выбрано`;
+  document.getElementById('modalUnits').innerHTML = units.map(u=>`
+    <div class="modal-unit">
+      <div class="bar" style="background:${PROJ_COLOR[u.proj]||'#888'};"></div>
+      <div class="code">${u.roomNo}</div>
+      <div class="price">${u.projName} · ${fmt(u.price)}</div>
+    </div>
+  `).join('');
+  document.getElementById('clientNameInput').value = '';
+  document.getElementById('linkBox').classList.remove('show');
+  document.getElementById('modalBtn').textContent = 'Создать ссылку';
+  document.getElementById('modalBtn').dataset.mode = 'create';
+  document.getElementById('offerModal').style.display='flex';
+  requestAnimationFrame(()=>document.getElementById('offerModal').classList.add('show'));
+}
+
+function closeOfferModal(){
+  const m = document.getElementById('offerModal');
+  m.classList.remove('show');
+  setTimeout(()=>m.style.display='none', 250);
+}
+
+async function createOffer(){
+  const btn = document.getElementById('modalBtn');
+  if(btn.dataset.mode==='copy'){ copyLink(); return; }
+  if(!AGENT){ alert('Нужна авторизация'); return; }
+  btn.disabled=true; btn.textContent='Создаю…';
+  const name = document.getElementById('clientNameInput').value.trim() || 'клиент';
+  const slug = Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+  const unitIds = [...SELECTED];
+  try{
+    await fetch(`${SUPABASE_URL}/offers`,{
+      method:'POST',
+      headers:{...SB,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({agent_id:AGENT.id, client_name:name, slug, unit_ids:unitIds})
+    });
+    const base = location.href.split('/').slice(0,-1).join('/');
+    const link = `${base}/offer.html?slug=${slug}`;
+    document.getElementById('linkText').textContent = link;
+    document.getElementById('linkBox').classList.add('show');
+    btn.disabled=false; btn.textContent='Скопировать'; btn.dataset.mode='copy';
+  }catch(e){
+    alert('Ошибка: '+e.message);
+    btn.disabled=false; btn.textContent='Создать ссылку'; btn.dataset.mode='create';
+  }
+}
+
+function copyLink(){
+  const link = document.getElementById('linkText').textContent;
+  navigator.clipboard?.writeText(link);
+  const btn = document.getElementById('copyBtn');
+  btn.textContent='Скопировано ✓';
+  setTimeout(()=>btn.textContent='Скопировать',1400);
+}
+
+// ── Close modal on bg click ─────────────────────────
+document.getElementById('offerModal').addEventListener('click',e=>{if(e.target===document.getElementById('offerModal')) closeOfferModal();});
+
+// ── Start ─────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
