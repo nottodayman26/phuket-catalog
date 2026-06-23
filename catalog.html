@@ -713,13 +713,20 @@ function updateCartbar(){
 
 // ── анимированное закрытие шторок ───────────────────────────
 function openSheet(bg){
+  document.body.style.overflow = 'hidden';
   bg.classList.remove('hiding');
   requestAnimationFrame(()=> bg.classList.add('show'));
 }
 
 function closeSheet(bg){
   bg.classList.add('hiding');
-  setTimeout(()=> bg.classList.remove('show','hiding'), 280);
+  setTimeout(()=>{
+    bg.classList.remove('show','hiding');
+    // разблокируем скролл только если нет других открытых шторок
+    const anyOpen = ['sheetBg','historyBg','cartSheetBg','mapSheetBg']
+      .some(id => document.getElementById(id).classList.contains('show'));
+    if(!anyOpen) document.body.style.overflow = '';
+  }, 280);
 }
 
 document.getElementById('closeSheetBg').onclick    = ()=> closeSheet(document.getElementById('sheetBg'));
@@ -822,13 +829,16 @@ document.getElementById('cartIcon').onclick = ()=>{
 function renderCartSheet(){
   const items = [...state.selected].map(id => UNITS.find(u=>u.id===id)).filter(Boolean);
   const offerBtn = document.getElementById('makeOfferFromCart');
+  const clearBtn = document.getElementById('clearAllCart');
   if(!items.length){
     document.getElementById('cartItemsList').innerHTML =
       '<div class="empty" style="padding:30px 10px;">Вы не добавили ни одного юнита.<br>Выберите объекты в каталоге.</div>';
     offerBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
     return;
   }
   offerBtn.style.display = 'block';
+  clearBtn.style.display = 'block';
   document.getElementById('cartItemsList').innerHTML = items.map(u=>`
     <div class="cart-item">
       <div class="bar" style="background:${PROJ_VAR[u.project]}"></div>
