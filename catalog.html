@@ -207,7 +207,8 @@
     opacity:0;transform:translateY(60px) scale(0.95);
     transition:opacity 0.32s cubic-bezier(0.22,1,0.36,1),
                transform 0.38s cubic-bezier(0.34,1.4,0.64,1);
-    overscroll-behavior:contain;
+    overscroll-behavior-y:contain;
+    touch-action:pan-y;
   }
   .sheet-bg.show .sheet{opacity:1;transform:translateY(0) scale(1);}
   .sheet-bg.hiding .sheet{
@@ -223,12 +224,13 @@
   }
   .map-sheet{
     background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
-    padding:18px 18px 28px;max-height:90vh;overflow-y:auto;position:relative;
+    padding:18px 18px 28px;max-height:90vh;overflow-y:scroll;position:relative;
     opacity:0;transform:translateY(60px) scale(0.95);
     transition:opacity 0.32s cubic-bezier(0.22,1,0.36,1),
                transform 0.38s cubic-bezier(0.34,1.4,0.64,1);
-    overscroll-behavior:contain;
+    overscroll-behavior-y:contain;
     -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
   }
   .sheet-bg.show .map-sheet{opacity:1;transform:translateY(0) scale(1);}
   .sheet-bg.hiding .map-sheet{
@@ -275,9 +277,12 @@
     max-height:80vh;
   }
   .cart-scroll{
-    flex:1;overflow-y:auto;
-    overscroll-behavior:contain;
+    flex:1;
+    overflow-y:scroll;
     -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
+    overscroll-behavior-y:contain;
+    min-height:0;
   }
   .cart-footer{
     flex-shrink:0;padding-top:12px;
@@ -401,7 +406,7 @@
   </div>
 
   <div class="sheet-bg" id="historyBg">
-    <div class="sheet" style="max-height:75vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;">
+    <div class="sheet" style="max-height:75vh;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-y:contain;">
       <button class="sheet-close" id="closeHistoryBg">×</button>
       <h3>Мои предложения</h3>
       <p style="margin-bottom:12px;">Статус ссылок, которые ты отправлял клиентам</p>
