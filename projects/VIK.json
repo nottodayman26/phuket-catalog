@@ -1,9 +1,9 @@
 {
   "id": "VIK",
   "name": "The Title Vivana",
-  "name_short": "Vivana Kamala",
-  "color": "#C9A84C",
-  "developer": "AssetWise / Rhom Bho Property",
+  "name_short": "The Title Vivana",
+  "color": "#5E17EB",
+  "developer": "Rhom Bho Property PLC",
   "developer_logo": "",
   "district": "Kamala",
   "amphoe": "Amphoe Kathu",
@@ -18,34 +18,25 @@
   "coords": { "lat": 7.9587, "lng": 98.2998 },
 
   "unit_types": [
-    { "type": "1 Bedroom S",       "bedrooms": 1, "area_from": 30, "area_to": 35,  "price_from": 4200000,  "price_to": 5500000,  "color": "#E8B84B" },
-    { "type": "1 Bedroom M",       "bedrooms": 1, "area_from": 35, "area_to": 42,  "price_from": 5300000,  "price_to": 7000000,  "color": "#E8B84B" },
-    { "type": "1 Bedroom L",       "bedrooms": 1, "area_from": 42, "area_to": 52,  "price_from": 6500000,  "price_to": 9900000,  "color": "#E8B84B" },
-    { "type": "1 Bedroom Plus",    "bedrooms": 1, "area_from": 50, "area_to": 60,  "price_from": 7300000,  "price_to": 8900000,  "color": "#4ECDC4" },
-    { "type": "2 Bedroom",         "bedrooms": 2, "area_from": 65, "area_to": 80,  "price_from": 8600000,  "price_to": 10600000, "color": "#E88FB4" },
+    { "type": "1 Bedroom S",        "bedrooms": 1, "area_from": 30, "area_to": 35,  "price_from": 4200000,  "price_to": 5500000,  "color": "#7B3FF5" },
+    { "type": "1 Bedroom M",        "bedrooms": 1, "area_from": 35, "area_to": 42,  "price_from": 5300000,  "price_to": 7000000,  "color": "#7B3FF5" },
+    { "type": "1 Bedroom L",        "bedrooms": 1, "area_from": 42, "area_to": 52,  "price_from": 6500000,  "price_to": 9900000,  "color": "#7B3FF5" },
+    { "type": "1 Bedroom Plus",     "bedrooms": 1, "area_from": 50, "area_to": 60,  "price_from": 7300000,  "price_to": 8900000,  "color": "#4ECDC4" },
+    { "type": "2 Bedroom",          "bedrooms": 2, "area_from": 65, "area_to": 80,  "price_from": 8600000,  "price_to": 10600000, "color": "#E88FB4" },
     { "type": "2 Bedroom Penthouse","bedrooms": 2, "area_from": 80, "area_to": 100, "price_from": 11900000, "price_to": 17600000, "color": "#A8C5E8" },
     { "type": "2 BR Plus Penthouse","bedrooms": 2, "area_from": 100,"area_to": 130, "price_from": 16000000, "price_to": 19200000, "color": "#5B8CDB" }
   ],
 
-  "gallery": [
-    {
-      "section": "Exterior",
-      "folder_url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ",
-      "images": []
-    },
-    {
-      "section": "Interior",
-      "folder_url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ",
-      "images": []
-    },
-    {
-      "section": "Mingle Crystal Lake",
-      "folder_url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ",
-      "images": []
-    }
-  ],
+  "gallery": {
+    "local": [],
+    "sections": [
+      { "name": "Exterior",           "url": "https://drive.google.com/drive/folders/1PKKXdTjJXIovEe5vz4xq39zc68_hg3DG" },
+      { "name": "Interior",           "url": "https://drive.google.com/drive/folders/19LSJh-yCrOUFQWnWLJj4QOT93GMs1OjT" },
+      { "name": "Mingle Crystal Lake","url": "https://drive.google.com/drive/folders/14KBrf9CRC66PmdiS7-4um2KIK4bNpSu_" }
+    ]
+  },
 
-  "description": "The Title Vivana — это boutique-проект в Камала, Пхукет, от застройщика AssetWise / Rhom Bho Property. Проект сочетает средиземноморскую архитектуру с тропической природой острова. В центре комплекса — кристальное озеро Mingle Crystal Lake с лагунным бассейном, окружённое садами и зонами отдыха. 4 корпуса (A, B, C, D), 8 этажей, 200+ юнитов от студий до пентхаусов.",
+  "description": "The Title Vivana — boutique-проект в Камала, Пхукет, от застройщика Rhom Bho Property PLC. Проект сочетает средиземноморскую архитектуру с тропической природой острова. В центре комплекса — кристальное озеро Mingle Crystal Lake с лагунным бассейном, окружённое садами и зонами отдыха. 4 корпуса (A, B, C, D), 8 этажей, 200+ юнитов от студий до пентхаусов.",
 
   "facilities": [
     "Mingle Crystal Lake (лагунный бассейн)",
@@ -57,48 +48,44 @@
   ],
 
   "nearby": [
-    { "name": "Kamala Beach",        "icon": "🏖️", "time": "5 мин",  "dist": "600 м" },
+    { "name": "Kamala Beach",                 "icon": "🏖️", "time": "5 мин",  "dist": "600 м" },
     { "name": "Phuket International Airport", "icon": "✈️", "time": "25 мин", "dist": "22 км" },
-    { "name": "Central Phuket",      "icon": "🛍️", "time": "20 мин", "dist": "14 км" },
-    { "name": "Headstart Int. School","icon": "🏫", "time": "10 мин", "dist": "7 км" },
-    { "name": "Bangkok Hospital Phuket","icon":"🏥","time": "15 мин", "dist": "11 км" }
+    { "name": "Central Phuket",               "icon": "🛍️", "time": "20 мин", "dist": "14 км" },
+    { "name": "Headstart Int. School",        "icon": "🏫", "time": "10 мин", "dist": "7 км" },
+    { "name": "Bangkok Hospital Phuket",      "icon": "🏥", "time": "15 мин", "dist": "11 км" }
   ],
 
   "payment_schedule": [
-    { "stage": "Reservation",                    "percent": 2,  "note": "Бронирование" },
-    { "stage": "Sign Contract (SPA)",             "percent": 28, "note": "В течение 30 дней" },
-    { "stage": "Foundation Complete",             "percent": 15, "note": "По завершению фундамента" },
-    { "stage": "Structure Complete",              "percent": 15, "note": "По завершению конструкции" },
-    { "stage": "Rooftop Complete",                "percent": 10, "note": "По завершению кровли" },
-    { "stage": "Interior & Finishing",            "percent": 20, "note": "Отделочные работы" },
-    { "stage": "Transfer of Ownership",           "percent": 10, "note": "Передача ключей" }
+    { "stage": "Reservation",           "percent": 2,  "note": "Бронирование" },
+    { "stage": "Sign Contract (SPA)",   "percent": 28, "note": "В течение 30 дней" },
+    { "stage": "Foundation Complete",   "percent": 15, "note": "По завершению фундамента" },
+    { "stage": "Structure Complete",    "percent": 15, "note": "По завершению конструкции" },
+    { "stage": "Rooftop Complete",      "percent": 10, "note": "По завершению кровли" },
+    { "stage": "Interior & Finishing",  "percent": 20, "note": "Отделочные работы" },
+    { "stage": "Transfer of Ownership", "percent": 10, "note": "Передача ключей" }
   ],
 
   "maintenance": {
-    "common_fee":    { "amount": 80, "unit": "THB/м²/мес" },
-    "sinking_fund":  { "amount": 600, "unit": "THB/м² (разово)" },
-    "registration":  { "freehold": "6.3%", "leasehold": "1.1%" },
-    "notes": "Common fee включает охрану, уборку территории, бассейн, фитнес"
+    "common_fee":   { "amount": 0,   "unit": "уточняется" },
+    "sinking_fund": { "amount": 0,   "unit": "уточняется" },
+    "registration": { "freehold": "уточняется", "leasehold": "уточняется" },
+    "notes": "Данные уточняются"
   },
 
   "agent_reward": {
-    "percent_from": 4,
-    "percent_to": 5,
-    "scale": "Прогрессивная",
-    "payment_days": 45,
-    "note": "Выплата после регистрации сделки"
+    "percent_from": 0,
+    "percent_to": 0,
+    "scale": "уточняется",
+    "payment_days": 0,
+    "note": "Данные уточняются"
   },
 
   "files": [
-    { "name": "E-Brochure",         "type": "pdf", "url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ" },
-    { "name": "Master Plan",        "type": "pdf", "url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ" },
-    { "name": "Floor Plans",        "type": "folder", "url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ" },
-    { "name": "Payment Schedule",   "type": "pdf", "url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ" },
-    { "name": "Living Service",     "type": "folder", "url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ" }
+    { "name": "E-Brochure",       "type": "folder", "url": "https://drive.google.com/drive/folders/1PKKXdTjJXIovEe5vz4xq39zc68_hg3DG" },
+    { "name": "Floor Plans",      "type": "folder", "url": "https://drive.google.com/drive/folders/19LSJh-yCrOUFQWnWLJj4QOT93GMs1OjT" },
+    { "name": "Payment Schedule", "type": "folder", "url": "https://drive.google.com/drive/folders/14KBrf9CRC66PmdiS7-4um2KIK4bNpSu_" },
+    { "name": "Master Plan (PDF актуальный)", "type": "pdf", "url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ" }
   ],
 
-  "drive_root": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ",
-
-  "masterplan_pdf": "VIK_Master_Plan_Price_list_V_1_-_updated_29_05_26.pdf"
+  "drive_root": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ"
 }
-
