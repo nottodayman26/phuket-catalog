@@ -28,7 +28,7 @@
   ],
 
   "gallery": {
-    "local": [],
+    "local": ["img/VIK/1.avif", "img/VIK/2.avif", "img/VIK/3.avif", "img/VIK/4.avif", "img/VIK/5.avif"],
     "sections": [
       { "name": "Exterior",           "url": "https://drive.google.com/drive/folders/1PKKXdTjJXIovEe5vz4xq39zc68_hg3DG" },
       { "name": "Interior",           "url": "https://drive.google.com/drive/folders/19LSJh-yCrOUFQWnWLJj4QOT93GMs1OjT" },
