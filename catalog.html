@@ -197,22 +197,33 @@
     position:fixed;inset:0;background:rgba(10,8,20,.7);
     display:flex;align-items:flex-end;z-index:20;
     opacity:0;pointer-events:none;
-    transform:translateY(100%);
-    transition:opacity 0.3s ease, transform 0.35s cubic-bezier(0.32,0.72,0,1);
+    transition:opacity 0.3s ease;
   }
-  .sheet-bg.show{opacity:1;pointer-events:auto;transform:translateY(0);}
-  .sheet-bg.hiding{opacity:0;transform:translateY(100%);pointer-events:none;}
+  .sheet-bg.show{opacity:1;pointer-events:auto;}
+  .sheet-bg.hiding{opacity:0;pointer-events:none;}
   .sheet{
     background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
     padding:20px 18px 26px;position:relative;
-    opacity:0;
-    transition:opacity 0.3s ease;
+    transform:translateY(100%);
+    transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);
     overscroll-behavior-y:contain;
     touch-action:pan-y;
-    will-change:opacity;
+    will-change:transform;
   }
-  .sheet-bg.show .sheet{opacity:1;}
-  .sheet-bg.hiding .sheet{opacity:0;}
+  .sheet-bg.show .sheet{transform:translateY(0);}
+  .sheet-bg.hiding .sheet{transform:translateY(100%);}
+  .map-sheet{
+    background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
+    padding:18px 18px 28px;max-height:90vh;overflow-y:scroll;position:relative;
+    transform:translateY(100%);
+    transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);
+    overscroll-behavior-y:contain;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
+    will-change:transform;
+  }
+  .sheet-bg.show .map-sheet{transform:translateY(0);}
+  .sheet-bg.hiding .map-sheet{transform:translateY(100%);}
   .sheet-close{
     position:absolute;top:14px;right:14px;
     width:28px;height:28px;border-radius:50%;
@@ -220,18 +231,6 @@
     display:flex;align-items:center;justify-content:center;
     cursor:pointer;color:var(--muted);font-size:16px;line-height:1;
   }
-  .map-sheet{
-    background:var(--surface-2);width:100%;border-radius:20px 20px 0 0;
-    padding:18px 18px 28px;max-height:90vh;overflow-y:scroll;position:relative;
-    opacity:0;
-    transition:opacity 0.3s ease;
-    overscroll-behavior-y:contain;
-    -webkit-overflow-scrolling:touch;
-    touch-action:pan-y;
-    will-change:opacity;
-  }
-  .sheet-bg.show .map-sheet{opacity:1;}
-  .sheet-bg.hiding .map-sheet{opacity:0;}
 
   /* кнопка наверх */
   .scroll-top{
