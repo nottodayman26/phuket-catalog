@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flox — Проект</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d18;
+  --surface: #111118;
+  --surface-2: #1a1a26;
+  --surface-3: #222232;
+  --line: rgba(255,255,255,0.06);
+  --line-2: rgba(255,255,255,0.1);
+  --text: #ffffff;
+  --muted: rgba(255,255,255,0.45);
+  --muted-2: rgba(255,255,255,0.2);
+  --accent: #5E17EB;
+  --accent-soft: rgba(94,23,235,0.18);
+  --green: #7BAF6E;
+  --green-soft: rgba(123,175,110,0.15);
+  --gold: #C9A84C;
+  --gold-soft: rgba(201,168,76,0.15);
+  --red: #FF6B6B;
+  --project-color: #C9A84C;
+}
+body.light {
+  --bg: #F5F5F7;
+  --surface: #ffffff;
+  --surface-2: #f0f0f4;
+  --surface-3: #e8e8ee;
+  --line: rgba(0,0,0,0.07);
+  --line-2: rgba(0,0,0,0.12);
+  --text: #111118;
+  --muted: rgba(0,0,0,0.45);
+  --muted-2: rgba(0,0,0,0.22);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+body { transition: background .3s, color .3s; }
+a { color: inherit; text-decoration: none; }
+
+/* ── TOP BAR ─────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  border-bottom: 0.5px solid var(--line);
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 20px; height: 52px;
+}
+.topbar-back {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--muted); font-size: 13px; cursor: pointer;
+  padding: 6px 10px; border-radius: 8px;
+  transition: background .15s, color .15s;
+}
+.topbar-back:hover { background: var(--surface-2); color: var(--text); }
+.topbar-logo { font-size: 18px; font-weight: 700; letter-spacing: -0.05em; }
+.topbar-logo span { color: var(--red); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.theme-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: none; background: var(--surface-2); color: var(--muted);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.theme-btn:hover { background: var(--surface-3); }
+
+/* ── HERO ─────────────────────────── */
+.hero {
+  position: relative; height: 420px; overflow: hidden;
+  background: var(--surface-2);
+}
+.hero-gallery {
+  display: flex; height: 100%; gap: 4px;
+}
+.hero-main {
+  flex: 1; position: relative; overflow: hidden; cursor: pointer;
+}
+.hero-main img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform .4s;
+}
+.hero-main:hover img { transform: scale(1.03); }
+.hero-thumbs {
+  display: flex; flex-direction: column; gap: 4px; width: 180px;
+}
+.hero-thumb {
+  flex: 1; overflow: hidden; cursor: pointer; position: relative;
+}
+.hero-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform .3s;
+}
+.hero-thumb:hover img { transform: scale(1.05); }
+.hero-thumb:last-child .thumb-more {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 14px; font-weight: 600;
+}
+.hero-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface-3));
+  color: var(--muted); font-size: 14px; flex-direction: column; gap: 8px;
+}
+
+/* ── BODY LAYOUT ─────────────────────────── */
+.body-wrap {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 320px; gap: 24px;
+  padding: 24px 20px;
+}
+@media(max-width:900px) {
+  .body-wrap { grid-template-columns: 1fr; }
+  .sidebar-col { order: -1; }
+}
+
+/* ── PROJECT HEADER ─────────────────────────── */
+.proj-header { margin-bottom: 20px; }
+.proj-breadcrumb { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.proj-breadcrumb span { color: var(--project-color); }
+.proj-title { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px; }
+.proj-sub { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+.proj-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: var(--green-soft); color: var(--green);
+}
+.proj-badge.sold-out { background: rgba(255,107,107,0.12); color: var(--red); }
+
+/* ── TABS ─────────────────────────── */
+.tabs {
+  display: flex; gap: 2px; border-bottom: 1px solid var(--line);
+  margin-bottom: 24px; overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 10px 16px; font-size: 13px; font-weight: 500;
+  color: var(--muted); cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+}
+.tab:hover { color: var(--text); }
+.tab.act { color: var(--project-color); border-bottom-color: var(--project-color); }
+
+/* ── TAB PANELS ─────────────────────────── */
+.panel { display: none; }
+.panel.act { display: block; }
+
+/* ── UNITS TABLE ─────────────────────────── */
+.units-filter {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.uf-btn {
+  padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--line-2); color: var(--muted);
+  cursor: pointer; background: none; font-family: inherit;
+  transition: all .15s;
+}
+.uf-btn:hover { border-color: var(--project-color); color: var(--project-color); }
+.uf-btn.act { background: var(--project-color); border-color: var(--project-color); color: #111; }
+
+.units-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.unit-card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 16px; cursor: pointer;
+  transition: border-color .2s, transform .2s;
+}
+.unit-card:hover { border-color: var(--project-color); transform: translateY(-2px); }
+.unit-type-dot {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 50%; margin-right: 6px; flex-shrink: 0;
+}
+.unit-type-label { font-size: 13px; font-weight: 600; display: flex; align-items: center; margin-bottom: 10px; }
+.unit-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.unit-stat-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.unit-stat-val { font-size: 13px; font-weight: 600; }
+.unit-price { color: var(--project-color); }
+
+/* ── DESCRIPTION ─────────────────────────── */
+.desc-text {
+  font-size: 14px; line-height: 1.75; color: var(--text);
+  margin-bottom: 24px;
+}
+.facilities-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px; margin-bottom: 24px;
+}
+.facility-item {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px 14px;
+  font-size: 13px; display: flex; align-items: center; gap: 8px;
+}
+.facility-icon { font-size: 18px; }
+
+/* ── PAYMENT SCHEDULE ─────────────────────────── */
+.ps-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+.ps-table th {
+  text-align: left; padding: 10px 14px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  border-bottom: 1px solid var(--line); text-transform: uppercase; letter-spacing: .05em;
+}
+.ps-table td {
+  padding: 12px 14px; font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+.ps-table tr:last-child td { border-bottom: none; }
+.ps-percent {
+  font-weight: 700; color: var(--project-color);
+  font-size: 15px;
+}
+.ps-timeline {
+  display: flex; align-items: flex-start; gap: 0;
+  margin-bottom: 28px; overflow-x: auto; padding-bottom: 8px;
+}
+.ps-step {
+  flex: 1; min-width: 80px; text-align: center; position: relative;
+}
+.ps-step::before {
+  content: ''; display: block;
+  height: 3px; background: var(--line-2);
+  position: absolute; top: 14px; left: 50%; right: -50%;
+}
+.ps-step:last-child::before { display: none; }
+.ps-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--project-color); color: #111;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 6px; position: relative; z-index: 1;
+}
+.ps-step-pct { font-size: 12px; font-weight: 700; color: var(--project-color); }
+.ps-step-label { font-size: 10px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+
+/* ── MAINTENANCE ─────────────────────────── */
+.maint-table { width: 100%; }
+.maint-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 13px 0; border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.maint-row:last-child { border-bottom: none; }
+.maint-label { color: var(--muted); }
+.maint-val { font-weight: 600; }
+
+/* ── MAP ─────────────────────────── */
+.map-wrap {
+  border-radius: 14px; overflow: hidden;
+  border: 1px solid var(--line); margin-bottom: 20px;
+}
+.map-wrap iframe { display: block; }
+.nearby-list { display: flex; flex-direction: column; gap: 8px; }
+.nearby-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 11px 14px;
+}
+.nearby-icon { font-size: 20px; width: 32px; text-align: center; }
+.nearby-name { font-size: 13px; font-weight: 500; flex: 1; }
+.nearby-dist { font-size: 12px; color: var(--muted); text-align: right; }
+.nearby-time { font-size: 11px; color: var(--muted); }
+
+/* ── FILES ─────────────────────────── */
+.files-list { display: flex; flex-direction: column; gap: 8px; }
+.file-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 13px 16px;
+  text-decoration: none; color: var(--text);
+  transition: border-color .15s, background .15s;
+}
+.file-item:hover { border-color: var(--project-color); background: var(--surface-2); }
+.file-icon { font-size: 22px; }
+.file-name { font-size: 13px; font-weight: 500; flex: 1; }
+.file-type { font-size: 11px; color: var(--muted); }
+.file-arrow { color: var(--muted); font-size: 16px; }
+
+/* ── SIDEBAR ─────────────────────────── */
+.sidebar-col { display: flex; flex-direction: column; gap: 16px; }
+
+.reward-card {
+  background: var(--surface);
+  border: 1px solid var(--project-color);
+  border-radius: 14px; padding: 18px;
+  position: relative; overflow: hidden;
+}
+.reward-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--project-color);
+}
+.reward-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.reward-pct { font-size: 36px; font-weight: 700; color: var(--project-color); line-height: 1; }
+.reward-pct-suffix { font-size: 16px; font-weight: 400; }
+.reward-rows { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.reward-row { display: flex; justify-content: space-between; font-size: 12px; }
+.reward-row-label { color: var(--muted); }
+.reward-row-val { font-weight: 600; }
+.reward-note { font-size: 11px; color: var(--muted); margin-top: 12px; line-height: 1.5; }
+
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px; padding: 18px;
+}
+.info-card-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+.info-rows { display: flex; flex-direction: column; gap: 10px; }
+.info-row { display: flex; justify-content: space-between; align-items: flex-start; font-size: 12px; gap: 8px; }
+.info-row-label { color: var(--muted); flex-shrink: 0; }
+.info-row-val { font-weight: 600; text-align: right; }
+
+.price-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface-2));
+  border: 1px solid var(--line);
+  border-radius: 14px; padding: 18px;
+}
+.price-from-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.price-from-val { font-size: 22px; font-weight: 700; color: var(--project-color); }
+.price-to { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+.action-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 13px; border-radius: 12px;
+  font-size: 14px; font-weight: 600; font-family: inherit;
+  cursor: pointer; border: none; transition: opacity .2s, transform .1s;
+}
+.action-btn:active { transform: scale(0.98); }
+.action-btn.primary { background: var(--project-color); color: #111; }
+.action-btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--line-2); }
+.action-btn:hover { opacity: 0.88; }
+
+/* ── LOADING ─────────────────────────── */
+.loading {
+  display: flex; align-items: center; justify-content: center;
+  height: 300px; color: var(--muted); font-size: 14px;
+  flex-direction: column; gap: 12px;
+}
+.spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid var(--line-2);
+  border-top-color: var(--project-color);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── SECTION TITLE ─────────────────────────── */
+.section-title {
+  font-size: 16px; font-weight: 700; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px; background: var(--line);
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-back" onclick="history.back()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    Назад
+  </div>
+  <div class="topbar-logo">Fl<span>o</span>x</div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()" title="Сменить тему">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- HERO GALLERY -->
+<div class="hero" id="heroSection">
+  <div class="hero-placeholder" id="heroPlaceholder">
+    <div class="spinner"></div>
+    <span>Загрузка галереи...</span>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="body-wrap">
+
+  <!-- MAIN COLUMN -->
+  <div class="main-col" id="mainCol">
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>Загрузка проекта...</span>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar-col" id="sidebarCol"></div>
+
+</div>
+
+<script>
+// ── Helpers ────────────────────────────────────
+const fmt = (n) => new Intl.NumberFormat('ru-RU').format(n);
+const fmtMln = (n) => {
+  if (n >= 1000000) return (n/1000000).toFixed(1).replace('.0','') + ' млн ฿';
+  return fmt(n) + ' ฿';
+};
+
+// ── Theme ────────────────────────────────────
+const savedTheme = localStorage.getItem('flox-theme') || 'dark';
+if (savedTheme === 'light') document.body.classList.add('light');
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  localStorage.setItem('flox-theme', document.body.classList.contains('light') ? 'light' : 'dark');
+}
+
+// ── Load project ─────────────────────────────
+const params = new URLSearchParams(location.search);
+const projectId = params.get('id') || 'VIK';
+
+async function loadProject() {
+  let data;
+  try {
+    const res = await fetch(`projects/${projectId}.json?v=${Date.now()}`);
+    if (!res.ok) throw new Error('Not found');
+    data = await res.json();
+  } catch(e) {
+    document.getElementById('mainCol').innerHTML = `
+      <div class="loading"><span>Проект не найден: ${projectId}</span></div>`;
+    return;
+  }
+  renderProject(data);
+}
+
+function renderProject(d) {
+  // Set project color
+  document.documentElement.style.setProperty('--project-color', d.color || '#C9A84C');
+  document.title = `Flox — ${d.name}`;
+
+  // Render hero
+  renderHero(d);
+  // Render sidebar
+  renderSidebar(d);
+  // Render main
+  document.getElementById('mainCol').innerHTML = `
+    <div class="proj-header">
+      <div class="proj-breadcrumb">Каталог / <span>${d.district}</span> / ${d.name}</div>
+      <div class="proj-title">${d.name}</div>
+      <div class="proj-sub">
+        <span>${d.district}, Phuket</span>
+        <span>•</span>
+        <span>${d.developer}</span>
+        <span class="proj-badge">${d.status}</span>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab act" data-tab="units">Юниты</div>
+      <div class="tab" data-tab="about">О проекте</div>
+      <div class="tab" data-tab="map">Карта</div>
+      <div class="tab" data-tab="payment">Payment Schedule</div>
+      <div class="tab" data-tab="maintenance">Обслуживание</div>
+      <div class="tab" data-tab="files">Файлы</div>
+    </div>
+    <div id="panel-units"    class="panel act">${renderUnits(d)}</div>
+    <div id="panel-about"    class="panel">${renderAbout(d)}</div>
+    <div id="panel-map"      class="panel">${renderMap(d)}</div>
+    <div id="panel-payment"  class="panel">${renderPayment(d)}</div>
+    <div id="panel-maintenance" class="panel">${renderMaintenance(d)}</div>
+    <div id="panel-files"    class="panel">${renderFiles(d)}</div>
+  `;
+
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('act'));
+      document.querySelectorAll('.panel').forEach(x => x.classList.remove('act'));
+      t.classList.add('act');
+      document.getElementById('panel-' + t.dataset.tab).classList.add('act');
+    });
+  });
+
+  // Unit filter
+  document.querySelectorAll('.uf-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.uf-btn').forEach(b => b.classList.remove('act'));
+      btn.classList.add('act');
+      const f = btn.dataset.filter;
+      document.querySelectorAll('.unit-card').forEach(card => {
+        card.style.display = (f === 'all' || card.dataset.bed === f) ? '' : 'none';
+      });
+    });
+  });
+}
+
+// ── Hero ─────────────────────────────────────
+function renderHero(d) {
+  const hero = document.getElementById('heroSection');
+  // Use Google Drive folder as fallback — show placeholder with link
+  hero.innerHTML = `
+    <div class="hero-placeholder" style="flex-direction:column;gap:16px;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      <div style="text-align:center;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Галерея проекта</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Exterior · Interior · Mingle Crystal Lake</div>
+        <a href="${d.drive_root}" target="_blank" style="
+          display:inline-flex;align-items:center;gap:6px;
+          background:var(--project-color);color:#111;
+          padding:8px 18px;border-radius:10px;font-size:13px;font-weight:600;
+          text-decoration:none;
+        ">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Открыть в Google Drive
+        </a>
+      </div>
+    </div>
+  `;
+}
+
+// ── Units ─────────────────────────────────────
+function renderUnits(d) {
+  const beds = [...new Set(d.unit_types.map(u => u.bedrooms))].sort();
+  const filterBtns = `
+    <div class="units-filter">
+      <button class="uf-btn act" data-filter="all">Все типы</button>
+      ${beds.map(b => `<button class="uf-btn" data-filter="${b}">${b} спальн${b===1?'я':'и'}</button>`).join('')}
+    </div>
+  `;
+  const cards = d.unit_types.map(u => `
+    <div class="unit-card" data-bed="${u.bedrooms}">
+      <div class="unit-type-label">
+        <span class="unit-type-dot" style="background:${u.color}"></span>
+        ${u.type}
+      </div>
+      <div class="unit-stats">
+        <div>
+          <div class="unit-stat-label">Площадь</div>
+          <div class="unit-stat-val">${u.area_from}–${u.area_to} м²</div>
+        </div>
+        <div>
+          <div class="unit-stat-label">Спальни</div>
+          <div class="unit-stat-val">${u.bedrooms} BR</div>
+        </div>
+        <div>
+          <div class="unit-stat-label">Цена от</div>
+          <div class="unit-stat-val unit-price">${fmtMln(u.price_from)}</div>
+        </div>
+        <div>
+          <div class="unit-stat-label">Цена до</div>
+          <div class="unit-stat-val unit-price">${fmtMln(u.price_to)}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  return filterBtns + `<div class="units-grid">${cards}</div>`;
+}
+
+// ── About ─────────────────────────────────────
+function renderAbout(d) {
+  const facilityIcons = {
+    'бассейн': '🏊', 'фитнес': '💪', 'лобби': '🏨', 'парковка': '🅿️',
+    'сад': '🌿', 'вода': '💧', 'охрана': '🔐', 'ресторан': '🍽️',
+  };
+  const getIcon = (name) => {
+    const low = name.toLowerCase();
+    for (const [k,v] of Object.entries(facilityIcons)) {
+      if (low.includes(k)) return v;
+    }
+    return '✨';
+  };
+  const facilsHtml = d.facilities.map(f => `
+    <div class="facility-item">
+      <span class="facility-icon">${getIcon(f)}</span>
+      <span>${f}</span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="section-title">Описание проекта</div>
+    <p class="desc-text">${d.description}</p>
+    <div class="section-title">Инфраструктура</div>
+    <div class="facilities-grid">${facilsHtml}</div>
+    <div class="info-rows" style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;">
+      <div class="info-row"><span class="info-row-label">Застройщик</span><span class="info-row-val">${d.developer}</span></div>
+      <div class="info-row"><span class="info-row-label">Корпуса</span><span class="info-row-val">${d.buildings.join(', ')}</span></div>
+      <div class="info-row"><span class="info-row-label">Этажей</span><span class="info-row-val">${d.floors}</span></div>
+      <div class="info-row"><span class="info-row-label">Сдача</span><span class="info-row-val">${d.completion}</span></div>
+      <div class="info-row"><span class="info-row-label">Район</span><span class="info-row-val">${d.district}, ${d.amphoe}</span></div>
+    </div>
+  `;
+}
+
+// ── Map ─────────────────────────────────────
+function renderMap(d) {
+  const { lat, lng } = d.coords;
+  const nearbyHtml = d.nearby.map(n => `
+    <div class="nearby-item">
+      <span class="nearby-icon">${n.icon}</span>
+      <span class="nearby-name">${n.name}</span>
+      <div class="nearby-dist">
+        <div>${n.dist}</div>
+        <div class="nearby-time">${n.time}</div>
+      </div>
+    </div>
+  `).join('');
+  return `
+    <div class="map-wrap">
+      <iframe
+        width="100%" height="340"
+        style="border:0;"
+        loading="lazy"
+        allowfullscreen
+        src="https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed">
+      </iframe>
+    </div>
+    <div class="section-title">Ближайшие локации</div>
+    <div class="nearby-list">${nearbyHtml}</div>
+  `;
+}
+
+// ── Payment Schedule ─────────────────────────────────────
+function renderPayment(d) {
+  const total = d.payment_schedule.reduce((s,p) => s+p.percent, 0);
+  const rows = d.payment_schedule.map(p => `
+    <tr>
+      <td>${p.stage}</td>
+      <td style="color:var(--muted);font-size:12px;">${p.note}</td>
+      <td style="text-align:right;"><span class="ps-percent">${p.percent}%</span></td>
+    </tr>
+  `).join('');
+  const steps = d.payment_schedule.map(p => `
+    <div class="ps-step">
+      <div class="ps-dot">${p.percent}%</div>
+      <div class="ps-step-pct"></div>
+      <div class="ps-step-label">${p.stage}</div>
+    </div>
+  `).join('');
+  return `
+    <div class="section-title">Payment Schedule</div>
+    <div class="ps-timeline">${steps}</div>
+    <table class="ps-table">
+      <thead><tr><th>Этап</th><th>Условие</th><th style="text-align:right;">%</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr>
+        <td colspan="2" style="padding:12px 14px;font-size:12px;color:var(--muted);">Итого</td>
+        <td style="text-align:right;padding:12px 14px;font-weight:700;">${total}%</td>
+      </tr></tfoot>
+    </table>
+  `;
+}
+
+// ── Maintenance ─────────────────────────────────────
+function renderMaintenance(d) {
+  const m = d.maintenance;
+  return `
+    <div class="section-title">Обслуживание</div>
+    <div class="maint-table">
+      <div class="maint-row">
+        <span class="maint-label">Common fee (плата за обслуживание)</span>
+        <span class="maint-val">${m.common_fee.amount} ${m.common_fee.unit}</span>
+      </div>
+      <div class="maint-row">
+        <span class="maint-label">Sinking fund (накопительный фонд)</span>
+        <span class="maint-val">${m.sinking_fund.amount} ${m.sinking_fund.unit}</span>
+      </div>
+      <div class="maint-row">
+        <span class="maint-label">Регистрационный сбор — Фрихолд</span>
+        <span class="maint-val">${m.registration.freehold}</span>
+      </div>
+      <div class="maint-row">
+        <span class="maint-label">Регистрационный сбор — Лизхолд</span>
+        <span class="maint-val">${m.registration.leasehold}</span>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.6;">
+      ${m.notes}
+    </div>
+  `;
+}
+
+// ── Files ─────────────────────────────────────
+function renderFiles(d) {
+  const icons = { pdf: '📄', folder: '📁', link: '🔗' };
+  const items = d.files.map(f => `
+    <a class="file-item" href="${f.url}" target="_blank">
+      <span class="file-icon">${icons[f.type] || '📄'}</span>
+      <span class="file-name">${f.name}</span>
+      <span class="file-type">${f.type.toUpperCase()}</span>
+      <span class="file-arrow">↗</span>
+    </a>
+  `).join('');
+  return `
+    <div class="section-title">Файлы проекта</div>
+    <div class="files-list">${items}</div>
+    <div style="margin-top:16px;">
+      <a class="file-item" href="${d.drive_root}" target="_blank" style="border-color:var(--project-color);">
+        <span class="file-icon">🗂️</span>
+        <span class="file-name">Открыть весь Google Drive</span>
+        <span class="file-arrow">↗</span>
+      </a>
+    </div>
+  `;
+}
+
+// ── Sidebar ─────────────────────────────────────
+function renderSidebar(d) {
+  const r = d.agent_reward;
+  document.getElementById('sidebarCol').innerHTML = `
+    <!-- Reward card (agent only) -->
+    <div class="reward-card">
+      <div class="reward-label">🎯 Ваше вознаграждение</div>
+      <div class="reward-pct">${r.percent_from}–${r.percent_to}<span class="reward-pct-suffix">%</span></div>
+      <div class="reward-rows">
+        <div class="reward-row">
+          <span class="reward-row-label">Шкала</span>
+          <span class="reward-row-val">${r.scale}</span>
+        </div>
+        <div class="reward-row">
+          <span class="reward-row-label">Срок выплаты</span>
+          <span class="reward-row-val">${r.payment_days} дней</span>
+        </div>
+      </div>
+      <div class="reward-note">${r.note}</div>
+    </div>
+
+    <!-- Price -->
+    <div class="price-card">
+      <div class="price-from-label">Цена от</div>
+      <div class="price-from-val">${fmtMln(d.price_from)}</div>
+      <div class="price-to">до ${fmtMln(d.price_to)}</div>
+    </div>
+
+    <!-- Project info -->
+    <div class="info-card">
+      <div class="info-card-title">О проекте</div>
+      <div class="info-rows">
+        <div class="info-row"><span class="info-row-label">Застройщик</span><span class="info-row-val">${d.developer}</span></div>
+        <div class="info-row"><span class="info-row-label">Район</span><span class="info-row-val">${d.district}</span></div>
+        <div class="info-row"><span class="info-row-label">Этажей</span><span class="info-row-val">${d.floors}</span></div>
+        <div class="info-row"><span class="info-row-label">Корпусов</span><span class="info-row-val">${d.buildings.length}</span></div>
+        <div class="info-row"><span class="info-row-label">Сдача</span><span class="info-row-val">${d.completion}</span></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <button class="action-btn primary" onclick="window.open('${d.drive_root}','_blank')">
+      📂 Google Drive проекта
+    </button>
+    <button class="action-btn secondary" onclick="window.open('https://t.me/phuket_proptech_bot','_blank')">
+      💬 Написать в бот
+    </button>
+  `;
+}
+
+// ── Init ─────────────────────────────────────
+loadProject();
+</script>
+</body>
+</html>
