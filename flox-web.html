@@ -1129,22 +1129,29 @@ async function loadActivity() {
   if (!offers.length) { el.innerHTML = '<div class="empty-page">Нет активности</div>'; return; }
 
   const ids = offers.map(o=>o.id).join(',');
-  const [vr,br] = await Promise.all([
+  const [vr,br,pvr] = await Promise.all([
     h(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id`),
-    h(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`)
+    h(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`),
+    h(`${SUPABASE_URL}/offer_viewing_requests?offer_id=in.(${ids})&select=offer_id,unit_id,viewing_date,units(room_no)`)
   ]);
   const views = await vr.json();
   const bookings = await br.json();
+  const viewingRaw = await pvr.json(); const viewingReqs = Array.isArray(viewingRaw) ? viewingRaw : [];
   const viewMap = views.reduce((m,v)=>{m[v.offer_id]=(m[v.offer_id]||0)+1;return m;},{});
   const bookMap = bookings.reduce((m,b)=>{(m[b.offer_id]=m[b.offer_id]||[]).push(b.units?.room_no);return m;},{});
+  const viewingMap = viewingReqs.reduce((m,r)=>{(m[r.offer_id]=m[r.offer_id]||[]).push({room:r.units?.room_no||r.unit_id,date:r.viewing_date});return m;},{});
 
   el.innerHTML = offers.map(o => {
-    const vc = viewMap[o.id]||0, bc = bookMap[o.id]||[];
+    const vc = viewMap[o.id]||0, bc = bookMap[o.id]||[], vreqs = viewingMap[o.id]||[];
     const units = (o.unit_ids||[]).length;
     let events = [];
     if (vc) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>Открыто ${vc} раз${vc===1?'':'а'}</div>`);
     if (bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--red)"></div>Забронировал: ${bc.join(', ')}</div>`);
-    if (!vc&&!bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
+    if (vreqs.length) vreqs.forEach(r => {
+      const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';
+      events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--green)"></div>Запись на просмотр: ${r.room}${dateStr?' — '+dateStr:''}</div>`);
+    });
+    if (!vc&&!bc.length&&!vreqs.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
     return `
       <div class="activity-card">
         <div class="act-client">${o.client_name||'Клиент'}</div>
