@@ -519,23 +519,13 @@ async function identifyAgent(){
 
   const found = await fetch(`${SUPABASE_URL}/agents?telegram_id=eq.${tgUser.id}&select=*`, {headers: SB_HEADERS});
   const foundRows = await found.json();
-  if(foundRows.length) return foundRows[0];
-
-  const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || 'Агент';
-  const created = await fetch(`${SUPABASE_URL}/agents`, {
-    method: 'POST',
-    headers: {...SB_HEADERS, Prefer: 'return=representation'},
-    body: JSON.stringify({
-      telegram_id: tgUser.id,
-      full_name: fullName,
-      avatar_url: tgUser.photo_url || null,
-      is_founding_agent: true,
-      commission_rate_pct: 7,
-    }),
-  });
-  if(!created.ok) return null;
-  const rows = await created.json();
-  return rows[0] || null;
+  if(foundRows.length) {
+    // Save to localStorage for flox-web.html
+    localStorage.setItem('flox-agent', JSON.stringify(foundRows[0]));
+    return foundRows[0];
+  }
+  // Not registered — show registration prompt
+  return null;
 }
 
 function renderTopbar(){
@@ -970,9 +960,26 @@ async function init(){
   document.getElementById('ticker').innerHTML = '';
   try {
     CURRENT_AGENT = await identifyAgent().catch(()=>null);
-    // Save to localStorage so flox-web.html can read it
-    if (CURRENT_AGENT) {
-      localStorage.setItem('flox-agent', JSON.stringify(CURRENT_AGENT));
+    if (!CURRENT_AGENT && window.Telegram?.WebApp?.initDataUnsafe?.user) {
+      // Agent opened via bot but not registered yet
+      document.getElementById('list').innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;gap:16px;">
+          <div style="font-size:48px">👋</div>
+          <div style="font-size:18px;font-weight:700">Добро пожаловать в Flox!</div>
+          <div style="font-size:14px;color:var(--muted);max-width:280px;line-height:1.6">
+            Чтобы получить доступ к каталогу, пройди быструю регистрацию через бота — это займёт меньше минуты.
+          </div>
+          <a href="https://t.me/phuket_proptech_bot" style="
+            display:inline-flex;align-items:center;gap:8px;
+            background:var(--accent);color:#fff;
+            padding:12px 24px;border-radius:12px;
+            font-size:14px;font-weight:600;text-decoration:none;
+            margin-top:8px;
+          ">
+            Зарегистрироваться в боте →
+          </a>
+        </div>`;
+      return;
     }
     renderTopbar();
     UNITS = await loadUnitsFromSupabase();
