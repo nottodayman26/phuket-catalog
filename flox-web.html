@@ -423,9 +423,9 @@ input,button{font-family:inherit;}
   <div class="logo">flox<span class="logo-dot"></span></div>
   <nav class="nav">
     <div class="nav-item act" data-page="search" onclick="setPage('search')">Поиск</div>
-    <div class="nav-dropdown-wrap">
-      <div class="nav-item" id="navTools" onclick="toggleDropdown('tools',this)">Инструменты</div>
-      <div class="dropdown" id="dropdownTools">
+    <div class="nav-dropdown-wrap" onmouseenter="openDropdown('tools')" onmouseleave="scheduleClose('tools')">
+      <div class="nav-item" id="navTools">Инструменты</div>
+      <div class="dropdown" id="dropdownTools" onmouseenter="cancelClose('tools')" onmouseleave="scheduleClose('tools')">
         <div class="dropdown-title">Инструменты</div>
         <div class="dropdown-item" onclick="openPage('offers')">
           <div class="dropdown-icon">📋</div>
@@ -436,9 +436,9 @@ input,button{font-family:inherit;}
         </div>
       </div>
     </div>
-    <div class="nav-dropdown-wrap">
-      <div class="nav-item" id="navClients" onclick="toggleDropdown('clients',this)">Клиенты</div>
-      <div class="dropdown" id="dropdownClients">
+    <div class="nav-dropdown-wrap" onmouseenter="openDropdown('clients')" onmouseleave="scheduleClose('clients')">
+      <div class="nav-item" id="navClients">Клиенты</div>
+      <div class="dropdown" id="dropdownClients" onmouseenter="cancelClose('clients')" onmouseleave="scheduleClose('clients')">
         <div class="dropdown-title">Клиенты</div>
         <div class="dropdown-item" onclick="openPage('activity')">
           <div class="dropdown-icon">📊</div>
@@ -1161,7 +1161,7 @@ async function loadActivity() {
     const units = (o.unit_ids||[]).length;
     let events = [];
     if (vc) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>Открыто ${vc} раз${vc===1?'':'а'}</div>`);
-    if (bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--red)"></div>Забронировал: ${bc.join(', ')}</div>`);
+    if (bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--red)"></div>Хочет забронировать: ${bc.join(', ')}</div>`);
     if (vreqs.length) vreqs.forEach(r => {
       const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';
       events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--green)"></div>Запись на просмотр — ${dateStr}</div>`);
@@ -1252,20 +1252,29 @@ function toggleMeeting() {
 applyMeetingMode();
 
 
-// ── DROPDOWNS ────────────────────────────
-function toggleDropdown(name, btn) {
-  const dd = document.getElementById('dropdown' + name.charAt(0).toUpperCase() + name.slice(1));
-  const isVis = dd.classList.contains('vis');
+// ── DROPDOWNS (hover) ────────────────────
+const closeTimers = {};
+
+function openDropdown(name) {
+  cancelClose(name);
   closeAllDropdowns();
-  if (!isVis) {
-    dd.classList.add('vis');
-    btn.classList.add('dd-open');
-  }
+  const dd = document.getElementById('dropdown' + name.charAt(0).toUpperCase() + name.slice(1));
+  if (dd) dd.classList.add('vis');
+}
+
+function scheduleClose(name) {
+  closeTimers[name] = setTimeout(() => {
+    const dd = document.getElementById('dropdown' + name.charAt(0).toUpperCase() + name.slice(1));
+    if (dd) dd.classList.remove('vis');
+  }, 180);
+}
+
+function cancelClose(name) {
+  clearTimeout(closeTimers[name]);
 }
 
 function closeAllDropdowns() {
   document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('vis'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('dd-open'));
 }
 
 function openPage(name) {
@@ -1273,9 +1282,6 @@ function openPage(name) {
   setPage(name);
 }
 
-document.addEventListener('click', e => {
-  if (!e.target.closest('.nav-dropdown-wrap')) closeAllDropdowns();
-});
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllDropdowns(); });
 
 // ── AGENT POPOVER ────────────────────────

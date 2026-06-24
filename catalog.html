@@ -920,7 +920,7 @@ async function openHistory(){
       const extra = [];
       if(myBookings.length){
         const rooms = myBookings.map(b=>(b.units||{}).room_no).filter(Boolean).join(', ');
-        extra.push(`<div class="hist-status booked"><span class="dot"></span>Забронировал: ${rooms}</div>`);
+        extra.push(`<div class="hist-status booked"><span class="dot"></span>Хочет забронировать: ${rooms}</div>`);
       }
       if(myViewings.length){
         const list = myViewings.map(v=>`${(v.units||{}).room_no} — ${fmtDateRu(v.requested_date)}`).join('; ');
