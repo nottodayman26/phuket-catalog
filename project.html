@@ -697,19 +697,17 @@ let meetingMode = localStorage.getItem('flox-meeting') === 'true';
 function applyMeetingMode() {
   const btn = document.getElementById('meetingBtnProj');
   const label = document.getElementById('meetingBtnLabel');
-  const logo = document.getElementById('topbarLogo');
-  const reward = document.querySelector('.reward-card');
 
   if (meetingMode) {
     if (btn) btn.classList.add('act');
     if (label) label.textContent = 'Режим встречи';
-    if (logo) logo.style.visibility = 'hidden';
-    if (reward) reward.style.display = 'none';
+    document.documentElement.style.setProperty('--meeting-logo-vis', 'hidden');
+    document.documentElement.style.setProperty('--meeting-reward-display', 'none');
   } else {
     if (btn) btn.classList.remove('act');
     if (label) label.textContent = 'Встреча';
-    if (logo) logo.style.visibility = 'visible';
-    if (reward) reward.style.display = '';
+    document.documentElement.style.setProperty('--meeting-logo-vis', 'visible');
+    document.documentElement.style.setProperty('--meeting-reward-display', 'block');
   }
 }
 
