@@ -70,6 +70,21 @@ a { color: inherit; text-decoration: none; }
   transition: background .15s;
 }
 .theme-btn:hover { background: var(--surface-3); }
+.topbar-logo { font-size:20px;font-weight:700;letter-spacing:-0.05em;text-decoration:none;color:var(--text); }
+.topbar-nav { display:flex;align-items:center;gap:2px;margin-left:16px; }
+.tnav-item {
+  padding:5px 12px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--muted);text-decoration:none;transition:background .15s,color .15s;
+}
+.tnav-item:hover { background:var(--surface-2);color:var(--text); }
+.meeting-btn-proj {
+  display:flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:8px;border:1px solid var(--line-2);
+  background:none;color:var(--muted);font-size:11px;font-weight:500;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.meeting-btn-proj:hover { border-color:var(--accent);color:var(--accent); }
+.meeting-btn-proj.act { background:var(--accent);border-color:var(--accent);color:#fff; }
 
 /* ── HERO ─── */
 .hero {
@@ -344,14 +359,19 @@ a { color: inherit; text-decoration: none; }
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-back" onclick="history.back()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-    Назад
-  </div>
-  <div class="topbar-logo">
+  <a class="topbar-logo" id="topbarLogo" href="flox-web.html">
     flox<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:1px;margin-bottom:8px;vertical-align:bottom"></span>
-  </div>
+  </a>
+  <nav class="topbar-nav">
+    <a class="tnav-item" href="flox-web.html">Поиск</a>
+    <a class="tnav-item" href="flox-web.html#offers" onclick="localStorage.setItem('flox-page','offers')">Инструменты</a>
+    <a class="tnav-item" href="flox-web.html#activity" onclick="localStorage.setItem('flox-page','activity')">Клиенты</a>
+  </nav>
   <div class="topbar-right">
+    <button class="meeting-btn-proj" id="meetingBtnProj" onclick="toggleMeeting()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <span id="meetingBtnLabel">Встреча</span>
+    </button>
     <button class="theme-btn" onclick="toggleTheme()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
     </button>
@@ -405,6 +425,7 @@ function renderProject(d) {
 
   renderHero(d);
   renderSidebar(d);
+  setTimeout(applyMeetingMode, 50);
 
   document.getElementById('mainCol').innerHTML = `
     <div class="proj-header">

@@ -56,6 +56,14 @@ input,button{font-family:inherit;}
   display:flex;align-items:center;justify-content:center;
 }
 .theme-btn:hover{background:var(--surface-3);}
+.meeting-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:8px;border:1px solid var(--line-2);
+  background:none;color:var(--muted);font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.meeting-btn:hover{border-color:var(--accent);color:var(--accent);}
+.meeting-btn.act{background:var(--accent);border-color:var(--accent);color:#fff;}
 
 /* ── PAGES ─── */
 .page{display:none;min-height:calc(100vh - 52px);}
@@ -324,6 +332,10 @@ input,button{font-family:inherit;}
   </nav>
   <div class="topbar-right">
     <div class="agent-avatar" id="agentAvatar">ИК</div>
+    <button class="meeting-btn" id="meetingBtn" onclick="toggleMeeting()" title="Режим встречи с клиентом">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Встреча с клиентом
+    </button>
     <button class="theme-btn" onclick="toggleTheme()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
     </button>
@@ -513,7 +525,7 @@ const COMPLETION_OPTIONS = [
 
 // ── STATE ─────────────────────────────────
 let AGENT = null;
-let filters = { unitTypes: null, price: null, completion: null };
+let filters = { propType: 'condo', unitTypes: null, price: null, completion: null };
 let tmpType = 'all';
 let tmpCompletion = null;
 
@@ -537,12 +549,24 @@ function setPage(name) {
 }
 
 // ── TYPE SELECTOR (top) ───────────────────
-const UNIT_TYPES = ['Студия','1 Bedroom','2 Bedroom','3 Bedroom','Penthouse'];
+const UNIT_TYPES = ['Студия','1 Bedroom','1 Bedroom Plus','2 Bedroom','2 Bedroom Penthouse','3 Bedroom'];
 let tmpUnitTypes = [];
 
 function selectType(type, btn) {
   document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('act'));
   btn.classList.add('act');
+  filters.propType = type;
+  // If villa/townhouse selected — show empty state (no projects yet)
+  if (type !== 'condo') {
+    document.getElementById('searchResults').innerHTML = `
+      <div class="no-results">
+        <div class="no-results-icon">🏗️</div>
+        <div style="font-weight:600;margin-bottom:6px;">Скоро появятся</div>
+        <div style="font-size:13px;">Виллы и таунхаусы — в разработке.<br>Сейчас доступны только кондоминиумы.</div>
+      </div>`;
+  } else {
+    clearResults();
+  }
 }
 
 // ── FUZZY ─────────────────────────────────
@@ -565,6 +589,7 @@ function matchProject(q, p) {
 
 // ── FILTER PROJECTS ───────────────────────
 function applyFilters(list) {
+  if (filters.propType && filters.propType !== 'condo') return [];
   return list.filter(p => {
     if (filters.price) {
       if (filters.price.min && p.priceTo < filters.price.min) return false;
@@ -990,13 +1015,21 @@ async function loadActivity() {
 
 // ── AGENT ─────────────────────────────────
 async function initAgent() {
+  // Try localStorage first (set by webapp/catalog.html or previous session)
   const saved = localStorage.getItem('flox-agent');
-  if (saved) { AGENT = JSON.parse(saved); renderAgent(); return; }
+  if (saved) {
+    try { AGENT = JSON.parse(saved); renderAgent(); return; } catch(e) {}
+  }
+  // Try Telegram WebApp
   if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
     const tg = window.Telegram.WebApp.initDataUnsafe.user;
     const r = await h(`${SUPABASE_URL}/agents?telegram_id=eq.${tg.id}&select=*`);
     const agents = await r.json();
-    if (agents.length) { AGENT = agents[0]; localStorage.setItem('flox-agent',JSON.stringify(AGENT)); renderAgent(); }
+    if (agents.length) {
+      AGENT = agents[0];
+      localStorage.setItem('flox-agent', JSON.stringify(AGENT));
+      renderAgent();
+    }
   }
 }
 function renderAgent() {
@@ -1011,6 +1044,29 @@ function timeAgo(iso) {
   if (d<86400) return Math.floor(d/3600)+' ч назад';
   return Math.floor(d/86400)+' дн назад';
 }
+
+// ── MEETING MODE ─────────────────────────
+let meetingMode = localStorage.getItem('flox-meeting') === 'true';
+
+function applyMeetingMode() {
+  const btn = document.getElementById('meetingBtn');
+  if (meetingMode) {
+    btn.classList.add('act');
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Режим встречи`;
+    localStorage.setItem('flox-meeting', 'true');
+  } else {
+    btn.classList.remove('act');
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Встреча с клиентом`;
+    localStorage.setItem('flox-meeting', 'false');
+  }
+}
+
+function toggleMeeting() {
+  meetingMode = !meetingMode;
+  applyMeetingMode();
+}
+
+applyMeetingMode();
 
 initAgent();
 </script>
