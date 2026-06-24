@@ -1,0 +1,137 @@
+{
+  "id": "OLN",
+  "name": "The Olive Naiyang",
+  "color": "#8FAB5F",
+  "developer": "Rhom Bho Property PLC",
+  "district": "Nai Yang",
+  "amphoe": "Amphoe Thalang",
+  "districtRu": "Най Янг",
+  "status": "Under Construction",
+  "completion": "Q2 2026",
+  "completionYear": 2026,
+  "completionQ": 2,
+  "price_from": 3961000,
+  "price_to": 9279100,
+  "currency": "THB",
+  "floors": 8,
+  "buildings": [
+    "A",
+    "B"
+  ],
+  "coords": {
+    "lat": 8.18,
+    "lng": 98.302
+  },
+  "unit_types": [
+    {
+      "type": "1 спальня",
+      "bedrooms": 1,
+      "area_from": 31,
+      "area_to": 34,
+      "price_from": 3961000,
+      "price_to": 4868000,
+      "color": "#5E17EB"
+    },
+    {
+      "type": "1 спальня+",
+      "bedrooms": 1,
+      "area_from": 44,
+      "area_to": 52,
+      "price_from": 5638300,
+      "price_to": 7223900,
+      "color": "#4ECDC4"
+    },
+    {
+      "type": "2 спальни",
+      "bedrooms": 2,
+      "area_from": 55,
+      "area_to": 63,
+      "price_from": 7177100,
+      "price_to": 9279100,
+      "color": "#E88FB4"
+    }
+  ],
+  "gallery": {
+    "local": [],
+    "sections": []
+  },
+  "description": "The Olive Naiyang — кондоминиум в районе Най Янг от Rhom Bho Property PLC. 2 корпуса, 8 этажей, юниты от 1 спальни до 2 спален.",
+  "facilities": [
+    "Бассейн",
+    "Фитнес-центр",
+    "Парковка",
+    "Охрана",
+    "Лобби"
+  ],
+  "nearby": [
+    {
+      "name": "Nai Yang Beach",
+      "icon": "🏖️",
+      "time": "5 мин",
+      "dist": "700 м"
+    },
+    {
+      "name": "Phuket International Airport",
+      "icon": "✈️",
+      "time": "10 мин",
+      "dist": "6 км"
+    },
+    {
+      "name": "Central Phuket",
+      "icon": "🛍️",
+      "time": "35 мин",
+      "dist": "28 км"
+    }
+  ],
+  "payment_schedule": [
+    {
+      "stage": "Booking deposit",
+      "percent": 0,
+      "note": "100,000 / 200,000 THB"
+    },
+    {
+      "stage": "Contract payment",
+      "percent": 25,
+      "note": ""
+    },
+    {
+      "stage": "1st Installment",
+      "percent": 25,
+      "note": ""
+    },
+    {
+      "stage": "2nd Installment",
+      "percent": 25,
+      "note": ""
+    },
+    {
+      "stage": "Transfer of ownership",
+      "percent": 25,
+      "note": ""
+    }
+  ],
+  "maintenance": {
+    "common_fee": {
+      "amount": 850,
+      "unit": "THB/м²/мес"
+    },
+    "sinking_fund": {
+      "amount": 85,
+      "unit": "THB/м² (разово)"
+    },
+    "registration": {
+      "freehold": "уточняется",
+      "leasehold": "уточняется"
+    },
+    "notes": "Common fee 850 THB/м²/мес · Sinking fund 85 THB/м²"
+  },
+  "agent_reward": {
+    "percent_from": 0,
+    "percent_to": 0,
+    "scale": "уточняется",
+    "payment_days": 0,
+    "note": "Данные уточняются"
+  },
+  "files": [],
+  "drive_root": "https://drive.google.com"
+}

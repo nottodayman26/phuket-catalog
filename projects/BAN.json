@@ -1,0 +1,144 @@
+{
+  "id": "BAN",
+  "name": "Balcony Naiyang",
+  "color": "#6B9BC2",
+  "developer": "Rhom Bho Property PLC",
+  "district": "Nai Yang",
+  "amphoe": "Amphoe Thalang",
+  "districtRu": "Най Янг",
+  "status": "Under Construction",
+  "completion": "Q4 2026",
+  "completionYear": 2026,
+  "completionQ": 4,
+  "price_from": 5794300,
+  "price_to": 11950300,
+  "currency": "THB",
+  "floors": 5,
+  "buildings": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I"
+  ],
+  "coords": {
+    "lat": 8.1847,
+    "lng": 98.3003
+  },
+  "unit_types": [
+    {
+      "type": "1 спальня",
+      "bedrooms": 1,
+      "area_from": 33,
+      "area_to": 50,
+      "price_from": 5728900,
+      "price_to": 9636700,
+      "color": "#5E17EB"
+    },
+    {
+      "type": "1 спальня+",
+      "bedrooms": 1,
+      "area_from": 44,
+      "area_to": 45,
+      "price_from": 7391700,
+      "price_to": 8439600,
+      "color": "#4ECDC4"
+    },
+    {
+      "type": "2 спальни",
+      "bedrooms": 2,
+      "area_from": 50,
+      "area_to": 66,
+      "price_from": 8367300,
+      "price_to": 11950300,
+      "color": "#E88FB4"
+    }
+  ],
+  "gallery": {
+    "local": [],
+    "sections": []
+  },
+  "description": "The Balcony Naiyang — кондоминиум в районе Най Янг от Rhom Bho Property PLC. Расположен рядом с пляжем Най Янг и международным аэропортом Пхукета. 9 корпусов, 5 этажей.",
+  "facilities": [
+    "Бассейн",
+    "Фитнес-центр",
+    "Парковка",
+    "Охрана",
+    "Лобби"
+  ],
+  "nearby": [
+    {
+      "name": "Nai Yang Beach",
+      "icon": "🏖️",
+      "time": "5 мин",
+      "dist": "600 м"
+    },
+    {
+      "name": "Phuket International Airport",
+      "icon": "✈️",
+      "time": "10 мин",
+      "dist": "6 км"
+    },
+    {
+      "name": "Central Phuket",
+      "icon": "🛍️",
+      "time": "35 мин",
+      "dist": "28 км"
+    }
+  ],
+  "payment_schedule": [
+    {
+      "stage": "Booking deposit",
+      "percent": 0,
+      "note": "100,000 THB"
+    },
+    {
+      "stage": "Contract payment",
+      "percent": 25,
+      "note": ""
+    },
+    {
+      "stage": "1st Installment",
+      "percent": 25,
+      "note": ""
+    },
+    {
+      "stage": "2nd Installment",
+      "percent": 25,
+      "note": ""
+    },
+    {
+      "stage": "Transfer of ownership",
+      "percent": 25,
+      "note": ""
+    }
+  ],
+  "maintenance": {
+    "common_fee": {
+      "amount": 85,
+      "unit": "THB/м²/мес"
+    },
+    "sinking_fund": {
+      "amount": 850,
+      "unit": "THB/м² (разово)"
+    },
+    "registration": {
+      "freehold": "уточняется",
+      "leasehold": "уточняется"
+    },
+    "notes": "Common fee 85 THB/м²/мес · Sinking fund 850 THB/м²"
+  },
+  "agent_reward": {
+    "percent_from": 0,
+    "percent_to": 0,
+    "scale": "уточняется",
+    "payment_days": 0,
+    "note": "Данные уточняются"
+  },
+  "files": [],
+  "drive_root": "https://drive.google.com"
+}

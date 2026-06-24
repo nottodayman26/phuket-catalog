@@ -9,35 +9,83 @@
   "amphoe": "Amphoe Kathu",
   "status": "Under Construction",
   "completion": "Q4 2027",
-  "price_from": 4200000,
-  "price_to": 19200000,
+  "price_from": 4201101,
+  "price_to": 19131284,
   "currency": "THB",
   "total_units": 200,
   "floors": 8,
-  "buildings": ["A", "B", "C", "D"],
-  "coords": { "lat": 7.9587, "lng": 98.2998 },
-
-  "unit_types": [
-    { "type": "1 Bedroom S",        "bedrooms": 1, "area_from": 30, "area_to": 35,  "price_from": 4200000,  "price_to": 5500000,  "color": "#7B3FF5" },
-    { "type": "1 Bedroom M",        "bedrooms": 1, "area_from": 35, "area_to": 42,  "price_from": 5300000,  "price_to": 7000000,  "color": "#7B3FF5" },
-    { "type": "1 Bedroom L",        "bedrooms": 1, "area_from": 42, "area_to": 52,  "price_from": 6500000,  "price_to": 9900000,  "color": "#7B3FF5" },
-    { "type": "1 Bedroom Plus",     "bedrooms": 1, "area_from": 50, "area_to": 60,  "price_from": 7300000,  "price_to": 8900000,  "color": "#4ECDC4" },
-    { "type": "2 Bedroom",          "bedrooms": 2, "area_from": 65, "area_to": 80,  "price_from": 8600000,  "price_to": 10600000, "color": "#E88FB4" },
-    { "type": "2 Bedroom Penthouse","bedrooms": 2, "area_from": 80, "area_to": 100, "price_from": 11900000, "price_to": 17600000, "color": "#A8C5E8" },
-    { "type": "2 BR Plus Penthouse","bedrooms": 2, "area_from": 100,"area_to": 130, "price_from": 16000000, "price_to": 19200000, "color": "#5B8CDB" }
+  "buildings": [
+    "A",
+    "B",
+    "C",
+    "D"
   ],
-
+  "coords": {
+    "lat": 7.9587,
+    "lng": 98.2998
+  },
+  "unit_types": [
+    {
+      "type": "1 спальня",
+      "bedrooms": 1,
+      "area_from": 30,
+      "area_to": 43,
+      "price_from": 4201101,
+      "price_to": 6297010,
+      "color": "#5E17EB"
+    },
+    {
+      "type": "1 спальня+",
+      "bedrooms": 1,
+      "area_from": 50,
+      "area_to": 55,
+      "price_from": 6646738,
+      "price_to": 8878870,
+      "color": "#4ECDC4"
+    },
+    {
+      "type": "2 спальни",
+      "bedrooms": 2,
+      "area_from": 60,
+      "area_to": 66,
+      "price_from": 7990467,
+      "price_to": 10583928,
+      "color": "#E88FB4"
+    },
+    {
+      "type": "Пентхаус",
+      "bedrooms": 2,
+      "area_from": 89,
+      "area_to": 128,
+      "price_from": 11912757,
+      "price_to": 19131284,
+      "color": "#C9A84C"
+    }
+  ],
   "gallery": {
-    "local": ["1.avif", "2.avif", "3.avif", "4.avif", "5.avif"],
+    "local": [
+      "1.avif",
+      "2.avif",
+      "3.avif",
+      "4.avif",
+      "5.avif"
+    ],
     "sections": [
-      { "name": "Exterior",           "url": "https://drive.google.com/drive/folders/1PKKXdTjJXIovEe5vz4xq39zc68_hg3DG" },
-      { "name": "Interior",           "url": "https://drive.google.com/drive/folders/19LSJh-yCrOUFQWnWLJj4QOT93GMs1OjT" },
-      { "name": "Mingle Crystal Lake","url": "https://drive.google.com/drive/folders/14KBrf9CRC66PmdiS7-4um2KIK4bNpSu_" }
+      {
+        "name": "Exterior",
+        "url": "https://drive.google.com/drive/folders/1PKKXdTjJXIovEe5vz4xq39zc68_hg3DG"
+      },
+      {
+        "name": "Interior",
+        "url": "https://drive.google.com/drive/folders/19LSJh-yCrOUFQWnWLJj4QOT93GMs1OjT"
+      },
+      {
+        "name": "Mingle Crystal Lake",
+        "url": "https://drive.google.com/drive/folders/14KBrf9CRC66PmdiS7-4um2KIK4bNpSu_"
+      }
     ]
   },
-
   "description": "The Title Vivana — boutique-проект в Камала, Пхукет, от застройщика Rhom Bho Property PLC. Проект сочетает средиземноморскую архитектуру с тропической природой острова. В центре комплекса — кристальное озеро Mingle Crystal Lake с лагунным бассейном, окружённое садами и зонами отдыха. 4 корпуса (A, B, C, D), 8 этажей, 200+ юнитов от студий до пентхаусов.",
-
   "facilities": [
     "Mingle Crystal Lake (лагунный бассейн)",
     "Фитнес-центр",
@@ -46,32 +94,90 @@
     "Зоны отдыха у воды",
     "Сад"
   ],
-
   "nearby": [
-    { "name": "Kamala Beach",                 "icon": "🏖️", "time": "5 мин",  "dist": "600 м" },
-    { "name": "Phuket International Airport", "icon": "✈️", "time": "25 мин", "dist": "22 км" },
-    { "name": "Central Phuket",               "icon": "🛍️", "time": "20 мин", "dist": "14 км" },
-    { "name": "Headstart Int. School",        "icon": "🏫", "time": "10 мин", "dist": "7 км" },
-    { "name": "Bangkok Hospital Phuket",      "icon": "🏥", "time": "15 мин", "dist": "11 км" }
+    {
+      "name": "Kamala Beach",
+      "icon": "🏖️",
+      "time": "5 мин",
+      "dist": "600 м"
+    },
+    {
+      "name": "Phuket International Airport",
+      "icon": "✈️",
+      "time": "25 мин",
+      "dist": "22 км"
+    },
+    {
+      "name": "Central Phuket",
+      "icon": "🛍️",
+      "time": "20 мин",
+      "dist": "14 км"
+    },
+    {
+      "name": "Headstart Int. School",
+      "icon": "🏫",
+      "time": "10 мин",
+      "dist": "7 км"
+    },
+    {
+      "name": "Bangkok Hospital Phuket",
+      "icon": "🏥",
+      "time": "15 мин",
+      "dist": "11 км"
+    }
   ],
-
   "payment_schedule": [
-    { "stage": "Reservation",           "percent": 2,  "note": "Бронирование" },
-    { "stage": "Sign Contract (SPA)",   "percent": 28, "note": "В течение 30 дней" },
-    { "stage": "Foundation Complete",   "percent": 15, "note": "По завершению фундамента" },
-    { "stage": "Structure Complete",    "percent": 15, "note": "По завершению конструкции" },
-    { "stage": "Rooftop Complete",      "percent": 10, "note": "По завершению кровли" },
-    { "stage": "Interior & Finishing",  "percent": 20, "note": "Отделочные работы" },
-    { "stage": "Transfer of Ownership", "percent": 10, "note": "Передача ключей" }
+    {
+      "stage": "Reservation",
+      "percent": 2,
+      "note": "Бронирование"
+    },
+    {
+      "stage": "Sign Contract (SPA)",
+      "percent": 28,
+      "note": "В течение 30 дней"
+    },
+    {
+      "stage": "Foundation Complete",
+      "percent": 15,
+      "note": "По завершению фундамента"
+    },
+    {
+      "stage": "Structure Complete",
+      "percent": 15,
+      "note": "По завершению конструкции"
+    },
+    {
+      "stage": "Rooftop Complete",
+      "percent": 10,
+      "note": "По завершению кровли"
+    },
+    {
+      "stage": "Interior & Finishing",
+      "percent": 20,
+      "note": "Отделочные работы"
+    },
+    {
+      "stage": "Transfer of Ownership",
+      "percent": 10,
+      "note": "Передача ключей"
+    }
   ],
-
   "maintenance": {
-    "common_fee":   { "amount": 0,   "unit": "уточняется" },
-    "sinking_fund": { "amount": 0,   "unit": "уточняется" },
-    "registration": { "freehold": "уточняется", "leasehold": "уточняется" },
+    "common_fee": {
+      "amount": 0,
+      "unit": "уточняется"
+    },
+    "sinking_fund": {
+      "amount": 0,
+      "unit": "уточняется"
+    },
+    "registration": {
+      "freehold": "уточняется",
+      "leasehold": "уточняется"
+    },
     "notes": "Данные уточняются"
   },
-
   "agent_reward": {
     "percent_from": 0,
     "percent_to": 0,
@@ -79,13 +185,27 @@
     "payment_days": 0,
     "note": "Данные уточняются"
   },
-
   "files": [
-    { "name": "E-Brochure",       "type": "folder", "url": "https://drive.google.com/drive/folders/1PKKXdTjJXIovEe5vz4xq39zc68_hg3DG" },
-    { "name": "Floor Plans",      "type": "folder", "url": "https://drive.google.com/drive/folders/19LSJh-yCrOUFQWnWLJj4QOT93GMs1OjT" },
-    { "name": "Payment Schedule", "type": "folder", "url": "https://drive.google.com/drive/folders/14KBrf9CRC66PmdiS7-4um2KIK4bNpSu_" },
-    { "name": "Master Plan (PDF актуальный)", "type": "pdf", "url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ" }
+    {
+      "name": "E-Brochure",
+      "type": "folder",
+      "url": "https://drive.google.com/drive/folders/1PKKXdTjJXIovEe5vz4xq39zc68_hg3DG"
+    },
+    {
+      "name": "Floor Plans",
+      "type": "folder",
+      "url": "https://drive.google.com/drive/folders/19LSJh-yCrOUFQWnWLJj4QOT93GMs1OjT"
+    },
+    {
+      "name": "Payment Schedule",
+      "type": "folder",
+      "url": "https://drive.google.com/drive/folders/14KBrf9CRC66PmdiS7-4um2KIK4bNpSu_"
+    },
+    {
+      "name": "Master Plan (PDF актуальный)",
+      "type": "pdf",
+      "url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ"
+    }
   ],
-
   "drive_root": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ"
 }

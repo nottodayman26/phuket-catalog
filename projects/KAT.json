@@ -1,0 +1,156 @@
+{
+  "id": "KAT",
+  "name": "KataBello",
+  "color": "#7BAF6E",
+  "developer": "Rhom Bho Property PLC",
+  "district": "Kata",
+  "amphoe": "Amphoe Mueang",
+  "districtRu": "Ката",
+  "status": "Under Construction",
+  "completion": "Q2 2027",
+  "completionYear": 2027,
+  "completionQ": 2,
+  "price_from": 4620000,
+  "price_to": 20286000,
+  "currency": "THB",
+  "floors": 7,
+  "buildings": [
+    "A",
+    "C",
+    "F",
+    "G",
+    "H"
+  ],
+  "coords": {
+    "lat": 7.8209,
+    "lng": 98.2994
+  },
+  "unit_types": [
+    {
+      "type": "1 спальня",
+      "bedrooms": 1,
+      "area_from": 28,
+      "area_to": 41,
+      "price_from": 4620000,
+      "price_to": 6142000,
+      "color": "#5E17EB"
+    },
+    {
+      "type": "1 спальня+",
+      "bedrooms": 1,
+      "area_from": 44,
+      "area_to": 61,
+      "price_from": 6956000,
+      "price_to": 10675000,
+      "color": "#4ECDC4"
+    },
+    {
+      "type": "2 спальни",
+      "bedrooms": 2,
+      "area_from": 66,
+      "area_to": 66,
+      "price_from": 9240000,
+      "price_to": 9438000,
+      "color": "#E88FB4"
+    },
+    {
+      "type": "Пентхаус",
+      "bedrooms": 3,
+      "area_from": 100,
+      "area_to": 138,
+      "price_from": 13300000,
+      "price_to": 20286000,
+      "color": "#C9A84C"
+    }
+  ],
+  "gallery": {
+    "local": [],
+    "sections": []
+  },
+  "description": "KataBello Phase II — кондоминиум в престижном районе Ката, Пхукет, от Rhom Bho Property PLC. Рядом с пляжами Ката и Карон. 5 корпусов, 7 этажей, широкий выбор от 1 спальни до пентхаусов.",
+  "facilities": [
+    "Бассейн",
+    "Фитнес-центр",
+    "Парковка",
+    "Охрана",
+    "Лобби",
+    "Сад"
+  ],
+  "nearby": [
+    {
+      "name": "Kata Beach",
+      "icon": "🏖️",
+      "time": "5 мин",
+      "dist": "500 м"
+    },
+    {
+      "name": "Karon Beach",
+      "icon": "🏖️",
+      "time": "8 мин",
+      "dist": "1.5 км"
+    },
+    {
+      "name": "Phuket International Airport",
+      "icon": "✈️",
+      "time": "40 мин",
+      "dist": "35 км"
+    },
+    {
+      "name": "Central Phuket",
+      "icon": "🛍️",
+      "time": "25 мин",
+      "dist": "18 км"
+    }
+  ],
+  "payment_schedule": [
+    {
+      "stage": "Booking deposit",
+      "percent": 0,
+      "note": "уточняется"
+    },
+    {
+      "stage": "Contract payment",
+      "percent": 25,
+      "note": ""
+    },
+    {
+      "stage": "1st Installment",
+      "percent": 25,
+      "note": ""
+    },
+    {
+      "stage": "2nd Installment",
+      "percent": 25,
+      "note": ""
+    },
+    {
+      "stage": "Transfer of ownership",
+      "percent": 25,
+      "note": ""
+    }
+  ],
+  "maintenance": {
+    "common_fee": {
+      "amount": 80,
+      "unit": "THB/м²/мес"
+    },
+    "sinking_fund": {
+      "amount": 800,
+      "unit": "THB/м² (разово)"
+    },
+    "registration": {
+      "freehold": "уточняется",
+      "leasehold": "уточняется"
+    },
+    "notes": "Common fee 80 THB/м²/мес · Sinking fund 800 THB/м²"
+  },
+  "agent_reward": {
+    "percent_from": 0,
+    "percent_to": 0,
+    "scale": "уточняется",
+    "payment_days": 0,
+    "note": "Данные уточняются"
+  },
+  "files": [],
+  "drive_root": "https://drive.google.com"
+}
