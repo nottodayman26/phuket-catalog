@@ -70,7 +70,7 @@ a { color: inherit; text-decoration: none; }
   transition: background .15s;
 }
 .theme-btn:hover { background: var(--surface-3); }
-.topbar-logo { font-size:20px;font-weight:700;letter-spacing:-0.05em;text-decoration:none;color:var(--text); }
+.topbar-logo { font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);cursor:default; }
 .topbar-nav { display:flex;align-items:center;gap:2px;margin-left:16px; }
 .tnav-item {
   padding:5px 12px;border-radius:8px;font-size:13px;font-weight:500;
@@ -359,9 +359,7 @@ a { color: inherit; text-decoration: none; }
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <a class="topbar-logo" id="topbarLogo" href="flox-web.html">
-    flox<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:1px;margin-bottom:8px;vertical-align:bottom"></span>
-  </a>
+  <div class="topbar-logo" id="topbarLogo">flox<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:1px;margin-bottom:8px;vertical-align:bottom"></span></div>
   <nav class="topbar-nav">
     <a class="tnav-item" href="flox-web.html">Поиск</a>
     <a class="tnav-item" href="flox-web.html#offers" onclick="localStorage.setItem('flox-page','offers')">Инструменты</a>
@@ -425,7 +423,6 @@ function renderProject(d) {
 
   renderHero(d);
   renderSidebar(d);
-  setTimeout(applyMeetingMode, 50);
 
   document.getElementById('mainCol').innerHTML = `
     <div class="proj-header">
@@ -469,6 +466,9 @@ function renderProject(d) {
       c.style.display = (f === 'all' || c.dataset.bed === f) ? '' : 'none';
     });
   }));
+
+  // Apply meeting mode after full render
+  applyMeetingMode();
 }
 
 function renderHero(d) {

@@ -549,7 +549,16 @@ function setPage(name) {
 }
 
 // ── TYPE SELECTOR (top) ───────────────────
-const UNIT_TYPES = ['Студия','1 Bedroom','1 Bedroom Plus','2 Bedroom','2 Bedroom Penthouse','3 Bedroom'];
+// Unit type display buckets — each maps to room_type patterns
+const UNIT_TYPES = [
+  { label: 'Studio',    match: ['studio','студия'] },
+  { label: '1 BR',      match: ['1 bedroom','1br','1 bed'] },  // includes 1 BR Plus
+  { label: '2 BR',      match: ['2 bedroom','2br','2 bed'] },  // includes 2 BR Penthouse
+  { label: '3 BR',      match: ['3 bedroom','3br','3 bed'] },
+  { label: '4 BR',      match: ['4 bedroom','4br','4 bed'] },
+  { label: '5 BR+',     match: ['5 bedroom','5br','6 bedroom','6br'] },
+  { label: 'Penthouse', match: ['penthouse'] },
+];
 let tmpUnitTypes = [];
 
 function selectType(type, btn) {
@@ -761,7 +770,7 @@ function updateChips() {
   if (filters.unitTypes && filters.unitTypes.length) {
     const label = filters.unitTypes.join(', ');
     chips.push({label, key:'type'});
-    document.getElementById('filterTypeLabel').textContent = label.length > 14 ? label.slice(0,14)+'…' : label;
+    document.getElementById('filterTypeLabel').textContent = label.length > 16 ? label.slice(0,16)+'…' : label;
     document.getElementById('filterTypeBtn').classList.add('act');
   } else {
     document.getElementById('filterTypeLabel').textContent = 'Тип';
@@ -821,19 +830,19 @@ function closeTypeModal() { document.getElementById('typeModal').classList.remov
 
 function renderUnitTypeOptions() {
   document.getElementById('unitTypeOptions').innerHTML = UNIT_TYPES.map(t => {
-    const act = tmpUnitTypes.includes(t) ? 'act' : '';
-    return `<div class="type-option ${act}" onclick="toggleUnitType(this,'${t}')">
-      <div><div class="type-option-name">${t}</div></div>
+    const act = tmpUnitTypes.includes(t.label) ? 'act' : '';
+    return `<div class="type-option ${act}" onclick="toggleUnitType(this,'${t.label}')">
+      <div><div class="type-option-name">${t.label}</div></div>
       <div class="type-option-check"></div>
     </div>`;
   }).join('');
 }
 
-function toggleUnitType(el, type) {
-  const idx = tmpUnitTypes.indexOf(type);
+function toggleUnitType(el, label) {
+  const idx = tmpUnitTypes.indexOf(label);
   if (idx >= 0) tmpUnitTypes.splice(idx, 1);
-  else tmpUnitTypes.push(type);
-  el.classList.toggle('act', tmpUnitTypes.includes(type));
+  else tmpUnitTypes.push(label);
+  el.classList.toggle('act', tmpUnitTypes.includes(label));
 }
 
 function clearTypeModal() { tmpUnitTypes = []; renderUnitTypeOptions(); }
