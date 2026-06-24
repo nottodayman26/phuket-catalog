@@ -64,63 +64,44 @@ input,button{font-family:inherit;}
 }
 .meeting-btn:hover{border-color:var(--accent);color:var(--accent);}
 .meeting-btn.act{background:var(--accent);border-color:var(--accent);color:#fff;}
-/* ── DRAWERS ─── */
-.drawer-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-  z-index: 400; opacity: 0; pointer-events: none;
-  transition: opacity .25s;
+/* ── DROPDOWN MENUS ─── */
+.nav-dropdown-wrap { position: relative; }
+.dropdown {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  z-index: 400; min-width: 220px;
+  padding: 8px;
+  opacity: 0; pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity .18s, transform .18s;
 }
-.drawer-overlay.vis { opacity: 1; pointer-events: all; }
-.drawer {
-  position: fixed; top: 0; right: -360px; bottom: 0;
-  width: 320px; max-width: 90vw;
-  background: var(--surface); border-left: 0.5px solid var(--line);
-  z-index: 401; transition: right .28s cubic-bezier(0.32,0,0.15,1);
-  display: flex; flex-direction: column;
-  box-shadow: -8px 0 32px rgba(0,0,0,0.2);
+.dropdown.vis {
+  opacity: 1; pointer-events: all;
+  transform: translateY(0);
 }
-.drawer.vis { right: 0; }
-.drawer-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 20px; border-bottom: 0.5px solid var(--line);
-  flex-shrink: 0;
+.dropdown-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: 6px 10px 4px;
 }
-.drawer-title { font-size: 16px; font-weight: 700; }
-.drawer-close {
-  width: 30px; height: 30px; border-radius: 8px; border: none;
-  background: var(--surface-2); color: var(--muted); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; transition: background .15s;
+.dropdown-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  transition: background .12s; color: var(--text); text-decoration: none;
 }
-.drawer-close:hover { background: var(--surface-3); }
-.drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
-.drawer-menu-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px; border-radius: 12px; cursor: pointer;
-  border: 1px solid var(--line); margin-bottom: 8px;
-  transition: border-color .15s, background .15s;
-  text-decoration: none; color: var(--text);
-}
-.drawer-menu-item:hover { border-color: var(--accent); background: var(--accent-soft); }
-.drawer-menu-icon {
-  width: 36px; height: 36px; border-radius: 10px;
+.dropdown-item:hover { background: var(--surface-2); }
+.dropdown-icon {
+  width: 32px; height: 32px; border-radius: 8px;
   background: var(--accent-soft); color: var(--accent);
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px; flex-shrink: 0;
+  font-size: 15px; flex-shrink: 0;
 }
-.drawer-menu-label { font-size: 14px; font-weight: 500; }
-.drawer-menu-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.drawer-footer {
-  padding: 16px 20px; border-top: 0.5px solid var(--line); flex-shrink: 0;
-}
-.drawer-go-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 12px; border-radius: 12px;
-  background: var(--accent); color: #fff; border: none;
-  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
-  transition: opacity .15s;
-}
-.drawer-go-btn:hover { opacity: .88; }
+.dropdown-label { font-size: 13px; font-weight: 500; }
+.dropdown-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.nav-item.dd-open { background: var(--surface-2); color: var(--text); }
 
 
 /* ── PAGES ─── */
@@ -385,8 +366,32 @@ input,button{font-family:inherit;}
   <div class="logo">flox<span class="logo-dot"></span></div>
   <nav class="nav">
     <div class="nav-item act" data-page="search" onclick="setPage('search')">Поиск</div>
-    <div class="nav-item" id="navTools" onclick="openDrawer('tools')">Инструменты</div>
-    <div class="nav-item" id="navClients" onclick="openDrawer('clients')">Клиенты</div>
+    <div class="nav-dropdown-wrap">
+      <div class="nav-item" id="navTools" onclick="toggleDropdown('tools',this)">Инструменты</div>
+      <div class="dropdown" id="dropdownTools">
+        <div class="dropdown-title">Инструменты</div>
+        <div class="dropdown-item" onclick="openPage('offers')">
+          <div class="dropdown-icon">📋</div>
+          <div>
+            <div class="dropdown-label">Мои предложения</div>
+            <div class="dropdown-sub">Ссылки, отправленные клиентам</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-dropdown-wrap">
+      <div class="nav-item" id="navClients" onclick="toggleDropdown('clients',this)">Клиенты</div>
+      <div class="dropdown" id="dropdownClients">
+        <div class="dropdown-title">Клиенты</div>
+        <div class="dropdown-item" onclick="openPage('activity')">
+          <div class="dropdown-icon">📊</div>
+          <div>
+            <div class="dropdown-label">Последняя активность</div>
+            <div class="dropdown-sub">История действий клиентов</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </nav>
   <div class="topbar-right">
     <div class="agent-avatar" id="agentAvatar">ИК</div>
@@ -1143,27 +1148,31 @@ function toggleMeeting() {
 applyMeetingMode();
 
 
-// ── DRAWERS ──────────────────────────────
-function openDrawer(name) {
-  closeDrawer();
-  document.getElementById('drawerOverlay').classList.add('vis');
-  document.getElementById('drawer' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('vis');
-  document.body.style.overflow = 'hidden';
+// ── DROPDOWNS ────────────────────────────
+function toggleDropdown(name, btn) {
+  const dd = document.getElementById('dropdown' + name.charAt(0).toUpperCase() + name.slice(1));
+  const isVis = dd.classList.contains('vis');
+  closeAllDropdowns();
+  if (!isVis) {
+    dd.classList.add('vis');
+    btn.classList.add('dd-open');
+  }
 }
 
-function closeDrawer() {
-  document.querySelectorAll('.drawer').forEach(d => d.classList.remove('vis'));
-  document.getElementById('drawerOverlay').classList.remove('vis');
-  document.body.style.overflow = '';
+function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('vis'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('dd-open'));
 }
 
 function openPage(name) {
-  closeDrawer();
+  closeAllDropdowns();
   setPage(name);
 }
 
-// Close on Escape
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+document.addEventListener('click', e => {
+  if (!e.target.closest('.nav-dropdown-wrap')) closeAllDropdowns();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllDropdowns(); });
 
 initAgent();
 loadUnitCount();
@@ -1186,43 +1195,6 @@ async function loadUnitCount() {
   }
 }
 </script>
-
-<!-- DRAWER OVERLAY -->
-<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-
-<!-- TOOLS DRAWER -->
-<div class="drawer" id="drawerTools">
-  <div class="drawer-header">
-    <div class="drawer-title">Инструменты</div>
-    <button class="drawer-close" onclick="closeDrawer()">✕</button>
-  </div>
-  <div class="drawer-body">
-    <div class="drawer-menu-item" onclick="openPage('offers')">
-      <div class="drawer-menu-icon">📋</div>
-      <div>
-        <div class="drawer-menu-label">Мои предложения</div>
-        <div class="drawer-menu-sub">Ссылки отправленные клиентам</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- CLIENTS DRAWER -->
-<div class="drawer" id="drawerClients">
-  <div class="drawer-header">
-    <div class="drawer-title">Клиенты</div>
-    <button class="drawer-close" onclick="closeDrawer()">✕</button>
-  </div>
-  <div class="drawer-body">
-    <div class="drawer-menu-item" onclick="openPage('activity')">
-      <div class="drawer-menu-icon">📊</div>
-      <div>
-        <div class="drawer-menu-label">Последняя активность</div>
-        <div class="drawer-menu-sub">История действий клиентов</div>
-      </div>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
