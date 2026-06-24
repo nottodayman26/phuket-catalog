@@ -7,6 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
 <style>
 :root {
+  --meeting-logo-vis: visible;
+  --meeting-reward-display: block;
   --bg: #0d0d18;
   --surface: #111118;
   --surface-2: #1a1a26;
@@ -70,7 +72,7 @@ a { color: inherit; text-decoration: none; }
   transition: background .15s;
 }
 .theme-btn:hover { background: var(--surface-3); }
-.topbar-logo { font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);cursor:default; }
+.topbar-logo { font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);cursor:default;visibility:var(--meeting-logo-vis); }
 .topbar-nav { display:flex;align-items:center;gap:2px;margin-left:16px; }
 .tnav-item {
   padding:5px 12px;border-radius:8px;font-size:13px;font-weight:500;
@@ -304,6 +306,7 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--project-color);
   border-radius: 14px; padding: 18px;
   position: relative; overflow: hidden;
+  display: var(--meeting-reward-display);
 }
 .reward-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0;
@@ -354,6 +357,15 @@ a { color: inherit; text-decoration: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading { display: flex; align-items: center; justify-content: center; height: 200px; flex-direction: column; gap: 12px; color: var(--muted); font-size: 14px; }
 </style>
+<script>
+// Instant meeting mode — prevents flash before JS loads
+(function(){
+  if (localStorage.getItem("flox-meeting") === "true") {
+    document.documentElement.style.setProperty("--meeting-logo-vis", "hidden");
+    document.documentElement.style.setProperty("--meeting-reward-display", "none");
+  }
+})();
+</script>
 </head>
 <body>
 

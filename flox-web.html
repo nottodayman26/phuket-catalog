@@ -345,7 +345,7 @@ input,button{font-family:inherit;}
 <!-- SEARCH PAGE -->
 <div class="page act" id="page-search">
   <div class="search-page">
-    <div class="search-headline">Более <span>728</span> предложений<br>на Пхукете</div>
+    <div class="search-headline">Более <span id="unitCount">...</span> предложений<br>на Пхукете</div>
 
     <div class="type-selector">
       <button class="type-btn act" data-type="condo" onclick="selectType('condo',this)">
@@ -1085,6 +1085,25 @@ function toggleMeeting() {
 applyMeetingMode();
 
 initAgent();
+loadUnitCount();
+
+async function loadUnitCount() {
+  try {
+    const r = await h(SUPABASE_URL + '/units?status=eq.available&select=id&limit=1');
+    // Use Content-Range header for total count
+    const r2 = await fetch(SUPABASE_URL + '/units?status=eq.available&select=id', {
+      headers: { ...SB, 'Prefer': 'count=exact', 'Range': '0-0' }
+    });
+    const range = r2.headers.get('content-range'); // e.g. 0-0/724
+    if (range) {
+      const total = range.split('/')[1];
+      const rounded = Math.floor(parseInt(total) / 10) * 10; // round to nearest 10
+      document.getElementById('unitCount').textContent = rounded.toLocaleString('ru') + '+';
+    }
+  } catch(e) {
+    document.getElementById('unitCount').textContent = '700+';
+  }
+}
 </script>
 </body>
 </html>
