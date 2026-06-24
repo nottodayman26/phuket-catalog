@@ -519,13 +519,23 @@ async function identifyAgent(){
 
   const found = await fetch(`${SUPABASE_URL}/agents?telegram_id=eq.${tgUser.id}&select=*`, {headers: SB_HEADERS});
   const foundRows = await found.json();
-  if(foundRows.length) {
-    // Save to localStorage for flox-web.html
-    localStorage.setItem('flox-agent', JSON.stringify(foundRows[0]));
-    return foundRows[0];
-  }
-  // Not registered — show registration prompt
-  return null;
+  if(foundRows.length) return foundRows[0];
+
+  const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || 'Агент';
+  const created = await fetch(`${SUPABASE_URL}/agents`, {
+    method: 'POST',
+    headers: {...SB_HEADERS, Prefer: 'return=representation'},
+    body: JSON.stringify({
+      telegram_id: tgUser.id,
+      full_name: fullName,
+      avatar_url: tgUser.photo_url || null,
+      is_founding_agent: true,
+      commission_rate_pct: 7,
+    }),
+  });
+  if(!created.ok) return null;
+  const rows = await created.json();
+  return rows[0] || null;
 }
 
 function renderTopbar(){
@@ -545,10 +555,11 @@ function renderTopbar(){
 }
 
 const TYPE_BUCKETS = [
-  {id:'1BR',label:'1 спальня', test:r=>/1\s*BEDROOM(?!\s*PLUS)/i.test(r) && !/PH/i.test(r)},
-  {id:'1BRP',label:'1 спальня+', test:r=>/PLUS/i.test(r) && !/PH/i.test(r)},
-  {id:'2BR',label:'2 спальни', test:r=>/2\s*BEDROOM/i.test(r)},
-  {id:'PH',label:'Penthouse', test:r=>/PH/i.test(r)},
+  {id:'STD', label:'Студия',     test:r=>/studio|студия/i.test(r)},
+  {id:'1BR', label:'1 спальня',  test:r=>/1\s*BEDROOM/i.test(r) && !/PLUS/i.test(r) && !/PH/i.test(r)},
+  {id:'1BRP',label:'1 спальня+', test:r=>/1\s*BEDROOM.*PLUS/i.test(r) && !/PH/i.test(r)},
+  {id:'2BR', label:'2 спальни',  test:r=>/2\s*BEDROOM/i.test(r) && !/PH/i.test(r)},
+  {id:'PH',  label:'Пентхаус',   test:r=>/PH/i.test(r)},
 ];
 function typeOf(roomType){return (TYPE_BUCKETS.find(b=>b.test(roomType))||{}).id;}
 
@@ -625,7 +636,7 @@ function buildProjChips(){
 }
 function buildTypeChips(){
   const wrap = document.getElementById('typeChips');
-  wrap.innerHTML = `<div class="chip ${!state.type?'active':''}" data-type="">Все типы</div>` +
+  wrap.innerHTML = `<div class="chip ${!state.type?'active':''}" data-type="">Все</div>` +
     TYPE_BUCKETS.map(b=>`<div class="chip ${state.type===b.id?'active':''}" data-type="${b.id}">${b.label}</div>`).join('');
   wrap.querySelectorAll('.chip').forEach(el=>el.onclick=()=>{state.type=el.dataset.type||null;render();});
 }
@@ -920,7 +931,7 @@ async function openHistory(){
       const extra = [];
       if(myBookings.length){
         const rooms = myBookings.map(b=>(b.units||{}).room_no).filter(Boolean).join(', ');
-        extra.push(`<div class="hist-status booked"><span class="dot"></span>Хочет забронировать: ${rooms}</div>`);
+        extra.push(`<div class="hist-status booked"><span class="dot"></span>Забронировал: ${rooms}</div>`);
       }
       if(myViewings.length){
         const list = myViewings.map(v=>`${(v.units||{}).room_no} — ${fmtDateRu(v.requested_date)}`).join('; ');
@@ -960,27 +971,6 @@ async function init(){
   document.getElementById('ticker').innerHTML = '';
   try {
     CURRENT_AGENT = await identifyAgent().catch(()=>null);
-    if (!CURRENT_AGENT && window.Telegram?.WebApp?.initDataUnsafe?.user) {
-      // Agent opened via bot but not registered yet
-      document.getElementById('list').innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;gap:16px;">
-          <div style="font-size:48px">👋</div>
-          <div style="font-size:18px;font-weight:700">Добро пожаловать в Flox!</div>
-          <div style="font-size:14px;color:var(--muted);max-width:280px;line-height:1.6">
-            Чтобы получить доступ к каталогу, пройди быструю регистрацию через бота — это займёт меньше минуты.
-          </div>
-          <a href="https://t.me/phuket_proptech_bot" style="
-            display:inline-flex;align-items:center;gap:8px;
-            background:var(--accent);color:#fff;
-            padding:12px 24px;border-radius:12px;
-            font-size:14px;font-weight:600;text-decoration:none;
-            margin-top:8px;
-          ">
-            Зарегистрироваться в боте →
-          </a>
-        </div>`;
-      return;
-    }
     renderTopbar();
     UNITS = await loadUnitsFromSupabase();
     buildTicker();

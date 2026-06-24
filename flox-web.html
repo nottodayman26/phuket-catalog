@@ -681,15 +681,13 @@ function setPage(name) {
 }
 
 // ── TYPE SELECTOR (top) ───────────────────
-// Unit type display buckets — each maps to room_type patterns
+// Unit type display buckets
 const UNIT_TYPES = [
-  { label: 'Studio',    match: ['studio','студия'] },
-  { label: '1 BR',      match: ['1 bedroom','1br','1 bed'] },  // includes 1 BR Plus
-  { label: '2 BR',      match: ['2 bedroom','2br','2 bed'] },  // includes 2 BR Penthouse
-  { label: '3 BR',      match: ['3 bedroom','3br','3 bed'] },
-  { label: '4 BR',      match: ['4 bedroom','4br','4 bed'] },
-  { label: '5 BR+',     match: ['5 bedroom','5br','6 bedroom','6br'] },
-  { label: 'Penthouse', match: ['penthouse'] },
+  { label: 'Студия',     match: ['studio','студия'] },
+  { label: '1 спальня',  match: ['1 bedroom'] },        // без plus и ph
+  { label: '1 спальня+', match: ['1 bedroom plus'] },   // plus, без ph
+  { label: '2 спальни',  match: ['2 bedroom'] },        // без ph
+  { label: 'Пентхаус',   match: ['ph-','penthouse'] },
 ];
 let tmpUnitTypes = [];
 
