@@ -406,7 +406,7 @@ const pid = params.get('id') || 'VIK';
 
 async function loadProject() {
   try {
-    const res = await fetch(`projects/${pid}.json?v=${Date.now()}`);
+    const base = location.pathname.replace(/\/[^\/]*$/, "/"); const res = await fetch(`${base}projects/${pid}.json?v=${Date.now()}`);
     if (!res.ok) throw new Error();
     const data = await res.json();
     renderProject(data);
@@ -676,6 +676,35 @@ function renderSidebar(d) {
     <a class="action-btn primary" href="${d.drive_root}" target="_blank">📂 Google Drive проекта</a>
     <a class="action-btn secondary" href="https://t.me/phuket_proptech_bot" target="_blank">💬 Написать в бот</a>
   `;
+}
+
+
+// ── Meeting mode ─────────────────────────────
+let meetingMode = localStorage.getItem('flox-meeting') === 'true';
+
+function applyMeetingMode() {
+  const btn = document.getElementById('meetingBtnProj');
+  const label = document.getElementById('meetingBtnLabel');
+  const logo = document.getElementById('topbarLogo');
+  const reward = document.querySelector('.reward-card');
+
+  if (meetingMode) {
+    if (btn) btn.classList.add('act');
+    if (label) label.textContent = 'Режим встречи';
+    if (logo) logo.style.visibility = 'hidden';
+    if (reward) reward.style.display = 'none';
+  } else {
+    if (btn) btn.classList.remove('act');
+    if (label) label.textContent = 'Встреча';
+    if (logo) logo.style.visibility = 'visible';
+    if (reward) reward.style.display = '';
+  }
+}
+
+function toggleMeeting() {
+  meetingMode = !meetingMode;
+  localStorage.setItem('flox-meeting', String(meetingMode));
+  applyMeetingMode();
 }
 
 loadProject();
