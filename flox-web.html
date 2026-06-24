@@ -8,342 +8,308 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
 <style>
 :root {
-  --bg: #0d0d18;
-  --surface: #111118;
-  --surface-2: #1a1a26;
-  --surface-3: #222232;
-  --line: rgba(255,255,255,0.06);
-  --line-2: rgba(255,255,255,0.1);
-  --text: #ffffff;
-  --muted: rgba(255,255,255,0.45);
-  --muted-2: rgba(255,255,255,0.2);
-  --accent: #5E17EB;
-  --accent-soft: rgba(94,23,235,0.18);
-  --red: #FF6B6B;
-  --red-soft: rgba(255,107,107,0.14);
-  --green: #7BAF6E;
-  --green-soft: rgba(123,175,110,0.15);
-  --vik: #C9A84C; --kat: #7BAF6E; --ban: #6B9BC2; --oln: #8FAB5F;
+  --bg:#0d0d18; --surface:#111118; --surface-2:#1a1a26; --surface-3:#222232;
+  --line:rgba(255,255,255,0.06); --line-2:rgba(255,255,255,0.1);
+  --text:#ffffff; --muted:rgba(255,255,255,0.45); --muted-2:rgba(255,255,255,0.2);
+  --accent:#5E17EB; --accent-soft:rgba(94,23,235,0.18);
+  --red:#FF6B6B; --red-soft:rgba(255,107,107,0.14);
+  --green:#7BAF6E; --green-soft:rgba(123,175,110,0.15);
+  --vik:#C9A84C; --kat:#7BAF6E; --ban:#6B9BC2; --oln:#8FAB5F;
 }
 body.light {
-  --bg: #F5F5F7; --surface: #ffffff; --surface-2: #f0f0f4; --surface-3: #e8e8ee;
-  --line: rgba(0,0,0,0.07); --line-2: rgba(0,0,0,0.12);
-  --text: #111118; --muted: rgba(0,0,0,0.45); --muted-2: rgba(0,0,0,0.22);
-  --accent-soft: rgba(94,23,235,0.1); --red-soft: rgba(224,85,85,0.1);
+  --bg:#F5F5F7; --surface:#ffffff; --surface-2:#f0f0f4; --surface-3:#e8e8ee;
+  --line:rgba(0,0,0,0.07); --line-2:rgba(0,0,0,0.12);
+  --text:#111118; --muted:rgba(0,0,0,0.45); --muted-2:rgba(0,0,0,0.22);
+  --accent-soft:rgba(94,23,235,0.1); --red-soft:rgba(224,85,85,0.1);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-family: 'Inter', system-ui, sans-serif; }
-body { min-height: 100vh; background: var(--bg); color: var(--text); transition: background .3s, color .3s; -webkit-tap-highlight-color: transparent; }
-a { color: inherit; text-decoration: none; }
-input, button { font-family: inherit; }
+*{box-sizing:border-box;margin:0;padding:0;}
+html{font-family:'Inter',system-ui,sans-serif;}
+body{min-height:100vh;background:var(--bg);color:var(--text);transition:background .3s,color .3s;-webkit-tap-highlight-color:transparent;}
+a{color:inherit;text-decoration:none;}
+input,button{font-family:inherit;}
 
 /* ── TOPBAR ─── */
-.topbar {
-  position: sticky; top: 0; z-index: 200;
-  background: var(--surface); border-bottom: 0.5px solid var(--line);
-  display: flex; align-items: center; gap: 0;
-  padding: 0 24px; height: 52px;
+.topbar{
+  position:sticky;top:0;z-index:200;
+  background:var(--surface);border-bottom:0.5px solid var(--line);
+  display:flex;align-items:center;padding:0 24px;height:52px;gap:0;
 }
-.logo { display: flex; align-items: center; gap: 2px; font-size: 20px; font-weight: 700; letter-spacing: -0.05em; margin-right: 32px; }
-.logo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-bottom: 10px; }
-.nav { display: flex; align-items: center; gap: 2px; flex: 1; }
-.nav-item {
-  padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 500;
-  color: var(--muted); cursor: pointer; transition: background .15s, color .15s;
-  position: relative;
+.logo{display:flex;align-items:center;gap:2px;font-size:20px;font-weight:700;letter-spacing:-0.05em;margin-right:32px;}
+.logo-dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-bottom:10px;}
+.nav{display:flex;align-items:center;gap:2px;flex:1;}
+.nav-item{
+  padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--muted);cursor:pointer;transition:background .15s,color .15s;
 }
-.nav-item:hover { background: var(--surface-2); color: var(--text); }
-.nav-item.act { color: var(--accent); background: var(--accent-soft); }
-.nav-badge {
-  position: absolute; top: 2px; right: 6px;
-  background: var(--red); color: #fff;
-  font-size: 9px; font-weight: 700; border-radius: 8px; padding: 1px 5px;
+.nav-item:hover{background:var(--surface-2);color:var(--text);}
+.nav-item.act{color:var(--accent);background:var(--accent-soft);}
+.topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.agent-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#7B3FF5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;
 }
-.topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-.agent-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #7B3FF5);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: #fff; cursor: pointer;
-  flex-shrink: 0;
+.theme-btn{
+  width:30px;height:30px;border-radius:8px;border:none;
+  background:var(--surface-2);color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
 }
-.theme-btn {
-  width: 30px; height: 30px; border-radius: 8px; border: none;
-  background: var(--surface-2); color: var(--muted); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
-.theme-btn:hover { background: var(--surface-3); }
+.theme-btn:hover{background:var(--surface-3);}
 
 /* ── PAGES ─── */
-.page { display: none; min-height: calc(100vh - 52px); }
-.page.act { display: block; }
+.page{display:none;min-height:calc(100vh - 52px);}
+.page.act{display:block;}
 
-/* ══════════════════════════════════════════
-   SEARCH PAGE
-══════════════════════════════════════════ */
-.search-page {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 80px 20px 40px;
+/* ══ SEARCH PAGE ══ */
+.search-page{display:flex;flex-direction:column;align-items:center;padding:60px 20px 60px;}
+.search-headline{
+  font-size:clamp(26px,4vw,46px);font-weight:700;
+  letter-spacing:-0.04em;text-align:center;margin-bottom:32px;line-height:1.15;
 }
-.search-headline {
-  font-size: clamp(28px, 4vw, 48px); font-weight: 700;
-  letter-spacing: -0.04em; text-align: center; margin-bottom: 36px;
-  line-height: 1.15;
-}
-.search-headline span { color: var(--accent); }
+.search-headline span{color:var(--accent);}
 
 /* Type selector */
-.type-selector { display: flex; gap: 8px; margin-bottom: 16px; }
-.type-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 10px 20px; border-radius: 12px; cursor: pointer;
-  border: 1.5px solid var(--line-2); background: none; color: var(--muted);
-  font-size: 12px; font-weight: 500; transition: all .15s;
+.type-selector{display:flex;gap:8px;margin-bottom:16px;}
+.type-btn{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:10px 20px;border-radius:12px;cursor:pointer;
+  border:1.5px solid var(--line-2);background:none;color:var(--muted);
+  font-size:12px;font-weight:500;transition:all .15s;
 }
-.type-btn:hover { border-color: var(--accent); color: var(--text); }
-.type-btn.act { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-.type-btn svg { width: 22px; height: 22px; }
+.type-btn:hover{border-color:var(--accent);color:var(--text);}
+.type-btn.act{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+.type-btn svg{width:22px;height:22px;}
 
 /* Search box */
-.search-box-wrap {
-  width: 100%; max-width: 720px;
-  background: var(--surface);
-  border: 1.5px solid var(--line-2);
-  border-radius: 16px;
-  transition: border-color .2s, box-shadow .2s;
-  position: relative;
+.search-box-wrap{
+  width:100%;max-width:720px;
+  background:var(--surface);border:1.5px solid var(--line-2);
+  border-radius:16px;transition:border-color .2s,box-shadow .2s;position:relative;
 }
-.search-box-wrap:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(94,23,235,0.12);
+.search-box-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px rgba(94,23,235,0.12);}
+.search-row{
+  display:flex;align-items:center;padding:0 16px;height:54px;
+  border-bottom:0.5px solid var(--line);
 }
-.search-row {
-  display: flex; align-items: center; gap: 0;
-  padding: 0 16px; height: 54px;
-  border-bottom: 0.5px solid var(--line);
+.search-icon{color:var(--muted);flex-shrink:0;margin-right:10px;}
+.search-input{flex:1;border:none;background:none;color:var(--text);font-size:15px;outline:none;}
+.search-input::placeholder{color:var(--muted-2);}
+.search-clear{
+  width:24px;height:24px;border-radius:50%;border:none;
+  background:var(--surface-3);color:var(--muted);cursor:pointer;
+  display:none;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;
 }
-.search-icon { color: var(--muted); flex-shrink: 0; margin-right: 10px; }
-.search-input {
-  flex: 1; border: none; background: none; color: var(--text);
-  font-size: 15px; outline: none;
-}
-.search-input::placeholder { color: var(--muted-2); }
-.search-clear {
-  width: 24px; height: 24px; border-radius: 50%; border: none;
-  background: var(--surface-3); color: var(--muted); cursor: pointer;
-  display: none; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.search-clear.vis { display: flex; }
+.search-clear.vis{display:flex;}
 
 /* Filters row */
-.filters-row {
-  display: flex; align-items: center; gap: 6px;
-  padding: 10px 14px; flex-wrap: wrap;
+.filters-row{display:flex;align-items:center;gap:6px;padding:10px 14px;flex-wrap:wrap;}
+.filter-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;
+  border:1px solid var(--line-2);color:var(--muted);background:none;
+  cursor:pointer;white-space:nowrap;transition:all .15s;
 }
-.filter-btn {
-  display: flex; align-items: center; gap: 5px;
-  padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
-  border: 1px solid var(--line-2); color: var(--muted); background: none;
-  cursor: pointer; white-space: nowrap; transition: all .15s;
+.filter-btn:hover{border-color:var(--accent);color:var(--accent);}
+.filter-btn.act{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+.filter-btn svg{width:12px;height:12px;}
+.filter-sep{width:1px;height:20px;background:var(--line-2);flex-shrink:0;}
+.search-btn{
+  margin-left:auto;padding:6px 18px;border-radius:20px;
+  background:var(--accent);color:#fff;border:none;
+  font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s;
 }
-.filter-btn:hover { border-color: var(--accent); color: var(--accent); }
-.filter-btn.act { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-.filter-btn svg { width: 12px; height: 12px; }
-.filter-sep { width: 1px; height: 20px; background: var(--line-2); flex-shrink: 0; }
-.search-btn {
-  margin-left: auto; padding: 6px 18px; border-radius: 20px;
-  background: var(--accent); color: #fff; border: none;
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: opacity .15s;
-}
-.search-btn:hover { opacity: .88; }
+.search-btn:hover{opacity:.88;}
 
-/* Active filters chips */
-.active-filters {
-  display: flex; gap: 6px; flex-wrap: wrap;
-  width: 100%; max-width: 720px; margin-top: 10px;
-  min-height: 0;
+/* Active chips */
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:720px;margin-top:10px;}
+.filter-chip{
+  display:flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;font-size:12px;
+  background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);
 }
-.filter-chip {
-  display: flex; align-items: center; gap: 5px;
-  padding: 4px 10px; border-radius: 20px; font-size: 12px;
-  background: var(--accent-soft); color: var(--accent);
-  border: 1px solid var(--accent);
+.chip-remove{
+  width:14px;height:14px;border-radius:50%;border:none;
+  background:var(--accent);color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;
 }
-.chip-remove {
-  width: 14px; height: 14px; border-radius: 50%; border: none;
-  background: var(--accent); color: #fff; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 9px; flex-shrink: 0;
+.reset-all{
+  font-size:12px;color:var(--muted);cursor:pointer;
+  padding:4px 8px;border-radius:8px;background:none;border:none;transition:color .15s;
 }
-.reset-all {
-  font-size: 12px; color: var(--muted); cursor: pointer;
-  padding: 4px 8px; border-radius: 8px;
-  background: none; border: none;
-  transition: color .15s;
-}
-.reset-all:hover { color: var(--red); }
+.reset-all:hover{color:var(--red);}
 
-/* Autocomplete dropdown */
-.autocomplete {
-  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-  background: var(--surface); border: 1px solid var(--line-2);
-  border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-  z-index: 300; overflow: hidden; display: none;
+/* Autocomplete */
+.autocomplete{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;
+  background:var(--surface);border:1px solid var(--line-2);
+  border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25);
+  z-index:300;overflow:hidden;display:none;
 }
-.autocomplete.vis { display: block; }
-.ac-section-title {
-  font-size: 10px; font-weight: 600; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .06em;
-  padding: 10px 14px 4px;
+.autocomplete.vis{display:block;}
+.ac-section-title{
+  font-size:10px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;padding:10px 14px 4px;
 }
-.ac-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; cursor: pointer;
-  transition: background .1s;
+.ac-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;cursor:pointer;transition:background .1s;
 }
-.ac-item:hover { background: var(--surface-2); }
-.ac-icon {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: var(--accent-soft); display: flex; align-items: center; justify-content: center;
-  font-size: 14px; flex-shrink: 0;
+.ac-item:hover{background:var(--surface-2);}
+.ac-icon{
+  width:32px;height:32px;border-radius:8px;background:var(--accent-soft);
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;
 }
-.ac-name { font-size: 13px; font-weight: 500; }
-.ac-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
-.ac-arrow { margin-left: auto; color: var(--muted); font-size: 14px; }
+.ac-name{font-size:13px;font-weight:500;}
+.ac-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.ac-arrow{margin-left:auto;color:var(--muted);}
 
 /* Results */
-.search-results {
-  width: 100%; max-width: 720px; margin-top: 24px;
+.search-results{width:100%;max-width:720px;margin-top:24px;}
+.results-label{font-size:13px;color:var(--muted);margin-bottom:14px;}
+.no-results{
+  text-align:center;padding:40px 20px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;color:var(--muted);font-size:14px;
 }
-.results-label {
-  font-size: 13px; color: var(--muted); margin-bottom: 14px;
-}
-.project-cards { display: flex; flex-direction: column; gap: 10px; }
-.project-card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 14px; padding: 16px 18px;
-  display: flex; align-items: center; gap: 14px;
-  cursor: pointer; transition: border-color .2s, transform .15s;
-  text-decoration: none; color: var(--text);
-}
-.project-card:hover { border-color: var(--accent); transform: translateY(-1px); }
-.project-card-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.project-card-info { flex: 1; }
-.project-card-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
-.project-card-sub { font-size: 12px; color: var(--muted); }
-.project-card-price { font-size: 13px; font-weight: 600; color: var(--accent); }
-.project-card-arrow { color: var(--muted); }
+.no-results-icon{font-size:32px;margin-bottom:12px;}
 
-/* Developer group */
-.dev-group { margin-bottom: 10px; }
-.dev-group-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 16px; background: var(--surface);
-  border: 1px solid var(--line); border-radius: 12px;
-  cursor: pointer; transition: border-color .15s;
-  font-size: 13px; font-weight: 600;
+/* Project card */
+.project-cards{display:flex;flex-direction:column;gap:10px;}
+.project-card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:16px 18px;
+  display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:border-color .2s,transform .15s;
+  text-decoration:none;color:var(--text);
 }
-.dev-group-header:hover { border-color: var(--accent); }
-.dev-group-count { font-size: 11px; color: var(--muted); margin-left: auto; }
-.dev-group-chevron { color: var(--muted); transition: transform .2s; }
-.dev-group.open .dev-group-chevron { transform: rotate(180deg); }
-.dev-group-items { display: none; padding: 6px 0 0 12px; }
-.dev-group.open .dev-group-items { display: flex; flex-direction: column; gap: 6px; }
+.project-card:hover{border-color:var(--accent);transform:translateY(-1px);}
+.project-card-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.project-card-info{flex:1;}
+.project-card-name{font-size:14px;font-weight:600;margin-bottom:3px;}
+.project-card-sub{font-size:12px;color:var(--muted);}
+.project-card-price{font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap;}
+.project-card-arrow{color:var(--muted);}
+
+/* Dev group */
+.dev-group{margin-bottom:10px;}
+.dev-group-header{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;transition:border-color .15s;font-size:13px;font-weight:600;
+}
+.dev-group-header:hover{border-color:var(--accent);}
+.dev-group-count{font-size:11px;color:var(--muted);margin-left:auto;}
+.dev-group-chevron{color:var(--muted);transition:transform .2s;}
+.dev-group.open .dev-group-chevron{transform:rotate(180deg);}
+.dev-group-items{display:none;padding:6px 0 0 12px;}
+.dev-group.open .dev-group-items{display:flex;flex-direction:column;gap:6px;}
+
+/* ══ MODALS ══ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.55);
+  z-index:500;display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.vis{display:flex;}
+.modal{
+  background:var(--surface);border-radius:20px;padding:24px;
+  width:480px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.4);
+  max-height:80vh;overflow-y:auto;
+}
+.modal-title{
+  font-size:17px;font-weight:700;margin-bottom:20px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;}
+.modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;}
+.modal-clear{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;}
+.modal-clear:hover{color:var(--red);}
+.modal-apply{
+  background:var(--accent);color:#fff;border:none;
+  padding:10px 24px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;
+}
 
 /* Price modal */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-  z-index: 500; display: none; align-items: center; justify-content: center;
+.price-histogram{display:flex;align-items:flex-end;gap:2px;height:56px;margin-bottom:14px;cursor:pointer;}
+.price-bar{
+  flex:1;background:var(--accent);border-radius:2px 2px 0 0;
+  opacity:0.5;transition:opacity .15s;
 }
-.modal-overlay.vis { display: flex; }
-.modal {
-  background: var(--surface); border-radius: 20px;
-  padding: 24px; width: 480px; max-width: calc(100vw - 40px);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+.price-bar:hover,.price-bar.sel{opacity:1;}
+.price-inputs{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.price-input-wrap{
+  flex:1;display:flex;align-items:center;gap:8px;
+  background:var(--surface-2);border:1px solid var(--line-2);
+  border-radius:10px;padding:9px 12px;
 }
-.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-.modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; }
-.price-histogram { display: flex; align-items: flex-end; gap: 3px; height: 60px; margin-bottom: 16px; }
-.price-bar { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; opacity: 0.7; transition: opacity .15s; }
-.price-bar:hover { opacity: 1; }
-.price-inputs { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.price-input-wrap {
-  flex: 1; display: flex; align-items: center; gap: 8px;
-  background: var(--surface-2); border: 1px solid var(--line-2);
-  border-radius: 10px; padding: 10px 12px; font-size: 13px;
+.price-input-wrap input{flex:1;border:none;background:none;color:var(--text);font-size:13px;outline:none;width:80px;}
+.price-input-label{color:var(--muted);font-size:11px;}
+.price-presets{display:flex;gap:6px;flex-wrap:wrap;}
+.price-preset{
+  padding:5px 12px;border-radius:20px;font-size:11px;font-weight:500;
+  border:1px solid var(--line-2);color:var(--muted);cursor:pointer;background:none;
+  transition:all .15s;
 }
-.price-input-wrap input { flex: 1; border: none; background: none; color: var(--text); font-size: 13px; outline: none; width: 80px; }
-.price-input-label { color: var(--muted); font-size: 11px; }
-.price-tabs { display: flex; background: var(--surface-2); border-radius: 8px; padding: 2px; margin-bottom: 16px; width: fit-content; }
-.price-tab { padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all .15s; }
-.price-tab.act { background: var(--surface); color: var(--text); }
-.price-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-.price-preset {
-  padding: 6px 14px; border-radius: 20px; font-size: 12px;
-  border: 1px solid var(--line-2); color: var(--muted); cursor: pointer;
-  background: none; transition: all .15s;
+.price-preset:hover,.price-preset.act{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+
+/* Type modal */
+.type-options{display:flex;flex-direction:column;gap:8px;}
+.type-option{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 16px;border-radius:12px;cursor:pointer;
+  border:1.5px solid var(--line);transition:all .15s;
 }
-.price-preset:hover, .price-preset.act { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-.modal-actions { display: flex; justify-content: space-between; align-items: center; }
-.modal-clear { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; }
-.modal-apply { background: var(--accent); color: #fff; border: none; padding: 10px 24px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.type-option:hover{border-color:var(--accent);}
+.type-option.act{border-color:var(--accent);background:var(--accent-soft);}
+.type-option svg{width:20px;height:20px;color:var(--accent);}
+.type-option-name{font-size:13px;font-weight:600;}
+.type-option-sub{font-size:11px;color:var(--muted);}
+.type-option-check{margin-left:auto;width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.type-option.act .type-option-check{background:var(--accent);border-color:var(--accent);}
+.type-option.act .type-option-check::after{content:'✓';font-size:10px;color:#fff;}
 
 /* Completion modal */
-.completion-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
-.completion-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; border-radius: 10px; cursor: pointer;
-  border: 1px solid var(--line); transition: all .15s;
+.completion-list{display:flex;flex-direction:column;gap:4px;}
+.completion-group-title{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:10px 0 4px;}
+.completion-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-radius:10px;cursor:pointer;
+  border:1px solid var(--line);transition:all .15s;
 }
-.completion-item:hover, .completion-item.act { border-color: var(--accent); background: var(--accent-soft); }
-.completion-item input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
+.completion-item:hover{border-color:var(--accent);}
+.completion-item.act{border-color:var(--accent);background:var(--accent-soft);}
+.completion-item-left{display:flex;align-items:center;gap:10px;}
+.completion-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.completion-item.act .completion-check{background:var(--accent);border-color:var(--accent);}
+.completion-item.act .completion-check::after{content:'✓';font-size:9px;color:#fff;}
 
-/* ══════════════════════════════════════════
-   OFFERS PAGE
-══════════════════════════════════════════ */
-.offers-page { padding: 24px; max-width: 900px; margin: 0 auto; }
-.offers-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.offers-title { font-size: 20px; font-weight: 700; }
-.offers-list { display: flex; flex-direction: column; gap: 10px; }
-.offer-card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 14px; padding: 16px 18px;
-}
-.offer-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
-.offer-client { font-size: 15px; font-weight: 600; }
-.offer-time { font-size: 12px; color: var(--muted); }
-.offer-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
-.offer-url {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--surface-2); border-radius: 8px; padding: 8px 12px;
-}
-.offer-url-text { font-size: 12px; color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.offer-copy {
-  padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 600;
-  background: var(--accent-soft); color: var(--accent); border: none; cursor: pointer;
-  white-space: nowrap;
-}
+/* ══ OFFERS PAGE ══ */
+.offers-page{padding:24px;max-width:900px;margin:0 auto;}
+.page-title{font-size:20px;font-weight:700;margin-bottom:20px;}
+.offers-list{display:flex;flex-direction:column;gap:10px;}
+.offer-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;}
+.offer-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
+.offer-client{font-size:15px;font-weight:600;}
+.offer-time{font-size:12px;color:var(--muted);}
+.offer-meta{font-size:12px;color:var(--muted);margin-bottom:10px;}
+.offer-url{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:8px;padding:8px 12px;}
+.offer-url-text{font-size:12px;color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.offer-copy{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent);border:none;cursor:pointer;white-space:nowrap;}
 
-/* ══════════════════════════════════════════
-   ACTIVITY PAGE  
-══════════════════════════════════════════ */
-.activity-page { padding: 24px; max-width: 900px; margin: 0 auto; }
-.activity-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
-.activity-list { display: flex; flex-direction: column; gap: 10px; }
-.activity-card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 14px; padding: 16px 18px;
-}
-.act-client { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-.act-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
-.act-events { display: flex; flex-direction: column; gap: 5px; }
-.act-event { display: flex; align-items: center; gap: 7px; font-size: 12px; }
-.act-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+/* ══ ACTIVITY PAGE ══ */
+.activity-page{padding:24px;max-width:900px;margin:0 auto;}
+.activity-list{display:flex;flex-direction:column;gap:10px;}
+.activity-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;}
+.act-client{font-size:14px;font-weight:600;margin-bottom:3px;}
+.act-count{font-size:12px;color:var(--muted);margin-bottom:10px;}
+.act-events{display:flex;flex-direction:column;gap:5px;}
+.act-event{display:flex;align-items:center;gap:7px;font-size:12px;}
+.act-dot-sm{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 
 /* ── UTILS ─── */
-.loader { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
-.empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; }
+.loader{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
+.empty-page{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;}
 </style>
 </head>
 <body>
@@ -353,9 +319,7 @@ input, button { font-family: inherit; }
   <div class="logo">flox<span class="logo-dot"></span></div>
   <nav class="nav">
     <div class="nav-item act" data-page="search" onclick="setPage('search')">Поиск</div>
-    <div class="nav-item" data-page="offers" onclick="setPage('offers')">
-      Инструменты
-    </div>
+    <div class="nav-item" data-page="offers" onclick="setPage('offers')">Инструменты</div>
     <div class="nav-item" data-page="activity" onclick="setPage('activity')">Клиенты</div>
   </nav>
   <div class="topbar-right">
@@ -371,23 +335,21 @@ input, button { font-family: inherit; }
   <div class="search-page">
     <div class="search-headline">Более <span>728</span> предложений<br>на Пхукете</div>
 
-    <!-- Type selector -->
     <div class="type-selector">
-      <button class="type-btn act" data-type="condo" onclick="selectType('condo')">
+      <button class="type-btn act" data-type="condo" onclick="selectType('condo',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         Кондо
       </button>
-      <button class="type-btn" data-type="villa" onclick="selectType('villa')">
+      <button class="type-btn" data-type="villa" onclick="selectType('villa',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M3 9l9-6 9 6M9 21V12h6v9"/></svg>
         Вилла
       </button>
-      <button class="type-btn" data-type="townhouse" onclick="selectType('townhouse')">
+      <button class="type-btn" data-type="townhouse" onclick="selectType('townhouse',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M4 21V8l8-5 8 5v13M9 21v-7h6v7"/></svg>
         Таунхаус
       </button>
     </div>
 
-    <!-- Search box -->
     <div class="search-box-wrap" id="searchWrap">
       <div class="search-row">
         <span class="search-icon">
@@ -395,94 +357,84 @@ input, button { font-family: inherit; }
         </span>
         <input class="search-input" id="searchInput" type="text"
           placeholder="Поиск по названию проекта, застройщику, району"
-          oninput="onSearchInput(this.value)"
-          autocomplete="off">
+          oninput="onSearchInput(this.value)" autocomplete="off">
         <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
       </div>
-
-      <!-- Filters -->
       <div class="filters-row">
-        <button class="filter-btn" id="filterType" onclick="openTypeFilter()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+        <button class="filter-btn" id="filterTypeBtn" onclick="openTypeModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
           <span id="filterTypeLabel">Тип</span>
         </button>
         <div class="filter-sep"></div>
-        <button class="filter-btn" id="filterPrice" onclick="openPriceModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <button class="filter-btn" id="filterPriceBtn" onclick="openPriceModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14H11v-2h2v2zm0-4H11V7h2v5z"/></svg>
           <span id="filterPriceLabel">Цена</span>
         </button>
         <div class="filter-sep"></div>
-        <button class="filter-btn" id="filterCompletion" onclick="openCompletionModal()">
+        <button class="filter-btn" id="filterCompBtn" onclick="openCompletionModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          <span id="filterCompletionLabel">Срок сдачи</span>
+          <span id="filterCompLabel">Срок сдачи до</span>
         </button>
         <div class="filter-sep"></div>
-        <button class="filter-btn" onclick="openAllFilters()">
+        <button class="filter-btn" onclick="alert('Скоро!')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M8 12h8M11 18h2"/></svg>
           Все фильтры
         </button>
         <button class="search-btn" onclick="doSearch()">Найти</button>
       </div>
-
-      <!-- Autocomplete -->
       <div class="autocomplete" id="autocomplete"></div>
     </div>
 
-    <!-- Active filter chips -->
     <div class="active-filters" id="activeFilters"></div>
-
-    <!-- Results -->
     <div class="search-results" id="searchResults"></div>
   </div>
 </div>
 
-<!-- OFFERS PAGE (Инструменты → Мои предложения) -->
+<!-- OFFERS PAGE -->
 <div class="page" id="page-offers">
   <div class="offers-page">
-    <div class="offers-header">
-      <div class="offers-title">Мои предложения</div>
-    </div>
+    <div class="page-title">Мои предложения</div>
     <div class="offers-list" id="offersList"><div class="loader">Загрузка…</div></div>
   </div>
 </div>
 
-<!-- ACTIVITY PAGE (Клиенты → Последняя активность) -->
+<!-- ACTIVITY PAGE -->
 <div class="page" id="page-activity">
   <div class="activity-page">
-    <div class="activity-title">Последняя активность</div>
+    <div class="page-title">Последняя активность</div>
     <div class="activity-list" id="activityList"><div class="loader">Загрузка…</div></div>
   </div>
 </div>
 
+<!-- TYPE MODAL -->
+<div class="modal-overlay" id="typeModal" onclick="if(event.target===this)closeTypeModal()">
+  <div class="modal">
+    <div class="modal-title">Тип кондо <button class="modal-close" onclick="closeTypeModal()">✕</button></div>
+    <div class="type-options" id="unitTypeOptions"></div>
+    <div class="modal-actions">
+      <button class="modal-clear" onclick="clearTypeModal()">Сбросить</button>
+      <button class="modal-apply" onclick="applyTypeModal()">Применить</button>
+    </div>
+  </div>
+</div>
+
 <!-- PRICE MODAL -->
-<div class="modal-overlay" id="priceModal" onclick="closePriceModal(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-title">
-      Выберите цену
-      <button class="modal-close" onclick="closePriceModal()">✕</button>
-    </div>
+<div class="modal-overlay" id="priceModal" onclick="if(event.target===this)closePriceModal()">
+  <div class="modal">
+    <div class="modal-title">Выберите цену <button class="modal-close" onclick="closePriceModal()">✕</button></div>
     <div class="price-histogram" id="priceHistogram"></div>
-    <div class="price-tabs">
-      <div class="price-tab act" onclick="setPriceTab('unit',this)">Юнит</div>
-      <div class="price-tab" onclick="setPriceTab('sqm',this)">м²</div>
-    </div>
     <div class="price-inputs">
       <div class="price-input-wrap">
-        <input type="number" id="priceMin" placeholder="Мин. цена">
+        <input type="number" id="priceMin" placeholder="Мин. цена" oninput="syncHistogram()">
         <span class="price-input-label">THB</span>
       </div>
       <span style="color:var(--muted)">—</span>
       <div class="price-input-wrap">
-        <input type="number" id="priceMax" placeholder="Макс. цена">
+        <input type="number" id="priceMax" placeholder="Макс. цена" oninput="syncHistogram()">
         <span class="price-input-label">THB</span>
       </div>
     </div>
-    <div class="price-presets">
-      <button class="price-preset" onclick="setPricePreset(0,10000000,this)">≤ 10 млн</button>
-      <button class="price-preset" onclick="setPricePreset(10000000,20000000,this)">10–20 млн</button>
-      <button class="price-preset" onclick="setPricePreset(20000000,50000000,this)">20–50 млн</button>
-      <button class="price-preset" onclick="setPricePreset(50000000,0,this)">50 млн+</button>
-    </div>
+    <div class="price-presets" id="pricePresets"></div>
     <div class="modal-actions">
       <button class="modal-clear" onclick="clearPrice()">Очистить</button>
       <button class="modal-apply" onclick="applyPrice()">Применить</button>
@@ -491,119 +443,90 @@ input, button { font-family: inherit; }
 </div>
 
 <!-- COMPLETION MODAL -->
-<div class="modal-overlay" id="completionModal" onclick="closeCompletionModal(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-title">
-      Срок сдачи
-      <button class="modal-close" onclick="closeCompletionModal()">✕</button>
-    </div>
-    <div class="completion-list">
-      <label class="completion-item"><input type="checkbox" value="delivered"> Сдан</label>
-      <label class="completion-item"><input type="checkbox" value="2025"> 2025</label>
-      <label class="completion-item"><input type="checkbox" value="2026"> 2026</label>
-      <label class="completion-item"><input type="checkbox" value="2027"> 2027</label>
-      <label class="completion-item"><input type="checkbox" value="2028"> 2028</label>
-      <label class="completion-item"><input type="checkbox" value="2028+"> 2028+</label>
-    </div>
+<div class="modal-overlay" id="compModal" onclick="if(event.target===this)closeCompletionModal()">
+  <div class="modal">
+    <div class="modal-title">Срок сдачи до <button class="modal-close" onclick="closeCompletionModal()">✕</button></div>
+    <div class="completion-list" id="completionList"></div>
     <div class="modal-actions">
-      <button class="modal-clear" onclick="clearCompletion()">Очистить</button>
+      <button class="modal-clear" onclick="clearCompletion()">Сбросить</button>
       <button class="modal-apply" onclick="applyCompletion()">Применить</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── CONFIG ───────────────────────────────────────
+// ── CONFIG ───────────────────────────────
 const SUPABASE_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
 const SB = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
 const h = url => fetch(url, { headers: SB });
 
-// ── PROJECTS DATA ─────────────────────────────────
+// ── PROJECTS ─────────────────────────────
 const PROJECTS = [
-  {
-    id: 'VIK', name: 'The Title Vivana', nameEn: 'The Title Vivana',
-    developer: 'Rhom Bho Property PLC', district: 'Kamala', amphoe: 'Amphoe Kathu',
-    districtRu: 'Камала', color: '#C9A84C', type: 'condo',
-    priceFrom: 4200000, completion: '2027',
-    url: 'project.html?id=VIK'
-  },
-  {
-    id: 'KAT', name: 'KataBello', nameEn: 'KataBello',
-    developer: 'Rhom Bho Property PLC', district: 'Kata', amphoe: 'Amphoe Mueang',
-    districtRu: 'Ката', color: '#7BAF6E', type: 'condo',
-    priceFrom: 3500000, completion: '2027',
-    url: 'project.html?id=KAT'
-  },
-  {
-    id: 'BAN', name: 'Balcony Naiyang', nameEn: 'Balcony Naiyang',
-    developer: 'Rhom Bho Property PLC', district: 'Nai Yang', amphoe: 'Amphoe Thalang',
-    districtRu: 'Най Янг', color: '#6B9BC2', type: 'condo',
-    priceFrom: 3200000, completion: '2026',
-    url: 'project.html?id=BAN'
-  },
-  {
-    id: 'OLN', name: 'The Olive Naiyang', nameEn: 'The Olive Naiyang',
-    developer: 'Rhom Bho Property PLC', district: 'Nai Yang', amphoe: 'Amphoe Thalang',
-    districtRu: 'Най Янг', color: '#8FAB5F', type: 'condo',
-    priceFrom: 3800000, completion: '2026',
-    url: 'project.html?id=OLN'
-  }
+  { id:'VIK', name:'The Title Vivana', nameEn:'The Title Vivana', developer:'Rhom Bho Property PLC', district:'Kamala', amphoe:'Amphoe Kathu', districtRu:'Камала', color:'#C9A84C', type:'condo', priceFrom:4200000, priceTo:19200000, completion:'Q4 2027', completionYear:2027, completionQ:4, url:'project.html?id=VIK' },
+  { id:'KAT', name:'KataBello', nameEn:'KataBello', developer:'Rhom Bho Property PLC', district:'Kata', amphoe:'Amphoe Mueang', districtRu:'Ката', color:'#7BAF6E', type:'condo', priceFrom:3500000, priceTo:12000000, completion:'Q2 2027', completionYear:2027, completionQ:2, url:'project.html?id=KAT' },
+  { id:'BAN', name:'Balcony Naiyang', nameEn:'Balcony Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#6B9BC2', type:'condo', priceFrom:3200000, priceTo:8000000, completion:'Q4 2026', completionYear:2026, completionQ:4, url:'project.html?id=BAN' },
+  { id:'OLN', name:'The Olive Naiyang', nameEn:'The Olive Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#8FAB5F', type:'condo', priceFrom:3800000, priceTo:10000000, completion:'Q2 2026', completionYear:2026, completionQ:2, url:'project.html?id=OLN' },
 ];
 
-// ── DISTRICTS MAP (RU+EN) ─────────────────────────
+// ── DISTRICTS ─────────────────────────────
 const DISTRICTS = {
-  // Amphoe Mueang
-  'Kata Noi': { ru: 'Ката Ной', amphoe: 'Amphoe Mueang' },
-  'Nai Harn': { ru: 'Най Харн', amphoe: 'Amphoe Mueang' },
-  'Panwa': { ru: 'Панва', amphoe: 'Amphoe Mueang' },
-  'Ya Nui': { ru: 'Я Нуй', amphoe: 'Amphoe Mueang' },
-  'Rawai': { ru: 'Равай', amphoe: 'Amphoe Mueang' },
-  'Koh Kaew': { ru: 'Ко Кэо', amphoe: 'Amphoe Mueang' },
-  'Wichit': { ru: 'Вичит', amphoe: 'Amphoe Mueang' },
-  'Karon': { ru: 'Карон', amphoe: 'Amphoe Mueang' },
-  'Ratsada': { ru: 'Ратсада', amphoe: 'Amphoe Mueang' },
-  'Chalong': { ru: 'Чалонг', amphoe: 'Amphoe Mueang' },
-  'Phuket Town': { ru: 'Пхукет Таун', amphoe: 'Amphoe Mueang' },
-  'Kata': { ru: 'Ката', amphoe: 'Amphoe Mueang' },
-  // Amphoe Kathu
-  'Patong': { ru: 'Патонг', amphoe: 'Amphoe Kathu' },
-  'Kathu': { ru: 'Катху', amphoe: 'Amphoe Kathu' },
-  'Kamala': { ru: 'Камала', amphoe: 'Amphoe Kathu' },
-  // Amphoe Thalang
-  'Layan': { ru: 'Лаян', amphoe: 'Amphoe Thalang' },
-  'Nai Thon': { ru: 'Най Тон', amphoe: 'Amphoe Thalang' },
-  'Surin': { ru: 'Сурин', amphoe: 'Amphoe Thalang' },
-  'Nai Yang': { ru: 'Най Янг', amphoe: 'Amphoe Thalang' },
-  'Pa Klok': { ru: 'Па Клок', amphoe: 'Amphoe Thalang' },
-  'Thep Krasattri': { ru: 'Теп Красатри', amphoe: 'Amphoe Thalang' },
-  'Pasak': { ru: 'Пасак', amphoe: 'Amphoe Thalang' },
-  'Bang Tao': { ru: 'Банг Тао', amphoe: 'Amphoe Thalang' },
-  'Sakhu': { ru: 'Саку', amphoe: 'Amphoe Thalang' },
-  'Choeng Thale': { ru: 'Чоенг Тале', amphoe: 'Amphoe Thalang' },
-  'Si Sunthon': { ru: 'Си Сунтон', amphoe: 'Amphoe Thalang' },
-  'Mai Khao': { ru: 'Май Кхао', amphoe: 'Amphoe Thalang' },
+  'Kata Noi':{ru:'Ката Ной',amphoe:'Amphoe Mueang'},'Nai Harn':{ru:'Най Харн',amphoe:'Amphoe Mueang'},
+  'Panwa':{ru:'Панва',amphoe:'Amphoe Mueang'},'Ya Nui':{ru:'Я Нуй',amphoe:'Amphoe Mueang'},
+  'Rawai':{ru:'Равай',amphoe:'Amphoe Mueang'},'Koh Kaew':{ru:'Ко Кэо',amphoe:'Amphoe Mueang'},
+  'Wichit':{ru:'Вичит',amphoe:'Amphoe Mueang'},'Karon':{ru:'Карон',amphoe:'Amphoe Mueang'},
+  'Ratsada':{ru:'Ратсада',amphoe:'Amphoe Mueang'},'Chalong':{ru:'Чалонг',amphoe:'Amphoe Mueang'},
+  'Phuket Town':{ru:'Пхукет Таун',amphoe:'Amphoe Mueang'},'Kata':{ru:'Ката',amphoe:'Amphoe Mueang'},
+  'Patong':{ru:'Патонг',amphoe:'Amphoe Kathu'},'Kathu':{ru:'Катху',amphoe:'Amphoe Kathu'},
+  'Kamala':{ru:'Камала',amphoe:'Amphoe Kathu'},
+  'Layan':{ru:'Лаян',amphoe:'Amphoe Thalang'},'Nai Thon':{ru:'Най Тон',amphoe:'Amphoe Thalang'},
+  'Surin':{ru:'Сурин',amphoe:'Amphoe Thalang'},'Nai Yang':{ru:'Най Янг',amphoe:'Amphoe Thalang'},
+  'Pa Klok':{ru:'Па Клок',amphoe:'Amphoe Thalang'},'Thep Krasattri':{ru:'Теп Красатри',amphoe:'Amphoe Thalang'},
+  'Pasak':{ru:'Пасак',amphoe:'Amphoe Thalang'},'Bang Tao':{ru:'Банг Тао',amphoe:'Amphoe Thalang'},
+  'Sakhu':{ru:'Саку',amphoe:'Amphoe Thalang'},'Choeng Thale':{ru:'Чоенг Тале',amphoe:'Amphoe Thalang'},
+  'Si Sunthon':{ru:'Си Сунтон',amphoe:'Amphoe Thalang'},'Mai Khao':{ru:'Май Кхао',amphoe:'Amphoe Thalang'},
 };
+const AMPHOE = ['Amphoe Mueang','Amphoe Kathu','Amphoe Thalang'];
+const AMPHOE_RU = {'Amphoe Mueang':'Мыонг','Amphoe Kathu':'Катху','Amphoe Thalang':'Таланг'};
 
-const AMPHOE = ['Amphoe Mueang', 'Amphoe Kathu', 'Amphoe Thalang'];
-const AMPHOE_RU = { 'Amphoe Mueang': 'Мыонг', 'Amphoe Kathu': 'Катху', 'Amphoe Thalang': 'Таланг' };
+// ── PRICE RANGES ──────────────────────────
+const PRICE_RANGES = [
+  {label:'< 5 млн',  min:0,        max:5000000},
+  {label:'5–8 млн',  min:5000000,  max:8000000},
+  {label:'8–10 млн', min:8000000,  max:10000000},
+  {label:'10–12 млн',min:10000000, max:12000000},
+  {label:'12–15 млн',min:12000000, max:15000000},
+  {label:'15–20 млн',min:15000000, max:20000000},
+  {label:'20–30 млн',min:20000000, max:30000000},
+  {label:'30–50 млн',min:30000000, max:50000000},
+];
 
-// ── STATE ─────────────────────────────────────────
+// ── COMPLETION QUARTERS ───────────────────
+const COMPLETION_OPTIONS = [
+  {label:'Q1 2026', year:2026, q:1},{label:'Q2 2026', year:2026, q:2},
+  {label:'Q3 2026', year:2026, q:3},{label:'Q4 2026', year:2026, q:4},
+  {label:'Q1 2027', year:2027, q:1},{label:'Q2 2027', year:2027, q:2},
+  {label:'Q3 2027', year:2027, q:3},{label:'Q4 2027', year:2027, q:4},
+  {label:'Q1 2028', year:2028, q:1},{label:'Q2 2028', year:2028, q:2},
+  {label:'Q3 2028', year:2028, q:3},{label:'Q4 2028', year:2028, q:4},
+];
+
+// ── STATE ─────────────────────────────────
 let AGENT = null;
-let activeType = 'condo';
-let filters = { price: null, completion: [] };
-let priceTabMode = 'unit';
+let filters = { unitTypes: null, price: null, completion: null };
+let tmpType = 'all';
+let tmpCompletion = null;
 
-const fmtMln = n => n >= 1000000 ? (n/1000000).toFixed(1).replace('.0','') + ' млн ฿' : n.toLocaleString('ru') + ' ฿';
+const fmtMln = n => n >= 1000000 ? (n/1e6).toFixed(1).replace('.0','') + ' млн ฿' : n.toLocaleString('ru') + ' ฿';
 
-// ── THEME ─────────────────────────────────────────
+// ── THEME ─────────────────────────────────
 if (localStorage.getItem('flox-theme') === 'light') document.body.classList.add('light');
 function toggleTheme() {
   document.body.classList.toggle('light');
   localStorage.setItem('flox-theme', document.body.classList.contains('light') ? 'light' : 'dark');
 }
 
-// ── NAVIGATION ────────────────────────────────────
+// ── NAVIGATION ────────────────────────────
 function setPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('act'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('act'));
@@ -613,112 +536,91 @@ function setPage(name) {
   if (name === 'activity') loadActivity();
 }
 
-// ── TYPE SELECTOR ─────────────────────────────────
-function selectType(type) {
-  activeType = type;
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('act', b.dataset.type === type));
+// ── TYPE SELECTOR (top) ───────────────────
+const UNIT_TYPES = ['Студия','1 Bedroom','2 Bedroom','3 Bedroom','Penthouse'];
+let tmpUnitTypes = [];
+
+function selectType(type, btn) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('act'));
+  btn.classList.add('act');
 }
 
-// ── FUZZY SEARCH ──────────────────────────────────
-function fuzzyMatch(query, text) {
-  if (!query || !text) return false;
-  const q = query.toLowerCase().trim();
-  const t = text.toLowerCase();
-  if (t.includes(q)) return true;
-  // Allow 1 typo for queries > 3 chars
-  if (q.length > 3) {
-    for (let i = 0; i < q.length; i++) {
-      const variant = q.slice(0, i) + q.slice(i + 1);
-      if (t.includes(variant)) return true;
+// ── FUZZY ─────────────────────────────────
+function fuzzyMatch(q, text) {
+  if (!q || !text) return false;
+  const ql = q.toLowerCase().trim(), tl = text.toLowerCase();
+  if (tl.includes(ql)) return true;
+  if (ql.length > 3) {
+    for (let i = 0; i < ql.length; i++) {
+      if (tl.includes(ql.slice(0,i)+ql.slice(i+1))) return true;
     }
   }
   return false;
 }
 
 function matchProject(q, p) {
-  return fuzzyMatch(q, p.name) || fuzzyMatch(q, p.nameEn) ||
-    fuzzyMatch(q, p.district) || fuzzyMatch(q, p.districtRu) ||
-    fuzzyMatch(q, p.developer) || fuzzyMatch(q, p.id);
+  return fuzzyMatch(q, p.name) || fuzzyMatch(q, p.district) ||
+    fuzzyMatch(q, p.districtRu) || fuzzyMatch(q, p.developer) || fuzzyMatch(q, p.id);
 }
 
-function matchDistrict(q) {
-  const results = [];
-  for (const [en, data] of Object.entries(DISTRICTS)) {
-    if (fuzzyMatch(q, en) || fuzzyMatch(q, data.ru)) results.push({ en, ...data });
-  }
-  return results;
+// ── FILTER PROJECTS ───────────────────────
+function applyFilters(list) {
+  return list.filter(p => {
+    if (filters.price) {
+      if (filters.price.min && p.priceTo < filters.price.min) return false;
+      if (filters.price.max && p.priceFrom > filters.price.max) return false;
+    }
+    if (filters.completion) {
+      const { year, q } = filters.completion;
+      if (p.completionYear > year || (p.completionYear === year && p.completionQ > q)) return false;
+    }
+    // unitTypes filter applies at unit level — project shown if any unit matches
+    // For now projects don't have per-unit breakdown in this view, so show all
+    return true;
+  });
 }
 
-function matchAmphoe(q) {
-  return AMPHOE.filter(a => fuzzyMatch(q, a) || fuzzyMatch(q, AMPHOE_RU[a]));
-}
-
-function matchDeveloper(q) {
-  const devs = [...new Set(PROJECTS.map(p => p.developer))];
-  return devs.filter(d => fuzzyMatch(q, d));
-}
-
-// ── AUTOCOMPLETE ──────────────────────────────────
+// ── AUTOCOMPLETE ──────────────────────────
 function onSearchInput(val) {
-  const clear = document.getElementById('searchClear');
-  clear.classList.toggle('vis', val.length > 0);
-
-  if (val.length < 2) {
-    hideAutocomplete();
-    if (!val) clearResults();
-    return;
-  }
-
+  document.getElementById('searchClear').classList.toggle('vis', val.length > 0);
+  if (val.length < 2) { hideAC(); if (!val) clearResults(); return; }
   const ac = document.getElementById('autocomplete');
   let html = '';
 
-  // Projects
   const projects = PROJECTS.filter(p => matchProject(val, p));
   if (projects.length) {
     html += `<div class="ac-section-title">Проекты</div>`;
     html += projects.map(p => `
-      <div class="ac-item" onclick="goProject('${p.url}')">
-        <div class="ac-icon" style="background:${p.color}22">🏢</div>
-        <div>
-          <div class="ac-name">${p.name}</div>
-          <div class="ac-sub">${p.districtRu} · ${p.developer}</div>
-        </div>
+      <div class="ac-item" onclick="location.href='${p.url}'">
+        <div class="ac-icon" style="background:${p.color}22;color:${p.color}">🏢</div>
+        <div><div class="ac-name">${p.name}</div><div class="ac-sub">${p.districtRu} · от ${fmtMln(p.priceFrom)}</div></div>
         <span class="ac-arrow">→</span>
       </div>`).join('');
   }
 
-  // Districts
-  const districts = matchDistrict(val);
+  const districts = Object.entries(DISTRICTS).filter(([en,d]) => fuzzyMatch(val,en)||fuzzyMatch(val,d.ru));
   if (districts.length) {
     html += `<div class="ac-section-title">Районы</div>`;
-    html += districts.slice(0, 4).map(d => `
-      <div class="ac-item" onclick="filterByDistrict('${d.en}')">
+    html += districts.slice(0,4).map(([en,d]) => `
+      <div class="ac-item" onclick="filterByDistrict('${en}')">
         <div class="ac-icon">📍</div>
-        <div>
-          <div class="ac-name">${d.en} / ${d.ru}</div>
-          <div class="ac-sub">${d.amphoe}</div>
-        </div>
+        <div><div class="ac-name">${en} / ${d.ru}</div><div class="ac-sub">${d.amphoe}</div></div>
         <span class="ac-arrow">→</span>
       </div>`).join('');
   }
 
-  // Amphoe
-  const amphoes = matchAmphoe(val);
+  const amphoes = AMPHOE.filter(a => fuzzyMatch(val,a)||fuzzyMatch(val,AMPHOE_RU[a]));
   if (amphoes.length) {
     html += `<div class="ac-section-title">Округ</div>`;
     html += amphoes.map(a => `
       <div class="ac-item" onclick="filterByAmphoe('${a}')">
         <div class="ac-icon">🗺️</div>
-        <div>
-          <div class="ac-name">${a}</div>
-          <div class="ac-sub">${AMPHOE_RU[a]}</div>
-        </div>
+        <div><div class="ac-name">${a} / ${AMPHOE_RU[a]}</div></div>
         <span class="ac-arrow">→</span>
       </div>`).join('');
   }
 
-  // Developers
-  const devs = matchDeveloper(val);
+  const devs = [...new Set(PROJECTS.map(p=>p.developer))].filter(d=>fuzzyMatch(val,d));
   if (devs.length) {
     html += `<div class="ac-section-title">Застройщики</div>`;
     html += devs.map(d => `
@@ -729,228 +631,305 @@ function onSearchInput(val) {
       </div>`).join('');
   }
 
-  if (!html) {
-    ac.classList.remove('vis');
-    return;
-  }
+  if (!html) { ac.classList.remove('vis'); return; }
   ac.innerHTML = html;
   ac.classList.add('vis');
 }
 
-function hideAutocomplete() {
-  document.getElementById('autocomplete').classList.remove('vis');
-}
+function hideAC() { document.getElementById('autocomplete').classList.remove('vis'); }
 
 function clearSearch() {
   document.getElementById('searchInput').value = '';
   document.getElementById('searchClear').classList.remove('vis');
-  hideAutocomplete();
-  clearResults();
+  hideAC(); clearResults();
 }
+function clearResults() { document.getElementById('searchResults').innerHTML = ''; }
 
-function clearResults() {
-  document.getElementById('searchResults').innerHTML = '';
-}
+document.addEventListener('click', e => {
+  if (!document.getElementById('searchWrap').contains(e.target)) hideAC();
+});
 
-// ── NAVIGATION ACTIONS ────────────────────────────
-function goProject(url) {
-  window.location.href = url;
-}
-
+// ── SEARCH ACTIONS ────────────────────────
 function filterByDistrict(district) {
-  hideAutocomplete();
+  hideAC();
   document.getElementById('searchInput').value = district;
-  const filtered = PROJECTS.filter(p => p.district === district);
-  showProjectCards(filtered, `Проекты в районе ${district}`);
+  const filtered = applyFilters(PROJECTS.filter(p => p.district === district));
+  showCards(filtered, `Проекты в районе ${district}`);
 }
 
 function filterByAmphoe(amphoe) {
-  hideAutocomplete();
+  hideAC();
   document.getElementById('searchInput').value = amphoe;
-  const districts = Object.entries(DISTRICTS).filter(([, d]) => d.amphoe === amphoe).map(([en]) => en);
-  const filtered = PROJECTS.filter(p => districts.includes(p.district));
-  showProjectCards(filtered, `Проекты в округе ${amphoe}`);
+  const inAmphoe = Object.entries(DISTRICTS).filter(([,d])=>d.amphoe===amphoe).map(([en])=>en);
+  const filtered = applyFilters(PROJECTS.filter(p => inAmphoe.includes(p.district)));
+  showCards(filtered, `Проекты в округе ${amphoe}`);
 }
 
 function filterByDeveloper(dev) {
-  hideAutocomplete();
+  hideAC();
   document.getElementById('searchInput').value = dev;
-  const filtered = PROJECTS.filter(p => p.developer === dev);
+  const filtered = applyFilters(PROJECTS.filter(p => p.developer === dev));
   showDevGroup(dev, filtered);
 }
 
 function doSearch() {
   const val = document.getElementById('searchInput').value.trim();
-  hideAutocomplete();
-  if (!val) return;
-  const filtered = PROJECTS.filter(p => matchProject(val, p));
-  showProjectCards(filtered, `Результаты: ${filtered.length} проект${filtered.length === 1 ? '' : 'а'}`);
+  hideAC();
+  const base = val ? PROJECTS.filter(p => matchProject(val, p)) : PROJECTS;
+  const filtered = applyFilters(base);
+  showCards(filtered, `Найдено: ${filtered.length}`);
 }
 
-// ── RESULTS RENDERING ─────────────────────────────
-function showProjectCards(projects, label) {
+// ── RENDER ────────────────────────────────
+function cardHTML(p) {
+  return `
+    <a class="project-card" href="${p.url}">
+      <div class="project-card-dot" style="background:${p.color}"></div>
+      <div class="project-card-info">
+        <div class="project-card-name">${p.name}</div>
+        <div class="project-card-sub">${p.districtRu} · ${p.completion}</div>
+      </div>
+      <div class="project-card-price">от ${fmtMln(p.priceFrom)}</div>
+      <span class="project-card-arrow">→</span>
+    </a>`;
+}
+
+function showCards(projects, label) {
   const el = document.getElementById('searchResults');
   if (!projects.length) {
-    el.innerHTML = `<div class="empty">Проекты не найдены</div>`;
+    el.innerHTML = `
+      <div class="no-results">
+        <div class="no-results-icon">🔍</div>
+        <div style="font-weight:600;margin-bottom:6px;">Ничего не найдено</div>
+        <div style="font-size:13px;">Под ваш запрос нет подходящих вариантов.<br>Попробуйте изменить фильтры или запрос.</div>
+      </div>`;
     return;
   }
   el.innerHTML = `
     <div class="results-label">${label}</div>
-    <div class="project-cards">
-      ${projects.map(p => `
-        <a class="project-card" href="${p.url}">
-          <div class="project-card-dot" style="background:${p.color}"></div>
-          <div class="project-card-info">
-            <div class="project-card-name">${p.name}</div>
-            <div class="project-card-sub">${p.districtRu} · ${p.developer}</div>
-          </div>
-          <div class="project-card-price">от ${fmtMln(p.priceFrom)}</div>
-          <span class="project-card-arrow">→</span>
-        </a>`).join('')}
-    </div>`;
+    <div class="project-cards">${projects.map(cardHTML).join('')}</div>`;
 }
 
 function showDevGroup(dev, projects) {
   const el = document.getElementById('searchResults');
+  if (!projects.length) {
+    el.innerHTML = `<div class="no-results"><div class="no-results-icon">🔍</div><div>Нет проектов этого застройщика</div></div>`;
+    return;
+  }
   el.innerHTML = `
     <div class="results-label">Застройщик: ${dev}</div>
     <div class="dev-group open" id="devGroup">
-      <div class="dev-group-header" onclick="toggleDevGroup()">
+      <div class="dev-group-header" onclick="this.closest('.dev-group').classList.toggle('open')">
         <span>🏗️ ${dev}</span>
-        <span class="dev-group-count">${projects.length} проект${projects.length === 1 ? '' : 'а'}</span>
+        <span class="dev-group-count">${projects.length} проект${projects.length===1?'':'а'}</span>
         <svg class="dev-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </div>
-      <div class="dev-group-items">
-        ${projects.map(p => `
-          <a class="project-card" href="${p.url}">
-            <div class="project-card-dot" style="background:${p.color}"></div>
-            <div class="project-card-info">
-              <div class="project-card-name">${p.name}</div>
-              <div class="project-card-sub">${p.districtRu}</div>
-            </div>
-            <div class="project-card-price">от ${fmtMln(p.priceFrom)}</div>
-            <span class="project-card-arrow">→</span>
-          </a>`).join('')}
-      </div>
+      <div class="dev-group-items">${projects.map(cardHTML).join('')}</div>
     </div>`;
 }
 
-function toggleDevGroup() {
-  document.getElementById('devGroup')?.classList.toggle('open');
-}
-
-// ── FILTERS ───────────────────────────────────────
+// ── CHIPS ─────────────────────────────────
 function updateChips() {
   const el = document.getElementById('activeFilters');
   const chips = [];
+
+  if (filters.unitTypes && filters.unitTypes.length) {
+    const label = filters.unitTypes.join(', ');
+    chips.push({label, key:'type'});
+    document.getElementById('filterTypeLabel').textContent = label.length > 14 ? label.slice(0,14)+'…' : label;
+    document.getElementById('filterTypeBtn').classList.add('act');
+  } else {
+    document.getElementById('filterTypeLabel').textContent = 'Тип';
+    document.getElementById('filterTypeBtn').classList.remove('act');
+  }
+
   if (filters.price) {
-    const label = filters.price.max
-      ? `${fmtMln(filters.price.min)} — ${fmtMln(filters.price.max)}`
-      : `от ${fmtMln(filters.price.min)}`;
-    chips.push({ label, key: 'price' });
+    const r = PRICE_RANGES.find(r => r.min === filters.price.min && r.max === filters.price.max);
+    const label = r ? r.label : `${fmtMln(filters.price.min)}–${fmtMln(filters.price.max)}`;
+    chips.push({label, key:'price'});
     document.getElementById('filterPriceLabel').textContent = label;
-    document.getElementById('filterPrice').classList.add('act');
+    document.getElementById('filterPriceBtn').classList.add('act');
   } else {
     document.getElementById('filterPriceLabel').textContent = 'Цена';
-    document.getElementById('filterPrice').classList.remove('act');
+    document.getElementById('filterPriceBtn').classList.remove('act');
   }
-  if (filters.completion.length) {
-    chips.push({ label: filters.completion.join(', '), key: 'completion' });
-    document.getElementById('filterCompletionLabel').textContent = filters.completion.join(', ');
-    document.getElementById('filterCompletion').classList.add('act');
+
+  if (filters.completion) {
+    const label = `до ${filters.completion.label}`;
+    chips.push({label, key:'completion'});
+    document.getElementById('filterCompLabel').textContent = label;
+    document.getElementById('filterCompBtn').classList.add('act');
   } else {
-    document.getElementById('filterCompletionLabel').textContent = 'Срок сдачи';
-    document.getElementById('filterCompletion').classList.remove('act');
+    document.getElementById('filterCompLabel').textContent = 'Срок сдачи до';
+    document.getElementById('filterCompBtn').classList.remove('act');
   }
 
   if (!chips.length) { el.innerHTML = ''; return; }
   el.innerHTML = chips.map(c => `
-    <div class="filter-chip">
-      ${c.label}
-      <button class="chip-remove" onclick="removeFilter('${c.key}')">✕</button>
+    <div class="filter-chip">${c.label}
+      <button class="chip-remove" onclick="removeChip('${c.key}')">✕</button>
     </div>`).join('') +
-    `<button class="reset-all" onclick="resetAllFilters()">Сбросить все</button>`;
+    `<button class="reset-all" onclick="resetAll()">Сбросить все</button>`;
 }
 
-function removeFilter(key) {
-  if (key === 'price') filters.price = null;
-  if (key === 'completion') filters.completion = [];
-  updateChips();
-}
-
-function resetAllFilters() {
-  filters = { price: null, completion: [] };
+function removeChip(key) {
+  if (key==='type') filters.unitTypes=null;
+  if (key==='price') filters.price=null;
+  if (key==='completion') filters.completion=null;
   updateChips();
   clearResults();
 }
 
-// Price modal
-function openPriceModal() { document.getElementById('priceModal').classList.add('vis'); renderHistogram(); }
-function closePriceModal(e) { if (!e || e.target === document.getElementById('priceModal')) document.getElementById('priceModal').classList.remove('vis'); }
-function setPriceTab(mode, el) {
-  priceTabMode = mode;
-  document.querySelectorAll('.price-tab').forEach(t => t.classList.remove('act'));
-  el.classList.add('act');
+function resetAll() {
+  filters = {unitTypes:null, price:null, completion:null};
+  document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('act',i===0));
+  updateChips(); clearResults();
 }
-function setPricePreset(min, max, el) {
+
+// ── TYPE MODAL ────────────────────────────
+function openTypeModal() {
+  tmpUnitTypes = [...(filters.unitTypes||[])];
+  document.getElementById('typeModal').classList.add('vis');
+  renderUnitTypeOptions();
+}
+function closeTypeModal() { document.getElementById('typeModal').classList.remove('vis'); }
+
+function renderUnitTypeOptions() {
+  document.getElementById('unitTypeOptions').innerHTML = UNIT_TYPES.map(t => {
+    const act = tmpUnitTypes.includes(t) ? 'act' : '';
+    return `<div class="type-option ${act}" onclick="toggleUnitType(this,'${t}')">
+      <div><div class="type-option-name">${t}</div></div>
+      <div class="type-option-check"></div>
+    </div>`;
+  }).join('');
+}
+
+function toggleUnitType(el, type) {
+  const idx = tmpUnitTypes.indexOf(type);
+  if (idx >= 0) tmpUnitTypes.splice(idx, 1);
+  else tmpUnitTypes.push(type);
+  el.classList.toggle('act', tmpUnitTypes.includes(type));
+}
+
+function clearTypeModal() { tmpUnitTypes = []; renderUnitTypeOptions(); }
+
+function applyTypeModal() {
+  filters.unitTypes = tmpUnitTypes.length ? [...tmpUnitTypes] : null;
+  updateChips(); closeTypeModal();
+}
+
+// ── PRICE MODAL ───────────────────────────
+function openPriceModal() {
+  document.getElementById('priceModal').classList.add('vis');
+  renderPricePresets();
+  renderHistogram();
+}
+function closePriceModal() { document.getElementById('priceModal').classList.remove('vis'); }
+
+function renderPricePresets() {
+  document.getElementById('pricePresets').innerHTML = PRICE_RANGES.map(r => `
+    <button class="price-preset ${filters.price?.min===r.min&&filters.price?.max===r.max?'act':''}"
+      onclick="setPricePreset(${r.min},${r.max},this)">${r.label}</button>`).join('');
+}
+
+function renderHistogram() {
+  const bars = PRICE_RANGES.map(r => {
+    const count = PROJECTS.filter(p => p.priceFrom >= r.min && p.priceFrom < (r.max||Infinity)).length;
+    return { r, count };
+  });
+  const maxC = Math.max(...bars.map(b => b.count), 1);
+  const curMin = parseInt(document.getElementById('priceMin').value)||0;
+  const curMax = parseInt(document.getElementById('priceMax').value)||Infinity;
+  document.getElementById('priceHistogram').innerHTML = bars.map(({r,count}) => {
+    const h = Math.max(8, Math.round((count/maxC)*100));
+    const sel = r.min >= curMin && (curMax===Infinity||r.max<=curMax) ? 'sel' : '';
+    return `<div class="price-bar ${sel}" style="height:${h}%"
+      onclick="setPricePreset(${r.min},${r.max},null)" title="${r.label}"></div>`;
+  }).join('');
+}
+
+function setPricePreset(min, max, btn) {
   document.querySelectorAll('.price-preset').forEach(p => p.classList.remove('act'));
-  el.classList.add('act');
+  if (btn) btn.classList.add('act');
   document.getElementById('priceMin').value = min || '';
   document.getElementById('priceMax').value = max || '';
+  renderHistogram();
 }
+
+function syncHistogram() { renderHistogram(); }
+
 function clearPrice() {
   document.getElementById('priceMin').value = '';
   document.getElementById('priceMax').value = '';
   document.querySelectorAll('.price-preset').forEach(p => p.classList.remove('act'));
+  renderHistogram();
 }
+
 function applyPrice() {
-  const min = parseInt(document.getElementById('priceMin').value) || 0;
-  const max = parseInt(document.getElementById('priceMax').value) || 0;
-  if (min || max) filters.price = { min, max };
-  else filters.price = null;
-  updateChips();
-  closePriceModal();
-}
-function renderHistogram() {
-  const prices = PROJECTS.map(p => p.priceFrom);
-  const max = Math.max(...prices);
-  const el = document.getElementById('priceHistogram');
-  el.innerHTML = prices.map(p => `
-    <div class="price-bar" style="height:${Math.round((p/max)*100)}%"></div>`).join('');
+  const min = parseInt(document.getElementById('priceMin').value)||0;
+  const max = parseInt(document.getElementById('priceMax').value)||0;
+  filters.price = (min||max) ? {min, max} : null;
+  updateChips(); closePriceModal();
 }
 
-// Completion modal
-function openCompletionModal() { document.getElementById('completionModal').classList.add('vis'); }
-function closeCompletionModal(e) { if (!e || e.target === document.getElementById('completionModal')) document.getElementById('completionModal').classList.remove('vis'); }
-function clearCompletion() { document.querySelectorAll('#completionModal input').forEach(i => i.checked = false); }
-function applyCompletion() {
-  filters.completion = [...document.querySelectorAll('#completionModal input:checked')].map(i => i.value);
-  updateChips();
-  closeCompletionModal();
+// ── COMPLETION MODAL ──────────────────────
+function openCompletionModal() {
+  document.getElementById('compModal').classList.add('vis');
+  renderCompletionList();
 }
-function openAllFilters() { /* TODO */ }
-function openTypeFilter() { /* TODO */ }
+function closeCompletionModal() { document.getElementById('compModal').classList.remove('vis'); }
 
-// Close autocomplete on outside click
-document.addEventListener('click', e => {
-  if (!document.getElementById('searchWrap').contains(e.target)) hideAutocomplete();
-});
+function renderCompletionList() {
+  // Group by year
+  const years = [...new Set(COMPLETION_OPTIONS.map(o=>o.year))];
+  let html = '';
+  years.forEach(year => {
+    html += `<div class="completion-group-title">${year}</div>`;
+    COMPLETION_OPTIONS.filter(o=>o.year===year).forEach(o => {
+      const act = filters.completion?.label === o.label ? 'act' : '';
+      html += `
+        <div class="completion-item ${act}" onclick="selectCompletion(this,'${o.label}',${o.year},${o.q})">
+          <div class="completion-item-left">
+            <div class="completion-check"></div>
+            <span style="font-size:13px;font-weight:500">${o.label}</span>
+          </div>
+        </div>`;
+    });
+  });
+  document.getElementById('completionList').innerHTML = html;
+}
 
-// ── OFFERS PAGE ───────────────────────────────────
+let tmpCompl = null;
+function selectCompletion(el, label, year, q) {
+  document.querySelectorAll('.completion-item').forEach(i => i.classList.remove('act'));
+  el.classList.add('act');
+  tmpCompl = {label, year, q};
+}
+function clearCompletion() { tmpCompl=null; document.querySelectorAll('.completion-item').forEach(i=>i.classList.remove('act')); }
+function applyCompletion() { filters.completion = tmpCompl; updateChips(); closeCompletionModal(); }
+
+// ── OFFERS ────────────────────────────────
 async function loadOffers() {
-  if (!AGENT) { document.getElementById('offersList').innerHTML = '<div class="empty">Войдите через Telegram-бота</div>'; return; }
+  const el = document.getElementById('offersList');
+  if (!AGENT) {
+    el.innerHTML = `<div class="empty-page">
+      <div style="font-size:32px;margin-bottom:12px">🤖</div>
+      <div style="font-weight:600;margin-bottom:6px">Нужна авторизация</div>
+      <div style="font-size:13px;color:var(--muted)">Откройте каталог через <a href="https://t.me/phuket_proptech_bot" target="_blank" style="color:var(--accent)">Telegram-бота</a></div>
+    </div>`;
+    return;
+  }
   const r = await h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,slug,unit_ids&order=created_at.desc`);
   const offers = await r.json();
-  if (!offers.length) { document.getElementById('offersList').innerHTML = '<div class="empty">Нет предложений</div>'; return; }
-  document.getElementById('offersList').innerHTML = offers.map(o => {
+  if (!offers.length) { el.innerHTML = '<div class="empty-page">Нет предложений</div>'; return; }
+  el.innerHTML = offers.map(o => {
     const units = (o.unit_ids||[]).length;
     const url = `https://nottodayman26.github.io/phuket-catalog/offer.html?slug=${o.slug}`;
-    const ago = timeAgo(o.created_at);
     return `
       <div class="offer-card">
         <div class="offer-card-top">
-          <div class="offer-client">${o.client_name || 'Клиент'}</div>
-          <div class="offer-time">${ago}</div>
+          <div class="offer-client">${o.client_name||'Клиент'}</div>
+          <div class="offer-time">${timeAgo(o.created_at)}</div>
         </div>
         <div class="offer-meta">${units} объект${units===1?'':'ов'} в подборке</div>
         <div class="offer-url">
@@ -962,75 +941,77 @@ async function loadOffers() {
 }
 
 function copyUrl(url, btn) {
-  navigator.clipboard.writeText(url).then(() => { btn.textContent = 'Скопировано'; setTimeout(() => btn.textContent = 'Копировать', 2000); });
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = 'Скопировано ✓';
+    setTimeout(() => btn.textContent = 'Копировать', 2000);
+  });
 }
 
-// ── ACTIVITY PAGE ─────────────────────────────────
+// ── ACTIVITY ──────────────────────────────
 async function loadActivity() {
-  if (!AGENT) { document.getElementById('activityList').innerHTML = '<div class="empty">Войдите через Telegram-бота</div>'; return; }
+  const el = document.getElementById('activityList');
+  if (!AGENT) {
+    el.innerHTML = `<div class="empty-page">
+      <div style="font-size:32px;margin-bottom:12px">🤖</div>
+      <div style="font-weight:600;margin-bottom:6px">Нужна авторизация</div>
+      <div style="font-size:13px;color:var(--muted)">Откройте каталог через <a href="https://t.me/phuket_proptech_bot" target="_blank" style="color:var(--accent)">Telegram-бота</a></div>
+    </div>`;
+    return;
+  }
   const r = await h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,unit_ids&order=created_at.desc&limit=20`);
   const offers = await r.json();
-  if (!offers.length) { document.getElementById('activityList').innerHTML = '<div class="empty">Нет активности</div>'; return; }
+  if (!offers.length) { el.innerHTML = '<div class="empty-page">Нет активности</div>'; return; }
 
-  const ids = offers.map(o => o.id).join(',');
-  const [vr, br] = await Promise.all([
+  const ids = offers.map(o=>o.id).join(',');
+  const [vr,br] = await Promise.all([
     h(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id`),
     h(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`)
   ]);
   const views = await vr.json();
   const bookings = await br.json();
+  const viewMap = views.reduce((m,v)=>{m[v.offer_id]=(m[v.offer_id]||0)+1;return m;},{});
+  const bookMap = bookings.reduce((m,b)=>{(m[b.offer_id]=m[b.offer_id]||[]).push(b.units?.room_no);return m;},{});
 
-  const viewMap = views.reduce((m,v) => { m[v.offer_id] = (m[v.offer_id]||0)+1; return m; }, {});
-  const bookMap = bookings.reduce((m,b) => { (m[b.offer_id] = m[b.offer_id]||[]).push(b.units?.room_no); return m; }, {});
-
-  document.getElementById('activityList').innerHTML = offers.map(o => {
-    const vc = viewMap[o.id] || 0;
-    const bc = bookMap[o.id] || [];
+  el.innerHTML = offers.map(o => {
+    const vc = viewMap[o.id]||0, bc = bookMap[o.id]||[];
     const units = (o.unit_ids||[]).length;
     let events = [];
-    if (vc) events.push(`<div class="act-event"><div class="act-dot" style="background:var(--accent)"></div>Открыто ${vc} раз${vc===1?'':'а'}</div>`);
-    if (bc.length) events.push(`<div class="act-event"><div class="act-dot" style="background:var(--red)"></div>Забронировал: ${bc.join(', ')}</div>`);
-    if (!vc && !bc.length) events.push(`<div class="act-event"><div class="act-dot" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
+    if (vc) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>Открыто ${vc} раз${vc===1?'':'а'}</div>`);
+    if (bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--red)"></div>Забронировал: ${bc.join(', ')}</div>`);
+    if (!vc&&!bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
     return `
       <div class="activity-card">
-        <div class="act-client">${o.client_name || 'Клиент'}</div>
-        <div class="act-count">${units} объект${units===1?'':'ов'} в подборке · ${timeAgo(o.created_at)}</div>
+        <div class="act-client">${o.client_name||'Клиент'}</div>
+        <div class="act-count">${units} объект${units===1?'':'ов'} · ${timeAgo(o.created_at)}</div>
         <div class="act-events">${events.join('')}</div>
       </div>`;
   }).join('');
 }
 
-// ── AGENT AUTH ────────────────────────────────────
+// ── AGENT ─────────────────────────────────
 async function initAgent() {
   const saved = localStorage.getItem('flox-agent');
-  if (saved) {
-    AGENT = JSON.parse(saved);
-    renderAgent();
-    return;
-  }
-  // Try Telegram WebApp
+  if (saved) { AGENT = JSON.parse(saved); renderAgent(); return; }
   if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
     const tg = window.Telegram.WebApp.initDataUnsafe.user;
     const r = await h(`${SUPABASE_URL}/agents?telegram_id=eq.${tg.id}&select=*`);
     const agents = await r.json();
-    if (agents.length) { AGENT = agents[0]; localStorage.setItem('flox-agent', JSON.stringify(AGENT)); renderAgent(); }
+    if (agents.length) { AGENT = agents[0]; localStorage.setItem('flox-agent',JSON.stringify(AGENT)); renderAgent(); }
   }
 }
-
 function renderAgent() {
   if (!AGENT) return;
-  const initials = [AGENT.first_name?.[0], AGENT.last_name?.[0]].filter(Boolean).join('').toUpperCase() || 'АГ';
+  const initials = [AGENT.first_name?.[0],AGENT.last_name?.[0]].filter(Boolean).join('').toUpperCase()||'АГ';
   document.getElementById('agentAvatar').textContent = initials;
 }
 
 function timeAgo(iso) {
-  const diff = (Date.now() - new Date(iso)) / 1000;
-  if (diff < 3600) return Math.floor(diff/60) + ' мин назад';
-  if (diff < 86400) return Math.floor(diff/3600) + ' ч назад';
-  return Math.floor(diff/86400) + ' дн назад';
+  const d = (Date.now()-new Date(iso))/1000;
+  if (d<3600) return Math.floor(d/60)+' мин назад';
+  if (d<86400) return Math.floor(d/3600)+' ч назад';
+  return Math.floor(d/86400)+' дн назад';
 }
 
-// ── INIT ──────────────────────────────────────────
 initAgent();
 </script>
 </body>
