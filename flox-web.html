@@ -1087,12 +1087,18 @@ async function loadActivity() {
 
 // ── AGENT ─────────────────────────────────
 async function initAgent() {
-  // Try localStorage first (set by webapp/catalog.html or previous session)
+  // Try localStorage first (set by catalog.html webapp after Telegram auth)
   const saved = localStorage.getItem('flox-agent');
   if (saved) {
-    try { AGENT = JSON.parse(saved); renderAgent(); return; } catch(e) {}
+    try {
+      AGENT = JSON.parse(saved);
+      renderAgent();
+      return;
+    } catch(e) {
+      localStorage.removeItem('flox-agent');
+    }
   }
-  // Try Telegram WebApp
+  // Try Telegram WebApp (if opened via bot)
   if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
     const tg = window.Telegram.WebApp.initDataUnsafe.user;
     const r = await h(`${SUPABASE_URL}/agents?telegram_id=eq.${tg.id}&select=*`);
@@ -1106,7 +1112,12 @@ async function initAgent() {
 }
 function renderAgent() {
   if (!AGENT) return;
-  const initials = [AGENT.first_name?.[0],AGENT.last_name?.[0]].filter(Boolean).join('').toUpperCase()||'АГ';
+  let initials = 'АГ';
+  if (AGENT.full_name) {
+    initials = AGENT.full_name.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
+  } else if (AGENT.first_name) {
+    initials = [AGENT.first_name[0], AGENT.last_name?.[0]].filter(Boolean).join('').toUpperCase();
+  }
   document.getElementById('agentAvatar').textContent = initials;
 }
 

@@ -402,7 +402,7 @@
   <div class="sheet-bg" id="historyBg">
     <div class="sheet" style="max-height:75vh;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-y:contain;">
       <button class="sheet-close" id="closeHistoryBg">×</button>
-      <h3>Последняя активность</h3>
+      <h3>Мои предложения</h3>
       <p style="margin-bottom:12px;">Статус ссылок, которые ты отправлял клиентам</p>
       <div id="historyList"></div>
     </div>
@@ -970,6 +970,10 @@ async function init(){
   document.getElementById('ticker').innerHTML = '';
   try {
     CURRENT_AGENT = await identifyAgent().catch(()=>null);
+    // Save to localStorage so flox-web.html can read it
+    if (CURRENT_AGENT) {
+      localStorage.setItem('flox-agent', JSON.stringify(CURRENT_AGENT));
+    }
     renderTopbar();
     UNITS = await loadUnitsFromSupabase();
     buildTicker();
