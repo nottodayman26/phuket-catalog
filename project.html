@@ -478,7 +478,10 @@ a { color: inherit; text-decoration: none; }
 .sidebar-col {
   display: flex; flex-direction: column; gap: 14px;
   align-self: start;
+}
+.sidebar-inner {
   position: sticky; top: 108px;
+  display: flex; flex-direction: column; gap: 14px;
 }
 
 .reward-card {
@@ -735,13 +738,13 @@ function renderProject(d) {
 
   // Ограничиваем высоту sidebar до начала карты
   setTimeout(() => {
-    const sidebar = document.getElementById('sidebarCol');
+    const sidebarCol = document.getElementById('sidebarCol');
     const mapSection = document.getElementById('s-map');
-    if (!sidebar || !mapSection) return;
-    const sidebarTop = sidebar.getBoundingClientRect().top + window.scrollY;
+    if (!sidebarCol || !mapSection) return;
+    const sidebarTop = sidebarCol.getBoundingClientRect().top + window.scrollY;
     const mapTop = mapSection.getBoundingClientRect().top + window.scrollY;
-    const maxH = mapTop - sidebarTop - 24;
-    if (maxH > 0) sidebar.style.maxHeight = maxH + 'px';
+    const h = mapTop - sidebarTop - 24;
+    if (h > 0) sidebarCol.style.height = h + 'px';
   }, 300);
 }
 
@@ -1233,31 +1236,31 @@ function renderSidebar(d) {
   const scaleHtml = r.scale === 'уточняется' ? 'уточняется' : r.scale;
 
   document.getElementById('sidebarCol').innerHTML = `
-    <div class="reward-card">
-      <div class="reward-label">🎯 Ваше вознаграждение</div>
-      ${pctHtml}
-      <div class="reward-rows">
-        <div class="reward-row"><span class="reward-row-label">Шкала</span><span class="reward-row-val">${scaleHtml}</span></div>
-        <div class="reward-row"><span class="reward-row-label">Срок выплаты</span><span class="reward-row-val">${daysHtml}</span></div>
+    <div class="sidebar-inner" id="sidebarInner">
+      <div class="reward-card">
+        <div class="reward-label">🎯 Ваше вознаграждение</div>
+        ${pctHtml}
+        <div class="reward-rows">
+          <div class="reward-row"><span class="reward-row-label">Шкала</span><span class="reward-row-val">${scaleHtml}</span></div>
+          <div class="reward-row"><span class="reward-row-label">Срок выплаты</span><span class="reward-row-val">${daysHtml}</span></div>
+        </div>
+        <div class="reward-note">${r.note}</div>
       </div>
-      <div class="reward-note">${r.note}</div>
-    </div>
 
-    <div class="price-card">
-      <div class="price-from-label">Цена от</div>
-      <div class="price-from-val">${fmtMln(d.price_from)}</div>
-      <div class="price-to">до ${fmtMln(d.price_to)}</div>
-    </div>
+      <div class="price-card">
+        <div class="price-from-label">Цена от</div>
+        <div class="price-from-val">${fmtMln(d.price_from)}</div>
+        <div class="price-to">до ${fmtMln(d.price_to)}</div>
+      </div>
 
-    <div class="info-card">
-      <div class="info-card-title">О проекте</div>
-      <div class="info-row"><span class="info-label">Застройщик</span><span class="info-val">${d.developer}</span></div>
-      <div class="info-row"><span class="info-label">Район</span><span class="info-val">${d.district}</span></div>
-      <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors}</span></div>
-      <div class="info-row"><span class="info-label">Корпусов</span><span class="info-val">${d.buildings.length}</span></div>
-      <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion}</span></div>
-    </div>
-
+      <div class="info-card">
+        <div class="info-card-title">О проекте</div>
+        <div class="info-row"><span class="info-label">Застройщик</span><span class="info-val">${d.developer}</span></div>
+        <div class="info-row"><span class="info-label">Район</span><span class="info-val">${d.district}</span></div>
+        <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors}</span></div>
+        <div class="info-row"><span class="info-label">Корпусов</span><span class="info-val">${d.buildings.length}</span></div>
+        <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion}</span></div>
+      </div>
     </div>
   `;
 }
