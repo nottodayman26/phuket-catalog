@@ -737,15 +737,7 @@ function renderProject(d) {
   applyMeetingMode();
 
   // Ограничиваем высоту sidebar до начала карты
-  setTimeout(() => {
-    const sidebarCol = document.getElementById('sidebarCol');
-    const mapSection = document.getElementById('s-map');
-    if (!sidebarCol || !mapSection) return;
-    const sidebarTop = sidebarCol.getBoundingClientRect().top + window.scrollY;
-    const mapTop = mapSection.getBoundingClientRect().top + window.scrollY;
-    const h = mapTop - sidebarTop - 24;
-    if (h > 0) sidebarCol.style.height = h + 'px';
-  }, 300);
+  setTimeout(updateSidebarHeight, 300);
 }
 
 function renderHero(d) {
@@ -906,6 +898,7 @@ async function loadUnits(d) {
     buildPriceHints(_allUnits);
     renderUnitsTree(d, _allUnits);
     applyUnitFilters();
+    setTimeout(updateSidebarHeight, 100);
   } catch(e) { console.error('Units load error:', e); }
 }
 
@@ -1293,6 +1286,16 @@ function toggleMeeting() {
 }
 
 loadProject();
+
+function updateSidebarHeight() {
+  const sidebarCol = document.getElementById('sidebarCol');
+  const mapSection = document.getElementById('s-map');
+  if (!sidebarCol || !mapSection) return;
+  const sidebarTop = sidebarCol.getBoundingClientRect().top + window.scrollY;
+  const mapTop = mapSection.getBoundingClientRect().top + window.scrollY;
+  const h = mapTop - sidebarTop - 24;
+  if (h > 0) sidebarCol.style.height = h + 'px';
+}
 </script>
 </body>
 </html>
