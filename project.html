@@ -477,8 +477,9 @@ a { color: inherit; text-decoration: none; }
 /* ── SIDEBAR ─── */
 .sidebar-col {
   display: flex; flex-direction: column; gap: 14px;
+  grid-row: 1;
+  align-self: start;
   position: sticky; top: 108px;
-  align-self: flex-start;
 }
 
 .reward-card {
@@ -732,7 +733,17 @@ function renderProject(d) {
   sectionIds.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
 
   applyMeetingMode();
-  setTimeout(initSidebarScroll, 150);
+
+  // Ограничиваем высоту sidebar до начала карты
+  setTimeout(() => {
+    const sidebar = document.getElementById('sidebarCol');
+    const mapSection = document.getElementById('s-map');
+    if (!sidebar || !mapSection) return;
+    const sidebarTop = sidebar.getBoundingClientRect().top + window.scrollY;
+    const mapTop = mapSection.getBoundingClientRect().top + window.scrollY;
+    const maxH = mapTop - sidebarTop - 24;
+    if (maxH > 0) sidebar.style.maxHeight = maxH + 'px';
+  }, 300);
 }
 
 function renderHero(d) {
@@ -1280,32 +1291,6 @@ function toggleMeeting() {
 }
 
 loadProject();
-
-// ── Sidebar — sticky до карты ─────────────────────────────────────────────
-function initSidebarScroll() {
-  const sidebar = document.getElementById('sidebarCol');
-  const mapSection = document.getElementById('s-map');
-  if (!sidebar || !mapSection) return;
-
-  const stickyTop = 108;
-
-  function updateSidebar() {
-    const mapTop = mapSection.getBoundingClientRect().top;
-    const sidebarH = sidebar.offsetHeight;
-    // Когда низ sidebar приближается к карте — двигаем top вверх
-    const available = mapTop - stickyTop - 24;
-    if (available < sidebarH) {
-      const newTop = Math.max(0, stickyTop - (sidebarH - available));
-      sidebar.style.top = newTop + 'px';
-    } else {
-      sidebar.style.top = stickyTop + 'px';
-    }
-  }
-
-  window.addEventListener('scroll', updateSidebar, { passive: true });
-  window.addEventListener('resize', updateSidebar, { passive: true });
-  setTimeout(updateSidebar, 200);
-}
 </script>
 </body>
 </html>
