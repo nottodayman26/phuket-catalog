@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flox — Проект</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
   --meeting-logo-vis: visible;
@@ -158,7 +160,6 @@ a { color: inherit; text-decoration: none; }
   position: sticky; top: 52px; z-index: 90;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-  margin-bottom: 0;
 }
 .tabs {
   display: flex; gap: 0;
@@ -175,9 +176,15 @@ a { color: inherit; text-decoration: none; }
 .tab:hover { color: var(--text); }
 .tab.act { color: var(--project-color); border-bottom-color: var(--project-color); font-weight: 600; }
 
-/* ── PANELS ─── */
+/* ── PANELS / SECTIONS ─── */
 .panel { display: block; }
-.section-anchor { scroll-margin-top: 100px; }
+.page-section {
+  padding-top: 52px; padding-bottom: 28px;
+  scroll-margin-top: 108px;
+}
+.page-section + .page-section {
+  border-top: 1px solid var(--line);
+}
 
 /* ── UNITS ─── */
 .units-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -202,6 +209,52 @@ a { color: inherit; text-decoration: none; }
 .us-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: .04em; }
 .us-val { font-size: 13px; font-weight: 600; }
 .us-price { color: var(--project-color); }
+
+/* ── UNITS FILTERS ─── */
+.units-filters {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-end;
+}
+.uf-group { display: flex; flex-direction: column; gap: 5px; }
+.uf-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.uf-select {
+  padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--line-2); background: var(--surface-2); color: var(--text);
+  font-family: inherit; cursor: pointer; min-width: 130px;
+  transition: border-color .15s;
+}
+.uf-select:focus { outline: none; border-color: var(--project-color); }
+.uf-reset {
+  padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--line-2); background: none; color: var(--muted);
+  font-family: inherit; cursor: pointer; align-self: flex-end;
+  transition: all .15s;
+}
+.uf-reset:hover { border-color: var(--project-color); color: var(--project-color); }
+
+/* ── UNITS TABLE ─── */
+.units-table-wrap { overflow-x: auto; }
+.units-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.units-table th {
+  text-align: left; padding: 8px 12px;
+  font-size: 10px; color: var(--muted); border-bottom: 1px solid var(--line);
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+  cursor: pointer; user-select: none;
+}
+.units-table th:hover { color: var(--text); }
+.units-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.units-table tr:last-child td { border-bottom: none; }
+.units-table tr:hover td { background: var(--surface-2); }
+.ut-status-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px;
+}
+.ut-available { background: var(--green); }
+.ut-sold { background: var(--muted-2); }
+.ut-price { color: var(--project-color); font-weight: 600; }
+.units-loading { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
+.units-empty { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
+.units-count { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
 
 /* ── UNITS ACCORDION ─── */
 .buildings-list { display: flex; flex-direction: column; gap: 8px; }
@@ -238,15 +291,6 @@ a { color: inherit; text-decoration: none; }
 .uri-stats { display: flex; gap: 20px; flex-wrap: wrap; }
 .uri-stats > div { text-align: right; }
 
-/* ── SECTIONS ─── */
-.page-section {
-  padding-top: 36px; padding-bottom: 8px;
-  scroll-margin-top: 100px;
-}
-.page-section + .page-section {
-  border-top: 1px solid var(--line);
-}
-
 /* ── SECTION TITLE ─── */
 .sec-title {
   font-size: 15px; font-weight: 700; margin-bottom: 14px;
@@ -282,7 +326,9 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; gap: 12px;
   background: var(--surface); border: 1px solid var(--line);
   border-radius: 10px; padding: 11px 14px;
+  cursor: pointer; transition: border-color .15s, background .15s;
 }
+.nearby-item:hover { border-color: var(--project-color); background: var(--surface-2); }
 .nearby-icon { font-size: 20px; width: 30px; text-align: center; }
 .nearby-name { font-size: 13px; font-weight: 500; flex: 1; }
 .nearby-dist { text-align: right; }
@@ -569,7 +615,6 @@ function renderProject(d) {
         <div class="tab" data-target="s-files">Файлы</div>
       </div>
     </div>
-
     <div id="s-about"   class="page-section">${renderAbout(d)}</div>
     <div id="s-units"   class="page-section">${renderUnits(d)}</div>
     <div id="s-map"     class="page-section">${renderMap(d)}</div>
@@ -578,38 +623,30 @@ function renderProject(d) {
     <div id="s-files"   class="page-section">${renderFiles(d)}</div>
   `;
 
-  // Scroll to section on tab click
+  // Клик по вкладке → плавный скролл
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', () => {
       const target = document.getElementById(t.dataset.target);
       if (!target) return;
-      const tabsWrapH = document.querySelector('.tabs-wrap').offsetHeight;
       const topbarH = document.querySelector('.topbar').offsetHeight;
-      const offset = topbarH + tabsWrapH + 8;
-      const top = target.getBoundingClientRect().top + window.scrollY - offset;
+      const tabsH = document.querySelector('.tabs-wrap').offsetHeight;
+      const top = target.getBoundingClientRect().top + window.scrollY - topbarH - tabsH - 8;
       window.scrollTo({ top, behavior: 'smooth' });
     });
   });
 
-  // Highlight active tab on scroll via IntersectionObserver
-  const sections = ['s-about','s-units','s-map','s-payment','s-maint','s-files'];
-  let scrolling = false;
+  // Активная вкладка при скролле
+  const sectionIds = ['s-about','s-units','s-map','s-payment','s-maint','s-files'];
   const obs = new IntersectionObserver((entries) => {
-    if (scrolling) return;
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const id = entry.target.id;
-        document.querySelectorAll('.tab').forEach(t => {
-          t.classList.toggle('act', t.dataset.target === id);
-        });
+        document.querySelectorAll('.tab').forEach(t =>
+          t.classList.toggle('act', t.dataset.target === entry.target.id)
+        );
       }
     });
-  }, { rootMargin: '-52px 0px -60% 0px', threshold: 0 });
-
-  sections.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) obs.observe(el);
-  });
+  }, { rootMargin: '-108px 0px -55% 0px', threshold: 0 });
+  sectionIds.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
 
   applyMeetingMode();
 }
@@ -656,40 +693,202 @@ function renderHero(d) {
   }
 }
 
+// ── Supabase ──────────────────────────────────────────────────────────────
+const SB_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
+const SB_HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
+
+// Маппинг room_type из базы → наши категории
+function mapRoomType(rt) {
+  if (!rt) return 'Другое';
+  const r = rt.toUpperCase();
+  if (r.startsWith('PH') || r.includes('PENTHOUSE')) return 'Пентхаус';
+  if (r.includes('2 BEDROOM')) return '2 спальни';
+  if (r.includes('1 BEDROOM PLUS') || r.includes('1 BEDROOM+')) return '1 спальня+';
+  if (r.includes('1 BEDROOM')) return '1 спальня';
+  if (r.includes('STUDIO')) return 'Студия';
+  return rt;
+}
+
+let _allUnits = []; // кэш загруженных юнитов проекта
+let _sortCol = 'selling_price', _sortDir = 1;
+
 function renderUnits(d) {
+  // Запускаем загрузку юнитов асинхронно
+  setTimeout(() => loadUnits(d), 50);
+
   const typeOrder = ['Студия','1 спальня','1 спальня+','2 спальни','Пентхаус'];
   const types = d.unit_types.filter(u => u.type !== 'Студия');
-  const buildings = d.buildings || ['A'];
 
-  const rows = buildings.map((b, bi) => `
+  // Строим аккордеон по корпусам (сводная инфо из JSON)
+  const accordion = d.buildings.map((b, bi) => `
     <div class="building-block">
-      <div class="building-header" onclick="toggleBuilding(${bi})">
+      <div class="building-header" onclick="toggleBuilding(${bi}, '${b}')">
         <div class="building-title">
           <span class="building-badge">Корпус ${b}</span>
-          <span class="building-meta">${types.length} ${types.length===1?'тип':'типа'} · ${types.reduce((s,u)=>s+(u.area_from||0),0) > 0 ? types.map(u=>u.type).join(', ') : '—'}</span>
+          <span class="building-meta" id="bmeta-${bi}">загрузка...</span>
         </div>
         <span class="building-chevron" id="chev-${bi}">›</span>
       </div>
       <div class="building-types" id="btypes-${bi}" style="display:none">
-        ${types.sort((a,b)=>typeOrder.indexOf(a.type)-typeOrder.indexOf(b.type)).map(u => `
-          <div class="unit-row-item">
-            <div class="uri-left">
-              <span class="unit-dot" style="background:${u.color}"></span>
-              <span class="uri-type">${u.type}</span>
-            </div>
-            <div class="uri-stats">
-              <div><div class="us-label">Площадь</div><div class="us-val">${u.area_from}–${u.area_to} м²</div></div>
-              <div><div class="us-label">Цена от</div><div class="us-val us-price">${fmtMln(u.price_from)}</div></div>
-              <div><div class="us-label">Цена до</div><div class="us-val us-price">${fmtMln(u.price_to)}</div></div>
-            </div>
-          </div>`).join('')}
+        <div id="bunits-${bi}"><div class="units-loading">Загрузка юнитов...</div></div>
       </div>
     </div>`).join('');
 
-  return `<div class="buildings-list">${rows}</div>`;
+  return `
+    <div class="sec-title">Юниты</div>
+    <div id="units-filters-wrap" style="display:none">
+      <div class="units-filters">
+        <div class="uf-group">
+          <div class="uf-label">Тип</div>
+          <select class="uf-select" id="uf-type" onchange="applyUnitFilters()">
+            <option value="">Все типы</option>
+            <option>Студия</option>
+            <option>1 спальня</option>
+            <option>1 спальня+</option>
+            <option>2 спальни</option>
+            <option>Пентхаус</option>
+          </select>
+        </div>
+        <div class="uf-group">
+          <div class="uf-label">Цена до, млн ฿</div>
+          <select class="uf-select" id="uf-price" onchange="applyUnitFilters()">
+            <option value="">Любая</option>
+            <option value="5000000">до 5 млн</option>
+            <option value="7000000">до 7 млн</option>
+            <option value="10000000">до 10 млн</option>
+            <option value="15000000">до 15 млн</option>
+          </select>
+        </div>
+        <div class="uf-group">
+          <div class="uf-label">Статус</div>
+          <select class="uf-select" id="uf-status" onchange="applyUnitFilters()">
+            <option value="available">Доступные</option>
+            <option value="">Все</option>
+            <option value="sold">Проданные</option>
+          </select>
+        </div>
+        <button class="uf-reset" onclick="resetUnitFilters()">Сбросить</button>
+      </div>
+      <div class="units-count" id="units-count"></div>
+      <div class="units-table-wrap">
+        <table class="units-table" id="units-table">
+          <thead>
+            <tr>
+              <th onclick="sortUnits('room_no')">Номер ↕</th>
+              <th onclick="sortUnits('tower')">Корпус ↕</th>
+              <th onclick="sortUnits('floor')">Этаж ↕</th>
+              <th onclick="sortUnits('_category')">Тип ↕</th>
+              <th onclick="sortUnits('room_type')">Планировка ↕</th>
+              <th onclick="sortUnits('area_sqm')">Площадь ↕</th>
+              <th onclick="sortUnits('selling_price')">Цена ↕</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          <tbody id="units-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="units-accordion-wrap">
+      <div class="buildings-list">${accordion}</div>
+    </div>`;
 }
 
-function toggleBuilding(idx) {
+async function loadUnits(d) {
+  try {
+    // Получаем project_id из таблицы projects по коду
+    const projRes = await fetch(`${SB_URL}/projects?code=eq.${d.id}&select=id`, { headers: SB_HEADERS });
+    const projData = await projRes.json();
+    if (!projData.length) return;
+    const projectId = projData[0].id;
+
+    const res = await fetch(
+      `${SB_URL}/units?project_id=eq.${projectId}&select=room_no,tower,floor,room_type,area_sqm,selling_price,status&order=selling_price.asc&limit=1000`,
+      { headers: SB_HEADERS }
+    );
+    _allUnits = await res.json();
+
+    // Добавляем категорию
+    _allUnits.forEach(u => u._category = mapRoomType(u.room_type));
+
+    // Обновляем мета-инфо корпусов
+    d.buildings.forEach((b, bi) => {
+      const bUnits = _allUnits.filter(u => u.tower === b);
+      const avail = bUnits.filter(u => u.status === 'available').length;
+      const meta = document.getElementById('bmeta-' + bi);
+      if (meta) meta.textContent = `${avail} доступно · ${bUnits.length} всего`;
+    });
+
+    // Показываем фильтры и таблицу
+    document.getElementById('units-filters-wrap').style.display = 'block';
+    document.getElementById('units-accordion-wrap').style.display = 'none';
+    applyUnitFilters();
+
+  } catch(e) {
+    console.error('Units load error:', e);
+  }
+}
+
+function applyUnitFilters() {
+  const type = document.getElementById('uf-type')?.value || '';
+  const price = document.getElementById('uf-price')?.value || '';
+  const status = document.getElementById('uf-status')?.value || '';
+
+  let filtered = _allUnits.filter(u => {
+    if (type && u._category !== type) return false;
+    if (price && u.selling_price > parseFloat(price)) return false;
+    if (status && u.status !== status) return false;
+    return true;
+  });
+
+  // Сортировка
+  filtered.sort((a, b) => {
+    let av = a[_sortCol], bv = b[_sortCol];
+    if (typeof av === 'string') return _sortDir * av.localeCompare(bv);
+    return _sortDir * ((av || 0) - (bv || 0));
+  });
+
+  const count = document.getElementById('units-count');
+  if (count) count.textContent = `Показано ${filtered.length} юнитов`;
+
+  const tbody = document.getElementById('units-tbody');
+  if (!tbody) return;
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="units-empty">Нет юнитов по выбранным фильтрам</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(u => `
+    <tr>
+      <td style="font-weight:600">${u.room_no}</td>
+      <td>${u.tower}</td>
+      <td>${u.floor}</td>
+      <td>${u._category}</td>
+      <td style="color:var(--muted);font-size:12px">${u.room_type}</td>
+      <td>${u.area_sqm} м²</td>
+      <td class="ut-price">${fmtMln(u.selling_price)}</td>
+      <td>
+        <span class="ut-status-dot ${u.status === 'available' ? 'ut-available' : 'ut-sold'}"></span>
+        ${u.status === 'available' ? 'Доступен' : 'Продан'}
+      </td>
+    </tr>`).join('');
+}
+
+function sortUnits(col) {
+  if (_sortCol === col) _sortDir *= -1;
+  else { _sortCol = col; _sortDir = 1; }
+  applyUnitFilters();
+}
+
+function resetUnitFilters() {
+  document.getElementById('uf-type').value = '';
+  document.getElementById('uf-price').value = '';
+  document.getElementById('uf-status').value = 'available';
+  applyUnitFilters();
+}
+
+function toggleBuilding(idx, tower) {
   const el = document.getElementById('btypes-' + idx);
   const ch = document.getElementById('chev-' + idx);
   const open = el.style.display !== 'none';
@@ -721,16 +920,51 @@ function renderAbout(d) {
 
 function renderMap(d) {
   const { lat, lng } = d.coords;
+  const mapId = 'map-' + Date.now();
+  setTimeout(() => {
+    if (window._mapInstance) { window._mapInstance.remove(); window._mapInstance = null; }
+
+    const map = L.map(mapId, { zoomControl: true, scrollWheelZoom: false }).setView([lat, lng], 15);
+    window._mapInstance = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Брендированная метка
+    const floxIcon = L.divIcon({
+      html: `<div style="
+        background:var(--project-color,#5E17EB);
+        color:#fff;font-size:11px;font-weight:700;
+        padding:5px 10px;border-radius:20px;
+        white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);
+        display:flex;align-items:center;gap:4px;
+      ">🏢 ${d.name}</div>`,
+      className: '', iconAnchor: [0, 0]
+    });
+    L.marker([lat, lng], { icon: floxIcon }).addTo(map);
+
+    // Метки ближайших локаций
+    window._nearbyMarkers = {};
+    d.nearby.forEach((n, i) => {
+      if (!n.lat || !n.lng) return;
+      const icon = L.divIcon({
+        html: `<div style="font-size:22px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4))">${n.icon}</div>`,
+        className: '', iconAnchor: [11, 11]
+      });
+      const marker = L.marker([n.lat, n.lng], { icon }).addTo(map)
+        .bindPopup(`<b>${n.name}</b><br>${n.dist} · ${n.time}`);
+      window._nearbyMarkers[i] = marker;
+    });
+  }, 50);
+
   return `
-    <div class="map-wrap">
-      <iframe width="100%" height="340" style="border:0;" loading="lazy" allowfullscreen
-        src="https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed">
-      </iframe>
-    </div>
+    <div class="sec-title">Карта</div>
+    <div id="${mapId}" style="height:340px;border-radius:14px;overflow:hidden;border:1px solid var(--line);margin-bottom:20px;"></div>
     <div class="sec-title">Ближайшие локации</div>
     <div class="nearby-list">
-      ${d.nearby.map(n => `
-        <div class="nearby-item">
+      ${d.nearby.map((n, i) => `
+        <div class="nearby-item" onclick="focusNearby(${i}, ${n.lat||0}, ${n.lng||0})">
           <span class="nearby-icon">${n.icon}</span>
           <span class="nearby-name">${n.name}</span>
           <div class="nearby-dist">
@@ -739,6 +973,16 @@ function renderMap(d) {
           </div>
         </div>`).join('')}
     </div>`;
+}
+
+function focusNearby(idx, lat, lng) {
+  if (!window._mapInstance) return;
+  if (lat && lng) {
+    window._mapInstance.flyTo([lat, lng], 16, { duration: 1 });
+    if (window._nearbyMarkers && window._nearbyMarkers[idx]) {
+      window._nearbyMarkers[idx].openPopup();
+    }
+  }
 }
 
 function renderPayment(d) {
@@ -773,6 +1017,7 @@ function renderMaint(d) {
   const m = d.maintenance;
   const cfAmt = m.common_fee.amount === 0 ? 'уточняется' : `${m.common_fee.amount} ${m.common_fee.unit}`;
   const sfAmt = m.sinking_fund.amount === 0 ? 'уточняется' : `${m.sinking_fund.amount} ${m.sinking_fund.unit}`;
+  const noteHtml = (m.notes && m.notes !== 'Данные уточняются') ? `<div class="maint-note">${m.notes}</div>` : '';
   return `
     <div class="sec-title">Обслуживание</div>
     <div>
@@ -781,7 +1026,7 @@ function renderMaint(d) {
       <div class="maint-row"><span class="maint-label">Регистрация — Фрихолд</span><span class="maint-val">${m.registration.freehold}</span></div>
       <div class="maint-row"><span class="maint-label">Регистрация — Лизхолд</span><span class="maint-val">${m.registration.leasehold}</span></div>
     </div>
-    <div class="maint-note">${m.notes}</div>`;
+    ${noteHtml}`;
 }
 
 function renderFiles(d) {
