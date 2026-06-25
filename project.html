@@ -383,6 +383,30 @@ a { color: inherit; text-decoration: none; }
 .uri-stats { display: flex; gap: 20px; flex-wrap: wrap; }
 .uri-stats > div { text-align: right; }
 
+/* ── VISUAL ─── */
+.visual-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.visual-tab {
+  padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--line-2); color: var(--muted);
+  transition: all .15s; background: none; font-family: inherit;
+}
+.visual-tab:hover { border-color: var(--project-color); color: var(--project-color); }
+.visual-tab.act { background: var(--project-color); border-color: var(--project-color); color: #fff; }
+.visual-panel { display: none; }
+.visual-panel.act { display: block; }
+.visual-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+}
+.visual-thumb {
+  aspect-ratio: 4/3; border-radius: 8px; overflow: hidden;
+  cursor: zoom-in; position: relative;
+}
+.visual-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform .3s ease;
+}
+.visual-thumb:hover img { transform: scale(1.05); }
+
 /* ── ABOUT ─── */
 .desc-text { font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 24px; }
 .facilities-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px,1fr)); gap: 10px; margin-bottom: 24px; }
@@ -699,17 +723,19 @@ function renderProject(d) {
     </div>
     <div class="tabs-wrap">
       <div class="tabs">
-        <div class="tab act" data-target="s-about">О проекте</div>
-        <div class="tab" data-target="s-units">Юниты</div>
+        <div class="tab act" data-target="s-units">Юниты</div>
+        <div class="tab" data-target="s-about">О проекте</div>
         <div class="tab" data-target="s-map">Карта</div>
+        <div class="tab" data-target="s-visual">Визуал</div>
         <div class="tab" data-target="s-payment">График платежей</div>
         <div class="tab" data-target="s-maint">Обслуживание</div>
         <div class="tab" data-target="s-files">Файлы</div>
       </div>
     </div>
-    <div id="s-about"   class="page-section">${renderAbout(d)}</div>
     <div id="s-units"   class="page-section">${renderUnits(d)}</div>
+    <div id="s-about"   class="page-section">${renderAbout(d)}</div>
     <div id="s-map"     class="page-section">${renderMap(d)}</div>
+    <div id="s-visual"  class="page-section">${renderVisual(d)}</div>
     <div id="s-payment" class="page-section">${renderPayment(d)}</div>
     <div id="s-maint"   class="page-section">${renderMaint(d)}</div>
     <div id="s-files"   class="page-section">${renderFiles(d)}</div>
@@ -728,7 +754,7 @@ function renderProject(d) {
   });
 
   // Активная вкладка при скролле
-  const sectionIds = ['s-about','s-units','s-map','s-payment','s-maint','s-files'];
+  const sectionIds = ['s-units','s-about','s-map','s-visual','s-payment','s-maint','s-files'];
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -746,6 +772,15 @@ function renderProject(d) {
   setTimeout(updateSidebarHeight, 300);
 }
 
+function scrollToVisual() {
+  const section = document.getElementById('s-visual');
+  if (!section) return;
+  const topbarH = document.querySelector('.topbar').offsetHeight;
+  const tabsH = document.querySelector('.tabs-wrap').offsetHeight;
+  const top = section.getBoundingClientRect().top + window.scrollY - topbarH - tabsH - 8;
+  window.scrollTo({ top, behavior: 'smooth' });
+}
+
 function renderHero(d) {
   const hero = document.getElementById('heroSection');
   const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
@@ -753,19 +788,18 @@ function renderHero(d) {
   const base = location.pathname.replace(/\/[^\/]*$/, "/");
 
   if (local.length > 0) {
-    const photos = local.map(f => f.startsWith('http') ? f : `${base}img/VIK/${f}`);
+    const photos = local.map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
     const main = photos[0];
-    const thumbs = photos.slice(1, 4);
+    const thumbs = photos.slice(1, 4); // только 3 миниатюры = 4 фото всего
     const more = photos.length - 4;
-    const allPhotosJson = JSON.stringify(photos).replace(/"/g, '&quot;');
     hero.innerHTML = `
       <div class="hero-imgs">
-        <div class="hero-main" onclick="openLightbox(${allPhotosJson.replace(/&quot;/g,'"').replace(/'/g,"\\'")}||window._heroPhotos, 0)" style="cursor:zoom-in">
+        <div class="hero-main" onclick="scrollToVisual()" style="cursor:pointer">
           <img src="${main}" alt="${d.name}"/>
         </div>
         <div class="hero-side">
           ${thumbs.map((img, i) => `
-            <div class="hero-thumb" onclick="openLightbox(window._heroPhotos, ${i+1})" style="cursor:zoom-in">
+            <div class="hero-thumb" onclick="scrollToVisual()" style="cursor:pointer">
               <img src="${img}" alt=""/>
               ${i === 2 && more > 0 ? `<div class="hero-more">+${more}</div>` : ''}
             </div>
@@ -1138,6 +1172,41 @@ function sortUnits(col) {
   applyUnitFilters();
 }
 
+
+function renderVisual(d) {
+  const base = location.pathname.replace(/\/[^\/]*$/, "/");
+  const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
+  const renders = local.slice(0, 20).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const showroom = local.slice(20).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+
+  const makeGrid = (photos, offset) => photos.length
+    ? `<div class="visual-grid">
+        ${photos.map((src, i) => `
+          <div class="visual-thumb" onclick="openLightbox(window._allVisualPhotos, ${offset + i})">
+            <img src="${src}" loading="lazy" alt=""/>
+          </div>`).join('')}
+       </div>`
+    : `<div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">Фото появятся позже</div>`;
+
+  // Сохраняем все фото для лайтбокса
+  setTimeout(() => { window._allVisualPhotos = [...renders, ...showroom]; }, 50);
+
+  return `
+    <div class="sec-title">Визуал</div>
+    <div class="visual-tabs">
+      <button class="visual-tab act" onclick="switchVisualTab(this,'vp-renders')">Рендеры</button>
+      <button class="visual-tab" onclick="switchVisualTab(this,'vp-showroom')">Фото шоурума</button>
+    </div>
+    <div class="visual-panel act" id="vp-renders">${makeGrid(renders, 0)}</div>
+    <div class="visual-panel" id="vp-showroom">${makeGrid(showroom, renders.length)}</div>`;
+}
+
+function switchVisualTab(btn, panelId) {
+  btn.closest('.page-section').querySelectorAll('.visual-tab').forEach(t => t.classList.remove('act'));
+  btn.closest('.page-section').querySelectorAll('.visual-panel').forEach(p => p.classList.remove('act'));
+  btn.classList.add('act');
+  document.getElementById(panelId).classList.add('act');
+}
 
 function renderAbout(d) {
   const icons = { 'бассейн':'🏊','фитнес':'💪','лобби':'🏨','парковка':'🅿️','сад':'🌿','вода':'💧','охрана':'🔐','джакузи':'♨️','барбекю':'🔥','коворкинг':'💻','животных':'🐾','фонтан':'⛲','детск':'👶','лаундж':'🛋️','прачечная':'🧺','лагун':'🏖️' };
