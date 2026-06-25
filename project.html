@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flox — Проект</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
   --meeting-logo-vis: visible;
@@ -90,7 +92,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ── HERO ─── */
 .hero {
-  position: relative; background: var(--surface-2);
+  position: relative; background: #1C1C2E;
   overflow: hidden;
 }
 .hero-imgs {
@@ -145,7 +147,7 @@ a { color: inherit; text-decoration: none; }
 .proj-header { margin-bottom: 20px; }
 .proj-breadcrumb { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 .proj-breadcrumb span { color: var(--project-color); }
-.proj-title { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+.proj-title { font-size: 26px; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 6px; }
 .proj-sub { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .proj-badge {
   display: inline-flex; align-items: center;
@@ -174,19 +176,15 @@ a { color: inherit; text-decoration: none; }
 .tab:hover { color: var(--text); }
 .tab.act { color: var(--project-color); border-bottom-color: var(--project-color); font-weight: 600; }
 
-/* ── SECTION TITLE ─── */
-.sec-title {
-  font-size: 13px; font-weight: 600; margin-bottom: 18px;
-  color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
-}
-
 /* ── PANELS / SECTIONS ─── */
 .panel { display: block; }
 .page-section {
   padding-top: 52px; padding-bottom: 28px;
   scroll-margin-top: 108px;
 }
-.page-section + .page-section { border-top: none; }
+.page-section + .page-section {
+  border-top: 1px solid var(--line);
+}
 
 /* ── UNITS ─── */
 .units-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -214,88 +212,51 @@ a { color: inherit; text-decoration: none; }
 
 /* ── UNITS FILTERS ─── */
 .units-filters {
-  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-end;
-  background: var(--surface-2); border-radius: 12px; padding: 14px 16px;
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-end;
 }
 .uf-group { display: flex; flex-direction: column; gap: 5px; }
 .uf-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .uf-select {
-  padding: 7px 10px; border-radius: 8px; font-size: 12px; font-weight: 500;
-  border: 1px solid var(--line-2); background: var(--surface); color: var(--text);
-  font-family: inherit; cursor: pointer; min-width: 120px;
+  padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--line-2); background: var(--surface-2); color: var(--text);
+  font-family: inherit; cursor: pointer; min-width: 130px;
   transition: border-color .15s;
-  appearance: none; -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 10px center; padding-right: 26px;
 }
 .uf-select:focus { outline: none; border-color: var(--project-color); }
-.uf-price-range { display: flex; align-items: center; gap: 6px; }
-.uf-price-input {
-  width: 90px; padding: 7px 10px; border-radius: 8px; font-size: 12px;
-  border: 1px solid var(--line-2); background: var(--surface); color: var(--text);
-  font-family: inherit; transition: border-color .15s;
-}
-.uf-price-input:focus { outline: none; border-color: var(--project-color); }
-.uf-price-input::placeholder { color: var(--muted); font-size: 11px; }
-.uf-price-sep { color: var(--muted); font-size: 12px; }
 .uf-reset {
-  padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
   border: 1px solid var(--line-2); background: none; color: var(--muted);
   font-family: inherit; cursor: pointer; align-self: flex-end;
   transition: all .15s;
 }
 .uf-reset:hover { border-color: var(--project-color); color: var(--project-color); }
-.units-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
-
-/* ── UNITS NEW STRUCTURE ─── */
-.building-section { margin-bottom: 8px; }
-.building-section-header {
-  font-size: 13px; font-weight: 700; color: var(--text);
-  padding: 10px 0 8px; display: flex; justify-content: space-between; align-items: center;
-  border-bottom: 1px solid var(--line);
-  cursor: default;
-}
-.building-section-count { font-size: 11px; color: var(--muted); font-weight: 400; }
-.type-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 9px 12px; margin: 4px 0; border-radius: 8px;
-  cursor: pointer; transition: background .15s;
-  user-select: none;
-}
-.type-row:hover { background: var(--surface-2); }
-.type-row.open { background: var(--surface-2); }
-.type-row-left { display: flex; align-items: center; gap: 8px; }
-.type-row-name { font-size: 13px; font-weight: 600; }
-.type-row-meta { font-size: 11px; color: var(--muted); }
-.type-row-right { display: flex; align-items: center; gap: 12px; }
-.type-row-price { font-size: 12px; color: var(--project-color); font-weight: 600; }
-.type-row-chevron { font-size: 16px; color: var(--muted); transition: transform .2s; }
-.type-row.open .type-row-chevron { transform: rotate(90deg); color: var(--project-color); }
-
-.units-sublist { display: none; padding: 4px 0 8px 20px; }
-.units-sublist.open { display: block; }
 
 /* ── UNITS TABLE ─── */
-.units-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--line); }
-.units-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.units-table-wrap { overflow-x: auto; }
+.units-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
 .units-table th {
   text-align: left; padding: 8px 12px;
   font-size: 10px; color: var(--muted); border-bottom: 1px solid var(--line);
   text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
-  cursor: pointer; user-select: none; background: var(--surface-2);
+  cursor: pointer; user-select: none;
 }
 .units-table th:hover { color: var(--text); }
-.units-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.units-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
 .units-table tr:last-child td { border-bottom: none; }
 .units-table tr:hover td { background: var(--surface-2); }
-.ut-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
+.ut-status-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px;
+}
 .ut-available { background: var(--green); }
 .ut-sold { background: var(--muted-2); }
 .ut-price { color: var(--project-color); font-weight: 600; }
 .units-loading { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
 .units-empty { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
+.units-count { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
 
-/* ── UNITS ACCORDION (старый, оставляем для fallback) ─── */
+/* ── UNITS ACCORDION ─── */
 .buildings-list { display: flex; flex-direction: column; gap: 8px; }
 .building-block {
   background: var(--surface); border: 1px solid var(--line);
@@ -329,6 +290,13 @@ a { color: inherit; text-decoration: none; }
 .uri-type { font-size: 13px; font-weight: 600; }
 .uri-stats { display: flex; gap: 20px; flex-wrap: wrap; }
 .uri-stats > div { text-align: right; }
+
+/* ── SECTION TITLE ─── */
+.sec-title {
+  font-size: 15px; font-weight: 700; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.sec-title::after { content:''; flex:1; height:1px; background:var(--line); }
 
 /* ── ABOUT ─── */
 .desc-text { font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 24px; }
@@ -439,7 +407,7 @@ a { color: inherit; text-decoration: none; }
 }
 .reward-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0;
-  height: 3px; background: var(--project-color);
+  height: 3px; background: linear-gradient(90deg, #5E17EB, #9B7FD4);
 }
 .reward-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
 .reward-pct { font-size: 38px; font-weight: 700; color: var(--project-color); line-height: 1; }
@@ -626,7 +594,6 @@ function renderProject(d) {
 
   renderHero(d);
   renderSidebar(d);
-  window._currentProjectData = d;
 
   document.getElementById('mainCol').innerHTML = `
     <div class="proj-header">
@@ -747,16 +714,25 @@ let _allUnits = []; // кэш загруженных юнитов проекта
 let _sortCol = 'selling_price', _sortDir = 1;
 
 function renderUnits(d) {
+  // Запускаем загрузку юнитов асинхронно
   setTimeout(() => loadUnits(d), 50);
 
-  // Скелет: фильтры + корпуса (заполнятся после загрузки)
-  const buildingSkeleton = d.buildings.map((b, bi) => `
-    <div class="building-section" id="bsec-${bi}">
-      <div class="building-section-header">
-        <span>Корпус ${b}</span>
-        <span class="building-section-count" id="bcount-${bi}">загрузка...</span>
+  const typeOrder = ['Студия','1 спальня','1 спальня+','2 спальни','Пентхаус'];
+  const types = d.unit_types.filter(u => u.type !== 'Студия');
+
+  // Строим аккордеон по корпусам (сводная инфо из JSON)
+  const accordion = d.buildings.map((b, bi) => `
+    <div class="building-block">
+      <div class="building-header" onclick="toggleBuilding(${bi}, '${b}')">
+        <div class="building-title">
+          <span class="building-badge">Корпус ${b}</span>
+          <span class="building-meta" id="bmeta-${bi}">загрузка...</span>
+        </div>
+        <span class="building-chevron" id="chev-${bi}">›</span>
       </div>
-      <div id="btypes-${bi}"></div>
+      <div class="building-types" id="btypes-${bi}" style="display:none">
+        <div id="bunits-${bi}"><div class="units-loading">Загрузка юнитов...</div></div>
+      </div>
     </div>`).join('');
 
   return `
@@ -767,6 +743,7 @@ function renderUnits(d) {
           <div class="uf-label">Тип</div>
           <select class="uf-select" id="uf-type" onchange="applyUnitFilters()">
             <option value="">Все типы</option>
+            <option>Студия</option>
             <option>1 спальня</option>
             <option>1 спальня+</option>
             <option>2 спальни</option>
@@ -774,12 +751,14 @@ function renderUnits(d) {
           </select>
         </div>
         <div class="uf-group">
-          <div class="uf-label">Цена, млн ฿</div>
-          <div class="uf-price-range">
-            <input class="uf-price-input" id="uf-price-from" type="number" placeholder="от" oninput="applyUnitFilters()">
-            <span class="uf-price-sep">—</span>
-            <input class="uf-price-input" id="uf-price-to" type="number" placeholder="до" oninput="applyUnitFilters()">
-          </div>
+          <div class="uf-label">Цена до, млн ฿</div>
+          <select class="uf-select" id="uf-price" onchange="applyUnitFilters()">
+            <option value="">Любая</option>
+            <option value="5000000">до 5 млн</option>
+            <option value="7000000">до 7 млн</option>
+            <option value="10000000">до 10 млн</option>
+            <option value="15000000">до 15 млн</option>
+          </select>
         </div>
         <div class="uf-group">
           <div class="uf-label">Статус</div>
@@ -789,15 +768,35 @@ function renderUnits(d) {
             <option value="sold">Проданные</option>
           </select>
         </div>
-        <button class="uf-reset" onclick="resetUnitFilters()">↺ Сбросить</button>
+        <button class="uf-reset" onclick="resetUnitFilters()">Сбросить</button>
       </div>
       <div class="units-count" id="units-count"></div>
+      <div class="units-table-wrap">
+        <table class="units-table" id="units-table">
+          <thead>
+            <tr>
+              <th onclick="sortUnits('room_no')">Номер ↕</th>
+              <th onclick="sortUnits('tower')">Корпус ↕</th>
+              <th onclick="sortUnits('floor')">Этаж ↕</th>
+              <th onclick="sortUnits('_category')">Тип ↕</th>
+              <th onclick="sortUnits('room_type')">Планировка ↕</th>
+              <th onclick="sortUnits('area_sqm')">Площадь ↕</th>
+              <th onclick="sortUnits('selling_price')">Цена ↕</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          <tbody id="units-tbody"></tbody>
+        </table>
+      </div>
     </div>
-    <div id="units-tree-wrap">${buildingSkeleton}</div>`;
+    <div id="units-accordion-wrap">
+      <div class="buildings-list">${accordion}</div>
+    </div>`;
 }
 
 async function loadUnits(d) {
   try {
+    // Получаем project_id из таблицы projects по коду
     const projRes = await fetch(`${SB_URL}/projects?code=eq.${d.id}&select=id`, { headers: SB_HEADERS });
     const projData = await projRes.json();
     if (!projData.length) return;
@@ -808,176 +807,94 @@ async function loadUnits(d) {
       { headers: SB_HEADERS }
     );
     _allUnits = await res.json();
+
+    // Добавляем категорию
     _allUnits.forEach(u => u._category = mapRoomType(u.room_type));
 
+    // Обновляем мета-инфо корпусов
+    d.buildings.forEach((b, bi) => {
+      const bUnits = _allUnits.filter(u => u.tower === b);
+      const avail = bUnits.filter(u => u.status === 'available').length;
+      const meta = document.getElementById('bmeta-' + bi);
+      if (meta) meta.textContent = `${avail} доступно · ${bUnits.length} всего`;
+    });
+
+    // Показываем фильтры и таблицу
     document.getElementById('units-filters-wrap').style.display = 'block';
-    renderUnitsTree(d);
+    document.getElementById('units-accordion-wrap').style.display = 'none';
     applyUnitFilters();
-  } catch(e) { console.error('Units load error:', e); }
-}
 
-const TYPE_ORDER = ['Студия','1 спальня','1 спальня+','2 спальни','Пентхаус'];
-const TYPE_COLORS = {'1 спальня':'#5E17EB','1 спальня+':'#4ECDC4','2 спальни':'#E88FB4','Пентхаус':'#C9A84C','Студия':'#888'};
-
-function renderUnitsTree(d) {
-  d.buildings.forEach((b, bi) => {
-    const bUnits = _allUnits.filter(u => u.tower === b);
-    const avail = bUnits.filter(u => u.status === 'available').length;
-    const countEl = document.getElementById('bcount-' + bi);
-    if (countEl) countEl.textContent = `${avail} доступно · ${bUnits.length} всего`;
-
-    const types = [...new Set(bUnits.map(u => u._category))]
-      .sort((a,b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b));
-
-    const typesHtml = types.map((cat, ti) => {
-      const catUnits = bUnits.filter(u => u._category === cat);
-      const catAvail = catUnits.filter(u => u.status === 'available').length;
-      const priceFrom = Math.min(...catUnits.map(u => u.selling_price));
-      const color = TYPE_COLORS[cat] || '#888';
-      const tid = `tr-${bi}-${ti}`;
-      return `
-        <div class="type-row" id="${tid}" onclick="toggleTypeRow('${tid}')">
-          <div class="type-row-left">
-            <span class="unit-dot" style="background:${color}"></span>
-            <span class="type-row-name">${cat}</span>
-            <span class="type-row-meta">${catAvail} доступно</span>
-          </div>
-          <div class="type-row-right">
-            <span class="type-row-price">от ${fmtMln(priceFrom)}</span>
-            <span class="type-row-chevron">›</span>
-          </div>
-        </div>
-        <div class="units-sublist" id="sub-${tid}">
-          <div class="units-table-wrap">
-            <table class="units-table">
-              <thead><tr>
-                <th>Номер</th><th>Эт.</th><th>Планировка</th>
-                <th>Площадь</th><th>Цена</th><th>Статус</th>
-              </tr></thead>
-              <tbody>
-                ${catUnits.map(u => `
-                  <tr>
-                    <td style="font-weight:600">${u.room_no}</td>
-                    <td>${u.floor}</td>
-                    <td style="color:var(--muted);font-size:11px">${u.room_type}</td>
-                    <td>${u.area_sqm} м²</td>
-                    <td class="ut-price">${fmtMln(u.selling_price)}</td>
-                    <td><span class="ut-status-dot ${u.status==='available'?'ut-available':'ut-sold'}"></span>${u.status==='available'?'Свободен':'Продан'}</td>
-                  </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>`;
-    }).join('');
-
-    const el = document.getElementById('btypes-' + bi);
-    if (el) el.innerHTML = typesHtml;
-  });
-}
-
-function toggleTypeRow(tid) {
-  const row = document.getElementById(tid);
-  const sub = document.getElementById('sub-' + tid);
-  if (!row || !sub) return;
-  const open = sub.classList.contains('open');
-  sub.classList.toggle('open', !open);
-  row.classList.toggle('open', !open);
+  } catch(e) {
+    console.error('Units load error:', e);
+  }
 }
 
 function applyUnitFilters() {
   const type = document.getElementById('uf-type')?.value || '';
-  const priceFrom = parseFloat(document.getElementById('uf-price-from')?.value) * 1000000 || 0;
-  const priceTo = parseFloat(document.getElementById('uf-price-to')?.value) * 1000000 || Infinity;
+  const price = document.getElementById('uf-price')?.value || '';
   const status = document.getElementById('uf-status')?.value || '';
 
-  // Фильтруем и перестраиваем дерево
-  const filtered = _allUnits.filter(u => {
+  let filtered = _allUnits.filter(u => {
     if (type && u._category !== type) return false;
-    if (priceFrom && u.selling_price < priceFrom) return false;
-    if (priceTo !== Infinity && u.selling_price > priceTo) return false;
+    if (price && u.selling_price > parseFloat(price)) return false;
     if (status && u.status !== status) return false;
     return true;
+  });
+
+  // Сортировка
+  filtered.sort((a, b) => {
+    let av = a[_sortCol], bv = b[_sortCol];
+    if (typeof av === 'string') return _sortDir * av.localeCompare(bv);
+    return _sortDir * ((av || 0) - (bv || 0));
   });
 
   const count = document.getElementById('units-count');
   if (count) count.textContent = `Показано ${filtered.length} юнитов`;
 
-  // Перестраиваем дерево с отфильтрованными данными
-  window._currentProjectData && renderFilteredTree(window._currentProjectData, filtered);
-}
+  const tbody = document.getElementById('units-tbody');
+  if (!tbody) return;
 
-function renderFilteredTree(d, filtered) {
-  d.buildings.forEach((b, bi) => {
-    const bUnits = filtered.filter(u => u.tower === b);
-    const avail = bUnits.filter(u => u.status === 'available').length;
-    const countEl = document.getElementById('bcount-' + bi);
-    if (countEl) countEl.textContent = `${avail} доступно · ${bUnits.length} всего`;
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="units-empty">Нет юнитов по выбранным фильтрам</td></tr>`;
+    return;
+  }
 
-    const types = [...new Set(bUnits.map(u => u._category))]
-      .sort((a,b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b));
-
-    const typesHtml = types.map((cat, ti) => {
-      const catUnits = bUnits.filter(u => u._category === cat);
-      const catAvail = catUnits.filter(u => u.status === 'available').length;
-      const priceFrom = Math.min(...catUnits.map(u => u.selling_price));
-      const color = TYPE_COLORS[cat] || '#888';
-      const tid = `tr-${bi}-${ti}`;
-      return `
-        <div class="type-row" id="${tid}" onclick="toggleTypeRow('${tid}')">
-          <div class="type-row-left">
-            <span class="unit-dot" style="background:${color}"></span>
-            <span class="type-row-name">${cat}</span>
-            <span class="type-row-meta">${catAvail} доступно</span>
-          </div>
-          <div class="type-row-right">
-            <span class="type-row-price">от ${fmtMln(priceFrom)}</span>
-            <span class="type-row-chevron">›</span>
-          </div>
-        </div>
-        <div class="units-sublist" id="sub-${tid}">
-          <div class="units-table-wrap">
-            <table class="units-table">
-              <thead><tr>
-                <th>Номер</th><th>Эт.</th><th>Планировка</th>
-                <th>Площадь</th><th>Цена</th><th>Статус</th>
-              </tr></thead>
-              <tbody>
-                ${catUnits.map(u => `
-                  <tr>
-                    <td style="font-weight:600">${u.room_no}</td>
-                    <td>${u.floor}</td>
-                    <td style="color:var(--muted);font-size:11px">${u.room_type}</td>
-                    <td>${u.area_sqm} м²</td>
-                    <td class="ut-price">${fmtMln(u.selling_price)}</td>
-                    <td><span class="ut-status-dot ${u.status==='available'?'ut-available':'ut-sold'}"></span>${u.status==='available'?'Свободен':'Продан'}</td>
-                  </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>`;
-    }).join('') || '<div style="padding:12px;color:var(--muted);font-size:13px">Нет юнитов</div>';
-
-    const el = document.getElementById('btypes-' + bi);
-    if (el) el.innerHTML = typesHtml;
-  });
-}
-
-function resetUnitFilters() {
-  const ft = document.getElementById('uf-type');
-  const fp = document.getElementById('uf-price-from');
-  const fp2 = document.getElementById('uf-price-to');
-  const fs = document.getElementById('uf-status');
-  if (ft) ft.value = '';
-  if (fp) fp.value = '';
-  if (fp2) fp2.value = '';
-  if (fs) fs.value = 'available';
-  applyUnitFilters();
+  tbody.innerHTML = filtered.map(u => `
+    <tr>
+      <td style="font-weight:600">${u.room_no}</td>
+      <td>${u.tower}</td>
+      <td>${u.floor}</td>
+      <td>${u._category}</td>
+      <td style="color:var(--muted);font-size:12px">${u.room_type}</td>
+      <td>${u.area_sqm} м²</td>
+      <td class="ut-price">${fmtMln(u.selling_price)}</td>
+      <td>
+        <span class="ut-status-dot ${u.status === 'available' ? 'ut-available' : 'ut-sold'}"></span>
+        ${u.status === 'available' ? 'Доступен' : 'Продан'}
+      </td>
+    </tr>`).join('');
 }
 
 function sortUnits(col) {
   if (_sortCol === col) _sortDir *= -1;
   else { _sortCol = col; _sortDir = 1; }
   applyUnitFilters();
+}
+
+function resetUnitFilters() {
+  document.getElementById('uf-type').value = '';
+  document.getElementById('uf-price').value = '';
+  document.getElementById('uf-status').value = 'available';
+  applyUnitFilters();
+}
+
+function toggleBuilding(idx, tower) {
+  const el = document.getElementById('btypes-' + idx);
+  const ch = document.getElementById('chev-' + idx);
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  ch.style.transform = open ? '' : 'rotate(90deg)';
+  ch.style.color = open ? '' : 'var(--project-color)';
 }
 
 
@@ -1003,17 +920,51 @@ function renderAbout(d) {
 
 function renderMap(d) {
   const { lat, lng } = d.coords;
+  const mapId = 'map-' + Date.now();
+  setTimeout(() => {
+    if (window._mapInstance) { window._mapInstance.remove(); window._mapInstance = null; }
+
+    const map = L.map(mapId, { zoomControl: true, scrollWheelZoom: false }).setView([lat, lng], 15);
+    window._mapInstance = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Брендированная метка
+    const floxIcon = L.divIcon({
+      html: `<div style="
+        background:var(--project-color,#5E17EB);
+        color:#fff;font-size:11px;font-weight:700;
+        padding:5px 10px;border-radius:20px;
+        white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);
+        display:flex;align-items:center;gap:4px;
+      ">🏢 ${d.name}</div>`,
+      className: '', iconAnchor: [0, 0]
+    });
+    L.marker([lat, lng], { icon: floxIcon }).addTo(map);
+
+    // Метки ближайших локаций
+    window._nearbyMarkers = {};
+    d.nearby.forEach((n, i) => {
+      if (!n.lat || !n.lng) return;
+      const icon = L.divIcon({
+        html: `<div style="font-size:22px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4))">${n.icon}</div>`,
+        className: '', iconAnchor: [11, 11]
+      });
+      const marker = L.marker([n.lat, n.lng], { icon }).addTo(map)
+        .bindPopup(`<b>${n.name}</b><br>${n.dist} · ${n.time}`);
+      window._nearbyMarkers[i] = marker;
+    });
+  }, 50);
+
   return `
     <div class="sec-title">Карта</div>
-    <div class="map-wrap" style="margin-bottom:20px;">
-      <iframe width="100%" height="340" style="border:0;" loading="lazy" allowfullscreen
-        src="https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed">
-      </iframe>
-    </div>
+    <div id="${mapId}" style="height:340px;border-radius:14px;overflow:hidden;border:1px solid var(--line);margin-bottom:20px;"></div>
     <div class="sec-title">Ближайшие локации</div>
     <div class="nearby-list">
-      ${d.nearby.map(n => `
-        <div class="nearby-item" onclick="window.open('https://maps.google.com/maps?q=${lat},${lng}&z=15','_blank')">
+      ${d.nearby.map((n, i) => `
+        <div class="nearby-item" onclick="focusNearby(${i}, ${n.lat||0}, ${n.lng||0})">
           <span class="nearby-icon">${n.icon}</span>
           <span class="nearby-name">${n.name}</span>
           <div class="nearby-dist">
@@ -1022,6 +973,16 @@ function renderMap(d) {
           </div>
         </div>`).join('')}
     </div>`;
+}
+
+function focusNearby(idx, lat, lng) {
+  if (!window._mapInstance) return;
+  if (lat && lng) {
+    window._mapInstance.flyTo([lat, lng], 16, { duration: 1 });
+    if (window._nearbyMarkers && window._nearbyMarkers[idx]) {
+      window._nearbyMarkers[idx].openPopup();
+    }
+  }
 }
 
 function renderPayment(d) {
