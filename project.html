@@ -158,13 +158,14 @@ a { color: inherit; text-decoration: none; }
   position: sticky; top: 52px; z-index: 90;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-  border-radius: 0 0 12px 12px;
+  border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  margin: 0 20px;
 }
 .tabs {
   display: flex; gap: 0;
   overflow-x: auto; scrollbar-width: none;
-  max-width: 1200px; margin: 0 auto; padding: 0 20px;
+  max-width: 1200px; margin: 0 auto; padding: 0 8px;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
@@ -298,20 +299,19 @@ a { color: inherit; text-decoration: none; }
 .uf-overlay.open { display: block; }
 
 /* ── UNITS NEW STRUCTURE ─── */
-.building-section { margin-bottom: 4px; }
+.building-section { margin-bottom: 16px; }
 .building-section-header {
   font-size: 13px; font-weight: 700; color: var(--text);
-  padding: 10px 0 8px; display: flex; justify-content: space-between; align-items: center;
-  border-bottom: 1px solid var(--line);
+  padding: 10px 4px 8px; display: flex; justify-content: space-between; align-items: center;
 }
 .building-section-count { font-size: 11px; color: var(--muted); font-weight: 400; }
 .type-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 9px 12px; margin: 3px 0; border-radius: 8px;
+  padding: 9px 12px; margin: 2px 0; border-radius: 8px;
   cursor: pointer; transition: background .15s; user-select: none;
 }
 .type-row:hover { background: var(--surface-2); }
-.type-row.open { background: var(--surface-2); }
+.type-row.open { background: var(--surface-2); border-radius: 8px 8px 0 0; }
 .type-row-left { display: flex; align-items: center; gap: 8px; }
 .type-row-name { font-size: 13px; font-weight: 600; }
 .type-row-meta { font-size: 11px; color: var(--muted); }
@@ -319,20 +319,26 @@ a { color: inherit; text-decoration: none; }
 .type-row-price { font-size: 12px; color: var(--project-color); font-weight: 600; }
 .type-row-chevron { font-size: 16px; color: var(--muted); transition: transform .2s; line-height: 1; }
 .type-row.open .type-row-chevron { transform: rotate(90deg); color: var(--project-color); }
-.units-sublist { display: none; padding: 4px 0 8px 12px; }
+.units-sublist { display: none; padding: 0 0 8px 0; }
 .units-sublist.open { display: block; }
 
 /* ── UNITS TABLE ─── */
-.units-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--line); }
+.units-table-wrap {
+  overflow-x: auto;
+  border-radius: 0 0 8px 8px;
+  border: 1px solid var(--line);
+  border-top: none;
+  background: var(--surface);
+}
 .units-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .units-table th {
   text-align: left; padding: 8px 12px;
   font-size: 10px; color: var(--muted); border-bottom: 1px solid var(--line);
   text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
-  cursor: pointer; user-select: none; background: var(--surface-2);
+  cursor: pointer; user-select: none; background: var(--surface);
 }
 .units-table th:hover { color: var(--text); }
-.units-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.units-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); background: var(--surface); }
 .units-table tr:last-child td { border-bottom: none; }
 .units-table tr:hover td { background: var(--surface-2); }
 .ut-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
@@ -903,11 +909,24 @@ async function loadUnits(d) {
 }
 
 function renderUnitsTree(d, units) {
-  d.buildings.forEach((b, bi) => {
+  // Сортируем: корпуса с юнитами первыми, пустые в конец
+  const buildings = [...d.buildings].sort((a, b) => {
+    const aHas = units.some(u => u.tower === a);
+    const bHas = units.some(u => u.tower === b);
+    if (aHas && !bHas) return -1;
+    if (!aHas && bHas) return 1;
+    return 0;
+  });
+
+  buildings.forEach((b) => {
+    // Находим оригинальный индекс для id
+    const bi = d.buildings.indexOf(b);
     const bUnits = units.filter(u => u.tower === b);
     const avail = bUnits.filter(u => u.status === 'available').length;
     const countEl = document.getElementById('bcount-' + bi);
-    if (countEl) countEl.textContent = `${avail} доступно · ${bUnits.length} всего`;
+    if (countEl) countEl.textContent = bUnits.length
+      ? `${avail} доступно · ${bUnits.length} всего`
+      : 'Нет юнитов';
 
     const types = [...new Set(bUnits.map(u => u._category))]
       .sort((a, b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b));
@@ -951,10 +970,17 @@ function renderUnitsTree(d, units) {
             </table>
           </div>
         </div>`;
-    }).join('') : '<div style="padding:12px;color:var(--muted);font-size:13px">Нет юнитов</div>';
+    }).join('') : '<div style="padding:10px 4px;color:var(--muted);font-size:13px">Нет юнитов по выбранным фильтрам</div>';
 
     const el = document.getElementById('btypes-' + bi);
     if (el) el.innerHTML = typesHtml;
+
+    // Перемещаем секцию без юнитов в конец DOM
+    const sec = document.getElementById('bsec-' + bi);
+    if (sec && !bUnits.length) {
+      const wrap = document.getElementById('units-tree-wrap');
+      if (wrap) wrap.appendChild(sec);
+    }
   });
 }
 
