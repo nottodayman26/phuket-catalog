@@ -196,6 +196,41 @@ a { color: inherit; text-decoration: none; }
 .us-val { font-size: 13px; font-weight: 600; }
 .us-price { color: var(--project-color); }
 
+/* ── UNITS ACCORDION ─── */
+.buildings-list { display: flex; flex-direction: column; gap: 8px; }
+.building-block {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; overflow: hidden;
+  transition: border-color .2s;
+}
+.building-block:hover { border-color: var(--line-2); }
+.building-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; cursor: pointer;
+  user-select: none;
+}
+.building-header:hover { background: var(--surface-2); }
+.building-title { display: flex; flex-direction: column; gap: 3px; }
+.building-badge {
+  font-size: 13px; font-weight: 700; color: var(--text);
+}
+.building-meta { font-size: 11px; color: var(--muted); }
+.building-chevron {
+  font-size: 20px; color: var(--muted);
+  transition: transform .2s, color .2s;
+  line-height: 1;
+}
+.building-types { padding: 0 16px 14px; }
+.unit-row-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-top: 1px solid var(--line);
+  flex-wrap: wrap; gap: 8px;
+}
+.uri-left { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+.uri-type { font-size: 13px; font-weight: 600; }
+.uri-stats { display: flex; gap: 20px; flex-wrap: wrap; }
+.uri-stats > div { text-align: right; }
+
 /* ── SECTION TITLE ─── */
 .sec-title {
   font-size: 15px; font-weight: 700; margin-bottom: 14px;
@@ -348,6 +383,35 @@ a { color: inherit; text-decoration: none; }
 .action-btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--line-2); }
 .action-btn:hover { opacity: 0.85; }
 
+/* ── LIGHTBOX ─── */
+.lightbox {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.92); align-items: center; justify-content: center;
+}
+.lightbox.open { display: flex; }
+.lb-img { max-width: 90vw; max-height: 88vh; object-fit: contain; border-radius: 8px; }
+.lb-close {
+  position: absolute; top: 16px; right: 20px;
+  color: #fff; font-size: 28px; cursor: pointer; line-height: 1;
+  background: rgba(0,0,0,0.4); border: none; border-radius: 8px;
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+}
+.lb-prev, .lb-next {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  color: #fff; font-size: 22px; cursor: pointer;
+  background: rgba(0,0,0,0.5); border: none; border-radius: 50%;
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.lb-prev:hover, .lb-next:hover { background: rgba(0,0,0,0.8); }
+.lb-prev { left: 16px; }
+.lb-next { right: 16px; }
+.lb-counter {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  color: rgba(255,255,255,0.7); font-size: 12px;
+  background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 20px;
+}
+
 /* ── UTILS ─── */
 .spinner {
   width: 30px; height: 30px; border-radius: 50%;
@@ -401,9 +465,42 @@ a { color: inherit; text-decoration: none; }
   <div class="sidebar-col" id="sidebarCol"></div>
 </div>
 
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-prev" onclick="lbNav(-1)">‹</button>
+  <img class="lb-img" id="lbImg" src="" alt=""/>
+  <button class="lb-next" onclick="lbNav(1)">›</button>
+  <div class="lb-counter" id="lbCounter"></div>
+</div>
+
 <script>
 const fmt = n => new Intl.NumberFormat('ru-RU').format(n);
 const fmtMln = n => n >= 1000000 ? (n/1000000).toFixed(1).replace('.0','') + ' млн ฿' : fmt(n) + ' ฿';
+let lbPhotos = [], lbIdx = 0;
+function openLightbox(photos, idx) {
+  lbPhotos = photos; lbIdx = idx;
+  document.getElementById('lightbox').classList.add('open');
+  updateLb();
+  document.addEventListener('keydown', lbKey);
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.removeEventListener('keydown', lbKey);
+}
+function lbNav(dir) { lbIdx = (lbIdx + dir + lbPhotos.length) % lbPhotos.length; updateLb(); }
+function updateLb() {
+  document.getElementById('lbImg').src = lbPhotos[lbIdx];
+  document.getElementById('lbCounter').textContent = `${lbIdx+1} / ${lbPhotos.length}`;
+}
+function lbKey(e) {
+  if (e.key === 'ArrowRight') lbNav(1);
+  if (e.key === 'ArrowLeft') lbNav(-1);
+  if (e.key === 'Escape') closeLightbox();
+}
+document.getElementById('lightbox').addEventListener('click', function(e) {
+  if (e.target === this) closeLightbox();
+});
 
 // Theme
 const saved = localStorage.getItem('flox-theme') || 'dark';
@@ -438,7 +535,6 @@ function renderProject(d) {
 
   document.getElementById('mainCol').innerHTML = `
     <div class="proj-header">
-      <div class="proj-breadcrumb">Каталог / <span>${d.district}</span> / ${d.name}</div>
       <div class="proj-title">${d.name}</div>
       <div class="proj-sub">
         <span>${d.district}, Phuket</span>
@@ -448,15 +544,15 @@ function renderProject(d) {
       </div>
     </div>
     <div class="tabs">
-      <div class="tab act" data-tab="units">Юниты</div>
-      <div class="tab" data-tab="about">О проекте</div>
+      <div class="tab act" data-tab="about">О проекте</div>
+      <div class="tab" data-tab="units">Юниты</div>
       <div class="tab" data-tab="map">Карта</div>
-      <div class="tab" data-tab="payment">Payment Schedule</div>
+      <div class="tab" data-tab="payment">График платежей</div>
       <div class="tab" data-tab="maint">Обслуживание</div>
       <div class="tab" data-tab="files">Файлы</div>
     </div>
-    <div id="p-units"   class="panel act">${renderUnits(d)}</div>
-    <div id="p-about"   class="panel">${renderAbout(d)}</div>
+    <div id="p-about"   class="panel act">${renderAbout(d)}</div>
+    <div id="p-units"   class="panel">${renderUnits(d)}</div>
     <div id="p-map"     class="panel">${renderMap(d)}</div>
     <div id="p-payment" class="panel">${renderPayment(d)}</div>
     <div id="p-maint"   class="panel">${renderMaint(d)}</div>
@@ -470,15 +566,6 @@ function renderProject(d) {
     document.getElementById('p-' + t.dataset.tab).classList.add('act');
   }));
 
-  document.querySelectorAll('.uf-btn').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('.uf-btn').forEach(b => b.classList.remove('act'));
-    btn.classList.add('act');
-    const f = btn.dataset.filter;
-    document.querySelectorAll('.unit-card').forEach(c => {
-      c.style.display = (f === 'all' || c.dataset.bed === f) ? '' : 'none';
-    });
-  }));
-
   // Apply meeting mode after full render
   applyMeetingMode();
 }
@@ -487,23 +574,29 @@ function renderHero(d) {
   const hero = document.getElementById('heroSection');
   const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
   const sections = (d.gallery && d.gallery.sections) ? d.gallery.sections : [];
+  const base = location.pathname.replace(/\/[^\/]*$/, "/");
 
   if (local.length > 0) {
-    const main = local[0];
-    const thumbs = local.slice(1, 4);
-    const more = local.length - 4;
+    const photos = local.map(f => f.startsWith('http') ? f : `${base}img/VIK/${f}`);
+    const main = photos[0];
+    const thumbs = photos.slice(1, 4);
+    const more = photos.length - 4;
+    const allPhotosJson = JSON.stringify(photos).replace(/"/g, '&quot;');
     hero.innerHTML = `
       <div class="hero-imgs">
-        <div class="hero-main"><img src="${main}" alt="${d.name}"/></div>
+        <div class="hero-main" onclick="openLightbox(${allPhotosJson.replace(/&quot;/g,'"').replace(/'/g,"\\'")}||window._heroPhotos, 0)" style="cursor:zoom-in">
+          <img src="${main}" alt="${d.name}"/>
+        </div>
         <div class="hero-side">
           ${thumbs.map((img, i) => `
-            <div class="hero-thumb">
+            <div class="hero-thumb" onclick="openLightbox(window._heroPhotos, ${i+1})" style="cursor:zoom-in">
               <img src="${img}" alt=""/>
               ${i === 2 && more > 0 ? `<div class="hero-more">+${more}</div>` : ''}
             </div>
           `).join('')}
         </div>
       </div>`;
+    window._heroPhotos = photos;
   } else {
     const sectionBtns = sections.map(s =>
       `<a class="hero-drive-btn" href="${s.url}" target="_blank">📁 ${s.name}</a>`
@@ -514,40 +607,56 @@ function renderHero(d) {
         <div style="text-align:center;">
           <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Галерея проекта</div>
           <div class="hero-drive-sections" style="margin-bottom:16px;">${sectionBtns}</div>
-          <a class="hero-drive-btn primary" href="${d.drive_root}" target="_blank">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            Открыть Google Drive
-          </a>
         </div>
       </div>`;
   }
 }
 
 function renderUnits(d) {
-  const beds = [...new Set(d.unit_types.map(u => u.bedrooms))].sort();
-  return `
-    <div class="units-filter">
-      <button class="uf-btn act" data-filter="all">Все типы</button>
-      ${beds.map(b => `<button class="uf-btn" data-filter="${b}">${b} спальн${b===1?'я':'и'}</button>`).join('')}
-    </div>
-    <div class="units-grid">
-      ${d.unit_types.map(u => `
-        <div class="unit-card" data-bed="${u.bedrooms}">
-          <div class="unit-type-label">
-            <span class="unit-dot" style="background:${u.color}"></span>${u.type}
-          </div>
-          <div class="unit-stats">
-            <div><div class="us-label">Площадь</div><div class="us-val">${u.area_from}–${u.area_to} м²</div></div>
-            <div><div class="us-label">Спальни</div><div class="us-val">${u.bedrooms} BR</div></div>
-            <div><div class="us-label">Цена от</div><div class="us-val us-price">${fmtMln(u.price_from)}</div></div>
-            <div><div class="us-label">Цена до</div><div class="us-val us-price">${fmtMln(u.price_to)}</div></div>
-          </div>
-        </div>`).join('')}
-    </div>`;
+  const typeOrder = ['Студия','1 спальня','1 спальня+','2 спальни','Пентхаус'];
+  const types = d.unit_types.filter(u => u.type !== 'Студия');
+  const buildings = d.buildings || ['A'];
+
+  const rows = buildings.map((b, bi) => `
+    <div class="building-block">
+      <div class="building-header" onclick="toggleBuilding(${bi})">
+        <div class="building-title">
+          <span class="building-badge">Корпус ${b}</span>
+          <span class="building-meta">${types.length} ${types.length===1?'тип':'типа'} · ${types.reduce((s,u)=>s+(u.area_from||0),0) > 0 ? types.map(u=>u.type).join(', ') : '—'}</span>
+        </div>
+        <span class="building-chevron" id="chev-${bi}">›</span>
+      </div>
+      <div class="building-types" id="btypes-${bi}" style="display:none">
+        ${types.sort((a,b)=>typeOrder.indexOf(a.type)-typeOrder.indexOf(b.type)).map(u => `
+          <div class="unit-row-item">
+            <div class="uri-left">
+              <span class="unit-dot" style="background:${u.color}"></span>
+              <span class="uri-type">${u.type}</span>
+            </div>
+            <div class="uri-stats">
+              <div><div class="us-label">Площадь</div><div class="us-val">${u.area_from}–${u.area_to} м²</div></div>
+              <div><div class="us-label">Цена от</div><div class="us-val us-price">${fmtMln(u.price_from)}</div></div>
+              <div><div class="us-label">Цена до</div><div class="us-val us-price">${fmtMln(u.price_to)}</div></div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  return `<div class="buildings-list">${rows}</div>`;
 }
 
+function toggleBuilding(idx) {
+  const el = document.getElementById('btypes-' + idx);
+  const ch = document.getElementById('chev-' + idx);
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  ch.style.transform = open ? '' : 'rotate(90deg)';
+  ch.style.color = open ? '' : 'var(--project-color)';
+}
+
+
 function renderAbout(d) {
-  const icons = { 'бассейн':'🏊','фитнес':'💪','лобби':'🏨','парковка':'🅿️','сад':'🌿','вода':'💧','охрана':'🔐' };
+  const icons = { 'бассейн':'🏊','фитнес':'💪','лобби':'🏨','парковка':'🅿️','сад':'🌿','вода':'💧','охрана':'🔐','джакузи':'♨️','барбекю':'🔥','коворкинг':'💻','животных':'🐾','фонтан':'⛲','детск':'👶','лаундж':'🛋️','прачечная':'🧺','лагун':'🏖️' };
   const getIcon = f => { for(const [k,v] of Object.entries(icons)) if(f.toLowerCase().includes(k)) return v; return '✨'; };
   return `
     <div class="sec-title">Описание</div>
@@ -591,7 +700,7 @@ function renderMap(d) {
 function renderPayment(d) {
   const total = d.payment_schedule.reduce((s,p) => s+p.percent, 0);
   return `
-    <div class="sec-title">Payment Schedule</div>
+    <div class="sec-title">График платежей</div>
     <div class="ps-timeline">
       ${d.payment_schedule.map(p => `
         <div class="ps-step">
@@ -605,7 +714,7 @@ function renderPayment(d) {
         ${d.payment_schedule.map(p => `
           <tr>
             <td>${p.stage}</td>
-            <td style="color:var(--muted);font-size:12px">${p.note}</td>
+            <td>${p.note}</td>
             <td style="text-align:right"><span class="ps-pct">${p.percent}%</span></td>
           </tr>`).join('')}
       </tbody>
@@ -685,8 +794,7 @@ function renderSidebar(d) {
       <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion}</span></div>
     </div>
 
-    <a class="action-btn primary" href="${d.drive_root}" target="_blank">📂 Google Drive проекта</a>
-    <a class="action-btn secondary" href="https://t.me/phuket_proptech_bot" target="_blank">💬 Написать в бот</a>
+    </div>
   `;
 }
 
