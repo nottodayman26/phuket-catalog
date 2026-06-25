@@ -170,8 +170,9 @@ a { color: inherit; text-decoration: none; }
   color: var(--muted); cursor: pointer; white-space: nowrap;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
   transition: color .15s, border-color .15s;
+  border-radius: 8px 8px 0 0;
 }
-.tab:hover { color: var(--text); }
+.tab:hover { color: var(--text); background: var(--surface-2); }
 .tab.act { color: var(--project-color); border-bottom-color: var(--project-color); font-weight: 600; }
 
 /* ── PANELS / SECTIONS ─── */
@@ -216,24 +217,70 @@ a { color: inherit; text-decoration: none; }
   display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: flex-end;
   background: var(--surface-2); border-radius: 12px; padding: 14px 16px;
 }
-.uf-group { display: flex; flex-direction: column; gap: 5px; }
+.uf-group { display: flex; flex-direction: column; gap: 5px; position: relative; }
 .uf-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-.uf-select {
-  padding: 7px 10px; border-radius: 8px; font-size: 12px; font-weight: 500;
+
+/* Кастомная кнопка фильтра */
+.uf-btn-custom {
+  display: flex; align-items: center; gap: 8px; justify-content: space-between;
+  padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
   border: 1px solid var(--line-2); background: var(--surface); color: var(--text);
-  font-family: inherit; cursor: pointer; min-width: 120px;
+  font-family: inherit; cursor: pointer; min-width: 120px; white-space: nowrap;
   transition: border-color .15s;
+  user-select: none;
 }
-.uf-select:focus { outline: none; border-color: var(--project-color); }
-.uf-price-range { display: flex; align-items: center; gap: 6px; }
+.uf-btn-custom:hover { border-color: var(--project-color); }
+.uf-btn-custom.open { border-color: var(--project-color); }
+.uf-btn-custom svg { opacity: .5; flex-shrink: 0; transition: transform .2s; }
+.uf-btn-custom.open svg { transform: rotate(180deg); opacity: 1; }
+
+/* Дропдаун-панель */
+.uf-dropdown {
+  display: none; position: absolute; top: calc(100% + 6px); left: 0;
+  background: var(--surface); border: 1px solid var(--line-2);
+  border-radius: 12px; z-index: 200; min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  overflow: hidden;
+}
+.uf-dropdown.open { display: block; }
+
+/* Опции для Тип и Статус */
+.uf-option {
+  padding: 10px 14px; font-size: 13px; cursor: pointer;
+  transition: background .12s; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+.uf-option:hover { background: var(--surface-2); }
+.uf-option.selected { color: var(--project-color); font-weight: 600; }
+.uf-option.selected::after { content: '✓'; margin-left: auto; font-size: 12px; }
+
+/* Панель цены */
+.uf-price-panel { padding: 14px; }
+.uf-price-panel-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.uf-price-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .uf-price-input {
-  width: 88px; padding: 7px 10px; border-radius: 8px; font-size: 12px;
-  border: 1px solid var(--line-2); background: var(--surface); color: var(--text);
-  font-family: inherit; transition: border-color .15s;
+  flex: 1; padding: 8px 10px; border-radius: 8px; font-size: 13px;
+  border: 1px solid var(--line-2); background: var(--surface-2); color: var(--text);
+  font-family: inherit; transition: border-color .15s; outline: none;
 }
-.uf-price-input:focus { outline: none; border-color: var(--project-color); }
-.uf-price-input::placeholder { color: var(--muted); font-size: 11px; }
-.uf-price-sep { color: var(--muted); font-size: 12px; }
+.uf-price-input:focus { border-color: var(--project-color); }
+.uf-price-input::placeholder { color: var(--muted); }
+.uf-price-sep { color: var(--muted); font-size: 13px; flex-shrink: 0; }
+.uf-price-hints { display: flex; flex-direction: column; gap: 0; }
+.uf-price-hint-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--line); }
+.uf-price-hint {
+  padding: 8px 10px; font-size: 12px; cursor: pointer;
+  color: var(--muted); transition: background .12s, color .12s;
+  text-align: center;
+}
+.uf-price-hint:hover { background: var(--surface-2); color: var(--text); }
+.uf-price-hint.selected { color: var(--project-color); font-weight: 600; }
+.uf-price-hint-col { display: flex; flex-direction: column; }
+.uf-price-hint-col + .uf-price-hint-col { border-left: 1px solid var(--line); }
+.uf-price-hints-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
+.uf-price-hints-grid .uf-price-hint { border-bottom: 1px solid var(--line); }
+.uf-price-hints-grid .uf-price-hint:nth-child(odd) { border-right: 1px solid var(--line); }
+
 .uf-reset {
   padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
   border: 1px solid var(--line-2); background: none; color: var(--muted);
@@ -242,6 +289,12 @@ a { color: inherit; text-decoration: none; }
 }
 .uf-reset:hover { border-color: var(--project-color); color: var(--project-color); }
 .units-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+/* Закрытие дропдаунов при клике вне */
+.uf-overlay {
+  display: none; position: fixed; inset: 0; z-index: 199;
+}
+.uf-overlay.open { display: block; }
 
 /* ── UNITS NEW STRUCTURE ─── */
 .building-section { margin-bottom: 4px; }
@@ -421,7 +474,14 @@ a { color: inherit; text-decoration: none; }
 .file-arrow { color: var(--muted); }
 
 /* ── SIDEBAR ─── */
-.sidebar-col { display: flex; flex-direction: column; gap: 14px; }
+.sidebar-col {
+  display: flex; flex-direction: column; gap: 14px;
+  position: sticky; top: 108px;
+  align-self: flex-start;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto; scrollbar-width: none;
+}
+.sidebar-col::-webkit-scrollbar { display: none; }
 
 .reward-card {
   background: var(--surface);
@@ -757,33 +817,58 @@ function renderUnits(d) {
   return `
     <div class="sec-title">Юниты</div>
     <div id="units-filters-wrap" style="display:none">
+      <div class="uf-overlay" id="uf-overlay" onclick="closeAllDropdowns()"></div>
       <div class="units-filters">
+
+        <!-- Тип -->
         <div class="uf-group">
           <div class="uf-label">Тип</div>
-          <select class="uf-select" id="uf-type" onchange="applyUnitFilters()">
-            <option value="">Все типы</option>
-            <option>1 спальня</option>
-            <option>1 спальня+</option>
-            <option>2 спальни</option>
-            <option>Пентхаус</option>
-          </select>
-        </div>
-        <div class="uf-group">
-          <div class="uf-label">Цена, млн ฿</div>
-          <div class="uf-price-range">
-            <input class="uf-price-input" id="uf-price-from" type="number" min="0" step="0.1" placeholder="от" oninput="applyUnitFilters()">
-            <span class="uf-price-sep">—</span>
-            <input class="uf-price-input" id="uf-price-to" type="number" min="0" step="0.1" placeholder="до" oninput="applyUnitFilters()">
+          <div class="uf-btn-custom" id="uf-type-btn" onclick="toggleDropdown('uf-type-dd')">
+            <span id="uf-type-label">Все типы</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+          </div>
+          <div class="uf-dropdown" id="uf-type-dd">
+            <div class="uf-option selected" data-val="" onclick="selectType(this)">Все типы</div>
+            <div class="uf-option" data-val="1 спальня" onclick="selectType(this)"><span class="unit-dot" style="background:#5E17EB"></span>1 спальня</div>
+            <div class="uf-option" data-val="1 спальня+" onclick="selectType(this)"><span class="unit-dot" style="background:#4ECDC4"></span>1 спальня+</div>
+            <div class="uf-option" data-val="2 спальни" onclick="selectType(this)"><span class="unit-dot" style="background:#E88FB4"></span>2 спальни</div>
+            <div class="uf-option" data-val="Пентхаус" onclick="selectType(this)"><span class="unit-dot" style="background:#C9A84C"></span>Пентхаус</div>
           </div>
         </div>
+
+        <!-- Цена -->
+        <div class="uf-group">
+          <div class="uf-label">Цена, ฿</div>
+          <div class="uf-btn-custom" id="uf-price-btn" onclick="toggleDropdown('uf-price-dd')">
+            <span id="uf-price-label">Любая</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+          </div>
+          <div class="uf-dropdown" id="uf-price-dd" style="min-width:280px">
+            <div class="uf-price-panel">
+              <div class="uf-price-row">
+                <input class="uf-price-input" id="uf-price-from" type="number" min="0" step="100000" placeholder="Значение от" oninput="onPriceInput()">
+                <span class="uf-price-sep">—</span>
+                <input class="uf-price-input" id="uf-price-to" type="number" min="0" step="100000" placeholder="Значение до" oninput="onPriceInput()">
+              </div>
+            </div>
+            <div class="uf-price-hints-grid" id="uf-price-hints"></div>
+          </div>
+        </div>
+
+        <!-- Статус -->
         <div class="uf-group">
           <div class="uf-label">Статус</div>
-          <select class="uf-select" id="uf-status" onchange="applyUnitFilters()">
-            <option value="available">Доступные</option>
-            <option value="">Все</option>
-            <option value="sold">Проданные</option>
-          </select>
+          <div class="uf-btn-custom" id="uf-status-btn" onclick="toggleDropdown('uf-status-dd')">
+            <span id="uf-status-label">Доступные</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+          </div>
+          <div class="uf-dropdown" id="uf-status-dd">
+            <div class="uf-option selected" data-val="available" onclick="selectStatus(this)"><span class="ut-status-dot ut-available"></span>Доступные</div>
+            <div class="uf-option" data-val="" onclick="selectStatus(this)">Все</div>
+            <div class="uf-option" data-val="sold" onclick="selectStatus(this)"><span class="ut-status-dot ut-sold"></span>Проданные</div>
+          </div>
         </div>
+
         <button class="uf-reset" onclick="resetUnitFilters()">↺ Сбросить</button>
       </div>
       <div class="units-count" id="units-count"></div>
@@ -806,6 +891,7 @@ async function loadUnits(d) {
     _allUnits.forEach(u => u._category = mapRoomType(u.room_type));
 
     document.getElementById('units-filters-wrap').style.display = 'block';
+    buildPriceHints(_allUnits);
     renderUnitsTree(d, _allUnits);
     applyUnitFilters();
   } catch(e) { console.error('Units load error:', e); }
@@ -876,31 +962,142 @@ function toggleTypeRow(tid) {
   row.classList.toggle('open', !open);
 }
 
-function applyUnitFilters() {
-  const type = document.getElementById('uf-type')?.value || '';
-  const priceFrom = parseFloat(document.getElementById('uf-price-from')?.value) * 1000000 || 0;
-  const priceTo = parseFloat(document.getElementById('uf-price-to')?.value) * 1000000 || Infinity;
-  const status = document.getElementById('uf-status')?.value || '';
+// ── Состояние фильтров ────────────────────────────────────────────────────
+let _filterType = '';
+let _filterPriceFrom = 0;
+let _filterPriceTo = Infinity;
+let _filterStatus = 'available';
 
+// ── Дропдауны ─────────────────────────────────────────────────────────────
+function toggleDropdown(id) {
+  const dd = document.getElementById(id);
+  const overlay = document.getElementById('uf-overlay');
+  const isOpen = dd.classList.contains('open');
+  closeAllDropdowns();
+  if (!isOpen) {
+    dd.classList.add('open');
+    overlay.classList.add('open');
+    // Подсвечиваем кнопку
+    const btnId = id.replace('-dd', '-btn');
+    const btn = document.getElementById(btnId);
+    if (btn) btn.classList.add('open');
+  }
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.uf-dropdown').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.uf-btn-custom').forEach(b => b.classList.remove('open'));
+  const ov = document.getElementById('uf-overlay');
+  if (ov) ov.classList.remove('open');
+}
+
+function selectType(el) {
+  _filterType = el.dataset.val;
+  document.querySelectorAll('#uf-type-dd .uf-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('uf-type-label').textContent = el.dataset.val || 'Все типы';
+  closeAllDropdowns();
+  applyUnitFilters();
+}
+
+function selectStatus(el) {
+  _filterStatus = el.dataset.val;
+  document.querySelectorAll('#uf-status-dd .uf-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const labels = {available:'Доступные', '':'Все', sold:'Проданные'};
+  document.getElementById('uf-status-label').textContent = labels[el.dataset.val] || 'Все';
+  closeAllDropdowns();
+  applyUnitFilters();
+}
+
+function onPriceInput() {
+  const from = parseFloat(document.getElementById('uf-price-from')?.value) || 0;
+  const to = parseFloat(document.getElementById('uf-price-to')?.value) || 0;
+  _filterPriceFrom = from;
+  _filterPriceTo = to || Infinity;
+  updatePriceLabel();
+  // Снимаем выделение с подсказок
+  document.querySelectorAll('.uf-price-hint').forEach(h => h.classList.remove('selected'));
+  applyUnitFilters();
+}
+
+function selectPriceHint(type, val, el) {
+  const fromEl = document.getElementById('uf-price-from');
+  const toEl = document.getElementById('uf-price-to');
+  if (type === 'from') {
+    fromEl.value = val;
+    _filterPriceFrom = val;
+  } else {
+    toEl.value = val;
+    _filterPriceTo = val || Infinity;
+  }
+  document.querySelectorAll(`.uf-price-hint[data-type="${type}"]`).forEach(h => h.classList.remove('selected'));
+  el.classList.add('selected');
+  updatePriceLabel();
+  applyUnitFilters();
+}
+
+function updatePriceLabel() {
+  const from = _filterPriceFrom;
+  const to = _filterPriceTo;
+  const fmt = n => n >= 1000000 ? (n/1000000).toFixed(1).replace('.0','') + 'M' : n >= 1000 ? Math.round(n/1000) + 'K' : n;
+  let label = 'Любая';
+  if (from && to !== Infinity) label = `${fmt(from)} — ${fmt(to)}`;
+  else if (from) label = `от ${fmt(from)}`;
+  else if (to !== Infinity) label = `до ${fmt(to)}`;
+  const lbl = document.getElementById('uf-price-label');
+  if (lbl) lbl.textContent = label;
+}
+
+function buildPriceHints(units) {
+  const prices = units.map(u => u.selling_price).sort((a,b) => a-b);
+  const min = prices[0] || 0;
+  const max = prices[prices.length-1] || 0;
+  // Генерируем подсказки от min до max с шагом ~500K
+  const step = 500000;
+  const start = Math.floor(min / step) * step;
+  const hints = [];
+  for (let v = start; v <= max + step; v += step) {
+    if (v > 0) hints.push(v);
+    if (hints.length >= 8) break;
+  }
+  const container = document.getElementById('uf-price-hints');
+  if (!container) return;
+  container.innerHTML = hints.map(v => {
+    const label = (v/1000000).toFixed(1).replace('.0','') + ' млн';
+    return `
+      <div class="uf-price-hint" data-type="from" data-val="${v}" onclick="selectPriceHint('from',${v},this)">${label}</div>
+      <div class="uf-price-hint" data-type="to" data-val="${v}" onclick="selectPriceHint('to',${v},this)">${label}</div>`;
+  }).join('');
+}
+
+function applyUnitFilters() {
   const filtered = _allUnits.filter(u => {
-    if (type && u._category !== type) return false;
-    if (priceFrom && u.selling_price < priceFrom) return false;
-    if (priceTo !== Infinity && u.selling_price > priceTo) return false;
-    if (status && u.status !== status) return false;
+    if (_filterType && u._category !== _filterType) return false;
+    if (_filterPriceFrom && u.selling_price < _filterPriceFrom) return false;
+    if (_filterPriceTo !== Infinity && u.selling_price > _filterPriceTo) return false;
+    if (_filterStatus && u.status !== _filterStatus) return false;
     return true;
   });
 
   const count = document.getElementById('units-count');
   if (count) count.textContent = `Показано ${filtered.length} юнитов`;
-
   if (window._currentProjectData) renderUnitsTree(window._currentProjectData, filtered);
 }
 
 function resetUnitFilters() {
-  const fields = ['uf-type','uf-price-from','uf-price-to'];
-  fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const st = document.getElementById('uf-status');
-  if (st) st.value = 'available';
+  _filterType = ''; _filterPriceFrom = 0; _filterPriceTo = Infinity; _filterStatus = 'available';
+  const fromEl = document.getElementById('uf-price-from');
+  const toEl = document.getElementById('uf-price-to');
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  document.getElementById('uf-type-label').textContent = 'Все типы';
+  document.getElementById('uf-price-label').textContent = 'Любая';
+  document.getElementById('uf-status-label').textContent = 'Доступные';
+  document.querySelectorAll('.uf-option').forEach(o => o.classList.remove('selected'));
+  document.querySelector('#uf-type-dd .uf-option[data-val=""]')?.classList.add('selected');
+  document.querySelector('#uf-status-dd .uf-option[data-val="available"]')?.classList.add('selected');
+  document.querySelectorAll('.uf-price-hint').forEach(h => h.classList.remove('selected'));
   applyUnitFilters();
 }
 
