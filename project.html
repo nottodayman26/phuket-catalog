@@ -160,7 +160,10 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  margin: 0 20px;
+  max-width: 1200px; margin: 0 auto 0; padding: 0;
+  left: 0; right: 0;
+  width: calc(100% - 40px);
+  margin-left: 20px; margin-right: 20px;
 }
 .tabs {
   display: flex; gap: 0;
@@ -216,23 +219,23 @@ a { color: inherit; text-decoration: none; }
 
 /* ── UNITS FILTERS ─── */
 .units-filters {
-  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: flex-end;
-  background: var(--surface-2); border-radius: 12px; padding: 14px 16px;
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center;
 }
 .uf-group { display: flex; flex-direction: column; gap: 5px; position: relative; }
-.uf-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.uf-label { display: none; }
 
-/* Кастомная кнопка фильтра */
+/* Кастомная кнопка-пилюля */
 .uf-btn-custom {
-  display: flex; align-items: center; gap: 8px; justify-content: space-between;
-  padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
-  border: 1px solid var(--line-2); background: var(--surface); color: var(--text);
-  font-family: inherit; cursor: pointer; min-width: 120px; white-space: nowrap;
-  transition: border-color .15s;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  border: 0.5px solid var(--line-2); background: var(--surface); color: var(--text);
+  font-family: inherit; cursor: pointer; white-space: nowrap;
+  transition: border-color .15s, background .15s;
   user-select: none;
 }
-.uf-btn-custom:hover { border-color: var(--project-color); }
-.uf-btn-custom.open { border-color: var(--project-color); }
+.uf-btn-custom:hover { border-color: var(--project-color); color: var(--project-color); }
+.uf-btn-custom.open { border-color: var(--project-color); color: var(--project-color); background: var(--accent-soft); }
+.uf-btn-custom.has-value { border-color: var(--project-color); color: var(--project-color); background: var(--accent-soft); }
 .uf-btn-custom svg { opacity: .5; flex-shrink: 0; transition: transform .2s; }
 .uf-btn-custom.open svg { transform: rotate(180deg); opacity: 1; }
 
@@ -246,7 +249,7 @@ a { color: inherit; text-decoration: none; }
 }
 .uf-dropdown.open { display: block; }
 
-/* Опции для Тип и Статус */
+/* Опции */
 .uf-option {
   padding: 10px 14px; font-size: 13px; cursor: pointer;
   transition: background .12s; color: var(--text);
@@ -256,9 +259,8 @@ a { color: inherit; text-decoration: none; }
 .uf-option.selected { color: var(--project-color); font-weight: 600; }
 .uf-option.selected::after { content: '✓'; margin-left: auto; font-size: 12px; }
 
-/* Панель цены */
+/* Цена */
 .uf-price-panel { padding: 14px; }
-.uf-price-panel-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
 .uf-price-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .uf-price-input {
   flex: 1; padding: 8px 10px; border-radius: 8px; font-size: 13px;
@@ -268,85 +270,85 @@ a { color: inherit; text-decoration: none; }
 .uf-price-input:focus { border-color: var(--project-color); }
 .uf-price-input::placeholder { color: var(--muted); }
 .uf-price-sep { color: var(--muted); font-size: 13px; flex-shrink: 0; }
-.uf-price-hints { display: flex; flex-direction: column; gap: 0; }
-.uf-price-hint-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--line); }
+.uf-price-hints-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
 .uf-price-hint {
   padding: 8px 10px; font-size: 12px; cursor: pointer;
   color: var(--muted); transition: background .12s, color .12s;
-  text-align: center;
+  text-align: center; border-bottom: 1px solid var(--line);
 }
+.uf-price-hint:nth-child(odd) { border-right: 1px solid var(--line); }
 .uf-price-hint:hover { background: var(--surface-2); color: var(--text); }
 .uf-price-hint.selected { color: var(--project-color); font-weight: 600; }
-.uf-price-hint-col { display: flex; flex-direction: column; }
-.uf-price-hint-col + .uf-price-hint-col { border-left: 1px solid var(--line); }
-.uf-price-hints-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
-.uf-price-hints-grid .uf-price-hint { border-bottom: 1px solid var(--line); }
-.uf-price-hints-grid .uf-price-hint:nth-child(odd) { border-right: 1px solid var(--line); }
 
 .uf-reset {
-  padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
-  border: 1px solid var(--line-2); background: none; color: var(--muted);
-  font-family: inherit; cursor: pointer; align-self: flex-end;
-  transition: all .15s;
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  border: 0.5px solid var(--line-2); background: none; color: var(--muted);
+  font-family: inherit; cursor: pointer;
+  transition: all .15s; margin-left: auto;
 }
 .uf-reset:hover { border-color: var(--project-color); color: var(--project-color); }
 .units-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
 
-/* Закрытие дропдаунов при клике вне */
-.uf-overlay {
-  display: none; position: fixed; inset: 0; z-index: 199;
-}
+.uf-overlay { display: none; position: fixed; inset: 0; z-index: 199; }
 .uf-overlay.open { display: block; }
 
-/* ── UNITS NEW STRUCTURE ─── */
-.building-section { margin-bottom: 16px; }
+/* ── UNITS STRUCTURE — вариант 3 ─── */
+.building-section {
+  background: var(--surface); border: 0.5px solid var(--line-2);
+  border-radius: 12px; overflow: hidden; margin-bottom: 10px;
+}
 .building-section-header {
-  font-size: 13px; font-weight: 700; color: var(--text);
-  padding: 10px 4px 8px; display: flex; justify-content: space-between; align-items: center;
-}
-.building-section-count { font-size: 11px; color: var(--muted); font-weight: 400; }
-.type-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 9px 12px; margin: 2px 0; border-radius: 8px;
-  cursor: pointer; transition: background .15s; user-select: none;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--line);
 }
+.building-section-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.building-section-count { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+/* Строки типов */
+.type-row {
+  display: flex; align-items: center;
+  padding: 10px 16px; cursor: pointer;
+  transition: background .15s; user-select: none;
+  border-bottom: 0.5px solid var(--line);
+}
+.type-row:last-of-type { border-bottom: none; }
 .type-row:hover { background: var(--surface-2); }
-.type-row.open { background: var(--surface-2); border-radius: 8px 8px 0 0; }
-.type-row-left { display: flex; align-items: center; gap: 8px; }
+.type-row.open { background: var(--surface-2); }
+.type-row-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .type-row-name { font-size: 13px; font-weight: 600; }
-.type-row-meta { font-size: 11px; color: var(--muted); }
-.type-row-right { display: flex; align-items: center; gap: 12px; }
-.type-row-price { font-size: 12px; color: var(--project-color); font-weight: 600; }
-.type-row-chevron { font-size: 16px; color: var(--muted); transition: transform .2s; line-height: 1; }
+.type-row-area { font-size: 11px; color: var(--muted); margin-left: 12px; min-width: 70px; }
+.type-row-meta { font-size: 11px; color: var(--muted); min-width: 80px; }
+.type-row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.type-row-price { font-size: 12px; color: var(--project-color); font-weight: 600; min-width: 120px; text-align: right; }
+.type-row-chevron { font-size: 16px; color: var(--muted); transition: transform .2s; line-height: 1; margin-left: 4px; }
 .type-row.open .type-row-chevron { transform: rotate(90deg); color: var(--project-color); }
-.units-sublist { display: none; padding: 0 0 8px 0; }
+
+.units-sublist { display: none; }
 .units-sublist.open { display: block; }
 
 /* ── UNITS TABLE ─── */
 .units-table-wrap {
   overflow-x: auto;
-  border-radius: 0 0 8px 8px;
-  border: 1px solid var(--line);
-  border-top: none;
-  background: var(--surface);
+  border-top: 0.5px solid var(--line);
+  background: var(--surface-2);
 }
 .units-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .units-table th {
-  text-align: left; padding: 8px 12px;
-  font-size: 10px; color: var(--muted); border-bottom: 1px solid var(--line);
+  text-align: left; padding: 8px 16px;
+  font-size: 10px; color: var(--muted); border-bottom: 0.5px solid var(--line);
   text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
-  cursor: pointer; user-select: none; background: var(--surface);
+  background: var(--surface-2);
 }
-.units-table th:hover { color: var(--text); }
-.units-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.units-table td { padding: 9px 16px; border-bottom: 0.5px solid var(--line); background: var(--surface-2); }
 .units-table tr:last-child td { border-bottom: none; }
-.units-table tr:hover td { background: var(--surface-2); }
+.units-table tr:hover td { background: var(--surface-3); }
 .ut-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
 .ut-available { background: var(--green); }
 .ut-sold { background: var(--muted-2); }
 .ut-price { color: var(--project-color); font-weight: 600; }
 .units-loading { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
-.units-empty { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
+.units-empty { padding: 32px 16px; text-align: center; color: var(--muted); font-size: 13px; }
 
 /* ── UNITS ACCORDION (старый) ─── */
 .buildings-list { display: flex; flex-direction: column; gap: 8px; }
@@ -872,7 +874,7 @@ function renderUnits(d) {
   const buildingSkeleton = d.buildings.map((b, bi) => `
     <div class="building-section" id="bsec-${bi}">
       <div class="building-section-header">
-        <span>Корпус ${b}</span>
+        <span class="building-section-title">Корпус ${b}</span>
         <span class="building-section-count" id="bcount-${bi}">загрузка...</span>
       </div>
       <div id="btypes-${bi}"></div>
@@ -988,6 +990,10 @@ function renderUnitsTree(d, units) {
       const catUnits = bUnits.filter(u => u._category === cat);
       const catAvail = catUnits.filter(u => u.status === 'available').length;
       const priceFrom = Math.min(...catUnits.map(u => u.selling_price));
+      const priceTo = Math.max(...catUnits.map(u => u.selling_price));
+      const areaFrom = Math.min(...catUnits.map(u => parseFloat(u.area_sqm)));
+      const areaTo = Math.max(...catUnits.map(u => parseFloat(u.area_sqm)));
+      const priceRange = priceFrom === priceTo ? fmtMln(priceFrom) : `${fmtMln(priceFrom)} — ${fmtMln(priceTo)}`;
       const color = TYPE_COLORS[cat] || '#888';
       const tid = `tr-${bi}-${ti}`;
       return `
@@ -995,10 +1001,11 @@ function renderUnitsTree(d, units) {
           <div class="type-row-left">
             <span class="unit-dot" style="background:${color}"></span>
             <span class="type-row-name">${cat}</span>
+            <span class="type-row-area">${areaFrom}–${areaTo} м²</span>
             <span class="type-row-meta">${catAvail} доступно</span>
           </div>
           <div class="type-row-right">
-            <span class="type-row-price">от ${fmtMln(priceFrom)}</span>
+            <span class="type-row-price">${priceRange}</span>
             <span class="type-row-chevron">›</span>
           </div>
         </div>
