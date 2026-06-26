@@ -394,18 +394,39 @@ a { color: inherit; text-decoration: none; }
 .visual-tab.act { background: var(--project-color); border-color: var(--project-color); color: #fff; }
 .visual-panel { display: none; }
 .visual-panel.act { display: block; }
-.visual-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+
+/* Слайдер */
+.visual-slider {
+  position: relative; overflow: hidden; border-radius: 12px;
+  background: var(--surface-2); user-select: none;
+  aspect-ratio: 16/9;
 }
-.visual-thumb {
-  aspect-ratio: 4/3; border-radius: 8px; overflow: hidden;
-  cursor: zoom-in; position: relative;
+.visual-slides {
+  display: flex; transition: transform .35s cubic-bezier(.4,0,.2,1);
+  height: 100%;
 }
-.visual-thumb img {
-  width: 100%; height: 100%; object-fit: cover;
-  transition: transform .3s ease;
+.visual-slide {
+  min-width: 100%; height: 100%; flex-shrink: 0;
 }
-.visual-thumb:hover img { transform: scale(1.05); }
+.visual-slide img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  pointer-events: none;
+}
+.visual-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(0,0,0,0.45); border: none; color: #fff;
+  width: 40px; height: 40px; border-radius: 50%; font-size: 20px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s; z-index: 2; line-height: 1;
+}
+.visual-arrow:hover { background: rgba(0,0,0,0.75); }
+.visual-arrow.prev { left: 12px; }
+.visual-arrow.next { right: 12px; }
+.visual-counter {
+  position: absolute; bottom: 12px; right: 14px;
+  font-size: 11px; color: rgba(255,255,255,0.75);
+  background: rgba(0,0,0,0.4); padding: 3px 10px; border-radius: 20px;
+}
 
 /* ── ABOUT ─── */
 .desc-text { font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 24px; }
@@ -726,7 +747,7 @@ function renderProject(d) {
         <div class="tab act" data-target="s-units">Юниты</div>
         <div class="tab" data-target="s-about">О проекте</div>
         <div class="tab" data-target="s-map">Карта</div>
-        <div class="tab" data-target="s-visual">Визуал</div>
+        <div class="tab" data-target="s-visual">Рендеры и фото</div>
         <div class="tab" data-target="s-payment">График платежей</div>
         <div class="tab" data-target="s-maint">Обслуживание</div>
         <div class="tab" data-target="s-files">Файлы</div>
@@ -801,7 +822,6 @@ function renderHero(d) {
           ${thumbs.map((img, i) => `
             <div class="hero-thumb" onclick="scrollToVisual()" style="cursor:pointer">
               <img src="${img}" alt=""/>
-              ${i === 2 && more > 0 ? `<div class="hero-more">+${more}</div>` : ''}
             </div>
           `).join('')}
         </div>
@@ -859,7 +879,6 @@ function renderUnits(d) {
     </div>`).join('');
 
   return `
-    <div class="sec-title">Юниты</div>
     <div id="units-filters-wrap" style="display:none">
       <div class="uf-overlay" id="uf-overlay" onclick="closeAllDropdowns()"></div>
       <div class="units-filters">
@@ -1176,36 +1195,119 @@ function sortUnits(col) {
 function renderVisual(d) {
   const base = location.pathname.replace(/\/[^\/]*$/, "/");
   const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
-  const renders = local.slice(0, 20).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
-  const showroom = local.slice(20).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const renders = local.slice(0, 19).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const showroom = local.slice(19).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
 
-  const makeGrid = (photos, offset) => photos.length
-    ? `<div class="visual-grid">
-        ${photos.map((src, i) => `
-          <div class="visual-thumb" onclick="openLightbox(window._allVisualPhotos, ${offset + i})">
-            <img src="${src}" loading="lazy" alt=""/>
-          </div>`).join('')}
-       </div>`
-    : `<div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">Фото появятся позже</div>`;
+  window._visualSliders = {};
 
-  // Сохраняем все фото для лайтбокса
-  setTimeout(() => { window._allVisualPhotos = [...renders, ...showroom]; }, 50);
+  const makeSlider = (photos, sliderId) => {
+    if (!photos.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Фото появятся позже</div>`;
+    return `
+      <div class="visual-slider" id="${sliderId}"
+        data-idx="0" data-count="${photos.length}"
+        onmousedown="sliderDragStart(event,'${sliderId}')"
+        ontouchstart="sliderTouchStart(event,'${sliderId}')">
+        <div class="visual-slides" id="${sliderId}-slides">
+          ${photos.map((src, i) => `
+            <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
+              <img src="${i < 3 ? src : ''}" data-src="${src}" alt="фото ${i+1}"/>
+            </div>`).join('')}
+        </div>
+        <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>
+        <button class="visual-arrow next" onclick="sliderNav('${sliderId}',1);event.stopPropagation()">›</button>
+        <div class="visual-counter" id="${sliderId}-counter">1 / ${photos.length}</div>
+      </div>`;
+  };
 
   return `
-    <div class="sec-title">Визуал</div>
+    <div class="sec-title">Рендеры и фото</div>
     <div class="visual-tabs">
       <button class="visual-tab act" onclick="switchVisualTab(this,'vp-renders')">Рендеры</button>
       <button class="visual-tab" onclick="switchVisualTab(this,'vp-showroom')">Фото шоурума</button>
     </div>
-    <div class="visual-panel act" id="vp-renders">${makeGrid(renders, 0)}</div>
-    <div class="visual-panel" id="vp-showroom">${makeGrid(showroom, renders.length)}</div>`;
+    <div class="visual-panel act" id="vp-renders">${makeSlider(renders, 'sl-renders')}</div>
+    <div class="visual-panel" id="vp-showroom">${makeSlider(showroom, 'sl-showroom')}</div>`;
 }
 
 function switchVisualTab(btn, panelId) {
-  btn.closest('.page-section').querySelectorAll('.visual-tab').forEach(t => t.classList.remove('act'));
-  btn.closest('.page-section').querySelectorAll('.visual-panel').forEach(p => p.classList.remove('act'));
+  const section = btn.closest('.page-section');
+  section.querySelectorAll('.visual-tab').forEach(t => t.classList.remove('act'));
+  section.querySelectorAll('.visual-panel').forEach(p => p.classList.remove('act'));
   btn.classList.add('act');
   document.getElementById(panelId).classList.add('act');
+  // Lazy load первых фото новой панели
+  const slider = document.querySelector('#' + panelId + ' .visual-slider');
+  if (slider) sliderLazyLoad(slider.id, parseInt(slider.dataset.idx));
+}
+
+// ── Слайдер логика ────────────────────────────────────────────────────────
+function sliderNav(id, dir) {
+  const slider = document.getElementById(id);
+  if (!slider) return;
+  const count = parseInt(slider.dataset.count);
+  let idx = parseInt(slider.dataset.idx);
+  idx = (idx + dir + count) % count;
+  sliderGoTo(id, idx);
+}
+
+function sliderGoTo(id, idx) {
+  const slider = document.getElementById(id);
+  const slides = document.getElementById(id + '-slides');
+  const counter = document.getElementById(id + '-counter');
+  if (!slider || !slides) return;
+  slider.dataset.idx = idx;
+  slides.style.transform = `translateX(-${idx * 100}%)`;
+  if (counter) counter.textContent = `${idx + 1} / ${slider.dataset.count}`;
+  sliderLazyLoad(id, idx);
+}
+
+function sliderLazyLoad(id, idx) {
+  const slider = document.getElementById(id);
+  if (!slider) return;
+  const imgs = slider.querySelectorAll('img');
+  [idx - 1, idx, idx + 1].forEach(i => {
+    if (i >= 0 && i < imgs.length && imgs[i].dataset.src && !imgs[i].src.includes(imgs[i].dataset.src)) {
+      imgs[i].src = imgs[i].dataset.src;
+    }
+  });
+}
+
+function sliderClick(id, idx) {
+  // Клик открывает лайтбокс
+  const slider = document.getElementById(id);
+  if (!slider) return;
+  const imgs = [...slider.querySelectorAll('img')].map(i => i.dataset.src || i.src);
+  openLightbox(imgs, idx);
+}
+
+// Свайп мышью
+let _dragStart = null;
+function sliderDragStart(e, id) {
+  _dragStart = { x: e.clientX, id };
+  const onUp = (ev) => {
+    if (_dragStart && _dragStart.id === id) {
+      const dx = ev.clientX - _dragStart.x;
+      if (Math.abs(dx) > 40) sliderNav(id, dx < 0 ? 1 : -1);
+    }
+    _dragStart = null;
+    document.removeEventListener('mouseup', onUp);
+  };
+  document.addEventListener('mouseup', onUp);
+}
+
+// Свайп тачем
+let _touchStart = null;
+function sliderTouchStart(e, id) {
+  _touchStart = { x: e.touches[0].clientX, id };
+  const onEnd = (ev) => {
+    if (_touchStart && _touchStart.id === id) {
+      const dx = ev.changedTouches[0].clientX - _touchStart.x;
+      if (Math.abs(dx) > 40) sliderNav(id, dx < 0 ? 1 : -1);
+    }
+    _touchStart = null;
+    document.removeEventListener('touchend', onEnd);
+  };
+  document.addEventListener('touchend', onEnd);
 }
 
 function renderAbout(d) {
