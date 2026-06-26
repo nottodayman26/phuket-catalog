@@ -870,6 +870,7 @@ function renderProject(d) {
           <div class="tab" data-target="s-map">Карта</div>
           <div class="tab" data-target="s-visual">Рендеры и фото</div>
           <div class="tab" data-target="s-payment">График платежей</div>
+          <div class="tab" data-target="s-floors">Поэтажный план</div>
           <div class="tab" data-target="s-maint">Обслуживание</div>
           <div class="tab" data-target="s-files">Файлы</div>
         </div>
@@ -879,6 +880,7 @@ function renderProject(d) {
     <div id="s-map"     class="page-section">${renderMap(d)}</div>
     <div id="s-visual"  class="page-section">${renderVisual(d)}</div>
     <div id="s-payment" class="page-section">${renderPayment(d)}</div>
+    <div id="s-floors"  class="page-section">${renderFloors(d)}</div>
     <div id="s-maint"   class="page-section">${renderMaint(d)}</div>
     <div id="s-files"   class="page-section">${renderFiles(d)}</div>
   `;
@@ -896,7 +898,7 @@ function renderProject(d) {
   });
 
   // Активная вкладка при скролле
-  const sectionIds = ['s-units','s-about','s-map','s-visual','s-payment','s-maint','s-files'];
+  const sectionIds = ['s-units','s-about','s-map','s-visual','s-payment','s-floors','s-maint','s-files'];
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -1591,6 +1593,49 @@ function focusNearby(lat, lng, name) {
   if (frame) {
     frame.src = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
   }
+}
+
+function renderFloors(d) {
+  const plans = d.floor_plans;
+  if (!plans || !plans.length) return `
+    <div class="sec-title">Поэтажный план</div>
+    <div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">Поэтажные планы появятся позже</div>`;
+
+  const base = location.pathname.replace(/\/[^\/]*$/, "/");
+  const fpBase = `${base}img/${d.id}/floor-plans/`;
+
+  // Слайдер идентичен visual
+  const makeFloorSlider = (files, sliderId) => {
+    if (!files.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Планы появятся позже</div>`;
+    return `
+      <div class="visual-slider" id="${sliderId}"
+        data-idx="0" data-count="${files.length}"
+        onmousedown="sliderDragStart(event,'${sliderId}')"
+        ontouchstart="sliderTouchStart(event,'${sliderId}')">
+        <div class="visual-slides" id="${sliderId}-slides">
+          ${files.map((f, i) => `
+            <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
+              <img src="${i < 2 ? fpBase+f : ''}" data-src="${fpBase+f}" alt="Этаж ${i+1}" style="object-fit:contain;background:var(--surface-2)"/>
+            </div>`).join('')}
+        </div>
+        <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>
+        <button class="visual-arrow next" onclick="sliderNav('${sliderId}',1);event.stopPropagation()">›</button>
+        <div class="visual-counter" id="${sliderId}-counter">1 / ${files.length}</div>
+      </div>`;
+  };
+
+  const tabs = plans.map((p, i) =>
+    `<button class="visual-tab ${i===0?'act':''}" onclick="switchVisualTab(this,'fp-${i}')">${p.label}</button>`
+  ).join('');
+
+  const panels = plans.map((p, i) =>
+    `<div class="visual-panel ${i===0?'act':''}" id="fp-${i}">${makeFloorSlider(p.files, 'fsl-'+i)}</div>`
+  ).join('');
+
+  return `
+    <div class="sec-title">Поэтажный план</div>
+    <div class="visual-tabs">${tabs}</div>
+    ${panels}`;
 }
 
 function renderPayment(d) {
