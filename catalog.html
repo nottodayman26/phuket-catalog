@@ -447,15 +447,24 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let UNITS = [];
 
-async function loadUnitsFromSupabase(){
+async function loadUnitsFromSupabase(attempt = 1){
   const fields = 'id,room_no,tower,floor,room_type,area_sqm,price_per_sqm,selling_price,status,status_updated_at,projects(code,name)';
-  const res = await fetch(`${SUPABASE_URL}/units?select=${fields}&order=selling_price.asc`, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+  let res;
+  try {
+    res = await fetch(`${SUPABASE_URL}/units?select=${fields}&order=selling_price.asc`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+  } catch(e) {
+    if (attempt < 3) {
+      await new Promise(r => setTimeout(r, 1500 * attempt));
+      return loadUnitsFromSupabase(attempt + 1);
     }
-  });
-  if(!res.ok) throw new Error(`Склад ответил с ошибкой: ${res.status}`);
+    throw new Error('Нет соединения с базой. Проверь интернет.');
+  }
+  if(!res.ok) throw new Error(`Ошибка базы: ${res.status}`);
   const rows = await res.json();
   return rows.map(r => ({
     id: r.room_no,
@@ -967,11 +976,15 @@ document.getElementById('themeToggle').onclick = ()=>{
 };
 
 async function init(){
-  document.getElementById('list').innerHTML = '<div class="empty">Загружаем актуальный каталог со склада…</div>';
+  document.getElementById('list').innerHTML = '<div class="empty">Загружаем актуальный каталог…</div>';
   document.getElementById('ticker').innerHTML = '';
+
+  // Агент грузится независимо — даже если каталог не загрузится
+  CURRENT_AGENT = await identifyAgent().catch(() => null);
+  renderTopbar();
+
+  // Каталог грузится отдельно
   try {
-    CURRENT_AGENT = await identifyAgent().catch(()=>null);
-    renderTopbar();
     UNITS = await loadUnitsFromSupabase();
     buildTicker();
     render();
