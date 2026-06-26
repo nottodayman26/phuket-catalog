@@ -523,7 +523,7 @@ a { color: inherit; text-decoration: none; }
   border-radius: 12px; overflow: hidden;
 }
 .white-card .ps-timeline { padding: 20px 16px 0; }
-.white-card .ps-table { border-top: 0.5px solid var(--line); }
+.white-card .ps-table { border-top: none; }
 
 /* ── PAYMENT ─── */
 .ps-timeline {
@@ -554,7 +554,9 @@ a { color: inherit; text-decoration: none; }
   text-align: left; padding: 10px 14px;
   font-size: 11px; color: var(--muted);
   text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 0.5px solid var(--line);
 }
+.ps-table tbody tr:first-child td { border-top: none; }
 .ps-table td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--line); }
 .ps-table tr:last-child td { border-bottom: none; }
 .ps-pct { font-weight: 700; color: var(--project-color); font-size: 15px; }
@@ -1349,28 +1351,7 @@ function thSort(tblId, col, th) {
   const tbody = document.getElementById('tbody-' + tblId.replace('tbl-',''));
   if (!tbody) return;
 
-  // Если "Номер" — показываем поиск при двойном клике
-  if (col === 'room_no') {
-    const existing = th.querySelector('input.th-search');
-    if (existing) { existing.remove(); th.classList.remove('has-search'); return; }
-    th.classList.add('has-search');
-    const inp = document.createElement('input');
-    inp.className = 'th-search';
-    inp.placeholder = 'Поиск...';
-    inp.onclick = e => e.stopPropagation();
-    inp.oninput = () => {
-      const q = inp.value.toLowerCase();
-      tbody.querySelectorAll('tr').forEach(tr => {
-        const num = tr.cells[0]?.textContent.toLowerCase() || '';
-        tr.style.display = num.includes(q) ? '' : 'none';
-      });
-    };
-    th.appendChild(inp);
-    inp.focus();
-    return;
-  }
-
-  // Сортировка
+  // Сортировка для всех колонок включая номер
   const state = _tblSort[tblId] || {};
   const dir = (state.col === col && state.dir === 1) ? -1 : 1;
   _tblSort[tblId] = { col, dir };
@@ -1383,7 +1364,11 @@ function thSort(tblId, col, th) {
   const rows = [...tbody.querySelectorAll('tr')];
   rows.sort((a, b) => {
     let av, bv;
-    if (col === 'floor') {
+    if (col === 'room_no') {
+      av = a.cells[0]?.textContent || '';
+      bv = b.cells[0]?.textContent || '';
+      return dir * av.localeCompare(bv, undefined, { numeric: true });
+    } else if (col === 'floor') {
       av = parseInt(a.cells[1]?.textContent) || 0;
       bv = parseInt(b.cells[1]?.textContent) || 0;
     } else if (col === 'room_type') {
