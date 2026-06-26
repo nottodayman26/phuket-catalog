@@ -511,29 +511,23 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: flex-start;
   margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; gap: 0;
 }
-.ps-step { flex: 1; min-width: 72px; text-align: center; position: relative; }
-.ps-step::before {
-  content: ''; display: block; height: 2px;
-  background: var(--line-2);
-  position: absolute; top: 44px; left: 50%; right: -50%; z-index: 0;
-}
-.ps-step:last-child::before { display: none; }
+.ps-step { flex: 1; min-width: 80px; text-align: center; position: relative; }
 .ps-circle-wrap {
-  position: relative; width: 44px; height: 44px;
-  margin: 0 auto 6px; z-index: 1;
+  position: relative; width: 56px; height: 56px;
+  margin: 0 auto 8px; z-index: 1;
 }
 .ps-circle-wrap svg { transform: rotate(-90deg); }
 .ps-circle-track { stroke: var(--line-2); fill: none; stroke-width: 3; }
 .ps-circle-fill {
   fill: none; stroke-width: 3; stroke-linecap: round;
   stroke: var(--project-color);
-  stroke-dasharray: 113; stroke-dashoffset: 113;
+  stroke-dasharray: 145; stroke-dashoffset: 145;
   transition: stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);
 }
 .ps-circle-pct {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px; font-weight: 700; color: var(--project-color);
+  font-size: 10px; font-weight: 700; color: var(--project-color);
 }
 .ps-step-label { font-size: 9px; color: var(--muted); line-height: 1.3; }
 .ps-table { width: 100%; border-collapse: collapse; }
@@ -1507,7 +1501,6 @@ function renderMap(d) {
 
 function renderPayment(d) {
   const total = d.payment_schedule.reduce((s,p) => s+p.percent, 0);
-  const circ = 2 * Math.PI * 18;
 
   const stageRu = {
     'Reservation':'Бронирование','Booking deposit':'Депозит',
@@ -1517,24 +1510,25 @@ function renderPayment(d) {
     'Structure Complete':'Конструкция','Structure':'Конструкция',
     'Rooftop Complete':'Кровля','Rooftop':'Кровля',
     'Interior & Finishing':'Отделка','Finishing':'Отделка',
-    'Transfer of Ownership':'Передача','Transfer of ownership':'Передача',
+    'Transfer of Ownership':'Ключи','Transfer of ownership':'Ключи',
     '1st Installment':'1-й взнос','2nd Installment':'2-й взнос',
     '3rd Installment':'3-й взнос',
   };
 
+  const circ = 2 * Math.PI * 23; // r=23 → ≈144.5
   let cum = 0;
   const steps = d.payment_schedule.map((p, i) => {
     cum += p.percent;
-    const offset = circ * (1 - cum / total);
+    const offset = circ * (1 - cum / total); // для анимации — кумулятивный
     const label = stageRu[p.stage] || p.stage;
     return `
       <div class="ps-step" id="pss-${i}">
         <div class="ps-circle-wrap">
-          <svg viewBox="0 0 44 44" width="44" height="44">
-            <circle class="ps-circle-track" cx="22" cy="22" r="18"/>
-            <circle class="ps-circle-fill" id="psf-${i}" cx="22" cy="22" r="18" data-offset="${offset}"/>
+          <svg viewBox="0 0 56 56" width="56" height="56">
+            <circle class="ps-circle-track" cx="28" cy="28" r="23"/>
+            <circle class="ps-circle-fill" id="psf-${i}" cx="28" cy="28" r="23" data-offset="${offset}"/>
           </svg>
-          <div class="ps-circle-pct">${cum}%</div>
+          <div class="ps-circle-pct">${p.percent}%</div>
         </div>
         <div class="ps-step-label">${label}</div>
       </div>`;
@@ -1673,7 +1667,7 @@ function initPaymentAnimation() {
     if (entries[0].isIntersecting) {
       // Сбрасываем и запускаем заново каждый раз
       const fills = section.querySelectorAll('.ps-circle-fill');
-      fills.forEach(el => { el.style.transition = 'none'; el.style.strokeDashoffset = 113; });
+      fills.forEach(el => { el.style.transition = 'none'; el.style.strokeDashoffset = 145; });
       requestAnimationFrame(() => requestAnimationFrame(() => {
         fills.forEach((el, i) => {
           setTimeout(() => {
