@@ -263,5 +263,71 @@
       "url": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ"
     }
   ],
-  "drive_root": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ"
+  "drive_root": "https://drive.google.com/drive/folders/1ycgddzqsFCZIeIdIrcjyxW9M-RaWUmeZ",
+  "floor_plans": [
+    {
+      "building": "A",
+      "label": "Корпус A",
+      "files": [
+        "а.jpg",
+        "а1.jpg",
+        "а2.jpg",
+        "а3.jpg",
+        "а4.jpg",
+        "а5.jpg",
+        "а6.jpg",
+        "а7.jpg",
+        "а8.jpg",
+        "а9.jpg"
+      ]
+    },
+    {
+      "building": "B",
+      "label": "Корпус B",
+      "files": [
+        "б.jpg",
+        "б1.jpg",
+        "б2.jpg",
+        "б3.jpg",
+        "б4.jpg",
+        "б5.jpg",
+        "б6.jpg",
+        "б7.jpg",
+        "б8.jpg",
+        "б9.jpg"
+      ]
+    },
+    {
+      "building": "C",
+      "label": "Корпус C",
+      "files": [
+        "с.jpg",
+        "с1.jpg",
+        "с2.jpg",
+        "с3.jpg",
+        "с4.jpg",
+        "с5.jpg",
+        "с6.jpg",
+        "с7.jpg",
+        "с8.jpg",
+        "с9.jpg"
+      ]
+    },
+    {
+      "building": "D",
+      "label": "Корпус D",
+      "files": [
+        "д.jpg",
+        "д1.jpg",
+        "д2.jpg",
+        "д3.jpg",
+        "д4.jpg",
+        "д5.jpg",
+        "д6.jpg",
+        "д7.jpg",
+        "д8.jpg",
+        "д9.jpg"
+      ]
+    }
+  ]
 }
