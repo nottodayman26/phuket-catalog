@@ -608,6 +608,11 @@ a { color: inherit; text-decoration: none; }
   border-radius: 14px; padding: 18px;
   position: relative; overflow: hidden;
   display: var(--meeting-reward-display);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+}
+.reward-card:hover {
+  transform: scale(1.025);
+  box-shadow: 0 8px 28px rgba(94,23,235,0.18);
 }
 .reward-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0;
@@ -626,6 +631,11 @@ a { color: inherit; text-decoration: none; }
 .price-card {
   background: var(--surface); border: 1px solid var(--line);
   border-radius: 14px; padding: 18px;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+}
+.price-card:hover {
+  transform: scale(1.025);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
 }
 .price-from-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
 .price-from-val { font-size: 24px; font-weight: 700; color: var(--project-color); }
@@ -634,6 +644,11 @@ a { color: inherit; text-decoration: none; }
 .info-card {
   background: var(--surface); border: 1px solid var(--line);
   border-radius: 14px; padding: 18px;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+}
+.info-card:hover {
+  transform: scale(1.025);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
 }
 .info-card-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
 
@@ -1559,7 +1574,7 @@ function renderMap(d) {
     <div class="sec-title">Ближайшие локации</div>
     <div class="nearby-list">
       ${d.nearby.map((n, i) => `
-        <div class="nearby-item" onclick="focusNearby(${n.lat||0},${n.lng||0},'${n.name}')" style="cursor:pointer">
+        <div class="nearby-item">
           <span class="nearby-icon">${n.icon}</span>
           <span class="nearby-name">${n.name}</span>
           <div class="nearby-dist">
