@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flox — Проект</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
   --meeting-logo-vis: visible;
@@ -1549,45 +1547,19 @@ function renderAbout(d) {
 
 function renderMap(d) {
   const { lat, lng } = d.coords;
-  const mapId = 'map-' + d.id;
-
-  setTimeout(() => {
-    if (window._leafletMap) { window._leafletMap.remove(); window._leafletMap = null; }
-    const map = L.map(mapId, { scrollWheelZoom: false }).setView([lat, lng], 14);
-    window._leafletMap = map;
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
-
-    // Брендированная метка проекта
-    const projectIcon = L.divIcon({
-      html: `<div style="background:${d.color||'#5E17EB'};color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.35)">🏢 ${d.name}</div>`,
-      className: '', iconAnchor: [0, 0]
-    });
-    L.marker([lat, lng], { icon: projectIcon }).addTo(map);
-
-    // Метки ближайших локаций
-    window._nearbyMarkers = {};
-    d.nearby.forEach((n, i) => {
-      if (!n.lat || !n.lng) return;
-      const icon = L.divIcon({
-        html: `<div style="font-size:22px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4))">${n.icon}</div>`,
-        className: '', iconAnchor: [11, 11]
-      });
-      window._nearbyMarkers[i] = L.marker([n.lat, n.lng], { icon })
-        .addTo(map)
-        .bindPopup(`<b>${n.name}</b><br>${n.dist} · ${n.time}`);
-    });
-  }, 50);
-
   return `
     <div class="sec-title">Карта</div>
-    <div id="${mapId}" style="height:360px;border-radius:14px;overflow:hidden;border:1px solid var(--line);margin-bottom:20px;"></div>
+    <div class="map-wrap" style="margin-bottom:20px;">
+      <iframe id="gmap-frame" width="100%" height="360"
+        style="border:0;border-radius:14px;overflow:hidden;border:1px solid var(--line);"
+        loading="lazy" allowfullscreen
+        src="https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed">
+      </iframe>
+    </div>
     <div class="sec-title">Ближайшие локации</div>
     <div class="nearby-list">
       ${d.nearby.map((n, i) => `
-        <div class="nearby-item" onclick="focusNearby(${i})" style="cursor:pointer">
+        <div class="nearby-item" onclick="focusNearby(${n.lat||0},${n.lng||0},'${n.name}')" style="cursor:pointer">
           <span class="nearby-icon">${n.icon}</span>
           <span class="nearby-name">${n.name}</span>
           <div class="nearby-dist">
@@ -1598,12 +1570,12 @@ function renderMap(d) {
     </div>`;
 }
 
-function focusNearby(i) {
-  const map = window._leafletMap;
-  const marker = window._nearbyMarkers?.[i];
-  if (!map || !marker) return;
-  map.flyTo(marker.getLatLng(), 16, { duration: 1 });
-  setTimeout(() => marker.openPopup(), 1000);
+function focusNearby(lat, lng, name) {
+  if (!lat || !lng) return;
+  const frame = document.getElementById('gmap-frame');
+  if (frame) {
+    frame.src = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+  }
 }
 
 function renderPayment(d) {
