@@ -269,13 +269,20 @@ a { color: inherit; text-decoration: none; }
 
 /* Дропдаун-панель */
 .uf-dropdown {
-  display: none; position: absolute; top: calc(100% + 6px); left: 0;
+  display: block; position: absolute; top: calc(100% + 6px); left: 0;
   background: var(--surface); border: 1px solid var(--line-2);
   border-radius: 12px; z-index: 200; min-width: 200px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.18);
   overflow: hidden;
+  opacity: 0; pointer-events: none;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top left;
+  transition: opacity .18s ease, transform .18s ease;
 }
-.uf-dropdown.open { display: block; }
+.uf-dropdown.open {
+  opacity: 1; pointer-events: all;
+  transform: translateY(0) scale(1);
+}
 
 /* Опции */
 .uf-option {
@@ -369,7 +376,19 @@ a { color: inherit; text-decoration: none; }
   text-align: left; padding: 8px 16px;
   font-size: 10px; color: var(--muted); border-bottom: 0.5px solid var(--line);
   text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
-  background: var(--surface);
+  background: var(--surface); cursor: pointer; user-select: none;
+  transition: color .15s;
+}
+.units-table th:hover { color: var(--project-color); }
+.units-table th.sort-asc::after  { content: ' ↑'; color: var(--project-color); }
+.units-table th.sort-desc::after { content: ' ↓'; color: var(--project-color); }
+.units-table th.has-search { position: relative; }
+.units-table th input.th-search {
+  position: absolute; top: 50%; left: 16px; transform: translateY(-50%);
+  width: calc(100% - 32px); padding: 2px 6px; font-size: 11px;
+  border: 1px solid var(--project-color); border-radius: 6px;
+  background: var(--surface); color: var(--text); font-family: inherit;
+  outline: none;
 }
 .units-table td { padding: 9px 16px; border-bottom: 0.5px solid var(--line); background: var(--surface); }
 .units-table tr:last-child td { border-bottom: none; }
@@ -533,7 +552,7 @@ a { color: inherit; text-decoration: none; }
 .ps-table { width: 100%; border-collapse: collapse; }
 .ps-table th {
   text-align: left; padding: 10px 14px;
-  font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--line);
+  font-size: 11px; color: var(--muted);
   text-transform: uppercase; letter-spacing: .05em;
 }
 .ps-table td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--line); }
@@ -1103,21 +1122,17 @@ function renderUnitsTree(d, units) {
         </div>
         <div class="units-sublist" id="sub-${tid}">
           <div class="units-table-wrap">
-            <table class="units-table">
+            <table class="units-table" id="tbl-${tid}">
               <thead><tr>
-                <th>Номер</th><th>Эт.</th><th>Планировка</th>
-                <th>Площадь</th><th>Цена</th><th>Статус</th>
+                <th onclick="thSort('tbl-${tid}','room_no',this)" title="Поиск по номеру — кликни дважды">Номер</th>
+                <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
+                <th onclick="thSort('tbl-${tid}','room_type',this)">Планировка</th>
+                <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
+                <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
+                <th>Статус</th>
               </tr></thead>
-              <tbody>
-                ${catUnits.map(u => `
-                  <tr>
-                    <td style="font-weight:600">${u.room_no}</td>
-                    <td>${u.floor}</td>
-                    <td style="color:var(--muted);font-size:11px">${u.room_type}</td>
-                    <td>${u.area_sqm} м²</td>
-                    <td class="ut-price">${fmtMln(u.selling_price)}</td>
-                    <td><span class="ut-status-dot ${u.status==='available'?'ut-available':'ut-sold'}"></span>${u.status==='available'?'Свободен':'Продан'}</td>
-                  </tr>`).join('')}
+              <tbody id="tbody-${tid}">
+                ${renderUnitRows(catUnits)}
               </tbody>
             </table>
           </div>
@@ -1315,11 +1330,80 @@ function resetUnitFilters() {
   applyUnitFilters();
 }
 
-function sortUnits(col) {
-  if (_sortCol === col) _sortDir *= -1;
-  else { _sortCol = col; _sortDir = 1; }
-  applyUnitFilters();
+function renderUnitRows(units) {
+  return units.map(u => `
+    <tr>
+      <td style="font-weight:600">${u.room_no}</td>
+      <td>${u.floor}</td>
+      <td style="color:var(--muted);font-size:11px">${u.room_type}</td>
+      <td>${u.area_sqm} м²</td>
+      <td class="ut-price" data-price="${u.selling_price}">${fmtMln(u.selling_price)}</td>
+      <td><span class="ut-status-dot ${u.status==='available'?'ut-available':'ut-sold'}"></span>${u.status==='available'?'Свободен':'Продан'}</td>
+    </tr>`).join('');
 }
+
+// Состояние сортировки каждой таблицы
+const _tblSort = {};
+
+function thSort(tblId, col, th) {
+  const tbody = document.getElementById('tbody-' + tblId.replace('tbl-',''));
+  if (!tbody) return;
+
+  // Если "Номер" — показываем поиск при двойном клике
+  if (col === 'room_no') {
+    const existing = th.querySelector('input.th-search');
+    if (existing) { existing.remove(); th.classList.remove('has-search'); return; }
+    th.classList.add('has-search');
+    const inp = document.createElement('input');
+    inp.className = 'th-search';
+    inp.placeholder = 'Поиск...';
+    inp.onclick = e => e.stopPropagation();
+    inp.oninput = () => {
+      const q = inp.value.toLowerCase();
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const num = tr.cells[0]?.textContent.toLowerCase() || '';
+        tr.style.display = num.includes(q) ? '' : 'none';
+      });
+    };
+    th.appendChild(inp);
+    inp.focus();
+    return;
+  }
+
+  // Сортировка
+  const state = _tblSort[tblId] || {};
+  const dir = (state.col === col && state.dir === 1) ? -1 : 1;
+  _tblSort[tblId] = { col, dir };
+
+  // Убираем классы со всех th
+  th.closest('tr').querySelectorAll('th').forEach(t => t.classList.remove('sort-asc','sort-desc'));
+  th.classList.add(dir === 1 ? 'sort-asc' : 'sort-desc');
+
+  // Собираем строки, сортируем, вставляем обратно
+  const rows = [...tbody.querySelectorAll('tr')];
+  rows.sort((a, b) => {
+    let av, bv;
+    if (col === 'floor') {
+      av = parseInt(a.cells[1]?.textContent) || 0;
+      bv = parseInt(b.cells[1]?.textContent) || 0;
+    } else if (col === 'room_type') {
+      av = a.cells[2]?.textContent || '';
+      bv = b.cells[2]?.textContent || '';
+      return dir * av.localeCompare(bv);
+    } else if (col === 'area_sqm') {
+      av = parseFloat(a.cells[3]?.textContent) || 0;
+      bv = parseFloat(b.cells[3]?.textContent) || 0;
+    } else if (col === 'selling_price') {
+      // Парсим из fmtMln — берём data-price если есть, иначе текст
+      av = parseFloat(a.cells[4]?.dataset?.price || a.cells[4]?.textContent.replace(/[^\d.]/g,'')) || 0;
+      bv = parseFloat(b.cells[4]?.dataset?.price || b.cells[4]?.textContent.replace(/[^\d.]/g,'')) || 0;
+    }
+    return dir * (av - bv);
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+
 
 
 function renderVisual(d) {
