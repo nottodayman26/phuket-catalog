@@ -44,6 +44,37 @@ html { font-family: 'Inter', system-ui, sans-serif; scroll-behavior: smooth; }
 body { min-height: 100vh; font-family: inherit; background: var(--bg); color: var(--text); transition: background .3s, color .3s; }
 a { color: inherit; text-decoration: none; }
 
+/* ── NAV DROPDOWNS ─── */
+.nav-dropdown-wrap { position: relative; }
+.dropdown {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  background: var(--surface); border: 1px solid var(--line-2);
+  border-radius: 14px; box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  z-index: 400; min-width: 220px; padding: 8px;
+  opacity: 0; pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity .18s, transform .18s;
+}
+.dropdown.vis { opacity: 1; pointer-events: all; transform: translateY(0); }
+.dropdown-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em; padding: 6px 10px 4px;
+}
+.dropdown-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  transition: background .12s; color: var(--text); text-decoration: none;
+}
+.dropdown-item:hover { background: var(--surface-2); }
+.dropdown-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--accent-soft); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.dropdown-label { font-size: 13px; font-weight: 500; }
+.dropdown-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
 /* ── TOP BAR ─── */
 .topbar {
   position: sticky; top: 0; z-index: 100;
@@ -478,21 +509,31 @@ a { color: inherit; text-decoration: none; }
 /* ── PAYMENT ─── */
 .ps-timeline {
   display: flex; align-items: flex-start;
-  margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px;
+  margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; gap: 0;
 }
-.ps-step { flex: 1; min-width: 70px; text-align: center; position: relative; }
+.ps-step { flex: 1; min-width: 72px; text-align: center; position: relative; }
 .ps-step::before {
-  content: ''; display: block; height: 3px;
+  content: ''; display: block; height: 2px;
   background: var(--line-2);
-  position: absolute; top: 13px; left: 50%; right: -50%;
+  position: absolute; top: 22px; left: 50%; right: -50%; z-index: 0;
 }
 .ps-step:last-child::before { display: none; }
-.ps-dot {
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--project-color); color: #fff;
-  font-size: 9px; font-weight: 700;
+.ps-circle-wrap {
+  position: relative; width: 44px; height: 44px;
+  margin: 0 auto 6px; z-index: 1;
+}
+.ps-circle-wrap svg { transform: rotate(-90deg); }
+.ps-circle-track { stroke: var(--line-2); fill: none; stroke-width: 3; }
+.ps-circle-fill {
+  fill: none; stroke-width: 3; stroke-linecap: round;
+  stroke: var(--project-color);
+  stroke-dasharray: 113; stroke-dashoffset: 113;
+  transition: stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);
+}
+.ps-circle-pct {
+  position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 6px; position: relative; z-index: 1;
+  font-size: 9px; font-weight: 700; color: var(--project-color);
 }
 .ps-step-label { font-size: 9px; color: var(--muted); line-height: 1.3; }
 .ps-table { width: 100%; border-collapse: collapse; }
@@ -663,8 +704,32 @@ body.light .page-footer {
   <div class="topbar-logo" id="topbarLogo">flox<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:1px;margin-bottom:8px;vertical-align:bottom"></span></div>
   <nav class="topbar-nav">
     <a class="tnav-item" href="flox-web.html">Поиск</a>
-    <a class="tnav-item" href="flox-web.html#offers" onclick="localStorage.setItem('flox-page','offers')">Инструменты</a>
-    <a class="tnav-item" href="flox-web.html#activity" onclick="localStorage.setItem('flox-page','activity')">Клиенты</a>
+    <div class="nav-dropdown-wrap" onmouseenter="openDropdown('tools')" onmouseleave="scheduleClose('tools')">
+      <div class="tnav-item">Инструменты</div>
+      <div class="dropdown" id="dropdownTools" onmouseenter="cancelClose('tools')" onmouseleave="scheduleClose('tools')">
+        <div class="dropdown-title">Инструменты</div>
+        <a class="dropdown-item" href="flox-web.html" onclick="localStorage.setItem('flox-page','offers')">
+          <div class="dropdown-icon">📋</div>
+          <div>
+            <div class="dropdown-label">Мои предложения</div>
+            <div class="dropdown-sub">Ссылки, отправленные клиентам</div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <div class="nav-dropdown-wrap" onmouseenter="openDropdown('clients')" onmouseleave="scheduleClose('clients')">
+      <div class="tnav-item">Клиенты</div>
+      <div class="dropdown" id="dropdownClients" onmouseenter="cancelClose('clients')" onmouseleave="scheduleClose('clients')">
+        <div class="dropdown-title">Клиенты</div>
+        <a class="dropdown-item" href="flox-web.html" onclick="localStorage.setItem('flox-page','activity')">
+          <div class="dropdown-icon">📊</div>
+          <div>
+            <div class="dropdown-label">Последняя активность</div>
+            <div class="dropdown-sub">История действий клиентов</div>
+          </div>
+        </a>
+      </div>
+    </div>
   </nav>
   <div class="topbar-right">
     <button class="meeting-btn-proj" id="meetingBtnProj" onclick="toggleMeeting()">
@@ -823,6 +888,9 @@ function renderProject(d) {
     const footer = document.querySelector('.page-footer');
     if (footer) footer.classList.add('visible');
   }, 500);
+
+  // Запускаем анимацию платежей при скролле
+  initPaymentAnimation();
 }
 
 function scrollToVisual() {
@@ -1082,7 +1150,7 @@ function toggleTypeRow(tid) {
 }
 
 // ── Состояние фильтров ────────────────────────────────────────────────────
-let _filterType = '';
+let _filterTypes = new Set();
 let _filterPriceFrom = 0;
 let _filterPriceTo = Infinity;
 let _filterStatus = 'available';
@@ -1111,11 +1179,33 @@ function closeAllDropdowns() {
 }
 
 function selectType(el) {
-  _filterType = el.dataset.val;
-  document.querySelectorAll('#uf-type-dd .uf-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  document.getElementById('uf-type-label').textContent = el.dataset.val || 'Все типы';
-  closeAllDropdowns();
+  const val = el.dataset.val;
+  if (val === '') {
+    // "Все типы" — сбрасываем
+    _filterTypes.clear();
+    document.querySelectorAll('#uf-type-dd .uf-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+  } else {
+    // Снимаем "Все типы"
+    document.querySelector('#uf-type-dd .uf-option[data-val=""]').classList.remove('selected');
+    if (_filterTypes.has(val)) {
+      _filterTypes.delete(val);
+      el.classList.remove('selected');
+    } else {
+      _filterTypes.add(val);
+      el.classList.add('selected');
+    }
+    // Если ничего не выбрано — ставим "Все типы"
+    if (_filterTypes.size === 0) {
+      document.querySelector('#uf-type-dd .uf-option[data-val=""]').classList.add('selected');
+    }
+  }
+  // Обновляем лейбл кнопки
+  const lbl = document.getElementById('uf-type-label');
+  if (_filterTypes.size === 0) lbl.textContent = 'Все типы';
+  else if (_filterTypes.size === 1) lbl.textContent = [..._filterTypes][0];
+  else lbl.textContent = `${_filterTypes.size} типа`;
+  // НЕ закрываем дропдаун — можно выбрать несколько
   applyUnitFilters();
 }
 
@@ -1192,7 +1282,7 @@ function buildPriceHints(units) {
 
 function applyUnitFilters() {
   const filtered = _allUnits.filter(u => {
-    if (_filterType && u._category !== _filterType) return false;
+    if (_filterTypes.size > 0 && !_filterTypes.has(u._category)) return false;
     if (_filterPriceFrom && u.selling_price < _filterPriceFrom) return false;
     if (_filterPriceTo !== Infinity && u.selling_price > _filterPriceTo) return false;
     if (_filterStatus && u.status !== _filterStatus) return false;
@@ -1205,7 +1295,7 @@ function applyUnitFilters() {
 }
 
 function resetUnitFilters() {
-  _filterType = ''; _filterPriceFrom = 0; _filterPriceTo = Infinity; _filterStatus = 'available';
+  _filterTypes.clear(); _filterPriceFrom = 0; _filterPriceTo = Infinity; _filterStatus = 'available';
   const fromEl = document.getElementById('uf-price-from');
   const toEl = document.getElementById('uf-price-to');
   if (fromEl) fromEl.value = '';
@@ -1406,16 +1496,30 @@ function renderMap(d) {
 
 function renderPayment(d) {
   const total = d.payment_schedule.reduce((s,p) => s+p.percent, 0);
+  const circ = 2 * Math.PI * 18; // ≈113
+
+  // Кумулятивные проценты
+  let cum = 0;
+  const steps = d.payment_schedule.map((p, i) => {
+    cum += p.percent;
+    const offset = circ * (1 - cum / total);
+    return `
+      <div class="ps-step" id="pss-${i}">
+        <div class="ps-circle-wrap">
+          <svg viewBox="0 0 44 44" width="44" height="44">
+            <circle class="ps-circle-track" cx="22" cy="22" r="18"/>
+            <circle class="ps-circle-fill" id="psf-${i}" cx="22" cy="22" r="18" data-offset="${offset}"/>
+          </svg>
+          <div class="ps-circle-pct">${cum}%</div>
+        </div>
+        <div class="ps-step-label">${p.stage}</div>
+      </div>`;
+  }).join('');
+
   return `
     <div class="sec-title">График платежей</div>
     <div class="white-card">
-      <div class="ps-timeline">
-        ${d.payment_schedule.map(p => `
-          <div class="ps-step">
-            <div class="ps-dot">${p.percent}%</div>
-            <div class="ps-step-label">${p.stage}</div>
-          </div>`).join('')}
-      </div>
+      <div class="ps-timeline" id="psTimeline">${steps}</div>
       <table class="ps-table">
         <thead><tr><th>Этап</th><th>Условие</th><th style="text-align:right">%</th></tr></thead>
         <tbody>
@@ -1536,6 +1640,42 @@ function toggleMeeting() {
 }
 
 loadProject();
+
+// ── Payment animation ───────────────────────────────────────────────────
+function initPaymentAnimation() {
+  const section = document.getElementById('s-payment');
+  if (!section) return;
+  let animated = false;
+  const obs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !animated) {
+      animated = true;
+      const fills = section.querySelectorAll('.ps-circle-fill');
+      fills.forEach((el, i) => {
+        setTimeout(() => {
+          el.style.strokeDashoffset = el.dataset.offset;
+        }, i * 200);
+      });
+    }
+  }, { threshold: 0.3 });
+  obs.observe(section);
+}
+
+// ── Nav dropdowns ──────────────────────────────────────────────────────────
+const closeTimers = {};
+function openDropdown(name) {
+  cancelClose(name);
+  document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('vis'));
+  const dd = document.getElementById('dropdown' + name.charAt(0).toUpperCase() + name.slice(1));
+  if (dd) dd.classList.add('vis');
+}
+function scheduleClose(name) {
+  closeTimers[name] = setTimeout(() => {
+    const dd = document.getElementById('dropdown' + name.charAt(0).toUpperCase() + name.slice(1));
+    if (dd) dd.classList.remove('vis');
+  }, 180);
+}
+function cancelClose(name) { clearTimeout(closeTimers[name]); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('vis')); });
 
 function updateSidebarHeight() {
   const sidebarCol = document.getElementById('sidebarCol');
