@@ -1225,6 +1225,21 @@ function toggleGrouping() {
   const lbl = document.getElementById('uf-group-label');
   if (btn) btn.classList.toggle('flat', !_groupByBuilding);
   if (lbl) lbl.textContent = _groupByBuilding ? 'По корпусам' : 'Без разделения';
+
+  // При возврате к корпусам — пересоздаём скелет
+  if (_groupByBuilding && window._currentProjectData) {
+    const wrap = document.getElementById('units-tree-wrap');
+    if (wrap) {
+      wrap.innerHTML = window._currentProjectData.buildings.map((b, bi) => `
+        <div class="building-section" id="bsec-${bi}">
+          <div class="building-section-header">
+            <span class="building-section-title">Корпус ${b}</span>
+            <span class="building-section-count" id="bcount-${bi}">загрузка...</span>
+          </div>
+          <div id="btypes-${bi}"></div>
+        </div>`).join('');
+    }
+  }
   applyUnitFilters();
 }
 
@@ -1967,6 +1982,7 @@ function initCountAnimations() {
   if (priceEl) {
     const raw = priceEl.dataset.raw ? parseFloat(priceEl.dataset.raw) : null;
     if (raw) {
+      priceEl.textContent = '0 млн ฿'; // скрываем сразу
       const obs = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting) {
           animateCount(priceEl, raw / 1000000, 2000, v => v.toFixed(1) + ' млн ฿');
@@ -1976,49 +1992,33 @@ function initCountAnimations() {
     }
   }
 
-  // ── Ближайшие локации — расстояния ───────────────────────────────────────
-  const nearbySection = document.getElementById('s-map');
-  if (nearbySection) {
-    // Сохраняем оригинальные значения один раз
-    document.querySelectorAll('.nearby-dist-val').forEach(el => {
-      if (!el.dataset.target) {
-        const m = el.textContent.trim().match(/([\d.]+)\s*(м|км)/);
-        if (m) { el.dataset.target = m[1]; el.dataset.unit = m[2]; }
-      }
-    });
-    const obs = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) {
-        document.querySelectorAll('.nearby-dist-val').forEach(el => {
-          if (!el.dataset.target) return;
-          animateCount(el, parseFloat(el.dataset.target), 1800,
-            v => Math.round(v) + ' ' + el.dataset.unit);
-        });
-      }
-    }, { threshold: 0.3 });
-    obs.observe(nearbySection);
-  }
-
   // ── График платежей — кружки и таблица ───────────────────────────────────
   const paySection = document.getElementById('s-payment');
   if (paySection) {
-    // Сохраняем оригинальные значения один раз при инициализации
+    // Сохраняем оригинальные значения и сразу скрываем
     setTimeout(() => {
       document.querySelectorAll('.ps-circle-pct').forEach(el => {
-        if (!el.dataset.target) el.dataset.target = el.textContent.replace('%','').trim();
+        if (!el.dataset.target) {
+          el.dataset.target = el.textContent.replace('%','').trim();
+          el.textContent = '0%';
+        }
       });
       document.querySelectorAll('.ps-pct').forEach(el => {
-        if (!el.dataset.target) el.dataset.target = el.textContent.replace('%','').trim();
+        if (!el.dataset.target) {
+          el.dataset.target = el.textContent.replace('%','').trim();
+          el.textContent = '0%';
+        }
       });
-    }, 500);
+    }, 300);
 
     const obs = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting) {
         document.querySelectorAll('.ps-circle-pct').forEach((el, i) => {
-          const val = parseFloat(el.dataset.target || el.textContent);
+          const val = parseFloat(el.dataset.target);
           if (!isNaN(val)) setTimeout(() => animateCount(el, val, 1800, v => Math.round(v) + '%'), i * 150);
         });
         document.querySelectorAll('.ps-pct').forEach((el, i) => {
-          const val = parseFloat(el.dataset.target || el.textContent);
+          const val = parseFloat(el.dataset.target);
           if (!isNaN(val)) setTimeout(() => animateCount(el, val, 1800, v => Math.round(v) + '%'), i * 150);
         });
       }
