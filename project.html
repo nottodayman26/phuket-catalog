@@ -1102,10 +1102,11 @@ function renderUnits(d) {
           </div>
         </div>
 
-        <button class="uf-reset" onclick="resetUnitFilters()">↺ Сбросить</button>
         <button class="uf-group-toggle" id="uf-group-btn" onclick="toggleGrouping()">
           <span id="uf-group-label">По корпусам</span>
         </button>
+
+        <button class="uf-reset" onclick="resetUnitFilters()">↺ Сбросить</button>
       </div>
       <div class="units-count" id="units-count"></div>
     </div>
@@ -1968,7 +1969,7 @@ function initCountAnimations() {
     if (raw) {
       const obs = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting) {
-          animateCount(priceEl, raw / 1000000, 1000, v => v.toFixed(1) + ' млн ฿');
+          animateCount(priceEl, raw / 1000000, 2000, v => v.toFixed(1) + ' млн ฿');
         }
       }, { threshold: 0.5 });
       obs.observe(priceEl);
@@ -1978,18 +1979,19 @@ function initCountAnimations() {
   // ── Ближайшие локации — расстояния ───────────────────────────────────────
   const nearbySection = document.getElementById('s-map');
   if (nearbySection) {
-    let nearbyDone = false;
+    // Сохраняем оригинальные значения один раз
+    document.querySelectorAll('.nearby-dist-val').forEach(el => {
+      if (!el.dataset.target) {
+        const m = el.textContent.trim().match(/([\d.]+)\s*(м|км)/);
+        if (m) { el.dataset.target = m[1]; el.dataset.unit = m[2]; }
+      }
+    });
     const obs = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && !nearbyDone) {
-        nearbyDone = true;
+      if (entries[0].isIntersecting) {
         document.querySelectorAll('.nearby-dist-val').forEach(el => {
-          const text = el.textContent.trim();
-          const m = text.match(/([\d.]+)\s*(м|км)/);
-          if (!m) return;
-          el.dataset.orig = text;
-          const num = parseFloat(m[1]);
-          const unit = m[2];
-          animateCount(el, num, 800, v => Math.round(v) + ' ' + unit);
+          if (!el.dataset.target) return;
+          animateCount(el, parseFloat(el.dataset.target), 1800,
+            v => Math.round(v) + ' ' + el.dataset.unit);
         });
       }
     }, { threshold: 0.3 });
@@ -1999,17 +2001,25 @@ function initCountAnimations() {
   // ── График платежей — кружки и таблица ───────────────────────────────────
   const paySection = document.getElementById('s-payment');
   if (paySection) {
+    // Сохраняем оригинальные значения один раз при инициализации
+    setTimeout(() => {
+      document.querySelectorAll('.ps-circle-pct').forEach(el => {
+        if (!el.dataset.target) el.dataset.target = el.textContent.replace('%','').trim();
+      });
+      document.querySelectorAll('.ps-pct').forEach(el => {
+        if (!el.dataset.target) el.dataset.target = el.textContent.replace('%','').trim();
+      });
+    }, 500);
+
     const obs = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting) {
-        // Кружки — процент
-        document.querySelectorAll('.ps-circle-pct').forEach(el => {
-          const val = parseFloat(el.textContent);
-          if (!isNaN(val)) animateCount(el, val, 700, v => Math.round(v) + '%');
+        document.querySelectorAll('.ps-circle-pct').forEach((el, i) => {
+          const val = parseFloat(el.dataset.target || el.textContent);
+          if (!isNaN(val)) setTimeout(() => animateCount(el, val, 1800, v => Math.round(v) + '%'), i * 150);
         });
-        // Таблица — проценты
-        document.querySelectorAll('.ps-pct').forEach(el => {
-          const val = parseFloat(el.textContent);
-          if (!isNaN(val)) animateCount(el, val, 700, v => Math.round(v) + '%');
+        document.querySelectorAll('.ps-pct').forEach((el, i) => {
+          const val = parseFloat(el.dataset.target || el.textContent);
+          if (!isNaN(val)) setTimeout(() => animateCount(el, val, 1800, v => Math.round(v) + '%'), i * 150);
         });
       }
     }, { threshold: 0.3 });
