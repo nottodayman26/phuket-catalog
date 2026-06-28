@@ -1130,6 +1130,9 @@ async function loadUnits(d) {
     document.getElementById('units-filters-wrap').style.display = 'block';
     buildPriceHints(_allUnits);
     renderUnitsTree(d, _allUnits);
+
+    // Читаем фильтры из URL (переданные из поисковика)
+    applyURLFilters();
     applyUnitFilters();
     setTimeout(updateSidebarHeight, 100);
   } catch(e) { console.error('Units load error:', e); }
@@ -1934,6 +1937,39 @@ function toggleMeeting() {
   meetingMode = !meetingMode;
   localStorage.setItem('flox-meeting', String(meetingMode));
   applyMeetingMode();
+}
+
+function applyURLFilters() {
+  const params = new URLSearchParams(window.location.search);
+
+  // Типы кондо
+  const types = params.get('types');
+  if (types) {
+    const typeMap = {'1br':'1 спальня','1br+':'1 спальня+','2br':'2 спальни','ph':'Пентхаус','studio':'Студия'};
+    types.split(',').forEach(t => {
+      const cat = typeMap[t] || t;
+      _filterTypes.add(cat);
+      const opt = document.querySelector(`#uf-type-dd .uf-option[data-val="${cat}"]`);
+      if (opt) { opt.classList.add('selected'); document.querySelector('#uf-type-dd .uf-option[data-val=""]')?.classList.remove('selected'); }
+    });
+    const lbl = document.getElementById('uf-type-label');
+    if (lbl) lbl.textContent = _filterTypes.size === 1 ? [..._filterTypes][0] : `${_filterTypes.size} типа`;
+  }
+
+  // Цена
+  const priceFrom = params.get('priceFrom');
+  const priceTo = params.get('priceTo');
+  if (priceFrom) {
+    _filterPriceFrom = parseInt(priceFrom);
+    const el = document.getElementById('uf-price-from');
+    if (el) el.value = _filterPriceFrom;
+  }
+  if (priceTo) {
+    _filterPriceTo = parseInt(priceTo);
+    const el = document.getElementById('uf-price-to');
+    if (el) el.value = _filterPriceTo;
+  }
+  if (priceFrom || priceTo) updatePriceLabel();
 }
 
 loadProject();

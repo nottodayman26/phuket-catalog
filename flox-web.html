@@ -284,9 +284,12 @@ input,button{font-family:inherit;}
   background:var(--surface);border:1px solid var(--line);
   border-radius:14px;padding:16px 18px;
   display:flex;align-items:center;gap:14px;
-  cursor:pointer;transition:border-color .2s,transform .15s;
+  cursor:pointer;
   text-decoration:none;color:var(--text);
+  opacity:0;transform:translateY(14px);
+  transition:border-color .2s, transform .35s cubic-bezier(.4,0,.2,1), opacity .35s ease;
 }
+.project-card.visible{opacity:1;transform:translateY(0);}
 .project-card:hover{border-color:var(--accent);transform:translateY(-1px);}
 .project-card-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 .project-card-info{flex:1;}
@@ -313,14 +316,19 @@ input,button{font-family:inherit;}
 /* ══ MODALS ══ */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.55);
-  z-index:500;display:none;align-items:center;justify-content:center;padding:20px;
+  z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;
+  transition:opacity .22s ease;
 }
-.modal-overlay.vis{display:flex;}
+.modal-overlay.vis{opacity:1;pointer-events:all;}
 .modal{
   background:var(--surface);border-radius:20px;padding:24px;
   width:480px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.4);
   max-height:80vh;overflow-y:auto;
+  transform:translateY(16px) scale(0.97);
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1);
 }
+.modal-overlay.vis .modal{transform:translateY(0) scale(1);}
 .modal-title{
   font-size:17px;font-weight:700;margin-bottom:20px;
   display:flex;align-items:center;justify-content:space-between;
@@ -647,8 +655,8 @@ const PRICE_RANGES = [
 
 // ── COMPLETION QUARTERS ───────────────────
 const COMPLETION_OPTIONS = [
-  {label:'Q1 2026', year:2026, q:1},{label:'Q2 2026', year:2026, q:2},
-  {label:'Q3 2026', year:2026, q:3},{label:'Q4 2026', year:2026, q:4},
+  {label:'Сдан', year:2026, q:0},
+  {label:'Q4 2026', year:2026, q:4},
   {label:'Q1 2027', year:2027, q:1},{label:'Q2 2027', year:2027, q:2},
   {label:'Q3 2027', year:2027, q:3},{label:'Q4 2027', year:2027, q:4},
   {label:'Q1 2028', year:2028, q:1},{label:'Q2 2028', year:2028, q:2},
@@ -846,8 +854,16 @@ function doSearch() {
 
 // ── RENDER ────────────────────────────────
 function cardHTML(p) {
+  // Собираем параметры активных фильтров
+  const params = new URLSearchParams();
+  if (filters.unitTypes && filters.unitTypes.length) params.set('types', filters.unitTypes.join(','));
+  if (filters.price && filters.price.min) params.set('priceFrom', filters.price.min);
+  if (filters.price && filters.price.max) params.set('priceTo', filters.price.max);
+  if (filters.completion) params.set('completion', `${filters.completion.year}Q${filters.completion.q}`);
+  const query = params.toString();
+  const url = query ? `${p.url}&${query}` : p.url;
   return `
-    <a class="project-card" href="${p.url}">
+    <a class="project-card" href="${url}">
       <div class="project-card-dot" style="background:${p.color}"></div>
       <div class="project-card-info">
         <div class="project-card-name">${p.name}</div>
@@ -872,6 +888,10 @@ function showCards(projects, label) {
   el.innerHTML = `
     <div class="results-label">${label}</div>
     <div class="project-cards">${projects.map(cardHTML).join('')}</div>`;
+  // Каскадное появление
+  el.querySelectorAll('.project-card').forEach((card, i) => {
+    setTimeout(() => card.classList.add('visible'), i * 80);
+  });
 }
 
 function showDevGroup(dev, projects) {
@@ -996,19 +1016,33 @@ function renderPricePresets() {
       onclick="setPricePreset(${r.min},${r.max},this)">${r.label}</button>`).join('');
 }
 
-function renderHistogram() {
+let HIST_UNITS_CACHE = null;
+
+async function loadHistogramData() {
+  if (HIST_UNITS_CACHE) return HIST_UNITS_CACHE;
+  try {
+    const r = await fetch(SUPABASE_URL + '/units?status=eq.available&select=selling_price&limit=2000', {
+      headers: SB
+    });
+    HIST_UNITS_CACHE = await r.json();
+  } catch(e) { HIST_UNITS_CACHE = []; }
+  return HIST_UNITS_CACHE;
+}
+
+async function renderHistogram() {
+  const units = await loadHistogramData();
   const bars = PRICE_RANGES.map(r => {
-    const count = PROJECTS.filter(p => p.priceFrom >= r.min && p.priceFrom < (r.max||Infinity)).length;
+    const count = units.filter(u => u.selling_price >= r.min && u.selling_price < (r.max||Infinity)).length;
     return { r, count };
   });
   const maxC = Math.max(...bars.map(b => b.count), 1);
   const curMin = parseInt(document.getElementById('priceMin').value)||0;
   const curMax = parseInt(document.getElementById('priceMax').value)||Infinity;
   document.getElementById('priceHistogram').innerHTML = bars.map(({r,count}) => {
-    const h = Math.max(8, Math.round((count/maxC)*100));
+    const h = Math.max(4, Math.round((count/maxC)*100));
     const sel = r.min >= curMin && (curMax===Infinity||r.max<=curMax) ? 'sel' : '';
     return `<div class="price-bar ${sel}" style="height:${h}%"
-      onclick="setPricePreset(${r.min},${r.max},null)" title="${r.label}"></div>`;
+      onclick="setPricePreset(${r.min},${r.max},null)" title="${r.label}: ${count} юнитов"></div>`;
   }).join('');
 }
 
@@ -1359,12 +1393,24 @@ async function loadUnitCount() {
     });
     const range = r2.headers.get('content-range'); // e.g. 0-0/724
     if (range) {
-      const total = range.split('/')[1];
-      const rounded = Math.floor(parseInt(total) / 10) * 10; // round to nearest 10
-      document.getElementById('unitCount').textContent = rounded.toLocaleString('ru') + '+';
+      const total = parseInt(range.split('/')[1]);
+      const rounded = Math.floor(total / 10) * 10;
+      // Анимация от 0 до значения
+      const el = document.getElementById('unitCount');
+      el.textContent = '0';
+      const start = performance.now();
+      const dur = 2000;
+      const step = (now) => {
+        const t = Math.min((now - start) / dur, 1);
+        const ease = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+        el.textContent = Math.round(rounded * ease).toLocaleString('ru');
+        if (t < 1) requestAnimationFrame(step);
+        else el.textContent = rounded.toLocaleString('ru');
+      };
+      requestAnimationFrame(step);
     }
   } catch(e) {
-    document.getElementById('unitCount').textContent = '700+';
+    document.getElementById('unitCount').textContent = '700';
   }
 }
 </script>
