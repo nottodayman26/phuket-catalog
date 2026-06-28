@@ -269,15 +269,15 @@ a { color: inherit; text-decoration: none; }
 
 /* Дропдаун-панель */
 .uf-dropdown {
-  display: block; position: absolute; top: calc(100% + 6px); left: 0;
+  display: block; position: fixed;
   background: var(--surface); border: 1px solid var(--line-2);
-  border-radius: 12px; z-index: 200; min-width: 200px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  border-radius: 12px; z-index: 9999; min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
   overflow: hidden;
   opacity: 0; pointer-events: none;
-  transform: translateY(-6px) scale(0.97);
+  transform: translateY(-8px) scale(0.96);
   transform-origin: top left;
-  transition: opacity .18s ease, transform .18s ease;
+  transition: opacity .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.34,1.56,.64,1);
 }
 .uf-dropdown.open {
   opacity: 1; pointer-events: all;
@@ -440,9 +440,9 @@ a { color: inherit; text-decoration: none; }
 .visual-tab {
   padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500;
   cursor: pointer; border: 1px solid var(--line-2); color: var(--muted);
-  transition: all .2s cubic-bezier(.34,1.56,.64,1); background: none; font-family: inherit;
+  transition: all .15s; background: none; font-family: inherit;
 }
-.visual-tab:hover { border-color: var(--project-color); color: var(--project-color); transform: scale(1.06); }
+.visual-tab:hover { border-color: var(--project-color); color: var(--project-color); }
 .visual-tab.act { background: var(--project-color); border-color: var(--project-color); color: #fff; }
 .visual-panel { display: none; }
 .visual-panel.act { display: block; }
@@ -463,7 +463,9 @@ a { color: inherit; text-decoration: none; }
 .visual-slide img {
   width: 100%; height: 100%; object-fit: cover; display: block;
   pointer-events: none;
+  transition: transform .4s cubic-bezier(.4,0,.2,1);
 }
+.visual-slide:hover img { transform: scale(1.04); }
 .visual-arrow {
   position: absolute; top: 50%; transform: translateY(-50%);
   background: rgba(0,0,0,0.45); border: none; color: #fff;
@@ -487,6 +489,13 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface); border: 1px solid var(--line);
   border-radius: 10px; padding: 12px 14px;
   font-size: 13px; display: flex; align-items: center; gap: 8px;
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .2s;
+  cursor: default;
+}
+.fac-item:hover {
+  transform: scale(1.04);
+  border-color: var(--project-color);
+  box-shadow: 0 4px 16px rgba(94,23,235,0.12);
 }
 .fac-icon { font-size: 18px; }
 .info-box {
@@ -496,10 +505,7 @@ a { color: inherit; text-decoration: none; }
 .info-row {
   display: flex; justify-content: space-between; align-items: center;
   padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px;
-  transition: transform .2s cubic-bezier(.34,1.56,.64,1), padding .2s;
-  cursor: default;
 }
-.info-row:hover { transform: translateX(4px); }
 .info-row:last-child { border-bottom: none; }
 .info-label { color: var(--muted); }
 .info-val { font-weight: 600; }
@@ -511,10 +517,9 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; gap: 12px;
   background: var(--surface); border: 1px solid var(--line);
   border-radius: 10px; padding: 11px 14px;
-  cursor: pointer;
-  transition: border-color .2s, background .2s, transform .2s cubic-bezier(.34,1.56,.64,1);
+  cursor: pointer; transition: border-color .15s, background .15s;
 }
-.nearby-item:hover { border-color: var(--project-color); background: var(--surface-2); transform: scale(1.02); }
+.nearby-item:hover { border-color: var(--project-color); background: var(--surface-2); }
 .nearby-icon { font-size: 20px; width: 30px; text-align: center; }
 .nearby-name { font-size: 13px; font-weight: 500; flex: 1; }
 .nearby-dist { text-align: right; }
@@ -532,9 +537,13 @@ a { color: inherit; text-decoration: none; }
 /* ── PAYMENT ─── */
 .ps-timeline {
   display: flex; align-items: flex-start;
-  margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; gap: 0;
+  margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; gap: 0;
+  scrollbar-width: none;
 }
-.ps-step { flex: 1; min-width: 80px; text-align: center; position: relative;
+.ps-timeline::-webkit-scrollbar { display: none; }
+.ps-step {
+  flex: 1; min-width: 72px; text-align: center; position: relative;
+  padding-bottom: 4px;
   transition: transform .2s cubic-bezier(.34,1.56,.64,1); cursor: default;
 }
 .ps-step:hover { transform: scale(1.12); }
@@ -555,7 +564,7 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; justify-content: center;
   font-size: 10px; font-weight: 700; color: var(--project-color);
 }
-.ps-step-label { font-size: 9px; color: var(--muted); line-height: 1.3; }
+.ps-step-label { font-size: 10px; color: var(--muted); line-height: 1.4; margin-top: 4px; word-break: keep-all; }
 .ps-table { width: 100%; border-collapse: collapse; }
 .ps-table th {
   text-align: left; padding: 10px 14px;
@@ -573,10 +582,7 @@ a { color: inherit; text-decoration: none; }
   display: flex; justify-content: space-between; align-items: center;
   padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 13px;
   gap: 24px;
-  transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .15s;
-  cursor: default;
 }
-.maint-row:hover { transform: translateX(4px); background: var(--surface-2); }
 .maint-row:last-child { border-bottom: none; }
 .maint-label { color: var(--muted); flex: 1; }
 .maint-val { font-weight: 600; flex-shrink: 0; text-align: right; }
@@ -593,9 +599,9 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface); border: 1px solid var(--line);
   border-radius: 10px; padding: 13px 16px;
   text-decoration: none; color: var(--text);
-  transition: border-color .2s, background .2s, transform .2s cubic-bezier(.34,1.56,.64,1);
+  transition: border-color .15s, background .15s;
 }
-.file-item:hover { border-color: var(--project-color); background: var(--surface-2); transform: scale(1.02); }
+.file-item:hover { border-color: var(--project-color); background: var(--surface-2); }
 .file-item.highlight { border-color: var(--project-color); }
 .file-icon { font-size: 22px; }
 .file-name { font-size: 13px; font-weight: 500; flex: 1; }
@@ -854,6 +860,8 @@ async function loadProject() {
   }
 }
 
+const STATUS_RU = {"Under Construction":"Строится","Ready to Move":"Сдан","Completed":"Завершён","Pre-Launch":"Предпродажа"};
+
 function renderProject(d) {
   document.documentElement.style.setProperty('--project-color', d.color || '#5E17EB');
   const soft = d.color ? d.color + '22' : 'rgba(94,23,235,0.18)';
@@ -870,7 +878,7 @@ function renderProject(d) {
         <span>${d.district}, Phuket</span>
         <span>•</span>
         <span>${d.developer}</span>
-        <span class="proj-badge">${d.status}</span>
+        <span class="proj-badge">${STATUS_RU[d.status] || d.status}</span>
       </div>
     </div>
     <div class="tabs-wrap">
@@ -1153,12 +1161,12 @@ function renderUnitsTree(d, units) {
           <div class="units-table-wrap">
             <table class="units-table" id="tbl-${tid}">
               <thead><tr>
-                <th onclick="thSort('tbl-${tid}','room_no',this)" title="Поиск по номеру — кликни дважды">Номер</th>
+                <th onclick="thSort('tbl-${tid}','room_no',this)" title="Сортировка по номеру">Номер</th>
                 <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
                 <th onclick="thSort('tbl-${tid}','room_type',this)">Планировка</th>
                 <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
                 <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
-                <th>Статус</th>
+                <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
               </tr></thead>
               <tbody id="tbody-${tid}">
                 ${renderUnitRows(catUnits)}
@@ -1193,9 +1201,21 @@ function toggleTypeRow(tid) {
 const _ufTimers = {};
 function openUfDropdown(ddId, btnId) {
   cancelUfClose(ddId);
+  // Закрываем все остальные
+  document.querySelectorAll('.uf-dropdown.open').forEach(d => {
+    if (d.id !== ddId) d.classList.remove('open');
+  });
+  document.querySelectorAll('.uf-btn-custom.open').forEach(b => {
+    if (b.id !== btnId) b.classList.remove('open');
+  });
   const dd = document.getElementById(ddId);
   const btn = document.getElementById(btnId);
-  if (dd) dd.classList.add('open');
+  if (!dd || !btn) return;
+  // Позиционируем через fixed
+  const rect = btn.getBoundingClientRect();
+  dd.style.top = (rect.bottom + 6) + 'px';
+  dd.style.left = rect.left + 'px';
+  dd.classList.add('open');
   if (btn) btn.classList.add('open');
 }
 function scheduleUfClose(ddId, btnId) {
@@ -1391,7 +1411,11 @@ function thSort(tblId, col, th) {
   const rows = [...tbody.querySelectorAll('tr')];
   rows.sort((a, b) => {
     let av, bv;
-    if (col === 'room_no') {
+    if (col === 'status') {
+      // available сначала (dir=1), sold сначала (dir=-1)
+      av = a.cells[5]?.textContent.includes('Свободен') ? 0 : 1;
+      bv = b.cells[5]?.textContent.includes('Свободен') ? 0 : 1;
+    } else if (col === 'room_no') {
       av = a.cells[0]?.textContent || '';
       bv = b.cells[0]?.textContent || '';
       return dir * av.localeCompare(bv, undefined, { numeric: true });
