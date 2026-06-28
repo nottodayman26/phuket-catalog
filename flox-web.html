@@ -1096,17 +1096,19 @@ function updateChips() {
 }
 
 function removeChip(key) {
-  if (key==='type') filters.unitTypes=null;
+  if (key==='type') { filters.unitTypes=null; tmpUnitTypes=[]; }
   if (key==='price') filters.price=null;
   if (key==='completion') filters.completion=null;
   updateChips();
-  clearResults();
+  autoSearch();
 }
 
 function resetAll() {
   filters = {unitTypes:null, price:null, completion:null};
+  tmpUnitTypes = [];
   document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('act',i===0));
-  updateChips(); clearResults();
+  updateChips();
+  autoSearch();
 }
 
 // ── TYPE MODAL ────────────────────────────
