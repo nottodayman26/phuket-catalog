@@ -1637,16 +1637,10 @@ function focusNearby(lat, lng, name) {
 
 function renderFloors(d) {
   const plans = d.floor_plans;
-  if (!plans || !plans.length) return `
-    <div class="sec-title">Поэтажный план</div>
-    <div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">Поэтажные планы появятся позже</div>`;
-
   const base = location.pathname.replace(/\/[^\/]*$/, "/");
-  const fpBase = `${base}img/${d.id}/floor-plans/`;
 
-  // Слайдер идентичен visual
-  const makeFloorSlider = (files, sliderId) => {
-    if (!files.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Планы появятся позже</div>`;
+  const makeSlider = (files, sliderId, imgBase) => {
+    if (!files || !files.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Планы появятся позже</div>`;
     return `
       <div class="visual-slider" id="${sliderId}"
         data-idx="0" data-count="${files.length}"
@@ -1655,7 +1649,7 @@ function renderFloors(d) {
         <div class="visual-slides" id="${sliderId}-slides">
           ${files.map((f, i) => `
             <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
-              <img src="${i < 2 ? fpBase+f : ''}" data-src="${fpBase+f}" alt="Этаж ${i+1}" style="object-fit:contain;background:var(--surface-2)"/>
+              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:contain;background:var(--surface-2)"/>
             </div>`).join('')}
         </div>
         <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>
@@ -1664,18 +1658,30 @@ function renderFloors(d) {
       </div>`;
   };
 
-  const tabs = plans.map((p, i) =>
+  // Вкладки корпусов
+  const fpBase = `${base}img/${d.id}/floor-plans/`;
+  const floorTabs = (plans || []).map((p, i) =>
     `<button class="visual-tab ${i===0?'act':''}" onclick="switchVisualTab(this,'fp-${i}')">${p.label}</button>`
   ).join('');
-
-  const panels = plans.map((p, i) =>
-    `<div class="visual-panel ${i===0?'act':''}" id="fp-${i}">${makeFloorSlider(p.files, 'fsl-'+i)}</div>`
+  const floorPanels = (plans || []).map((p, i) =>
+    `<div class="visual-panel ${i===0?'act':''}" id="fp-${i}">${makeSlider(p.files, 'fsl-'+i, fpBase)}</div>`
   ).join('');
+
+  // Вкладка мастер план
+  const mp = d.master_plan;
+  const mpBase = mp ? `${base}img/${d.id}/${mp.folder}/` : '';
+  const mpTab = mp ? `<button class="visual-tab" onclick="switchVisualTab(this,'fp-master')">Мастер план</button>` : '';
+  const mpPanel = mp ? `<div class="visual-panel" id="fp-master">${makeSlider(mp.files, 'fsl-master', mpBase)}</div>` : '';
+
+  const hasFloors = plans && plans.length;
+  if (!hasFloors && !mp) return `
+    <div class="sec-title">Поэтажный план</div>
+    <div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">Планы появятся позже</div>`;
 
   return `
     <div class="sec-title">Поэтажный план</div>
-    <div class="visual-tabs">${tabs}</div>
-    ${panels}`;
+    <div class="visual-tabs">${floorTabs}${mpTab}</div>
+    ${floorPanels}${mpPanel}`;
 }
 
 function renderPayment(d) {
