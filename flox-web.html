@@ -744,9 +744,15 @@ let tmpUnitTypes = [];
 function selectType(type, btn) {
   document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('act'));
   btn.classList.add('act');
+  // Сбрасываем фильтры при смене типа
   filters.propType = type;
-  // If villa/townhouse selected — show empty state (no projects yet)
+  filters.unitTypes = null;
+  filters.price = null;
+  filters.completion = null;
+  tmpUnitTypes = [];
+  updateChips();
   if (type !== 'condo') {
+    _searchDone = false;
     document.getElementById('searchResults').innerHTML = `
       <div class="no-results">
         <div class="no-results-icon">🏗️</div>
@@ -793,8 +799,12 @@ function applyFilters(list) {
         if (p.completionYear > year || (p.completionYear === year && p.completionQ > q)) return false;
       }
     }
-    // unitTypes filter applies at unit level — project shown if any unit matches
-    // For now projects don't have per-unit breakdown in this view, so show all
+    // unitTypes — показываем проект только если у него есть нужный тип
+    if (filters.unitTypes && filters.unitTypes.length) {
+      const projectTypes = (p.unitTypes || []).map(t => t.name.toLowerCase());
+      const match = filters.unitTypes.some(ft => projectTypes.some(pt => pt.includes(ft.toLowerCase())));
+      if (!match) return false;
+    }
     return true;
   });
 }
@@ -891,12 +901,19 @@ function filterByDeveloper(dev) {
   showDevGroup(dev, filtered);
 }
 
+let _searchDone = false;
+
 function doSearch() {
+  _searchDone = true;
   const val = document.getElementById('searchInput').value.trim();
   hideAC();
   const base = val ? PROJECTS.filter(p => matchProject(val, p)) : PROJECTS;
   const filtered = applyFilters(base);
   showCards(filtered, `Найдено: ${filtered.length}`);
+}
+
+function autoSearch() {
+  if (_searchDone) doSearch();
 }
 
 // ── RENDER ────────────────────────────────
@@ -1061,7 +1078,7 @@ function updateChips() {
   }
 
   if (filters.completion) {
-    const label = `до ${filters.completion.label}`;
+    const label = filters.completion.q === 0 ? 'Сдан' : `до ${filters.completion.label}`;
     chips.push({label, key:'completion'});
     document.getElementById('filterCompLabel').textContent = label;
     document.getElementById('filterCompBtn').classList.add('act');
@@ -1121,7 +1138,7 @@ function clearTypeModal() { tmpUnitTypes = []; renderUnitTypeOptions(); }
 
 function applyTypeModal() {
   filters.unitTypes = tmpUnitTypes.length ? [...tmpUnitTypes] : null;
-  updateChips(); closeTypeModal();
+  updateChips(); closeTypeModal(); autoSearch();
 }
 
 // ── PRICE MODAL ───────────────────────────
@@ -1189,7 +1206,7 @@ function applyPrice() {
   const min = parseInt(document.getElementById('priceMin').value)||0;
   const max = parseInt(document.getElementById('priceMax').value)||0;
   filters.price = (min||max) ? {min, max} : null;
-  updateChips(); closePriceModal();
+  updateChips(); closePriceModal(); autoSearch();
 }
 
 // ── COMPLETION MODAL ──────────────────────
@@ -1226,7 +1243,7 @@ function selectCompletion(el, label, year, q) {
   tmpCompl = {label, year, q};
 }
 function clearCompletion() { tmpCompl=null; document.querySelectorAll('.completion-item').forEach(i=>i.classList.remove('act')); }
-function applyCompletion() { filters.completion = tmpCompl; updateChips(); closeCompletionModal(); }
+function applyCompletion() { filters.completion = tmpCompl; updateChips(); closeCompletionModal(); autoSearch(); }
 
 // ── OFFERS ────────────────────────────────
 async function loadOffers() {
