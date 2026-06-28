@@ -1812,7 +1812,7 @@ function renderPayment(d) {
             <circle class="ps-circle-track" cx="28" cy="28" r="23"/>
             <circle class="ps-circle-fill" id="psf-${i}" cx="28" cy="28" r="23" data-offset="${offset}"/>
           </svg>
-          <div class="ps-circle-pct">${p.percent}%</div>
+          <div class="ps-circle-pct" data-target="${p.percent}">0%</div>
         </div>
         <div class="ps-step-label">${label}</div>
       </div>`;
@@ -1829,7 +1829,7 @@ function renderPayment(d) {
             <tr>
               <td>${p.stage}</td>
               <td>${p.note}</td>
-              <td style="text-align:right"><span class="ps-pct">${p.percent}%</span></td>
+              <td style="text-align:right"><span class="ps-pct" data-target="${p.percent}">0%</span></td>
             </tr>`).join('')}
         </tbody>
         <tfoot><tr>
@@ -1995,22 +1995,6 @@ function initCountAnimations() {
   // ── График платежей — кружки и таблица ───────────────────────────────────
   const paySection = document.getElementById('s-payment');
   if (paySection) {
-    // Сохраняем оригинальные значения и сразу скрываем
-    setTimeout(() => {
-      document.querySelectorAll('.ps-circle-pct').forEach(el => {
-        if (!el.dataset.target) {
-          el.dataset.target = el.textContent.replace('%','').trim();
-          el.textContent = '0%';
-        }
-      });
-      document.querySelectorAll('.ps-pct').forEach(el => {
-        if (!el.dataset.target) {
-          el.dataset.target = el.textContent.replace('%','').trim();
-          el.textContent = '0%';
-        }
-      });
-    }, 300);
-
     const obs = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting) {
         document.querySelectorAll('.ps-circle-pct').forEach((el, i) => {
