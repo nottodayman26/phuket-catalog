@@ -1752,22 +1752,17 @@ function renderMaint(d) {
 }
 
 function renderFiles(d) {
-  const icons = { pdf:'📄', folder:'📁', link:'🔗' };
+  const icons = { pdf:'📄', folder:'📁', link:'🔗', video:'🎬' };
   return `
     <div class="sec-title">Файлы проекта</div>
     <div class="files-list">
       ${d.files.map(f => `
-        <a class="file-item" href="${f.url}" target="_blank">
+        <a class="file-item" href="${f.url}" download="${f.name}.pdf" target="_blank">
           <span class="file-icon">${icons[f.type]||'📄'}</span>
           <span class="file-name">${f.name}</span>
           <span class="file-type">${f.type.toUpperCase()}</span>
-          <span class="file-arrow">↗</span>
+          <span class="file-arrow">⬇</span>
         </a>`).join('')}
-      <a class="file-item highlight" href="${d.drive_root}" target="_blank">
-        <span class="file-icon">🗂️</span>
-        <span class="file-name">Весь Google Drive проекта</span>
-        <span class="file-arrow">↗</span>
-      </a>
     </div>`;
 }
 
