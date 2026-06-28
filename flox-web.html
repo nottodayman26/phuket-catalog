@@ -279,24 +279,52 @@ input,button{font-family:inherit;}
 .no-results-icon{font-size:32px;margin-bottom:12px;}
 
 /* Project card */
-.project-cards{display:flex;flex-direction:column;gap:10px;}
+.project-cards{display:flex;flex-direction:column;gap:12px;}
 .project-card{
-  background:var(--surface);border:1px solid var(--line);
-  border-radius:14px;padding:16px 18px;
-  display:flex;align-items:center;gap:14px;
-  cursor:pointer;
-  text-decoration:none;color:var(--text);
+  display:grid;grid-template-columns:220px 1fr;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  overflow:hidden;cursor:pointer;text-decoration:none;color:var(--text);
   opacity:0;transform:translateY(14px);
   transition:border-color .2s, transform .35s cubic-bezier(.4,0,.2,1), opacity .35s ease;
 }
 .project-card.visible{opacity:1;transform:translateY(0);}
-.project-card:hover{border-color:var(--accent);transform:translateY(-1px);}
-.project-card-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.project-card-info{flex:1;}
-.project-card-name{font-size:14px;font-weight:600;margin-bottom:3px;}
-.project-card-sub{font-size:12px;color:var(--muted);}
-.project-card-price{font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap;}
-.project-card-arrow{color:var(--muted);}
+.project-card:hover{border-color:#5E17EB;transform:translateY(-2px);}
+
+/* Фото */
+.pc-img-wrap{padding:10px 0 10px 10px;}
+.pc-img{position:relative;width:100%;height:100%;min-height:168px;border-radius:10px;overflow:hidden;background:var(--surface-2);}
+.pc-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .4s ease, transform .4s ease;opacity:0;}
+.pc-img img.act{opacity:1;transform:scale(1);}
+.project-card:hover .pc-img img.act{transform:scale(1.04);}
+.pc-status{
+  position:absolute;top:8px;left:8px;
+  font-size:10px;font-weight:500;padding:3px 9px;border-radius:20px;
+  background:rgba(201,168,76,0.92);color:#fff;
+}
+.pc-status.completed{background:rgba(63,145,84,0.92);}
+.pc-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;pointer-events:none;}
+.pc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.4);transition:background .2s;}
+.pc-dot.act{background:#fff;}
+
+/* Навигация по фото при hover */
+.pc-nav{position:absolute;inset:0;display:flex;}
+.pc-nav-prev,.pc-nav-next{flex:1;}
+
+/* Тело */
+.pc-body{padding:14px 18px;display:flex;flex-direction:column;}
+.pc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;}
+.pc-name{font-size:15px;font-weight:600;}
+.pc-q{font-size:11px;color:var(--muted);background:var(--surface-2);border:0.5px solid var(--line-2);padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.pc-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
+.pc-types{display:flex;flex-direction:column;gap:6px;flex:1;}
+.pc-type-row{display:flex;justify-content:space-between;align-items:center;}
+.pc-type-name{font-size:12px;color:var(--muted);}
+.pc-type-price{font-size:12px;font-weight:600;color:#5E17EB;}
+.pc-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--line);}
+.pc-from{font-size:12px;color:var(--muted);}
+.pc-from b{font-size:14px;font-weight:700;color:#5E17EB;}
+.pc-comm{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#5E17EB;background:#F0EAFD;border:0.5px solid #C4AAFA;padding:3px 9px;border-radius:6px;transition:opacity .2s;}
+.pc-comm.hidden{opacity:0;pointer-events:none;}
 
 /* Dev group */
 .dev-group{margin-bottom:10px;}
@@ -615,10 +643,22 @@ const h = url => fetch(url, { headers: SB });
 
 // ── PROJECTS ─────────────────────────────
 const PROJECTS = [
-  { id:'VIK', name:'The Title Vivana', nameEn:'The Title Vivana', developer:'Rhom Bho Property PLC', district:'Kamala', amphoe:'Amphoe Kathu', districtRu:'Камала', color:'#C9A84C', type:'condo', priceFrom:4200000, priceTo:19200000, completion:'Q4 2027', completionYear:2027, completionQ:4, url:'project.html?id=VIK' },
-  { id:'KAT', name:'KataBello', nameEn:'KataBello', developer:'Rhom Bho Property PLC', district:'Kata', amphoe:'Amphoe Mueang', districtRu:'Ката', color:'#7BAF6E', type:'condo', priceFrom:3500000, priceTo:12000000, completion:'Q2 2027', completionYear:2027, completionQ:2, url:'project.html?id=KAT' },
-  { id:'BAN', name:'Balcony Naiyang', nameEn:'Balcony Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#6B9BC2', type:'condo', priceFrom:3200000, priceTo:8000000, completion:'Q4 2026', completionYear:2026, completionQ:4, url:'project.html?id=BAN' },
-  { id:'OLN', name:'The Olive Naiyang', nameEn:'The Olive Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#8FAB5F', type:'condo', priceFrom:3800000, priceTo:10000000, completion:'Q2 2026', completionYear:2026, completionQ:2, url:'project.html?id=OLN' },
+  { id:'VIK', name:'The Title Vivana', nameEn:'The Title Vivana', developer:'Rhom Bho Property PLC', district:'Kamala', amphoe:'Amphoe Kathu', districtRu:'Камала', color:'#C9A84C', type:'condo', priceFrom:4200000, priceTo:19200000, completion:'Q4 2027', completionYear:2027, completionQ:4, status:'Under Construction', commission:10,
+    unitTypes:[{name:'1 спальня',price:4200000},{name:'1 спальня+',price:6600000},{name:'2 спальни',price:8000000},{name:'Пентхаус',price:11900000}],
+    photos:['1.avif','2.avif','3.avif','4.avif'],
+    url:'project.html?id=VIK' },
+  { id:'KAT', name:'KataBello', nameEn:'KataBello', developer:'Rhom Bho Property PLC', district:'Kata', amphoe:'Amphoe Mueang', districtRu:'Ката', color:'#7BAF6E', type:'condo', priceFrom:4600000, priceTo:21000000, completion:'Q2 2027', completionYear:2027, completionQ:2, status:'Under Construction', commission:10,
+    unitTypes:[{name:'1 спальня',price:4600000},{name:'1 спальня+',price:8500000},{name:'Пентхаус',price:13400000}],
+    photos:['1.avif','2.avif','3.avif','4.avif'],
+    url:'project.html?id=KAT' },
+  { id:'BAN', name:'Balcony Naiyang', nameEn:'Balcony Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#6B9BC2', type:'condo', priceFrom:5800000, priceTo:12000000, completion:'Q4 2026', completionYear:2026, completionQ:4, status:'Under Construction', commission:10,
+    unitTypes:[{name:'1 спальня',price:5800000},{name:'1 спальня+',price:7400000},{name:'2 спальни',price:8400000}],
+    photos:['1.avif','2.avif','3.avif','4.avif'],
+    url:'project.html?id=BAN' },
+  { id:'OLN', name:'The Olive Naiyang', nameEn:'The Olive Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#8FAB5F', type:'condo', priceFrom:3900000, priceTo:9300000, completion:'Q2 2026', completionYear:2026, completionQ:2, status:'Completed', commission:10,
+    unitTypes:[{name:'1 спальня',price:3900000},{name:'1 спальня+',price:5900000},{name:'2 спальни',price:7200000}],
+    photos:['1.avif','2.avif','3.avif','4.avif'],
+    url:'project.html?id=OLN' },
 ];
 
 // ── DISTRICTS ─────────────────────────────
@@ -853,8 +893,10 @@ function doSearch() {
 }
 
 // ── RENDER ────────────────────────────────
+const STATUS_LABELS = {'Under Construction':'Строится','Ready to Move':'Сдан','Completed':'Сдан','Pre-Launch':'Предпродажа'};
+const BASE_IMG = 'https://nottodayman26.github.io/phuket-catalog/img/';
+
 function cardHTML(p) {
-  // Собираем параметры активных фильтров
   const params = new URLSearchParams();
   if (filters.unitTypes && filters.unitTypes.length) params.set('types', filters.unitTypes.join(','));
   if (filters.price && filters.price.min) params.set('priceFrom', filters.price.min);
@@ -862,16 +904,92 @@ function cardHTML(p) {
   if (filters.completion) params.set('completion', `${filters.completion.year}Q${filters.completion.q}`);
   const query = params.toString();
   const url = query ? `${p.url}&${query}` : p.url;
+
+  const statusLabel = STATUS_LABELS[p.status] || p.status || 'Строится';
+  const isCompleted = p.status === 'Completed' || p.status === 'Ready to Move';
+  const photos = p.photos || ['1.avif'];
+  const cardId = 'pc-' + p.id;
+
+  const imgs = photos.map((f, i) =>
+    `<img src="${i === 0 ? BASE_IMG + p.id + '/' + f : ''}" data-src="${BASE_IMG + p.id + '/' + f}" class="${i === 0 ? 'act' : ''}" alt="${p.name}"/>`
+  ).join('');
+
+  const dots = photos.map((_, i) =>
+    `<div class="pc-dot ${i === 0 ? 'act' : ''}" id="${cardId}-d${i}"></div>`
+  ).join('');
+
+  const types = (p.unitTypes || []).map(t =>
+    `<div class="pc-type-row"><div class="pc-type-name">${t.name}</div><div class="pc-type-price">от ${fmtMln(t.price)}</div></div>`
+  ).join('');
+
+  const commClass = meetingMode ? 'pc-comm hidden' : 'pc-comm';
+
   return `
-    <a class="project-card" href="${url}">
-      <div class="project-card-dot" style="background:${p.color}"></div>
-      <div class="project-card-info">
-        <div class="project-card-name">${p.name}</div>
-        <div class="project-card-sub">${p.districtRu} · ${p.completion}</div>
+    <a class="project-card" href="${url}" id="${cardId}"
+       onmouseenter="pcStartSlide('${cardId}',${photos.length})"
+       onmouseleave="pcStopSlide('${cardId}')">
+      <div class="pc-img-wrap">
+        <div class="pc-img" id="${cardId}-img">
+          ${imgs}
+          <div class="pc-status ${isCompleted ? 'completed' : ''}">${statusLabel}</div>
+          <div class="pc-dots" id="${cardId}-dots">${dots}</div>
+          <div class="pc-nav">
+            <div class="pc-nav-prev" onclick="pcNav('${cardId}',-1,${photos.length});event.preventDefault()"></div>
+            <div class="pc-nav-next" onclick="pcNav('${cardId}',1,${photos.length});event.preventDefault()"></div>
+          </div>
+        </div>
       </div>
-      <div class="project-card-price">от ${fmtMln(p.priceFrom)}</div>
-      <span class="project-card-arrow">→</span>
+      <div class="pc-body">
+        <div class="pc-top">
+          <div class="pc-name">${p.name}</div>
+          <div class="pc-q">${p.completion}</div>
+        </div>
+        <div class="pc-sub">${p.districtRu}, Пхукет</div>
+        <div class="pc-types">${types}</div>
+        <div class="pc-footer">
+          <div class="pc-from">от <b>${fmtMln(p.priceFrom)}</b></div>
+          <div class="${commClass}"><i class="ti ti-coin"></i> ${p.commission || 10}%</div>
+        </div>
+      </div>
     </a>`;
+}
+
+// ── Листалка фото в карточке ──────────────────────────────────────────────
+const _pcSlideState = {};
+const _pcTimers = {};
+
+function pcSetSlide(cardId, idx, total) {
+  const wrap = document.getElementById(cardId + '-img');
+  if (!wrap) return;
+  const imgs = wrap.querySelectorAll('img');
+  const dots = wrap.querySelectorAll('.pc-dot');
+  const i = ((idx % total) + total) % total;
+  _pcSlideState[cardId] = i;
+  imgs.forEach((el, j) => {
+    if (j === i && !el.src && el.dataset.src) el.src = el.dataset.src;
+    el.classList.toggle('act', j === i);
+  });
+  dots.forEach((d, j) => d.classList.toggle('act', j === i));
+}
+
+function pcNav(cardId, dir, total) {
+  const cur = _pcSlideState[cardId] || 0;
+  pcSetSlide(cardId, cur + dir, total);
+}
+
+function pcStartSlide(cardId, total) {
+  if (total <= 1) return;
+  // Предзагружаем все фото
+  const wrap = document.getElementById(cardId + '-img');
+  if (wrap) wrap.querySelectorAll('img').forEach(el => { if (!el.src && el.dataset.src) el.src = el.dataset.src; });
+  _pcTimers[cardId] = setInterval(() => {
+    const cur = _pcSlideState[cardId] || 0;
+    pcSetSlide(cardId, cur + 1, total);
+  }, 900);
+}
+
+function pcStopSlide(cardId) {
+  clearInterval(_pcTimers[cardId]);
 }
 
 function showCards(projects, label) {
