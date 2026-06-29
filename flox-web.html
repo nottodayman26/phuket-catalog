@@ -824,7 +824,7 @@ function onSearchInput(val) {
   if (projects.length) {
     html += `<div class="ac-section-title">Проекты</div>`;
     html += projects.map(p => `
-      <div class="ac-item" onclick="location.href='${p.url}'">
+      <div class="ac-item" onclick="window.open('${p.url}','_blank')">
         <div class="ac-icon" style="background:${p.color}22;color:${p.color}">🏢</div>
         <div><div class="ac-name">${p.name}</div><div class="ac-sub">${p.districtRu} · от ${fmtMln(p.priceFrom)}</div></div>
         <span class="ac-arrow">→</span>
@@ -954,7 +954,7 @@ function cardHTML(p) {
   const commHtml = `<div class="${commClass}">💰 ${p.commission || 10}%</div>`;
 
   return `
-    <a class="project-card" href="${url}" id="${cardId}"
+    <a class="project-card" href="${url}" id="${cardId}" target="_blank"
        onmouseenter="pcStartSlide('${cardId}',${photos.length})"
        onmouseleave="pcStopSlide('${cardId}')">
       <div class="pc-img-wrap">

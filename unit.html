@@ -301,7 +301,7 @@ function renderUnit(u, proj, pd) {
     </div>
 
     <div class="actions">
-      <button class="act-btn" onclick="location.href='project.html?id=${proj.code}'">
+      <button class="act-btn" onclick="window.open('project.html?id=${proj.code}','_blank')">
         <i class="ti ti-building"></i> Страница проекта
       </button>
       <button class="act-btn" onclick="window.print()">
