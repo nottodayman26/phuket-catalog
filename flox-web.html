@@ -42,7 +42,7 @@ input,button{font-family:inherit;}
   color:var(--muted);cursor:pointer;transition:background .15s,color .15s;
 }
 .nav-item:hover{background:var(--surface-2);color:var(--text);}
-.nav-item.act{color:var(--text);background:var(--surface-2);}
+.nav-item.act{color:var(--text);background:none;}
 .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
 .agent-avatar{
   width:32px;height:32px;border-radius:50%;
@@ -1390,6 +1390,8 @@ function renderAgent() {
     initials = [AGENT.first_name[0], AGENT.last_name?.[0]].filter(Boolean).join('').toUpperCase();
   }
   document.getElementById('agentAvatar').textContent = initials;
+  // Сохраняем для project.html
+  try { localStorage.setItem('flox-agent', JSON.stringify(AGENT)); } catch(e) {}
 }
 
 function timeAgo(iso) {
