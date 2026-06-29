@@ -245,7 +245,44 @@ a { color: inherit; text-decoration: none; }
 .us-val { font-size: 13px; font-weight: 600; }
 .us-price { color: var(--project-color); }
 
-/* ── UNITS FILTERS ─── */
+/* ── UNIT SEARCH BAR ─── */
+.unit-search-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--line-2);
+  border-radius: 12px; padding: 7px 12px; margin-bottom: 12px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.unit-search-bar:focus-within {
+  border-color: var(--project-color);
+  box-shadow: 0 0 0 3px rgba(94,23,235,0.1);
+}
+.unit-search-icon { color: var(--muted); flex-shrink:0; display:flex; align-items:center; }
+.unit-search-icon svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8; }
+.unit-search-input {
+  flex:1; border:none; outline:none; background:transparent;
+  font-size:13px; color:var(--text); font-family:inherit; min-width:0;
+}
+.unit-search-input::placeholder { color:var(--muted); }
+.unit-search-divider { width:1px; height:18px; background:var(--line-2); flex-shrink:0; margin:0 4px; }
+.unit-search-filters { display:flex; align-items:center; gap:5px; flex-shrink:0; flex-wrap:nowrap; }
+.usf-btn {
+  display:flex; align-items:center; gap:3px;
+  font-size:11px; font-weight:500; color:var(--muted);
+  padding:4px 10px; border-radius:20px;
+  border:0.5px solid var(--line-2); background:var(--surface);
+  cursor:pointer; white-space:nowrap; font-family:inherit;
+  transition:border-color .2s, color .2s, transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.usf-btn:hover { border-color:var(--project-color); color:var(--project-color); transform:scale(1.05); }
+.usf-btn svg { width:10px; height:10px; }
+.usf-reset {
+  font-size:11px; color:var(--muted); cursor:pointer; padding:4px 6px;
+  border-radius:6px; font-family:inherit; background:none; border:none;
+  transition:color .15s, transform .2s;
+}
+.usf-reset:hover { color:var(--project-color); transform:scale(1.05); }
+
+/* ── UNITS FILTERS (старые) ─── */
 .units-filters {
   display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center;
 }
@@ -660,6 +697,14 @@ a { color: inherit; text-decoration: none; }
 .reward-row-label { color: var(--muted); }
 .reward-row-val { font-weight: 600; }
 .reward-note { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+.reward-table-btn {
+  display: block; margin-top: 12px; padding: 8px 12px; text-align: center;
+  font-size: 12px; font-weight: 500; color: var(--project-color);
+  background: var(--accent-soft); border: 1px solid var(--project-color);
+  border-radius: 8px; text-decoration: none; opacity: 0.7;
+  transition: opacity .2s;
+}
+.reward-table-btn:hover { opacity: 1; }
 
 .price-card {
   background: var(--surface); border: 1px solid var(--line);
@@ -1049,65 +1094,76 @@ function renderUnits(d) {
   return `
     <div id="units-filters-wrap" style="display:none">
       <div class="uf-overlay" id="uf-overlay" onclick="closeAllDropdowns()"></div>
-      <div class="units-filters">
 
-        <!-- Тип -->
-        <div class="uf-group" onmouseenter="openUfDropdown('uf-type-dd','uf-type-btn')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')">
-          <div class="uf-label">Тип</div>
-          <div class="uf-btn-custom" id="uf-type-btn">
-            <span id="uf-type-label">Все типы</span>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
-          </div>
-          <div class="uf-dropdown" id="uf-type-dd" onmouseenter="cancelUfClose('uf-type-dd')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')">
-            <div class="uf-option selected" data-val="" onclick="selectType(this)">Все типы</div>
-            <div class="uf-option" data-val="1 спальня" onclick="selectType(this)"><span class="unit-dot" style="background:#5E17EB"></span>1 спальня</div>
-            <div class="uf-option" data-val="1 спальня+" onclick="selectType(this)"><span class="unit-dot" style="background:#4ECDC4"></span>1 спальня+</div>
-            <div class="uf-option" data-val="2 спальни" onclick="selectType(this)"><span class="unit-dot" style="background:#E88FB4"></span>2 спальни</div>
-            <div class="uf-option" data-val="Пентхаус" onclick="selectType(this)"><span class="unit-dot" style="background:#C9A84C"></span>Пентхаус</div>
-          </div>
+      <!-- Поисковая строка с фильтрами внутри -->
+      <div class="unit-search-bar">
+        <div class="unit-search-icon">
+          <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
         </div>
+        <input class="unit-search-input" id="unit-search-input"
+          placeholder="Введите номер юнита"
+          oninput="onUnitSearch(this.value)"/>
+        <div class="unit-search-divider"></div>
+        <div class="unit-search-filters">
 
-        <!-- Цена -->
-        <div class="uf-group" onmouseenter="openUfDropdown('uf-price-dd','uf-price-btn')" onmouseleave="scheduleUfClose('uf-price-dd','uf-price-btn')">
-          <div class="uf-label">Цена, ฿</div>
-          <div class="uf-btn-custom" id="uf-price-btn">
-            <span id="uf-price-label">Любая</span>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+          <!-- Тип -->
+          <div onmouseenter="openUfDropdown('uf-type-dd','uf-type-btn')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')" style="position:relative">
+            <button class="usf-btn" id="uf-type-btn">
+              <span id="uf-type-label">Тип</span>
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+            </button>
+            <div class="uf-dropdown" id="uf-type-dd" onmouseenter="cancelUfClose('uf-type-dd')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')">
+              <div class="uf-option selected" data-val="" onclick="selectType(this)">Все типы</div>
+              <div class="uf-option" data-val="1 спальня" onclick="selectType(this)"><span class="unit-dot" style="background:#5E17EB"></span>1 спальня</div>
+              <div class="uf-option" data-val="1 спальня+" onclick="selectType(this)"><span class="unit-dot" style="background:#4ECDC4"></span>1 спальня+</div>
+              <div class="uf-option" data-val="2 спальни" onclick="selectType(this)"><span class="unit-dot" style="background:#E88FB4"></span>2 спальни</div>
+              <div class="uf-option" data-val="Пентхаус" onclick="selectType(this)"><span class="unit-dot" style="background:#C9A84C"></span>Пентхаус</div>
+            </div>
           </div>
-          <div class="uf-dropdown" id="uf-price-dd" style="min-width:280px" onmouseenter="cancelUfClose('uf-price-dd')" onmouseleave="scheduleUfClose('uf-price-dd','uf-price-btn')">
-            <div class="uf-price-panel">
-              <div class="uf-price-row">
-                <input class="uf-price-input" id="uf-price-from" type="number" min="0" step="1000000" placeholder="Значение от" oninput="onPriceInput()">
-                <span class="uf-price-sep">—</span>
-                <input class="uf-price-input" id="uf-price-to" type="number" min="0" step="1000000" placeholder="Значение до" oninput="onPriceInput()">
+
+          <!-- Цена -->
+          <div onmouseenter="openUfDropdown('uf-price-dd','uf-price-btn')" onmouseleave="scheduleUfClose('uf-price-dd','uf-price-btn')" style="position:relative">
+            <button class="usf-btn" id="uf-price-btn">
+              <span id="uf-price-label">Цена</span>
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+            </button>
+            <div class="uf-dropdown" id="uf-price-dd" style="min-width:280px" onmouseenter="cancelUfClose('uf-price-dd')" onmouseleave="scheduleUfClose('uf-price-dd','uf-price-btn')">
+              <div class="uf-price-panel">
+                <div class="uf-price-row">
+                  <input class="uf-price-input" id="uf-price-from" type="number" min="0" step="1000000" placeholder="Значение от" oninput="onPriceInput()">
+                  <span class="uf-price-sep">—</span>
+                  <input class="uf-price-input" id="uf-price-to" type="number" min="0" step="1000000" placeholder="Значение до" oninput="onPriceInput()">
+                </div>
               </div>
+              <div class="uf-price-hints-grid" id="uf-price-hints"></div>
             </div>
-            <div class="uf-price-hints-grid" id="uf-price-hints"></div>
           </div>
-        </div>
 
-        <!-- Статус -->
-        <div class="uf-group" onmouseenter="openUfDropdown('uf-status-dd','uf-status-btn')" onmouseleave="scheduleUfClose('uf-status-dd','uf-status-btn')">
-          <div class="uf-label">Статус</div>
-          <div class="uf-btn-custom" id="uf-status-btn">
-            <span id="uf-status-label">Доступные</span>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
-          </div>
-          <div class="uf-dropdown" id="uf-status-dd" onmouseenter="cancelUfClose('uf-status-dd')" onmouseleave="scheduleUfClose('uf-status-dd','uf-status-btn')">
-            <div style="display:flex;border-bottom:0.5px solid var(--line)">
-              <div class="uf-option selected" data-val="available" onclick="selectStatus(this)" style="flex:1;border-radius:8px 0 0 0"><span class="ut-status-dot ut-available"></span>Доступные</div>
-              <div class="uf-option" data-val="sold" onclick="selectStatus(this)" style="flex:1;border-left:0.5px solid var(--line);border-radius:0 8px 0 0"><span class="ut-status-dot ut-sold"></span>Проданные</div>
+          <!-- Статус -->
+          <div onmouseenter="openUfDropdown('uf-status-dd','uf-status-btn')" onmouseleave="scheduleUfClose('uf-status-dd','uf-status-btn')" style="position:relative">
+            <button class="usf-btn" id="uf-status-btn">
+              <span id="uf-status-label">Статус</span>
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+            </button>
+            <div class="uf-dropdown" id="uf-status-dd" onmouseenter="cancelUfClose('uf-status-dd')" onmouseleave="scheduleUfClose('uf-status-dd','uf-status-btn')">
+              <div style="display:flex;border-bottom:0.5px solid var(--line)">
+                <div class="uf-option selected" data-val="available" onclick="selectStatus(this)" style="flex:1;border-radius:8px 0 0 0"><span class="ut-status-dot ut-available"></span>Доступные</div>
+                <div class="uf-option" data-val="sold" onclick="selectStatus(this)" style="flex:1;border-left:0.5px solid var(--line);border-radius:0 8px 0 0"><span class="ut-status-dot ut-sold"></span>Проданные</div>
+              </div>
+              <div class="uf-option" data-val="" onclick="selectStatus(this)" style="border-radius:0 0 8px 8px">Все юниты</div>
             </div>
-            <div class="uf-option" data-val="" onclick="selectStatus(this)" style="border-radius:0 0 8px 8px">Все юниты</div>
           </div>
+
+          <!-- Группировка -->
+          <button class="usf-btn" id="uf-group-btn" onclick="toggleGrouping()">
+            <span id="uf-group-label">По корпусам</span>
+          </button>
+
+          <!-- Сброс -->
+          <button class="usf-reset" onclick="resetUnitFilters()">↺ Сбросить</button>
         </div>
-
-        <button class="uf-group-toggle" id="uf-group-btn" onclick="toggleGrouping()">
-          <span id="uf-group-label">По корпусам</span>
-        </button>
-
-        <button class="uf-reset" onclick="resetUnitFilters()">↺ Сбросить</button>
       </div>
+
       <div class="units-count" id="units-count"></div>
     </div>
     <div id="units-tree-wrap">${buildingSkeleton}</div>`;
@@ -1300,6 +1356,13 @@ function renderFlatList(units) {
       </div>`;
   }).join('');
 }
+let _unitSearch = '';
+
+function onUnitSearch(val) {
+  _unitSearch = val.trim().toUpperCase();
+  applyUnitFilters();
+}
+
 const _ufTimers = {};
 function openUfDropdown(ddId, btnId) {
   cancelUfClose(ddId);
@@ -1384,7 +1447,7 @@ function selectType(el) {
   }
   // Обновляем лейбл кнопки
   const lbl = document.getElementById('uf-type-label');
-  if (_filterTypes.size === 0) lbl.textContent = 'Все типы';
+  if (_filterTypes.size === 0) lbl.textContent = 'Тип';
   else if (_filterTypes.size === 1) lbl.textContent = [..._filterTypes][0];
   else lbl.textContent = `${_filterTypes.size} типа`;
   // НЕ закрываем дропдаун — можно выбрать несколько
@@ -1454,6 +1517,7 @@ function buildPriceHints(units) {
 
 function applyUnitFilters() {
   const filtered = _allUnits.filter(u => {
+    if (_unitSearch && !u.room_no.toUpperCase().includes(_unitSearch)) return false;
     if (_filterTypes.size > 0 && !_filterTypes.has(u._category)) return false;
     if (_filterPriceFrom && u.selling_price < _filterPriceFrom) return false;
     if (_filterPriceTo !== Infinity && u.selling_price > _filterPriceTo) return false;
@@ -1472,14 +1536,14 @@ function applyUnitFilters() {
 }
 
 function resetUnitFilters() {
-  _filterTypes.clear(); _filterPriceFrom = 0; _filterPriceTo = Infinity; _filterStatus = 'available';
+  _filterTypes.clear(); _filterPriceFrom = 0; _filterPriceTo = Infinity; _filterStatus = 'available'; _unitSearch = ''; const si = document.getElementById('unit-search-input'); if(si) si.value = '';
   const fromEl = document.getElementById('uf-price-from');
   const toEl = document.getElementById('uf-price-to');
   if (fromEl) fromEl.value = '';
   if (toEl) toEl.value = '';
-  document.getElementById('uf-type-label').textContent = 'Все типы';
-  document.getElementById('uf-price-label').textContent = 'Любая';
-  document.getElementById('uf-status-label').textContent = 'Доступные';
+  document.getElementById('uf-type-label').textContent = 'Тип';
+  document.getElementById('uf-price-label').textContent = 'Цена';
+  document.getElementById('uf-status-label').textContent = 'Статус';
   document.querySelectorAll('.uf-option').forEach(o => o.classList.remove('selected'));
   document.querySelector('#uf-type-dd .uf-option[data-val=""]')?.classList.add('selected');
   document.querySelector('#uf-status-dd .uf-option[data-val="available"]')?.classList.add('selected');
@@ -1876,11 +1940,14 @@ function renderFiles(d) {
 
 function renderSidebar(d) {
   const r = d.agent_reward;
-  const pctHtml = r.percent_from === 0
-    ? `<div class="reward-tbd">уточняется</div>`
-    : `<div class="reward-pct">${r.percent_from}–${r.percent_to}<sup>%</sup></div>`;
-  const daysHtml = (!r.payment_days || r.payment_days === 0) ? "уточняется" : `${r.payment_days} дней`;
-  const scaleHtml = r.scale === 'уточняется' ? 'уточняется' : r.scale;
+  const pct = (r.percent_from && r.percent_from > 0) ? r.percent_from : 10;
+  const pctTo = (r.percent_to && r.percent_to > 0) ? r.percent_to : pct;
+  const pctHtml = pct === pctTo
+    ? `<div class="reward-pct">${pct}<sup>%</sup></div>`
+    : `<div class="reward-pct">${pct}–${pctTo}<sup>%</sup></div>`;
+
+  const scale = (!r.scale || r.scale === 'уточняется') ? 'Фикс' : r.scale;
+  const days = (!r.payment_days || r.payment_days === 0) ? '1 месяц' : `${r.payment_days} дней`;
 
   document.getElementById('sidebarCol').innerHTML = `
     <div class="sidebar-inner" id="sidebarInner">
@@ -1888,10 +1955,12 @@ function renderSidebar(d) {
         <div class="reward-label">🎯 Ваше вознаграждение</div>
         ${pctHtml}
         <div class="reward-rows">
-          <div class="reward-row"><span class="reward-row-label">Шкала</span><span class="reward-row-val">${scaleHtml}</span></div>
-          <div class="reward-row"><span class="reward-row-label">Срок выплаты</span><span class="reward-row-val">${daysHtml}</span></div>
+          <div class="reward-row"><span class="reward-row-label">Шкала</span><span class="reward-row-val">${scale}</span></div>
+          <div class="reward-row"><span class="reward-row-label">Срок выплаты</span><span class="reward-row-val">${days}</span></div>
         </div>
-        <div class="reward-note">${r.note}</div>
+        <a class="reward-table-btn" href="#" onclick="return false" title="Скоро">
+          💵 Таблица вознаграждений
+        </a>
       </div>
 
       <div class="price-card">
