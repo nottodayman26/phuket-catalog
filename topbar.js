@@ -173,8 +173,15 @@ window.floxTopbar = {
   },
   _logout() {
     localStorage.removeItem('flox-meeting');
-    localStorage.removeItem('flox-agent');
-    window.location.href = 'flox-web.html';
+    // Не удаляем flox-agent — редиректим на главную
+    if (window.location.pathname.includes('flox-web')) {
+      // Уже на главной — просто показываем экран авторизации
+      const auth = document.getElementById('authScreen');
+      if (auth) auth.style.display = 'flex';
+      document.getElementById('ftb-popover')?.classList.remove('vis');
+    } else {
+      window.location.href = 'flox-web.html';
+    }
   },
 
   // ── Встреча ───────────────────────────────────────────────────────────────
@@ -218,11 +225,5 @@ window.floxTopbar = {
   },
 };
 
-// Авто-инициализация по data-page атрибуту
-document.addEventListener('DOMContentLoaded', () => {
-  const root = document.getElementById('flox-topbar');
-  if (root && root.dataset.page && !root.innerHTML.trim())
-    window.floxTopbar.init({ activePage: root.dataset.page });
-});
-
+// init вызывается явно каждой страницей через floxTopbar.init({activePage:'...'})
 })();

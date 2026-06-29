@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flox — Каталог Пхукет</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<script src="topbar.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
 <style>
 :root {
@@ -1289,8 +1288,11 @@ function renderAgentPopover() {
   if (!AGENT) return;
   const name = AGENT.full_name || [AGENT.first_name, AGENT.last_name].filter(Boolean).join(' ') || 'Агент';
   const agency = AGENT.agency || 'Независимый агент';
-  document.getElementById('popoverName').textContent = name;
-  document.getElementById('popoverAgency').textContent = agency;
+  // topbar.js использует ftb-name / ftb-agency
+  const nm = document.getElementById('ftb-name');
+  const ag = document.getElementById('ftb-agency');
+  if (nm) nm.textContent = name;
+  if (ag) ag.textContent = agency;
 }
 
 function logout() {
@@ -1410,5 +1412,6 @@ async function loadUnitCount() {
   </div>
 </div>
 
+<script src="topbar.js"></script>
 </body>
 </html>
