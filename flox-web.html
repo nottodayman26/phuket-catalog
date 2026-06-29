@@ -1177,6 +1177,17 @@ async function initAgent() {
   if (saved) {
     try {
       AGENT = JSON.parse(saved);
+      // Если нет id — подгружаем полные данные из Supabase
+      if (!AGENT.id && AGENT.telegram_id) {
+        try {
+          const r = await h(`${SUPABASE_URL}/agents?telegram_id=eq.${AGENT.telegram_id}&select=*`);
+          const agents = await r.json();
+          if (agents.length) {
+            AGENT = agents[0];
+            localStorage.setItem('flox-agent', JSON.stringify(AGENT));
+          }
+        } catch(e) {}
+      }
       renderAgent();
       renderAgentPopover();
       return;
