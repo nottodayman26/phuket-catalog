@@ -1965,7 +1965,6 @@ function applyURLFilters() {
 }
 
 loadProject();
-if (window.floxTopbar) floxTopbar.init({ activePage: 'project' });
 
 // ── Payment animation ───────────────────────────────────────────────────
 function initPaymentAnimation() {
@@ -2069,5 +2068,6 @@ function updateSidebarHeight() {
 <div class="page-footer"></div>
 
 <script src="topbar.js"></script>
+<script>floxTopbar.init({activePage:'project'});</script>
 </body>
 </html>

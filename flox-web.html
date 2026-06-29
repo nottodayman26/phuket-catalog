@@ -1342,9 +1342,6 @@ function showAuthIfNeeded() {
   }
 }
 
-// Инициализируем topbar сразу — до загрузки агента
-if (window.floxTopbar) floxTopbar.init({ activePage: 'search' });
-
 initAgent().then(() => {
   showAuthIfNeeded();
   const p = localStorage.getItem('flox-page');
@@ -1413,5 +1410,6 @@ async function loadUnitCount() {
 </div>
 
 <script src="topbar.js"></script>
+<script>floxTopbar.init({activePage:'search'});</script>
 </body>
 </html>
