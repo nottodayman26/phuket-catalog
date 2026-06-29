@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flox — Каталог Пхукет</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="topbar.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
 <style>
 :root {
@@ -29,136 +30,6 @@ a{color:inherit;text-decoration:none;}
 input,button{font-family:inherit;}
 
 /* ── TOPBAR ─── */
-.topbar{
-  position:sticky;top:0;z-index:200;
-  background:var(--surface);border-bottom:0.5px solid var(--line);
-  display:flex;align-items:center;padding:0 24px;height:52px;gap:0;
-}
-.logo{display:flex;align-items:center;gap:2px;font-size:20px;font-weight:700;letter-spacing:-0.05em;margin-right:32px;}
-.logo-dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-bottom:10px;}
-.nav{display:flex;align-items:center;gap:2px;flex:1;}
-.nav-item{
-  padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;
-  color:var(--muted);cursor:pointer;transition:background .15s,color .15s;
-}
-.nav-item:hover{background:var(--surface-2);color:var(--text);}
-.nav-item.act{color:var(--muted);background:none;}
-.topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
-.agent-avatar{
-  width:32px;height:32px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),#7B3FF5);
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;
-}
-.theme-btn{
-  width:30px;height:30px;border-radius:8px;border:none;
-  background:var(--surface-2);color:var(--muted);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-}
-.theme-btn:hover{background:var(--surface-3);}
-/* ── AUTH SCREEN ─── */
-.auth-screen {
-  position: fixed; inset: 0; background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1000; flex-direction: column; gap: 0;
-  padding: 20px;
-}
-.auth-card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 20px; padding: 40px 36px;
-  max-width: 400px; width: 100%; text-align: center;
-}
-.auth-logo {
-  font-size: 28px; font-weight: 700; letter-spacing: -0.05em;
-  margin-bottom: 28px; display: flex; align-items: center;
-  justify-content: center; gap: 2px;
-}
-.auth-logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); margin-bottom: 12px; }
-.auth-emoji { font-size: 40px; margin-bottom: 16px; }
-.auth-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-.auth-sub { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 28px; }
-.auth-btn {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; padding: 14px; border-radius: 12px;
-  background: var(--accent); color: #fff; border: none;
-  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-  text-decoration: none; transition: opacity .15s; margin-bottom: 10px;
-}
-.auth-btn:hover { opacity: .88; }
-.auth-btn.secondary {
-  background: var(--surface-2); color: var(--muted);
-  border: 1px solid var(--line-2); font-size: 13px;
-}
-.auth-btn svg { flex-shrink: 0; }
-
-/* ── AGENT POPOVER ─── */
-.agent-popover {
-  position: absolute; top: calc(100% + 8px); right: 0;
-  background: var(--surface); border: 1px solid var(--line-2);
-  border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-  z-index: 400; min-width: 200px; padding: 8px;
-  opacity: 0; pointer-events: none;
-  transform: translateY(-6px); transition: opacity .18s, transform .18s;
-}
-.agent-popover.vis { opacity: 1; pointer-events: all; transform: translateY(0); }
-.agent-info { padding: 10px 12px 8px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
-.agent-info-name { font-size: 13px; font-weight: 600; }
-.agent-info-agency { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.popover-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 12px; border-radius: 8px; cursor: pointer;
-  font-size: 13px; color: var(--text); transition: background .12s;
-}
-.popover-item:hover { background: var(--surface-2); }
-.popover-item.danger { color: var(--red); }
-.avatar-wrap { position: relative; }
-
-.meeting-btn{
-  display:flex;align-items:center;gap:6px;
-  padding:6px 12px;border-radius:8px;border:1px solid var(--line-2);
-  background:none;color:var(--muted);font-size:12px;font-weight:500;
-  cursor:pointer;transition:all .15s;white-space:nowrap;
-}
-.meeting-btn:hover{border-color:var(--accent);color:var(--accent);}
-.meeting-btn.act{background:var(--accent);border-color:var(--accent);color:#fff;}
-/* ── DROPDOWN MENUS ─── */
-.nav-dropdown-wrap { position: relative; }
-.dropdown {
-  position: absolute; top: calc(100% + 8px); left: 0;
-  background: var(--surface);
-  border: 1px solid var(--line-2);
-  border-radius: 14px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
-  z-index: 400; min-width: 220px;
-  padding: 8px;
-  opacity: 0; pointer-events: none;
-  transform: translateY(-6px);
-  transition: opacity .18s, transform .18s;
-}
-.dropdown.vis {
-  opacity: 1; pointer-events: all;
-  transform: translateY(0);
-}
-.dropdown-title {
-  font-size: 11px; font-weight: 600; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .06em;
-  padding: 6px 10px 4px;
-}
-.dropdown-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-radius: 10px; cursor: pointer;
-  transition: background .12s; color: var(--text); text-decoration: none;
-}
-.dropdown-item:hover { background: var(--surface-2); }
-.dropdown-icon {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: var(--accent-soft); color: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; flex-shrink: 0;
-}
-.dropdown-label { font-size: 13px; font-weight: 500; }
-.dropdown-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
-.nav-item.dd-open { background: var(--surface-2); color: var(--text); }
 
 
 /* ── PAGES ─── */
@@ -459,60 +330,7 @@ input,button{font-family:inherit;}
 <body>
 
 <!-- TOPBAR -->
-<div class="topbar">
-  <div class="logo">flox<span class="logo-dot"></span></div>
-  <nav class="nav">
-    <div class="nav-item act" data-page="search" onclick="setPage('search')">Поиск</div>
-    <div class="nav-dropdown-wrap" onmouseenter="openDropdown('tools')" onmouseleave="scheduleClose('tools')">
-      <div class="nav-item" id="navTools">Инструменты</div>
-      <div class="dropdown" id="dropdownTools" onmouseenter="cancelClose('tools')" onmouseleave="scheduleClose('tools')">
-        <div class="dropdown-title">Инструменты</div>
-        <div class="dropdown-item" onclick="openPage('offers')">
-          <div class="dropdown-icon">📋</div>
-          <div>
-            <div class="dropdown-label">Мои предложения</div>
-            <div class="dropdown-sub">Ссылки, отправленные клиентам</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="nav-dropdown-wrap" onmouseenter="openDropdown('clients')" onmouseleave="scheduleClose('clients')">
-      <div class="nav-item" id="navClients">Клиенты</div>
-      <div class="dropdown" id="dropdownClients" onmouseenter="cancelClose('clients')" onmouseleave="scheduleClose('clients')">
-        <div class="dropdown-title">Клиенты</div>
-        <div class="dropdown-item" onclick="openPage('activity')">
-          <div class="dropdown-icon">📊</div>
-          <div>
-            <div class="dropdown-label">Последняя активность</div>
-            <div class="dropdown-sub">История действий клиентов</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </nav>
-  <div class="topbar-right">
-    <div class="avatar-wrap">
-      <div class="agent-avatar" id="agentAvatar" onclick="toggleAgentPopover()">ИК</div>
-      <div class="agent-popover" id="agentPopover">
-        <div class="agent-info">
-          <div class="agent-info-name" id="popoverName">—</div>
-          <div class="agent-info-agency" id="popoverAgency">—</div>
-        </div>
-        <div class="popover-item danger" onclick="logout()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-          Выйти из аккаунта
-        </div>
-      </div>
-    </div>
-    <button class="meeting-btn" id="meetingBtn" onclick="toggleMeeting()" title="Режим встречи с клиентом">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      Встреча с клиентом
-    </button>
-    <button class="theme-btn" onclick="toggleTheme()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-    </button>
-  </div>
-</div>
+<div id="flox-topbar" data-page="search"></div>
 
 <!-- SEARCH PAGE -->
 <div class="page act" id="page-search">
@@ -1402,11 +1220,13 @@ function timeAgo(iso) {
 }
 
 // ── MEETING MODE ─────────────────────────
-let meetingMode = localStorage.getItem('flox-meeting') === 'true';
+let meetingMode = false; // управляется через floxTopbar
 
 const SVG_PEOPLE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`;
 
-function applyMeetingMode() {
+// Callback от floxTopbar
+window._pageMeetingCallback = function(m) { meetingMode = m; applyMeetingMode(m); };
+function applyMeetingMode(m) { if(m===undefined) m=meetingMode;
   const btn = document.getElementById('meetingBtn');
   const logo = document.querySelector('.logo');
   if (!btn) return;
@@ -1424,14 +1244,7 @@ function applyMeetingMode() {
   }
 }
 
-function toggleMeeting() {
-  meetingMode = !meetingMode;
-  applyMeetingMode();
-  // Обновляем видимость комиссии во всех карточках
-  document.querySelectorAll('.pc-comm').forEach(el => {
-    el.classList.toggle('hidden', meetingMode);
-  });
-}
+
 
 applyMeetingMode();
 

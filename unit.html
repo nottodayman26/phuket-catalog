@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flox — Юнит</title>
+<script src="topbar.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css"/>
 <style>
@@ -25,20 +26,6 @@ body.light{
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
 
-/* ── TOPBAR ── */
-.topbar{position:sticky;top:0;z-index:200;background:var(--surface);border-bottom:0.5px solid var(--line);display:flex;align-items:center;padding:0 24px;height:52px;gap:0}
-.topbar-logo{font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);text-decoration:none;margin-right:32px}
-.logo-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#E8441A;margin-left:1px;margin-bottom:9px;vertical-align:bottom}
-.topbar-nav{display:flex;align-items:center;gap:2px;flex:1}
-.tni{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;text-decoration:none}
-.tni:hover{background:var(--surface-2);color:var(--text)}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.agent-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7B3FF5);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0}
-.meeting-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px solid var(--line-2);background:none;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
-.meeting-btn:hover{border-color:var(--accent);color:var(--accent)}
-.meeting-btn.act{background:var(--accent);border-color:var(--accent);color:#fff}
-.theme-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--line-2);background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.theme-btn:hover{background:var(--surface-2)}
 
 /* ── BREADCRUMB ── */
 .breadcrumb{display:flex;align-items:center;gap:6px;padding:12px 24px;font-size:12px;color:var(--muted);border-bottom:0.5px solid var(--line)}
@@ -121,24 +108,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 </head>
 <body>
 
-<div class="topbar">
-  <a class="topbar-logo" href="flox-web.html">flox<span class="logo-dot"></span></a>
-  <nav class="topbar-nav">
-    <a class="tni" href="flox-web.html">Поиск</a>
-    <a class="tni" href="flox-web.html">Инструменты</a>
-    <a class="tni" href="flox-web.html">Клиенты</a>
-  </nav>
-  <div class="topbar-right">
-    <div class="agent-avatar" id="agentAvatar">АГ</div>
-    <button class="meeting-btn" id="meetingBtn" onclick="toggleMeeting()">
-      <i class="ti ti-users" style="font-size:14px"></i>
-      <span id="meetingLabel">Встреча с клиентом</span>
-    </button>
-    <button class="theme-btn" onclick="toggleTheme()">
-      <i class="ti ti-sun" style="font-size:15px"></i>
-    </button>
-  </div>
-</div>
+<div id="flox-topbar" data-page="unit"></div>
 
 <div class="breadcrumb" id="breadcrumb">
   <a href="flox-web.html">Поиск</a>
@@ -162,49 +132,6 @@ const SUPABASE_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
 const SB = { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}`, Accept: 'application/json' };
 
-// ── THEME ──────────────────────────────────────────────────────────────────
-let _dark = localStorage.getItem('flox-theme') !== 'light';
-function applyTheme() {
-  document.body.classList.toggle('light', !_dark);
-  document.querySelector('.theme-btn i').className = _dark ? 'ti ti-sun' : 'ti ti-moon';
-}
-function toggleTheme() { _dark = !_dark; localStorage.setItem('flox-theme', _dark ? 'dark' : 'light'); applyTheme(); }
-applyTheme();
-
-// ── MEETING ────────────────────────────────────────────────────────────────
-let meetingMode = localStorage.getItem('flox-meeting') === 'true';
-function applyMeeting() {
-  const btn = document.getElementById('meetingBtn');
-  const lbl = document.getElementById('meetingLabel');
-  if (meetingMode) {
-    btn.classList.add('act');
-    if (lbl) lbl.textContent = 'Встреча с клиентом';
-  } else {
-    btn.classList.remove('act');
-    if (lbl) lbl.textContent = 'Встреча с клиентом';
-  }
-  // Комиссия скрывается в режиме встречи
-  document.querySelectorAll('.reward-section').forEach(el => {
-    el.style.display = meetingMode ? 'none' : '';
-  });
-}
-function toggleMeeting() {
-  meetingMode = !meetingMode;
-  localStorage.setItem('flox-meeting', String(meetingMode));
-  applyMeeting();
-}
-
-// ── AVATAR ─────────────────────────────────────────────────────────────────
-function initAvatar() {
-  try {
-    const a = JSON.parse(localStorage.getItem('flox-agent') || '{}');
-    if (a.full_name) {
-      const initials = a.full_name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
-      document.getElementById('agentAvatar').textContent = initials;
-    }
-  } catch(e) {}
-}
-initAvatar();
 
 // ── PARAMS ─────────────────────────────────────────────────────────────────
 const params = new URLSearchParams(location.search);
@@ -409,6 +336,7 @@ function togglePresentation() {
 }
 
 loadUnit();
+if(window.floxTopbar) floxTopbar.init({activePage:'unit'});
 </script>
 </body>
 </html>

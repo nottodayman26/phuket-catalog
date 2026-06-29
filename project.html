@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flox — Проект</title>
+<script src="topbar.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
 <style>
 :root {
@@ -808,47 +809,7 @@ body.light .page-footer {
 <body>
 
 <!-- TOP BAR -->
-<div class="topbar">
-  <div class="topbar-logo" id="topbarLogo">flox<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:1px;margin-bottom:8px;vertical-align:bottom"></span></div>
-  <nav class="topbar-nav">
-    <a class="tnav-item" href="flox-web.html">Поиск</a>
-    <div class="nav-dropdown-wrap" onmouseenter="openDropdown('tools')" onmouseleave="scheduleClose('tools')">
-      <div class="tnav-item">Инструменты</div>
-      <div class="dropdown" id="dropdownTools" onmouseenter="cancelClose('tools')" onmouseleave="scheduleClose('tools')">
-        <div class="dropdown-title">Инструменты</div>
-        <a class="dropdown-item" href="flox-web.html" onclick="localStorage.setItem('flox-page','offers')">
-          <div class="dropdown-icon">📋</div>
-          <div>
-            <div class="dropdown-label">Мои предложения</div>
-            <div class="dropdown-sub">Ссылки, отправленные клиентам</div>
-          </div>
-        </a>
-      </div>
-    </div>
-    <div class="nav-dropdown-wrap" onmouseenter="openDropdown('clients')" onmouseleave="scheduleClose('clients')">
-      <div class="tnav-item">Клиенты</div>
-      <div class="dropdown" id="dropdownClients" onmouseenter="cancelClose('clients')" onmouseleave="scheduleClose('clients')">
-        <div class="dropdown-title">Клиенты</div>
-        <a class="dropdown-item" href="flox-web.html" onclick="localStorage.setItem('flox-page','activity')">
-          <div class="dropdown-icon">📊</div>
-          <div>
-            <div class="dropdown-label">Последняя активность</div>
-            <div class="dropdown-sub">История действий клиентов</div>
-          </div>
-        </a>
-      </div>
-    </div>
-  </nav>
-  <div class="topbar-right">
-    <button class="meeting-btn-proj" id="meetingBtnProj" onclick="toggleMeeting()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      <span id="meetingBtnLabel">Встреча</span>
-    </button>
-    <button class="theme-btn" onclick="toggleTheme()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-    </button>
-  </div>
-</div>
+<div id="flox-topbar" data-page="project"></div>
 
 <!-- HERO -->
 <div class="hero" id="heroSection">
@@ -1984,7 +1945,7 @@ function renderSidebar(d) {
 
 
 // ── Meeting mode ─────────────────────────────
-let meetingMode = localStorage.getItem('flox-meeting') === 'true';
+let meetingMode = false;
 
 function applyMeetingMode() {
   const btn = document.getElementById('meetingBtnProj');
@@ -2003,11 +1964,7 @@ function applyMeetingMode() {
   }
 }
 
-function toggleMeeting() {
-  meetingMode = !meetingMode;
-  localStorage.setItem('flox-meeting', String(meetingMode));
-  applyMeetingMode();
-}
+window._pageMeetingCallback = function(m) { meetingMode = m; applyMeetingMode(); };
 
 function applyURLFilters() {
   const params = new URLSearchParams(window.location.search);
