@@ -1331,6 +1331,8 @@ async function onTelegramAuth(tgUser) {
 
 function continueAsGuest() {
   document.getElementById('authScreen').style.display = 'none';
+  const p = localStorage.getItem('flox-page');
+  if (p) { localStorage.removeItem('flox-page'); setPage(p); }
 }
 
 // ── AUTH SCREEN ───────────────────────────
@@ -1340,7 +1342,9 @@ function showAuthIfNeeded() {
   }
 }
 
-initAgent().then(showAuthIfNeeded).then(() => {
+initAgent().then(() => {
+  showAuthIfNeeded();
+  // Читаем flox-page независимо от авторизации
   const p = localStorage.getItem('flox-page');
   if (p) { localStorage.removeItem('flox-page'); setPage(p); }
 });
