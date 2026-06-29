@@ -842,7 +842,7 @@ body.light .page-footer {
   <div class="topbar-right">
     <button class="meeting-btn-proj" id="meetingBtnProj" onclick="toggleMeeting()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      <span id="meetingBtnLabel">Встреча</span>
+      <span id="meetingBtnLabel">Встреча с клиентом</span>
     </button>
     <button class="theme-btn" onclick="toggleTheme()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -1996,7 +1996,7 @@ function applyMeetingMode() {
     document.documentElement.style.setProperty('--meeting-reward-display', 'none');
   } else {
     if (btn) btn.classList.remove('act');
-    if (label) label.textContent = 'Встреча';
+    if (label) label.textContent = 'Встреча с клиентом';
     document.documentElement.style.setProperty('--meeting-logo-vis', 'visible');
     document.documentElement.style.setProperty('--meeting-reward-display', 'block');
   }
