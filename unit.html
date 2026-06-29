@@ -335,8 +335,15 @@ function togglePresentation() {
   savePresentation(list);
 }
 
+// Callback от topbar — скрываем вознаграждение в режиме встречи
+window._pageMeetingCallback = function(m) {
+  document.querySelectorAll('.reward-section').forEach(el => el.style.display = m ? 'none' : '');
+};
+
 loadUnit();
 if(window.floxTopbar) floxTopbar.init({activePage:'unit'});
+// Применяем начальное состояние встречи
+window._pageMeetingCallback(localStorage.getItem('flox-meeting') === 'true');
 </script>
 </body>
 </html>

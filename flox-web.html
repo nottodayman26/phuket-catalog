@@ -1207,8 +1207,14 @@ function renderAgent() {
   } else if (AGENT.first_name) {
     initials = [AGENT.first_name[0], AGENT.last_name?.[0]].filter(Boolean).join('').toUpperCase();
   }
-  document.getElementById('agentAvatar').textContent = initials;
-  // Сохраняем для project.html
+  // Обновляем аватар в topbar.js
+  const av = document.getElementById('ftb-avatar');
+  const nm = document.getElementById('ftb-name');
+  const ag = document.getElementById('ftb-agency');
+  if (av) av.textContent = initials;
+  if (nm) nm.textContent = AGENT.full_name || '—';
+  if (ag) ag.textContent = AGENT.agency || '—';
+  // Сохраняем для других страниц
   try { localStorage.setItem('flox-agent', JSON.stringify(AGENT)); } catch(e) {}
 }
 
@@ -1226,26 +1232,14 @@ const SVG_PEOPLE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" 
 
 // Callback от floxTopbar
 window._pageMeetingCallback = function(m) { meetingMode = m; applyMeetingMode(m); };
-function applyMeetingMode(m) { if(m===undefined) m=meetingMode;
-  const btn = document.getElementById('meetingBtn');
-  const logo = document.querySelector('.logo');
-  if (!btn) return;
-
-  if (meetingMode) {
-    btn.classList.add('act');
-    btn.innerHTML = SVG_PEOPLE + ' Режим встречи';
-    localStorage.setItem('flox-meeting', 'true');
-    if (logo) logo.style.visibility = 'hidden';
-  } else {
-    btn.classList.remove('act');
-    btn.innerHTML = SVG_PEOPLE + ' Встреча с клиентом';
-    localStorage.setItem('flox-meeting', 'false');
-    if (logo) logo.style.visibility = 'visible';
-  }
+function applyMeetingMode(m) {
+  if (m === undefined) m = meetingMode;
+  meetingMode = m;
+  // Комиссия в карточках проектов
+  document.querySelectorAll('.pc-comm').forEach(el => el.classList.toggle('hidden', m));
+  // Комиссия и награда в вкладках предложений/активности
+  document.querySelectorAll('.offer-comm, .activity-comm').forEach(el => el.style.display = m ? 'none' : '');
 }
-
-
-
 applyMeetingMode();
 
 
