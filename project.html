@@ -1555,7 +1555,7 @@ function renderUnitRows(units) {
   const projId = window._currentProjectData?.id || '';
   return units.map(u => `
     <tr>
-      <td><a href="unit.html?unit=${encodeURIComponent(u.room_no)}&project=${projId}" style="font-weight:600;color:var(--project-color);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${u.room_no}</a></td>
+      <td><a href="unit.html?unit=${encodeURIComponent(u.room_no)}&project=${projId}" style="font-weight:600;color:var(--project-color);text-decoration:none">${u.room_no}</a></td>
       <td>${u.floor}</td>
       <td style="color:var(--muted);font-size:11px">${u.room_type}</td>
       <td>${u.area_sqm} м²</td>

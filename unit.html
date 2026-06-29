@@ -220,19 +220,44 @@ function fmtMln(v) {
 async function loadUnit() {
   if (!roomNo) { showError('Юнит не указан'); return; }
 
-  // Загружаем юнит из Supabase
-  const r = await fetch(`${SUPABASE_URL}/units?room_no=eq.${encodeURIComponent(roomNo)}&select=*,projects(id,code,name,color)&limit=1`, { headers: SB });
-  const rows = await r.json();
-  if (!rows.length) { showError('Юнит не найден'); return; }
-  const u = rows[0];
-  const proj = u.projects || {};
-
-  // Загружаем JSON проекта для доп. данных
-  let projData = null;
   try {
-    const pj = await fetch(`projects/${proj.code}.json`);
-    projData = await pj.json();
-  } catch(e) {}
+    // 1. Загружаем юнит
+    const r = await fetch(`${SUPABASE_URL}/units?room_no=eq.${encodeURIComponent(roomNo)}&limit=1`, { headers: SB });
+    const rows = await r.json();
+    if (!rows.length) {
+      // Пробуем без encodeURIComponent на случай двойного кодирования
+      const r2 = await fetch(`${SUPABASE_URL}/units?room_no=eq.${roomNo}&limit=1`, { headers: SB });
+      const rows2 = await r2.json();
+      if (!rows2.length) { showError('Юнит не найден: ' + roomNo); return; }
+      return processUnit(rows2[0]);
+    }
+    processUnit(rows[0]);
+  } catch(e) {
+    showError('Ошибка загрузки: ' + e.message);
+  }
+}
+
+async function processUnit(u) {
+  // 2. Загружаем проект из Supabase по project_id
+  let proj = { code: projectId || '', name: '' };
+  if (u.project_id) {
+    try {
+      const pr = await fetch(`${SUPABASE_URL}/projects?id=eq.${u.project_id}&limit=1`, { headers: SB });
+      const pd = await pr.json();
+      if (pd.length) proj = pd[0];
+    } catch(e) {}
+  }
+
+  // 3. Загружаем JSON проекта для доп. данных
+  let projData = null;
+  const code = proj.code || projectId || '';
+  if (code) {
+    try {
+      const base = location.pathname.replace(/\/[^\/]*$/, '/');
+      const pj = await fetch(`${base}projects/${code}.json`);
+      if (pj.ok) projData = await pj.json();
+    } catch(e) {}
+  }
 
   renderUnit(u, proj, projData);
 }
