@@ -1593,7 +1593,7 @@ function resetUnitFilters() {
 function renderUnitRows(units) {
   return units.map(u => `
     <tr>
-      <td style="font-weight:600">${u.room_no}</td>
+      <td><a href="unit.html?unit=${encodeURIComponent(u.room_no)}&project=${d?.id||''}" style="font-weight:600;color:var(--project-color);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${u.room_no}</a></td>
       <td>${u.floor}</td>
       <td style="color:var(--muted);font-size:11px">${u.room_type}</td>
       <td>${u.area_sqm} м²</td>

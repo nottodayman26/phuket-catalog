@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flox — Юнит</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css"/>
+<style>
+:root{
+  --bg:#0d0d18;--surface:#111118;--surface-2:#1a1a26;--surface-3:#222232;
+  --line:rgba(255,255,255,0.06);--line-2:rgba(255,255,255,0.1);
+  --text:#ffffff;--muted:rgba(255,255,255,0.45);
+  --accent:#5E17EB;--accent-soft:rgba(94,23,235,0.18);
+  --green:#7BAF6E;--red:#FF6B6B;--red-soft:rgba(255,107,107,0.15);
+  --project-color:#5E17EB;
+}
+body.light{
+  --bg:#F5F5F7;--surface:#ffffff;--surface-2:#F5F5F7;--surface-3:#EBEBED;
+  --line:rgba(0,0,0,0.06);--line-2:rgba(0,0,0,0.1);
+  --text:#1a1a1a;--muted:rgba(0,0,0,0.45);
+  --accent:#5E17EB;--accent-soft:rgba(94,23,235,0.1);
+  --green:#3B7A2E;--red:#D94040;--red-soft:rgba(217,64,64,0.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+
+/* ── TOPBAR ── */
+.topbar{position:sticky;top:0;z-index:200;background:var(--surface);border-bottom:0.5px solid var(--line);display:flex;align-items:center;padding:0 24px;height:52px;gap:0}
+.topbar-logo{font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);text-decoration:none;margin-right:32px}
+.logo-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#E8441A;margin-left:1px;margin-bottom:9px;vertical-align:bottom}
+.topbar-nav{display:flex;align-items:center;gap:2px;flex:1}
+.tni{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;text-decoration:none}
+.tni:hover{background:var(--surface-2);color:var(--text)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.agent-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7B3FF5);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0}
+.meeting-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px solid var(--line-2);background:none;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.meeting-btn:hover{border-color:var(--accent);color:var(--accent)}
+.meeting-btn.act{background:var(--accent);border-color:var(--accent);color:#fff}
+.theme-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--line-2);background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.theme-btn:hover{background:var(--surface-2)}
+
+/* ── BREADCRUMB ── */
+.breadcrumb{display:flex;align-items:center;gap:6px;padding:12px 24px;font-size:12px;color:var(--muted);border-bottom:0.5px solid var(--line)}
+.breadcrumb a{color:var(--muted);text-decoration:none;transition:color .15s}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .cur{color:var(--text)}
+
+/* ── LAYOUT ── */
+.page-body{display:grid;grid-template-columns:1fr 300px;min-height:calc(100vh - 104px)}
+.main{padding:24px;display:flex;flex-direction:column;gap:20px;border-right:0.5px solid var(--line)}
+.sidebar{padding:20px;display:flex;flex-direction:column;gap:12px}
+
+/* ── UNIT HEADER ── */
+.unit-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.unit-name{font-size:20px;font-weight:700;margin-bottom:4px}
+.unit-meta{font-size:13px;color:var(--muted)}
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap}
+.badge-avail{background:rgba(123,175,110,0.15);color:var(--green)}
+.badge-sold{background:var(--red-soft);color:var(--red)}
+.dot{width:6px;height:6px;border-radius:50%}
+
+/* ── ACTIONS ── */
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.act-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:0.5px solid var(--line-2);background:var(--surface);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.act-btn:hover{border-color:var(--text);color:var(--text)}
+
+/* ── TWO-COL ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ── PLAN ── */
+.plan-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;min-height:260px;display:flex;align-items:center;justify-content:center}
+.plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
+.plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted)}
+.plan-placeholder i{font-size:40px}
+.plan-placeholder span{font-size:12px}
+
+/* ── PARAMS ── */
+.params-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden}
+.p-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:0.5px solid var(--line);font-size:13px}
+.p-row:last-child{border-bottom:none}
+.p-label{color:var(--muted)}
+.p-val{font-weight:500}
+
+/* ── SIDEBAR CARDS ── */
+.sc{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;padding:14px}
+.sc.accent-border{border-color:rgba(94,23,235,0.5)}
+.sc-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.sc-price{font-size:26px;font-weight:700;margin-bottom:2px}
+.sc-price-exact{font-size:12px;color:var(--muted);margin-bottom:12px}
+.sc-row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:0.5px solid var(--line)}
+.sc-row:last-child{border-bottom:none}
+.sc-row span{color:var(--muted)}
+.sc-row b{font-weight:600;color:var(--text)}
+.sc-row .green{color:var(--green)}
+.sc-row .red{color:var(--red)}
+
+.rew-pct{font-size:26px;font-weight:700;margin:4px 0 8px}
+.rew-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
+.rew-row span{color:var(--muted)}
+.rew-row b{font-weight:500}
+.rew-btn{display:block;width:100%;padding:8px;border-radius:8px;border:0.5px solid var(--line-2);background:none;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;text-align:center;margin-top:10px;font-family:inherit;transition:all .15s}
+.rew-btn:hover{color:var(--text);border-color:var(--line)}
+
+/* ── ADD TO PRESENTATION ── */
+.add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.add-btn:hover{opacity:.88}
+.add-btn.added{background:var(--green);opacity:1}
+
+.proj-info{display:flex;flex-direction:column;gap:7px;padding:2px 0}
+.proj-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+.proj-row i{font-size:14px;flex-shrink:0}
+.proj-row a{color:var(--muted);text-decoration:none}
+.proj-row a:hover{color:var(--text)}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;min-height:300px}
+.spinner{width:28px;height:28px;border:2px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="topbar-logo" href="flox-web.html">flox<span class="logo-dot"></span></a>
+  <nav class="topbar-nav">
+    <a class="tni" href="flox-web.html">Поиск</a>
+    <a class="tni" href="flox-web.html">Инструменты</a>
+    <a class="tni" href="flox-web.html">Клиенты</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="agent-avatar" id="agentAvatar">АГ</div>
+    <button class="meeting-btn" id="meetingBtn" onclick="toggleMeeting()">
+      <i class="ti ti-users" style="font-size:14px"></i>
+      <span id="meetingLabel">Встреча с клиентом</span>
+    </button>
+    <button class="theme-btn" onclick="toggleTheme()">
+      <i class="ti ti-sun" style="font-size:15px"></i>
+    </button>
+  </div>
+</div>
+
+<div class="breadcrumb" id="breadcrumb">
+  <a href="flox-web.html">Поиск</a>
+  <i class="ti ti-chevron-right" style="font-size:11px"></i>
+  <a href="#" id="bc-project">—</a>
+  <i class="ti ti-chevron-right" style="font-size:11px"></i>
+  <span class="cur" id="bc-unit">—</span>
+</div>
+
+<div class="page-body">
+  <div class="main" id="mainContent">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+  <div class="sidebar" id="sidebarContent">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
+const SB = { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}`, Accept: 'application/json' };
+
+// ── THEME ──────────────────────────────────────────────────────────────────
+let _dark = localStorage.getItem('flox-theme') !== 'light';
+function applyTheme() {
+  document.body.classList.toggle('light', !_dark);
+  document.querySelector('.theme-btn i').className = _dark ? 'ti ti-sun' : 'ti ti-moon';
+}
+function toggleTheme() { _dark = !_dark; localStorage.setItem('flox-theme', _dark ? 'dark' : 'light'); applyTheme(); }
+applyTheme();
+
+// ── MEETING ────────────────────────────────────────────────────────────────
+let meetingMode = localStorage.getItem('flox-meeting') === 'true';
+function applyMeeting() {
+  const btn = document.getElementById('meetingBtn');
+  const lbl = document.getElementById('meetingLabel');
+  if (meetingMode) {
+    btn.classList.add('act');
+    if (lbl) lbl.textContent = 'Встреча с клиентом';
+  } else {
+    btn.classList.remove('act');
+    if (lbl) lbl.textContent = 'Встреча с клиентом';
+  }
+  // Комиссия скрывается в режиме встречи
+  document.querySelectorAll('.reward-section').forEach(el => {
+    el.style.display = meetingMode ? 'none' : '';
+  });
+}
+function toggleMeeting() {
+  meetingMode = !meetingMode;
+  localStorage.setItem('flox-meeting', String(meetingMode));
+  applyMeeting();
+}
+
+// ── AVATAR ─────────────────────────────────────────────────────────────────
+function initAvatar() {
+  try {
+    const a = JSON.parse(localStorage.getItem('flox-agent') || '{}');
+    if (a.full_name) {
+      const initials = a.full_name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('agentAvatar').textContent = initials;
+    }
+  } catch(e) {}
+}
+initAvatar();
+
+// ── PARAMS ─────────────────────────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+const roomNo = params.get('unit');
+const projectId = params.get('project');
+
+function fmtMln(v) {
+  const m = v / 1000000;
+  return m >= 10 ? m.toFixed(1) + ' млн ฿' : m.toFixed(2).replace(/\.?0+$/, '') + ' млн ฿';
+}
+
+// ── LOAD ────────────────────────────────────────────────────────────────────
+async function loadUnit() {
+  if (!roomNo) { showError('Юнит не указан'); return; }
+
+  // Загружаем юнит из Supabase
+  const r = await fetch(`${SUPABASE_URL}/units?room_no=eq.${encodeURIComponent(roomNo)}&select=*,projects(id,code,name,color)&limit=1`, { headers: SB });
+  const rows = await r.json();
+  if (!rows.length) { showError('Юнит не найден'); return; }
+  const u = rows[0];
+  const proj = u.projects || {};
+
+  // Загружаем JSON проекта для доп. данных
+  let projData = null;
+  try {
+    const pj = await fetch(`projects/${proj.code}.json`);
+    projData = await pj.json();
+  } catch(e) {}
+
+  renderUnit(u, proj, projData);
+}
+
+function renderUnit(u, proj, pd) {
+  const isAvail = u.status === 'available';
+  const projectColor = pd?.color || proj.color || '#5E17EB';
+  document.documentElement.style.setProperty('--project-color', projectColor);
+
+  // Хлебные крошки
+  document.getElementById('bc-project').textContent = proj.name || proj.code;
+  document.getElementById('bc-project').href = `project.html?id=${proj.code}`;
+  document.getElementById('bc-unit').textContent = u.room_no;
+  document.title = `Flox — ${u.room_no}`;
+
+  // Тип (категория)
+  const rt = (u.room_type || '').toUpperCase();
+  let cat = u.room_type;
+  if (rt.includes('PENTHOUSE') || rt.includes('PH-')) cat = 'Пентхаус';
+  else if (rt.includes('2 BEDROOM')) cat = '2 спальни';
+  else if (rt.includes('1 BEDROOM PLUS')) cat = '1 спальня+';
+  else if (rt.includes('1 BEDROOM')) cat = '1 спальня';
+
+  // Вознаграждение
+  const reward = pd?.agent_reward || {};
+  const pct = (reward.percent_from && reward.percent_from > 0) ? reward.percent_from : 10;
+  const scale = (!reward.scale || reward.scale === 'уточняется') ? 'Фикс' : reward.scale;
+  const days = (!reward.payment_days || reward.payment_days === 0) ? '30 дней' : `${reward.payment_days} дней`;
+
+  // MAIN
+  document.getElementById('mainContent').innerHTML = `
+    <div class="unit-header">
+      <div>
+        <div class="unit-name">${u.room_no} · ${cat}</div>
+        <div class="unit-meta">${proj.name || proj.code} · Корпус ${u.tower} · Этаж ${u.floor}${pd ? ' / ' + pd.floors : ''} · ${u.area_sqm} м²</div>
+      </div>
+      <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">
+        <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
+        ${isAvail ? 'Свободен' : 'Продан'}
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="act-btn" onclick="location.href='project.html?id=${proj.code}'">
+        <i class="ti ti-building"></i> Страница проекта
+      </button>
+      <button class="act-btn" onclick="window.print()">
+        <i class="ti ti-printer"></i> Печать
+      </button>
+    </div>
+
+    <div class="two-col">
+      <div class="plan-card" id="planCard">
+        <div class="plan-placeholder">
+          <i class="ti ti-layout-2"></i>
+          <span>Планировка появится позже</span>
+        </div>
+      </div>
+      <div class="params-card">
+        <div class="p-row"><span class="p-label">Площадь</span><span class="p-val">${u.area_sqm} м²</span></div>
+        <div class="p-row"><span class="p-label">Тип</span><span class="p-val">${cat}</span></div>
+        <div class="p-row"><span class="p-label">Этаж</span><span class="p-val">${u.floor}${pd ? ' / ' + pd.floors : ''}</span></div>
+        <div class="p-row"><span class="p-label">Корпус</span><span class="p-val">${u.tower}</span></div>
+        <div class="p-row"><span class="p-label">Номер</span><span class="p-val">${u.room_no}</span></div>
+        <div class="p-row"><span class="p-label">Цена за м²</span><span class="p-val">${u.price_per_sqm ? Math.round(u.price_per_sqm).toLocaleString('ru') + ' ฿' : '—'}</span></div>
+      </div>
+    </div>
+  `;
+
+  // SIDEBAR
+  document.getElementById('sidebarContent').innerHTML = `
+    <div class="sc">
+      <div class="sc-label">Цена</div>
+      <div class="sc-price">${fmtMln(u.selling_price)}</div>
+      <div class="sc-price-exact">${Math.round(u.selling_price).toLocaleString('ru')} ฿</div>
+      <div class="sc-row"><span>Площадь</span><b>${u.area_sqm} м²</b></div>
+      <div class="sc-row"><span>За м²</span><b>${u.price_per_sqm ? Math.round(u.price_per_sqm).toLocaleString('ru') + ' ฿' : '—'}</b></div>
+      <div class="sc-row"><span>Статус</span><b class="${isAvail ? 'green' : 'red'}">${isAvail ? 'Свободен' : 'Продан'}</b></div>
+    </div>
+
+    <div class="sc accent-border reward-section">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="sc-label" style="margin:0">Вознаграждение</div>
+        <span style="font-size:14px">💰</span>
+      </div>
+      <div class="rew-pct">${pct}%</div>
+      <div class="rew-row"><span>Шкала</span><b>${scale}</b></div>
+      <div class="rew-row"><span>Срок выплаты</span><b>${days}</b></div>
+      <button class="rew-btn" onclick="return false">💵 Таблица вознаграждений</button>
+    </div>
+
+    <button class="add-btn" id="addBtn" onclick="togglePresentation()">
+      <i class="ti ti-presentation" style="font-size:16px"></i>
+      <span id="addBtnLabel">Добавить в презентацию</span>
+    </button>
+
+    <div class="proj-info">
+      <div class="proj-row">
+        <i class="ti ti-building-estate"></i>
+        <a href="project.html?id=${proj.code}">${proj.name || proj.code}</a>
+      </div>
+      ${pd ? `<div class="proj-row"><i class="ti ti-calendar"></i>${pd.completion}</div>` : ''}
+      ${pd ? `<div class="proj-row"><i class="ti ti-map-pin"></i>${pd.districtRu || pd.district}, Пхукет</div>` : ''}
+    </div>
+  `;
+
+  applyMeeting();
+  initPresentation();
+}
+
+function showError(msg) {
+  document.getElementById('mainContent').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted)">${msg}</div>`;
+  document.getElementById('sidebarContent').innerHTML = '';
+}
+
+// ── ПРЕЗЕНТАЦИЯ ────────────────────────────────────────────────────────────
+function getPresentation() {
+  try { return JSON.parse(localStorage.getItem('flox-presentation') || '[]'); } catch(e) { return []; }
+}
+function savePresentation(list) {
+  localStorage.setItem('flox-presentation', JSON.stringify(list));
+}
+function initPresentation() {
+  const list = getPresentation();
+  const inList = list.some(u => u.room_no === roomNo);
+  const btn = document.getElementById('addBtn');
+  const lbl = document.getElementById('addBtnLabel');
+  if (!btn) return;
+  if (inList) {
+    btn.classList.add('added');
+    if (lbl) lbl.textContent = '✓ В презентации';
+  }
+}
+function togglePresentation() {
+  let list = getPresentation();
+  const btn = document.getElementById('addBtn');
+  const lbl = document.getElementById('addBtnLabel');
+  const inList = list.some(u => u.room_no === roomNo);
+  if (inList) {
+    list = list.filter(u => u.room_no !== roomNo);
+    btn.classList.remove('added');
+    if (lbl) lbl.textContent = 'Добавить в презентацию';
+  } else {
+    list.push({ room_no: roomNo, project: projectId });
+    btn.classList.add('added');
+    if (lbl) lbl.textContent = '✓ В презентации';
+  }
+  savePresentation(list);
+}
+
+loadUnit();
+</script>
+</body>
+</html>
