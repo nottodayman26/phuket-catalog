@@ -90,35 +90,8 @@ a { color: inherit; text-decoration: none; }
   padding: 6px 10px; border-radius: 8px;
   transition: background .15s, color .15s;
 }
-.topbar-back:hover { background: var(--surface-2); color: var(--text); }
-.topbar-logo {
-  font-size: 20px; font-weight: 700; letter-spacing: -0.05em;
-  display: flex; align-items: center; gap: 2px;
-}
-.logo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-bottom: 10px; flex-shrink: 0; }
-.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.theme-btn {
-  width: 30px; height: 30px; border-radius: 8px;
-  border: none; background: var(--surface-2); color: var(--muted);
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: background .15s;
-}
-.theme-btn:hover { background: var(--surface-3); }
-.topbar-logo { font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);cursor:default;visibility:var(--meeting-logo-vis); }
-.topbar-nav { display:flex;align-items:center;gap:2px;margin-left:16px; }
-.tnav-item {
-  padding:5px 12px;border-radius:8px;font-size:13px;font-weight:500;
-  color:var(--muted);text-decoration:none;transition:background .15s,color .15s;
-}
-.tnav-item:hover { background:var(--surface-2);color:var(--text); }
-.meeting-btn-proj {
-  display:flex;align-items:center;gap:5px;
-  padding:5px 10px;border-radius:8px;border:1px solid var(--line-2);
-  background:none;color:var(--muted);font-size:11px;font-weight:500;
-  cursor:pointer;transition:all .15s;white-space:nowrap;
-}
-.meeting-btn-proj:hover { border-color:var(--accent);color:var(--accent); }
-.meeting-btn-proj.act { background:var(--accent);border-color:var(--accent);color:#fff; }
+/* Видимость лого в режиме встречи */
+.flox-tb-logo { visibility: var(--meeting-logo-vis); }
 
 /* ── HERO ─── */
 .hero {
@@ -1948,17 +1921,10 @@ function renderSidebar(d) {
 let meetingMode = false;
 
 function applyMeetingMode() {
-  const btn = document.getElementById('meetingBtnProj');
-  const label = document.getElementById('meetingBtnLabel');
-
   if (meetingMode) {
-    if (btn) btn.classList.add('act');
-    if (label) label.textContent = 'Режим встречи';
     document.documentElement.style.setProperty('--meeting-logo-vis', 'hidden');
     document.documentElement.style.setProperty('--meeting-reward-display', 'none');
   } else {
-    if (btn) btn.classList.remove('act');
-    if (label) label.textContent = 'Встреча';
     document.documentElement.style.setProperty('--meeting-logo-vis', 'visible');
     document.documentElement.style.setProperty('--meeting-reward-display', 'block');
   }
@@ -2000,6 +1966,7 @@ function applyURLFilters() {
 }
 
 loadProject();
+if (window.floxTopbar) floxTopbar.init({ activePage: 'project' });
 
 // ── Payment animation ───────────────────────────────────────────────────
 function initPaymentAnimation() {
