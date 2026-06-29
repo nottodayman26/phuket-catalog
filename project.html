@@ -96,32 +96,6 @@ a { color: inherit; text-decoration: none; }
 }
 .logo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-bottom: 10px; flex-shrink: 0; }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.avatar-wrap { position: relative; }
-.agent-avatar {
-  width:32px;height:32px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),#7B3FF5);
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;
-}
-.agent-popover {
-  position: absolute; top: calc(100% + 8px); right: 0;
-  background: var(--surface); border: 1px solid var(--line-2);
-  border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-  z-index: 400; min-width: 200px; padding: 8px;
-  opacity: 0; pointer-events: none;
-  transform: translateY(-6px); transition: opacity .18s, transform .18s;
-}
-.agent-popover.vis { opacity: 1; pointer-events: all; transform: translateY(0); }
-.agent-info { padding: 10px 12px 8px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
-.agent-info-name { font-size: 13px; font-weight: 600; }
-.agent-info-agency { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.popover-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 12px; border-radius: 8px; cursor: pointer;
-  font-size: 13px; color: var(--text); transition: background .12s;
-}
-.popover-item:hover { background: var(--surface-2); }
-.popover-item.danger { color: var(--red); }
 .theme-btn {
   width: 30px; height: 30px; border-radius: 8px;
   border: none; background: var(--surface-2); color: var(--muted);
@@ -866,22 +840,9 @@ body.light .page-footer {
     </div>
   </nav>
   <div class="topbar-right">
-    <div class="avatar-wrap">
-      <div class="agent-avatar" id="agentAvatar" onclick="toggleAgentPopover()">АГ</div>
-      <div class="agent-popover" id="agentPopover">
-        <div class="agent-info">
-          <div class="agent-info-name" id="popoverName">—</div>
-          <div class="agent-info-agency" id="popoverAgency">—</div>
-        </div>
-        <div class="popover-item danger" onclick="logout()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-          Выйти из аккаунта
-        </div>
-      </div>
-    </div>
     <button class="meeting-btn-proj" id="meetingBtnProj" onclick="toggleMeeting()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      <span id="meetingBtnLabel">Встреча с клиентом</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <span id="meetingBtnLabel">Встреча</span>
     </button>
     <button class="theme-btn" onclick="toggleTheme()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -1591,9 +1552,10 @@ function resetUnitFilters() {
 }
 
 function renderUnitRows(units) {
+  const projId = window._currentProjectData?.id || '';
   return units.map(u => `
     <tr>
-      <td><a href="unit.html?unit=${encodeURIComponent(u.room_no)}&project=${d?.id||''}" style="font-weight:600;color:var(--project-color);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${u.room_no}</a></td>
+      <td><a href="unit.html?unit=${encodeURIComponent(u.room_no)}&project=${projId}" style="font-weight:600;color:var(--project-color);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${u.room_no}</a></td>
       <td>${u.floor}</td>
       <td style="color:var(--muted);font-size:11px">${u.room_type}</td>
       <td>${u.area_sqm} м²</td>
@@ -2035,7 +1997,7 @@ function applyMeetingMode() {
     document.documentElement.style.setProperty('--meeting-reward-display', 'none');
   } else {
     if (btn) btn.classList.remove('act');
-    if (label) label.textContent = 'Встреча с клиентом';
+    if (label) label.textContent = 'Встреча';
     document.documentElement.style.setProperty('--meeting-logo-vis', 'visible');
     document.documentElement.style.setProperty('--meeting-reward-display', 'block');
   }
@@ -2080,44 +2042,7 @@ function applyURLFilters() {
   if (priceFrom || priceTo) updatePriceLabel();
 }
 
-function toggleAgentPopover() {
-  const pop = document.getElementById('agentPopover');
-  if (!pop) return;
-  pop.classList.toggle('vis');
-}
-
-function logout() {
-  localStorage.removeItem('flox-meeting');
-  window.location.href = 'flox-web.html';
-}
-
-function updateProjectAvatar() {
-  const avatar = document.getElementById('agentAvatar');
-  const name = document.getElementById('popoverName');
-  const agency = document.getElementById('popoverAgency');
-  // Берём агента из localStorage (сохраняется при логине в flox-web)
-  try {
-    const stored = localStorage.getItem('flox-agent');
-    const agent = stored ? JSON.parse(stored) : null;
-    window.CURRENT_AGENT = agent;
-    if (avatar && agent && agent.full_name) {
-      const initials = agent.full_name.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
-      avatar.textContent = initials;
-      if (name) name.textContent = agent.full_name;
-      if (agency) agency.textContent = agent.agency || '—';
-    }
-  } catch(e) {}
-}
-
-// Закрываем поповер при клике вне
-document.addEventListener('click', e => {
-  if (!e.target.closest('.avatar-wrap')) {
-    document.getElementById('agentPopover')?.classList.remove('vis');
-  }
-});
-
 loadProject();
-updateProjectAvatar();
 
 // ── Payment animation ───────────────────────────────────────────────────
 function initPaymentAnimation() {
