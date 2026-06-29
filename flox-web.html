@@ -181,8 +181,8 @@ input,button{font-family:inherit;}
   border:1.5px solid var(--line-2);background:none;color:var(--muted);
   font-size:12px;font-weight:500;transition:all .15s;
 }
-.type-btn:hover{border-color:var(--accent);color:var(--text);}
-.type-btn.act{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+.type-btn:hover{border-color:var(--text);color:var(--text);}
+.type-btn.act{border-color:var(--text);background:var(--surface-2);color:var(--text);}
 .type-btn svg{width:22px;height:22px;}
 
 /* Search box */
@@ -316,16 +316,18 @@ input,button{font-family:inherit;}
 .pc-body{padding:14px 18px;display:flex;flex-direction:column;}
 .pc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;}
 .pc-name{font-size:15px;font-weight:600;}
+.pc-name-wrap{display:flex;align-items:center;gap:7px;}
+.pc-status-inline{font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;background:rgba(0,0,0,0.07);color:var(--muted);white-space:nowrap;}
 .pc-q{font-size:11px;color:var(--muted);background:var(--surface-2);border:0.5px solid var(--line-2);padding:2px 8px;border-radius:20px;white-space:nowrap;}
 .pc-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
 .pc-types{display:flex;flex-direction:column;gap:6px;flex:1;}
 .pc-type-row{display:flex;justify-content:space-between;align-items:center;}
 .pc-type-name{font-size:12px;color:var(--muted);}
-.pc-type-price{font-size:12px;font-weight:600;color:#5E17EB;}
+.pc-type-price{font-size:12px;font-weight:600;color:var(--text);}
 .pc-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--line);}
 .pc-from{font-size:12px;color:var(--muted);}
-.pc-from b{font-size:14px;font-weight:700;color:#5E17EB;}
-.pc-comm{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#374151;background:#F3F4F6;border:0.5px solid #D1D5DB;padding:4px 10px;border-radius:7px;transition:opacity .2s;}
+.pc-from b{font-size:14px;font-weight:700;color:var(--text);}
+.pc-comm{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text);background:var(--surface-2);border:0.5px solid var(--line-2);padding:4px 10px;border-radius:7px;transition:opacity .2s;}
 .pc-comm.hidden{opacity:0;pointer-events:none;}
 
 /* Dev group */
@@ -430,8 +432,8 @@ input,button{font-family:inherit;}
 .offers-page{padding:24px;max-width:900px;margin:0 auto;}
 .page-title{font-size:20px;font-weight:700;margin-bottom:20px;}
 .offers-list{display:flex;flex-direction:column;gap:10px;}
-.offer-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default;}
-.offer-card:hover{transform:scale(1.02);border-color:var(--accent);box-shadow:0 4px 20px rgba(94,23,235,0.1);}
+.offer-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;cursor:default;color:var(--text);}
+.offer-card:hover{transform:scale(1.02);box-shadow:0 6px 24px rgba(0,0,0,0.12);}
 .offer-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
 .offer-client{font-size:15px;font-weight:600;}
 .offer-time{font-size:12px;color:var(--muted);}
@@ -443,8 +445,8 @@ input,button{font-family:inherit;}
 /* ══ ACTIVITY PAGE ══ */
 .activity-page{padding:24px;max-width:900px;margin:0 auto;}
 .activity-list{display:flex;flex-direction:column;gap:10px;}
-.activity-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default;}
-.activity-card:hover{transform:scale(1.02);border-color:var(--accent);box-shadow:0 4px 20px rgba(94,23,235,0.1);}
+.activity-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;cursor:default;}
+.activity-card:hover{transform:scale(1.02);box-shadow:0 6px 24px rgba(0,0,0,0.12);}
 .act-client{font-size:14px;font-weight:600;margin-bottom:3px;}
 .act-count{font-size:12px;color:var(--muted);margin-bottom:10px;}
 .act-events{display:flex;flex-direction:column;gap:5px;}
@@ -728,6 +730,11 @@ function setPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('act'));
   document.getElementById('page-' + name).classList.add('act');
   document.querySelector(`[data-page="${name}"]`)?.classList.add('act');
+  if (name === 'search') {
+    // Сбрасываем фильтры и обновляем результаты
+    resetAll();
+    doSearch();
+  }
   if (name === 'offers') loadOffers();
   if (name === 'activity') loadActivity();
 }
@@ -960,7 +967,6 @@ function cardHTML(p) {
       <div class="pc-img-wrap">
         <div class="pc-img" id="${cardId}-img">
           ${imgs}
-          <div class="pc-status ${isCompleted ? 'completed' : ''}">${statusLabel}</div>
           <div class="pc-dots" id="${cardId}-dots">${dots}</div>
           <div class="pc-nav">
             <div class="pc-nav-prev" onclick="pcNav('${cardId}',-1,${photos.length});event.stopPropagation()"></div>
@@ -970,7 +976,10 @@ function cardHTML(p) {
       </div>
       <div class="pc-body">
         <div class="pc-top">
-          <div class="pc-name">${p.name}</div>
+          <div class="pc-name-wrap">
+            <div class="pc-name">${p.name}</div>
+            <span class="pc-status-inline">${statusLabel}</span>
+          </div>
           ${isCompleted ? '' : `<div class="pc-q">${p.completion}</div>`}
         </div>
         <div class="pc-sub">${p.districtRu}, Пхукет</div>
