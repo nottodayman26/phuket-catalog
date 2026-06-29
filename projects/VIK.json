@@ -235,11 +235,11 @@
     "notes": "Данные уточняются"
   },
   "agent_reward": {
-    "percent_from": 0,
-    "percent_to": 0,
-    "scale": "уточняется",
-    "payment_days": 0,
-    "note": "Данные уточняются"
+    "percent_from": 10,
+    "percent_to": 10,
+    "scale": "Фикс",
+    "payment_days": 30,
+    "note": ""
   },
   "files": [
     {
