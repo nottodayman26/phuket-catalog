@@ -1340,7 +1340,10 @@ function showAuthIfNeeded() {
   }
 }
 
-initAgent().then(showAuthIfNeeded);
+initAgent().then(showAuthIfNeeded).then(() => {
+  const p = localStorage.getItem('flox-page');
+  if (p) { localStorage.removeItem('flox-page'); setPage(p); }
+});
 loadUnitCount();
 
 async function loadUnitCount() {

@@ -206,13 +206,13 @@ window.floxTopbar = {
 
   // ── Тема ─────────────────────────────────────────────────────────────────
   _applyTheme() {
-    const dark = localStorage.getItem('flox-theme') !== 'light';
+    const dark = localStorage.getItem('flox-theme') === 'dark';
     document.body.classList.toggle('light', !dark);
     const btn = document.getElementById('ftb-theme');
     if (btn) btn.innerHTML = dark ? SVG_SUN : SVG_MOON;
   },
   toggleTheme() {
-    const dark = localStorage.getItem('flox-theme') !== 'light';
+    const dark = localStorage.getItem('flox-theme') === 'dark';
     localStorage.setItem('flox-theme', dark ? 'light' : 'dark');
     this._applyTheme();
   },
