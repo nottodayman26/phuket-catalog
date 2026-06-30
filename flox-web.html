@@ -934,6 +934,17 @@ function resetAll() {
   autoSearch();
 }
 
+// Полный сброс поиска: фильтры + анимация счётчика + принудительный запуск поиска
+function freshSearch() {
+  filters = {propType:'condo', unitTypes:null, price:null, completion:null};
+  tmpUnitTypes = [];
+  document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('act',i===0));
+  updateChips();
+  document.getElementById('searchInput').value = '';
+  loadUnitCount();
+  doSearch();
+}
+
 // ── TYPE MODAL ────────────────────────────
 function openTypeModal() {
   tmpUnitTypes = [...(filters.unitTypes||[])];
