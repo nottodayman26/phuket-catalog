@@ -193,6 +193,32 @@ async function processUnit(u) {
   renderUnit(u, proj, projData);
 }
 
+function loadPlanImage(u, proj) {
+  const code = proj.code || projectId || '';
+  if (!code || !u.plan_code || !u.area_sqm) return; // нет данных — оставляем плейсхолдер
+
+  // Шаблон имени файла: {площадь с 2 знаками}_{код планировки}.jpg
+  // Пример: 32.50_1BM4.jpg
+  const areaStr = Number(u.area_sqm).toFixed(2);
+  const fileName = `${areaStr}_${u.plan_code}.jpg`;
+  const base = location.pathname.replace(/\/[^\/]*$/, '/');
+  const imgPath = `${base}img/${code}/units/${fileName}`;
+
+  const img = new Image();
+  img.onload = () => {
+    const card = document.getElementById('planCard');
+    const placeholder = document.getElementById('planPlaceholder');
+    if (!card || !placeholder) return;
+    placeholder.remove();
+    const el = document.createElement('img');
+    el.src = imgPath;
+    el.alt = `Планировка ${u.room_no}`;
+    card.appendChild(el);
+  };
+  img.onerror = () => {}; // файла нет — плейсхолдер остаётся как есть
+  img.src = imgPath;
+}
+
 function renderUnit(u, proj, pd) {
   const isAvail = u.status === 'available';
   const projectColor = pd?.color || proj.color || '#5E17EB';
@@ -244,13 +270,15 @@ function renderUnit(u, proj, pd) {
 
     <div class="two-col">
       <div class="plan-card" id="planCard">
-        <div class="plan-placeholder">
+        <div class="plan-placeholder" id="planPlaceholder">
           <i class="ti ti-layout-2"></i>
           <span>Планировка появится позже</span>
         </div>
       </div>
     </div>
   `;
+
+  loadPlanImage(u, proj);
 
   // SIDEBAR
   document.getElementById('sidebarContent').innerHTML = `
