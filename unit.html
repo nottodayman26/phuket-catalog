@@ -69,6 +69,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .plan-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
 .plan-dot{width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,0.2);transition:background .2s}
 .plan-dot.act{background:rgba(0,0,0,0.65)}
+.plan-arrow{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.9);border:0.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;color:#1a1a1a;font-size:18px;transition:background .15s,opacity .15s;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.plan-arrow:hover{background:#fff}
+.plan-arrow.left{left:12px}
+.plan-arrow.right{right:12px}
+.plan-arrow.disabled{opacity:0;pointer-events:none}
 
 /* ── PARAMS ── */
 .params-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden}
@@ -293,11 +298,21 @@ function renderPlanCarousel(slides) {
     });
     card.appendChild(dotsEl);
 
-    initPlanSwipe(card, track, slides, dotsEl, labelEl);
+    const arrowLeft = document.createElement('div');
+    arrowLeft.className = 'plan-arrow left disabled';
+    arrowLeft.innerHTML = '<i class="ti ti-chevron-left"></i>';
+    card.appendChild(arrowLeft);
+
+    const arrowRight = document.createElement('div');
+    arrowRight.className = 'plan-arrow right';
+    arrowRight.innerHTML = '<i class="ti ti-chevron-right"></i>';
+    card.appendChild(arrowRight);
+
+    initPlanSwipe(card, track, slides, dotsEl, labelEl, arrowLeft, arrowRight);
   }
 }
 
-function initPlanSwipe(card, track, slides, dotsEl, labelEl) {
+function initPlanSwipe(card, track, slides, dotsEl, labelEl, arrowLeft, arrowRight) {
   let current = 0;
   let startX = 0;
   let deltaX = 0;
@@ -308,7 +323,12 @@ function initPlanSwipe(card, track, slides, dotsEl, labelEl) {
     track.style.transform = `translateX(-${current * 100}%)`;
     labelEl.textContent = slides[current].label;
     [...dotsEl.children].forEach((d, i) => d.classList.toggle('act', i === current));
+    arrowLeft.classList.toggle('disabled', current === 0);
+    arrowRight.classList.toggle('disabled', current === slides.length - 1);
   }
+
+  arrowLeft.addEventListener('click', () => goTo(current - 1));
+  arrowRight.addEventListener('click', () => goTo(current + 1));
 
   card.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
