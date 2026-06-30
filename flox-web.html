@@ -927,7 +927,7 @@ function removeChip(key) {
 }
 
 function resetAll() {
-  filters = {unitTypes:null, price:null, completion:null};
+  filters = {propType:'condo', unitTypes:null, price:null, completion:null};
   tmpUnitTypes = [];
   document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('act',i===0));
   updateChips();

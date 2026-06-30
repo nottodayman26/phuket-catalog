@@ -160,6 +160,7 @@ window.floxTopbar = {
   _onSearch() {
     if (this._page === 'search') {
       if (typeof setPage === 'function') setPage('search');
+      if (typeof resetAll === 'function') resetAll();
     } else {
       window.location.href = 'flox-web.html';
     }
