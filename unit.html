@@ -198,7 +198,7 @@ function loadPlanImage(u, proj) {
   if (!code || !u.plan_code || !u.area_sqm) return; // нет данных — оставляем плейсхолдер
 
   // Шаблон имени файла: {площадь с 2 знаками}_{код планировки}.jpg
-  // Пример: 32.50_1BM4.jpg
+  // Пример: 30.00_1BM1.jpg
   const areaStr = Number(u.area_sqm).toFixed(2);
   const fileName = `${areaStr}_${u.plan_code}.jpg`;
   const base = location.pathname.replace(/\/[^\/]*$/, '/');
