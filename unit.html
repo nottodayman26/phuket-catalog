@@ -72,11 +72,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 /* ── SIDEBAR CARDS ── */
 .sc{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;padding:14px}
 .sc.accent-border{border-color:rgba(94,23,235,0.5)}
-.sc+.params-card{margin-top:-12px;border-top:0.5px solid var(--line);border-top-left-radius:0;border-top-right-radius:0}
-.sc:has(+.params-card){border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none}
 .sc-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
 .sc-price{font-size:26px;font-weight:700;margin-bottom:2px}
-.sc-price-exact{font-size:12px;color:var(--muted);margin-bottom:12px}
+.sc-price-exact{font-size:12px;color:var(--muted);margin-bottom:7px}
 .sc-row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:0.5px solid var(--line)}
 .sc-row:last-child{border-bottom:none}
 .sc-row span{color:var(--muted)}
@@ -253,16 +251,14 @@ function renderUnit(u, proj, pd) {
       <div class="sc-label">Цена</div>
       <div class="sc-price">${fmtMln(u.selling_price)}</div>
       <div class="sc-price-exact">${Math.round(u.selling_price).toLocaleString('ru')} ฿</div>
+      <div class="sc-row"><span>Проект</span><b>${proj.name || proj.code}</b></div>
+      <div class="sc-row"><span>Корпус</span><b>${u.tower}</b></div>
+      <div class="sc-row"><span>Этаж</span><b>${u.floor}${pd ? ' / ' + pd.floors : ''}</b></div>
+      <div class="sc-row"><span>Тип</span><b>${cat}</b></div>
       <div class="sc-row"><span>Площадь</span><b>${u.area_sqm} м²</b></div>
       <div class="sc-row"><span>За м²</span><b>${u.price_per_sqm ? Math.round(u.price_per_sqm).toLocaleString('ru') + ' ฿' : '—'}</b></div>
+      <div class="sc-row"><span>Номер</span><b>${u.room_no}</b></div>
       <div class="sc-row"><span>Статус</span><b class="${isAvail ? 'green' : 'red'}">${isAvail ? 'Свободен' : 'Продан'}</b></div>
-    </div>
-
-    <div class="params-card">
-      <div class="p-row"><span class="p-label">Тип</span><span class="p-val">${cat}</span></div>
-      <div class="p-row"><span class="p-label">Этаж</span><span class="p-val">${u.floor}${pd ? ' / ' + pd.floors : ''}</span></div>
-      <div class="p-row"><span class="p-label">Корпус</span><span class="p-val">${u.tower}</span></div>
-      <div class="p-row"><span class="p-label">Номер</span><span class="p-val">${u.room_no}</span></div>
     </div>
 
     <div class="sc accent-border reward-section">
