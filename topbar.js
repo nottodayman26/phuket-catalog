@@ -8,7 +8,7 @@
 const CSS = `
 .flox-topbar{position:sticky;top:0;z-index:200;background:var(--surface);border-bottom:0.5px solid var(--line);display:flex;align-items:center;padding:0 24px;height:52px;gap:0;font-family:'Inter',system-ui,sans-serif;}
 .flox-tb-logo{font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);text-decoration:none;margin-right:32px;display:flex;align-items:center;}
-.flox-tb-logo-dot{width:6px;height:6px;border-radius:50%;background:#E8441A;margin-left:1px;margin-bottom:9px;flex-shrink:0;vertical-align:bottom;display:inline-block;}
+.flox-tb-logo-dot{width:6px;height:6px;border-radius:50%;background:#FF6B6B;margin-left:1px;margin-bottom:9px;flex-shrink:0;vertical-align:bottom;display:inline-block;}
 .flox-tb-nav{display:flex;align-items:center;gap:2px;flex:1;}
 .flox-tb-item{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;text-decoration:none;background:none;border:none;font-family:inherit;}
 .flox-tb-item:hover{background:var(--surface-2);color:var(--text);}
@@ -47,9 +47,9 @@ const SVG_OUT  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
 function buildHTML(isSearch) {
   const searchEl = isSearch
     ? `<div class="flox-tb-item" onclick="floxTopbar._onSearch()">Поиск</div>`
-    : `<a class="flox-tb-item" href="flox-web.html">Поиск</a>`;
+    : `<div class="flox-tb-item" onclick="floxTopbar._onSearch()">Поиск</div>`;
   return `
-    <a class="flox-tb-logo" id="ftb-logo" href="flox-web.html">flox<span class="flox-tb-logo-dot"></span></a>
+    <div class="flox-tb-logo" id="ftb-logo">flox<span class="flox-tb-logo-dot"></span></div>
     <nav class="flox-tb-nav">
       ${searchEl}
       <div class="flox-tb-dd-wrap" onmouseenter="floxTopbar._ddOpen('tools')" onmouseleave="floxTopbar._ddClose('tools')">
@@ -129,6 +129,13 @@ window.floxTopbar = {
   // ── Дропдауны ────────────────────────────────────────────────────────────
   _ddOpen(name) {
     clearTimeout(this._timers[name]);
+    // Закрываем остальные дропдауны сразу, чтобы не перекрывались
+    ['tools', 'clients'].forEach(n => {
+      if (n !== name) {
+        clearTimeout(this._timers[n]);
+        document.getElementById('ftb-dd-' + n)?.classList.remove('vis');
+      }
+    });
     document.getElementById('ftb-dd-' + name)?.classList.add('vis');
   },
   _ddKeep(name) { clearTimeout(this._timers[name]); },
@@ -151,7 +158,11 @@ window.floxTopbar = {
     }
   },
   _onSearch() {
-    if (typeof setPage === 'function') setPage('search');
+    if (this._page === 'search') {
+      if (typeof setPage === 'function') setPage('search');
+    } else {
+      window.location.href = 'flox-web.html';
+    }
   },
 
   // ── Поповер агента ────────────────────────────────────────────────────────
@@ -168,7 +179,10 @@ window.floxTopbar = {
       const ag = document.getElementById('ftb-agency');
       if (av && initials) av.textContent = initials;
       if (nm) nm.textContent = a.full_name || '—';
-      if (ag) ag.textContent = a.agency || '—';
+      if (ag) {
+        const agency = (a.agency || '').trim();
+        ag.textContent = agency.toLowerCase() === 'независимый' ? 'Независимый агент' : (agency || '—');
+      }
     } catch(e) {}
   },
   _logout() {
