@@ -169,12 +169,11 @@ input,button{font-family:inherit;}
 .pc-img img:first-child{opacity:1;}
 .project-card:hover .pc-img img.act{transform:scale(1.04);}
 .pc-status{
-  position:absolute;top:8px;left:8px;
   font-size:10px;font-weight:500;padding:3px 9px;border-radius:20px;
-  background:rgba(0,0,0,0.45);color:rgba(255,255,255,0.9);
-  backdrop-filter:blur(4px);
+  background:var(--surface-3);color:var(--muted);
+  white-space:nowrap;
 }
-.pc-status.completed{background:rgba(0,0,0,0.35);}
+.pc-status.completed{background:var(--surface-3);}
 .pc-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;pointer-events:none;}
 .pc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.4);transition:background .2s;}
 .pc-dot.act{background:#fff;}
@@ -185,8 +184,9 @@ input,button{font-family:inherit;}
 
 /* Тело */
 .pc-body{padding:14px 18px;display:flex;flex-direction:column;}
-.pc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;}
+.pc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:3px;}
 .pc-name{font-size:15px;font-weight:600;}
+.pc-name-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .pc-q{font-size:11px;color:var(--muted);background:var(--surface-2);border:0.5px solid var(--line-2);padding:2px 8px;border-radius:20px;white-space:nowrap;}
 .pc-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
 .pc-types{display:flex;flex-direction:column;gap:6px;flex:1;}
@@ -196,7 +196,7 @@ input,button{font-family:inherit;}
 .pc-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--line);}
 .pc-from{font-size:12px;color:var(--muted);}
 .pc-from b{font-size:14px;font-weight:700;color:#5E17EB;}
-.pc-comm{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#374151;background:#F3F4F6;border:0.5px solid #D1D5DB;padding:4px 10px;border-radius:7px;transition:opacity .2s;}
+.pc-comm{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text);background:var(--surface-2);border:0.5px solid var(--line-2);padding:4px 10px;border-radius:7px;transition:opacity .2s;}
 .pc-comm.hidden{opacity:0;pointer-events:none;}
 
 /* Dev group */
@@ -778,7 +778,6 @@ function cardHTML(p) {
       <div class="pc-img-wrap">
         <div class="pc-img" id="${cardId}-img">
           ${imgs}
-          <div class="pc-status ${isCompleted ? 'completed' : ''}">${statusLabel}</div>
           <div class="pc-dots" id="${cardId}-dots">${dots}</div>
           <div class="pc-nav">
             <div class="pc-nav-prev" onclick="pcNav('${cardId}',-1,${photos.length});event.stopPropagation()"></div>
@@ -788,7 +787,10 @@ function cardHTML(p) {
       </div>
       <div class="pc-body">
         <div class="pc-top">
-          <div class="pc-name">${p.name}</div>
+          <div class="pc-name-row">
+            <div class="pc-name">${p.name}</div>
+            <div class="pc-status ${isCompleted ? 'completed' : ''}">${statusLabel}</div>
+          </div>
           ${isCompleted ? '' : `<div class="pc-q">${p.completion}</div>`}
         </div>
         <div class="pc-sub">${p.districtRu}, Пхукет</div>
