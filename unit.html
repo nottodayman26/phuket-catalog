@@ -40,7 +40,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 /* ── UNIT HEADER ── */
 .unit-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.unit-name{font-size:20px;font-weight:700;margin-bottom:4px}
+.unit-project-name{font-size:28px;font-weight:700;margin-bottom:4px;color:var(--text)}
+.unit-name{font-size:15px;font-weight:600;color:var(--muted)}
 .unit-meta{font-size:13px;color:var(--muted)}
 .status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap}
 .badge-avail{background:rgba(123,175,110,0.15);color:var(--green)}
@@ -56,7 +57,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .two-col{display:block}
 
 /* ── PLAN ── */
-.plan-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:sticky;top:124px;min-height:480px;max-height:calc(100vh - 144px);display:flex;align-items:center;justify-content:center}
+.plan-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;min-height:600px;display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
 .plan-placeholder i{font-size:56px}
@@ -70,7 +71,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .p-val{font-weight:500}
 
 /* ── SIDEBAR CARDS ── */
-.sc{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;padding:14px}
+.sc{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;padding:14px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease}
+.sc:hover{transform:scale(1.02);box-shadow:0 6px 20px rgba(0,0,0,0.1)}
 .sc.accent-border{border-color:rgba(94,23,235,0.5)}
 .sc-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
 .sc-price{font-size:26px;font-weight:700;margin-bottom:2px}
@@ -91,6 +93,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 /* ── ADD TO PRESENTATION ── */
 .add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.book-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:10px;background:none;color:var(--text);border:0.5px solid var(--line-2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:8px}
+.book-btn:hover{border-color:var(--line);background:var(--surface-2)}
 .add-btn:hover{opacity:.88}
 .add-btn.added{background:var(--green);opacity:1}
 
@@ -216,25 +220,23 @@ function renderUnit(u, proj, pd) {
 
   // MAIN
   document.getElementById('mainContent').innerHTML = `
-    <div id="unitTopBlock">
-      <div class="unit-header">
-        <div>
-          <div class="unit-name">${proj.name || proj.code}</div>
-          <div class="unit-name">${u.room_no} · ${cat}</div>
-        </div>
+    <div class="unit-header">
+      <div>
+        <div class="unit-project-name">${proj.name || proj.code}</div>
+        <div class="unit-name">${u.room_no} · ${cat}</div>
       </div>
+    </div>
 
-      <div class="actions">
-        <button class="act-btn" onclick="window.open('project.html?id=${proj.code}','_blank')">
-          <i class="ti ti-building"></i> Страница проекта
-        </button>
-        <button class="act-btn" onclick="window.print()">
-          <i class="ti ti-printer"></i> Печать
-        </button>
-        <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
-          <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
-          ${isAvail ? 'Свободен' : 'Продан'}
-        </div>
+    <div class="actions">
+      <button class="act-btn" onclick="window.open('project.html?id=${proj.code}','_blank')">
+        <i class="ti ti-building"></i> Страница проекта
+      </button>
+      <button class="act-btn" onclick="window.print()">
+        <i class="ti ti-printer"></i> Печать
+      </button>
+      <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
+        <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
+        ${isAvail ? 'Свободен' : 'Продан'}
       </div>
     </div>
 
@@ -250,7 +252,6 @@ function renderUnit(u, proj, pd) {
 
   // SIDEBAR
   document.getElementById('sidebarContent').innerHTML = `
-    <div id="sidebarSpacer" style="height:0"></div>
     <div class="sc">
       <div class="sc-label">Цена</div>
       <div class="sc-price">${fmtMln(u.selling_price)}</div>
@@ -281,6 +282,11 @@ function renderUnit(u, proj, pd) {
       <span id="addBtnLabel">Добавить в презентацию</span>
     </button>
 
+    <button class="book-btn" onclick="return false">
+      <i class="ti ti-calendar-check" style="font-size:16px"></i>
+      Забронировать
+    </button>
+
     <div class="proj-info">
       <div class="proj-row">
         <i class="ti ti-building-estate"></i>
@@ -295,21 +301,7 @@ function renderUnit(u, proj, pd) {
   const _m = localStorage.getItem('flox-meeting') === 'true';
   document.querySelectorAll('.reward-section').forEach(el => el.style.display = _m ? 'none' : '');
   initPresentation();
-  alignSidebarToPlan();
 }
-
-function alignSidebarToPlan() {
-  const topBlock = document.getElementById('unitTopBlock');
-  const spacer = document.getElementById('sidebarSpacer');
-  if (!topBlock || !spacer) return;
-  // gap между unitTopBlock и two-col в .main (flex column, gap:20px)
-  const mainGap = parseFloat(getComputedStyle(document.querySelector('.main')).rowGap || 20);
-  // gap перед первой карточкой в .sidebar (flex column, gap:12px) — спейсер уже создаёт один gap, который нужно вычесть
-  const sidebarGap = parseFloat(getComputedStyle(document.getElementById('sidebarContent')).rowGap || 12);
-  const targetHeight = topBlock.offsetHeight + mainGap - sidebarGap;
-  spacer.style.height = Math.max(0, targetHeight) + 'px';
-}
-window.addEventListener('resize', () => { if (document.getElementById('unitTopBlock')) alignSidebarToPlan(); });
 
 function showError(msg) {
   document.getElementById('mainContent').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted)">${msg}</div>`;
