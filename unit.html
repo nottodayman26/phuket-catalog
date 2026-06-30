@@ -40,7 +40,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 /* ── UNIT HEADER ── */
 .unit-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.unit-project-name{font-size:26px;font-weight:700;margin-bottom:4px}
 .unit-name{font-size:20px;font-weight:700;margin-bottom:4px}
 .unit-meta{font-size:13px;color:var(--muted)}
 .status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap}
@@ -217,18 +216,9 @@ function renderUnit(u, proj, pd) {
 
   // MAIN
   document.getElementById('mainContent').innerHTML = `
-    <div class="two-col">
-      <div class="plan-card" id="planCard">
-        <div class="plan-placeholder">
-          <i class="ti ti-layout-2"></i>
-          <span>Планировка появится позже</span>
-        </div>
-      </div>
-    </div>
-
     <div class="unit-header">
       <div>
-        <div class="unit-project-name">${proj.name || proj.code}</div>
+        <div class="unit-name">${proj.name || proj.code}</div>
         <div class="unit-name">${u.room_no} · ${cat}</div>
       </div>
     </div>
@@ -243,6 +233,15 @@ function renderUnit(u, proj, pd) {
       <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
         <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
         ${isAvail ? 'Свободен' : 'Продан'}
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="plan-card" id="planCard">
+        <div class="plan-placeholder">
+          <i class="ti ti-layout-2"></i>
+          <span>Планировка появится позже</span>
+        </div>
       </div>
     </div>
   `;
