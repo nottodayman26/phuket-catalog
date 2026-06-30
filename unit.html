@@ -216,23 +216,25 @@ function renderUnit(u, proj, pd) {
 
   // MAIN
   document.getElementById('mainContent').innerHTML = `
-    <div class="unit-header">
-      <div>
-        <div class="unit-name">${proj.name || proj.code}</div>
-        <div class="unit-name">${u.room_no} · ${cat}</div>
+    <div id="unitTopBlock">
+      <div class="unit-header">
+        <div>
+          <div class="unit-name">${proj.name || proj.code}</div>
+          <div class="unit-name">${u.room_no} · ${cat}</div>
+        </div>
       </div>
-    </div>
 
-    <div class="actions">
-      <button class="act-btn" onclick="window.open('project.html?id=${proj.code}','_blank')">
-        <i class="ti ti-building"></i> Страница проекта
-      </button>
-      <button class="act-btn" onclick="window.print()">
-        <i class="ti ti-printer"></i> Печать
-      </button>
-      <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
-        <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
-        ${isAvail ? 'Свободен' : 'Продан'}
+      <div class="actions">
+        <button class="act-btn" onclick="window.open('project.html?id=${proj.code}','_blank')">
+          <i class="ti ti-building"></i> Страница проекта
+        </button>
+        <button class="act-btn" onclick="window.print()">
+          <i class="ti ti-printer"></i> Печать
+        </button>
+        <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
+          <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
+          ${isAvail ? 'Свободен' : 'Продан'}
+        </div>
       </div>
     </div>
 
@@ -248,6 +250,7 @@ function renderUnit(u, proj, pd) {
 
   // SIDEBAR
   document.getElementById('sidebarContent').innerHTML = `
+    <div id="sidebarSpacer" style="height:0"></div>
     <div class="sc">
       <div class="sc-label">Цена</div>
       <div class="sc-price">${fmtMln(u.selling_price)}</div>
@@ -292,7 +295,21 @@ function renderUnit(u, proj, pd) {
   const _m = localStorage.getItem('flox-meeting') === 'true';
   document.querySelectorAll('.reward-section').forEach(el => el.style.display = _m ? 'none' : '');
   initPresentation();
+  alignSidebarToPlan();
 }
+
+function alignSidebarToPlan() {
+  const topBlock = document.getElementById('unitTopBlock');
+  const spacer = document.getElementById('sidebarSpacer');
+  if (!topBlock || !spacer) return;
+  // gap между unitTopBlock и two-col в .main (flex column, gap:20px)
+  const mainGap = parseFloat(getComputedStyle(document.querySelector('.main')).rowGap || 20);
+  // gap перед первой карточкой в .sidebar (flex column, gap:12px) — спейсер уже создаёт один gap, который нужно вычесть
+  const sidebarGap = parseFloat(getComputedStyle(document.getElementById('sidebarContent')).rowGap || 12);
+  const targetHeight = topBlock.offsetHeight + mainGap - sidebarGap;
+  spacer.style.height = Math.max(0, targetHeight) + 'px';
+}
+window.addEventListener('resize', () => { if (document.getElementById('unitTopBlock')) alignSidebarToPlan(); });
 
 function showError(msg) {
   document.getElementById('mainContent').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted)">${msg}</div>`;
