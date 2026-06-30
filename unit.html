@@ -202,7 +202,7 @@ function loadPlanImage(u, proj) {
   const areaStr = Number(u.area_sqm).toFixed(2);
   const fileName = `${areaStr}_${u.plan_code}.jpg`;
   const base = location.pathname.replace(/\/[^\/]*$/, '/');
-  const imgPath = `${base}img/${code}/units/${fileName}`;
+  const imgPath = `${base}img/${code}/units/${encodeURIComponent(fileName)}`;
 
   const img = new Image();
   img.onload = () => {
