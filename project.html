@@ -660,10 +660,6 @@ a { color: inherit; text-decoration: none; }
   transform: scale(1.025);
   box-shadow: 0 8px 28px rgba(0,0,0,0.12);
 }
-.reward-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0;
-  height: 3px; background: var(--line-2);
-}
 .reward-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
 .reward-pct { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
 .reward-pct sup { font-size: 28px; font-weight: 700; vertical-align: baseline; }
@@ -900,7 +896,8 @@ function renderProject(d) {
     t.addEventListener('click', () => {
       const target = document.getElementById(t.dataset.target);
       if (!target) return;
-      const topbarH = document.querySelector('.topbar').offsetHeight;
+      const topbarEl = document.querySelector('.flox-topbar') || document.getElementById('flox-topbar');
+      const topbarH = topbarEl ? topbarEl.offsetHeight : 0;
       const tabsH = document.querySelector('.tabs-wrap').offsetHeight;
       const top = target.getBoundingClientRect().top + window.scrollY - topbarH - tabsH - 8;
       window.scrollTo({ top, behavior: 'smooth' });
