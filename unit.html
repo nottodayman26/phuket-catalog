@@ -56,10 +56,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .two-col{display:block}
 
 /* ── PLAN ── */
-.plan-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;min-height:560px;display:flex;align-items:center;justify-content:center}
+.plan-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;min-height:380px;display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
-.plan-placeholder i{font-size:56px}
+.plan-placeholder i{font-size:48px}
 .plan-placeholder span{font-size:13px}
 
 /* ── PARAMS ── */
@@ -72,6 +72,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 /* ── SIDEBAR CARDS ── */
 .sc{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;padding:14px}
 .sc.accent-border{border-color:rgba(94,23,235,0.5)}
+.sc+.params-card{margin-top:-12px;border-top:0.5px solid var(--line);border-top-left-radius:0;border-top-right-radius:0}
+.sc:has(+.params-card){border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none}
 .sc-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
 .sc-price{font-size:26px;font-weight:700;margin-bottom:2px}
 .sc-price-exact{font-size:12px;color:var(--muted);margin-bottom:12px}
@@ -219,7 +221,6 @@ function renderUnit(u, proj, pd) {
     <div class="unit-header">
       <div>
         <div class="unit-name">${u.room_no} · ${cat}</div>
-        <div class="unit-meta">${proj.name || proj.code} · Корпус ${u.tower} · Этаж ${u.floor}${pd ? ' / ' + pd.floors : ''} · ${u.area_sqm} м²</div>
       </div>
       <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">
         <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
@@ -258,12 +259,10 @@ function renderUnit(u, proj, pd) {
     </div>
 
     <div class="params-card">
-      <div class="p-row"><span class="p-label">Площадь</span><span class="p-val">${u.area_sqm} м²</span></div>
       <div class="p-row"><span class="p-label">Тип</span><span class="p-val">${cat}</span></div>
       <div class="p-row"><span class="p-label">Этаж</span><span class="p-val">${u.floor}${pd ? ' / ' + pd.floors : ''}</span></div>
       <div class="p-row"><span class="p-label">Корпус</span><span class="p-val">${u.tower}</span></div>
       <div class="p-row"><span class="p-label">Номер</span><span class="p-val">${u.room_no}</span></div>
-      <div class="p-row"><span class="p-label">Цена за м²</span><span class="p-val">${u.price_per_sqm ? Math.round(u.price_per_sqm).toLocaleString('ru') + ' ฿' : '—'}</span></div>
     </div>
 
     <div class="sc accent-border reward-section">
