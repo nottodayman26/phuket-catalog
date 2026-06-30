@@ -57,13 +57,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .two-col{display:block}
 
 /* ── PLAN ── */
-.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:sticky;top:124px;min-height:480px;max-height:calc(100vh - 144px);display:flex;align-items:center;justify-content:center}
+.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:sticky;top:124px;height:480px;max-height:calc(100vh - 144px);display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
 .plan-placeholder i{font-size:56px}
 .plan-placeholder span{font-size:13px}
-.plan-track{display:flex;width:100%;height:100%;transition:transform .3s ease}
-.plan-slide{flex:0 0 100%;position:relative;display:flex;align-items:center;justify-content:center;height:100%}
+.plan-track{display:flex;width:100%;height:100%;position:absolute;inset:0;transition:transform .3s ease}
+.plan-slide{flex:0 0 100%;position:relative;width:100%;height:100%}
 .plan-slide img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-slide-label{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.55);color:#fff;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;z-index:2}
 .plan-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
