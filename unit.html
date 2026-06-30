@@ -56,10 +56,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .two-col{display:block}
 
 /* ── PLAN ── */
-.plan-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;min-height:380px;display:flex;align-items:center;justify-content:center}
+.plan-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;min-height:600px;display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
-.plan-placeholder i{font-size:48px}
+.plan-placeholder i{font-size:56px}
 .plan-placeholder span{font-size:13px}
 
 /* ── PARAMS ── */
@@ -220,10 +220,6 @@ function renderUnit(u, proj, pd) {
       <div>
         <div class="unit-name">${u.room_no} · ${cat}</div>
       </div>
-      <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">
-        <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
-        ${isAvail ? 'Свободен' : 'Продан'}
-      </div>
     </div>
 
     <div class="actions">
@@ -233,6 +229,10 @@ function renderUnit(u, proj, pd) {
       <button class="act-btn" onclick="window.print()">
         <i class="ti ti-printer"></i> Печать
       </button>
+      <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
+        <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
+        ${isAvail ? 'Свободен' : 'Продан'}
+      </div>
     </div>
 
     <div class="two-col">
