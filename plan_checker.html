@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flox — Проверка планировок</title>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background: #f5f5f5; margin: 0; padding: 24px; color: #1a1a1a; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 24px; }
+  .controls { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+  select, button { padding: 8px 14px; border-radius: 8px; border: 1px solid #ddd; font-size: 13px; font-family: inherit; background: #fff; cursor: pointer; }
+  button { background: #5E17EB; color: #fff; border-color: #5E17EB; font-weight: 600; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .stats { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .stat { background: #fff; border-radius: 10px; padding: 12px 18px; border: 1px solid #eee; }
+  .stat-val { font-size: 24px; font-weight: 700; }
+  .stat-val.green { color: #22c55e; }
+  .stat-val.red { color: #ef4444; }
+  .stat-val.orange { color: #f97316; }
+  .stat-lbl { font-size: 12px; color: #888; margin-top: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .card { background: #fff; border-radius: 10px; border: 1px solid #eee; padding: 12px; font-size: 12px; }
+  .card.ok { border-left: 3px solid #22c55e; }
+  .card.miss { border-left: 3px solid #ef4444; background: #fff8f8; }
+  .card-file { font-weight: 600; font-size: 13px; margin-bottom: 4px; word-break: break-all; }
+  .card-units { color: #888; }
+  .card-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+  .badge-ok { background: #dcfce7; color: #16a34a; }
+  .badge-miss { background: #fee2e2; color: #dc2626; }
+  .progress { height: 4px; background: #eee; border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+  .progress-bar { height: 100%; background: #5E17EB; border-radius: 2px; transition: width .3s; }
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid #ddd; background: #fff; font-size: 12px; cursor: pointer; }
+  .filter-btn.act { background: #5E17EB; color: #fff; border-color: #5E17EB; }
+</style>
+</head>
+<body>
+<h1>Проверка планировок юнитов</h1>
+<div class="sub">Проверяет наличие JPG-файлов планировок для всех юнитов проекта</div>
+
+<div class="controls">
+  <select id="projectSel">
+    <option value="VIK">VIK — The Title Vivana</option>
+    <option value="KAT">KAT — KataBello</option>
+    <option value="OLN">OLN — The Olive Naiyang</option>
+    <option value="BAN">BAN — Balcony Naiyang</option>
+  </select>
+  <button id="runBtn" onclick="run()">Проверить</button>
+</div>
+
+<div class="progress" id="progressWrap" style="display:none">
+  <div class="progress-bar" id="progressBar" style="width:0%"></div>
+</div>
+
+<div class="stats" id="stats" style="display:none"></div>
+
+<div class="filter-bar" id="filterBar" style="display:none">
+  <button class="filter-btn act" onclick="setFilter('all')" id="f-all">Все</button>
+  <button class="filter-btn" onclick="setFilter('miss')" id="f-miss">❌ Отсутствуют</button>
+  <button class="filter-btn" onclick="setFilter('ok')" id="f-ok">✅ Есть</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const SB_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
+const BASE = 'https://nottodayman26.github.io/phuket-catalog/img/';
+
+let allResults = [];
+let currentFilter = 'all';
+
+async function run() {
+  const project = document.getElementById('projectSel').value;
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Загружаю...';
+  document.getElementById('stats').style.display = 'none';
+  document.getElementById('filterBar').style.display = 'none';
+  document.getElementById('grid').innerHTML = '';
+  allResults = [];
+
+  // Fetch units from Supabase
+  const res = await fetch(`${SB_URL}/units?room_no=like.${project}*&select=room_no,area_sqm,plan_code&limit=2000`, {
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+  });
+  const units = await res.json();
+
+  // Group by filename
+  const fileMap = {};
+  for (const u of units) {
+    if (!u.plan_code || !u.area_sqm) {
+      const key = '__no_code__' + u.room_no;
+      fileMap[key] = fileMap[key] || { file: null, units: [], room_nos: [] };
+      fileMap[key].units.push(u);
+      fileMap[key].room_nos.push(u.room_no);
+      continue;
+    }
+    const areaStr = Number(u.area_sqm).toFixed(2);
+    const fname = `${areaStr}_${u.plan_code}.jpg`;
+    if (!fileMap[fname]) fileMap[fname] = { file: fname, units: [], room_nos: [] };
+    fileMap[fname].units.push(u);
+    fileMap[fname].room_nos.push(u.room_no);
+  }
+
+  const entries = Object.entries(fileMap);
+  const total = entries.length;
+  let checked = 0;
+
+  document.getElementById('progressWrap').style.display = 'block';
+
+  // Check each file in parallel batches of 10
+  const results = [];
+  for (let i = 0; i < entries.length; i += 10) {
+    const batch = entries.slice(i, i + 10);
+    const batchResults = await Promise.all(batch.map(([key, data]) => {
+      if (!data.file) return Promise.resolve({ key, data, exists: false, noCode: true });
+      return new Promise(resolve => {
+        const img = new Image();
+        const url = BASE + data.file.startsWith('__') ? '' : `${project}/units/${encodeURIComponent(data.file)}`;
+        img.onload = () => resolve({ key, data, exists: true });
+        img.onerror = () => resolve({ key, data, exists: false });
+        img.src = BASE + `${project}/units/${encodeURIComponent(data.file)}`;
+      });
+    }));
+    results.push(...batchResults);
+    checked += batch.length;
+    document.getElementById('progressBar').style.width = `${Math.round(checked/total*100)}%`;
+  }
+
+  allResults = results;
+  renderResults(results, project);
+
+  btn.disabled = false;
+  btn.textContent = 'Проверить';
+  document.getElementById('progressWrap').style.display = 'none';
+}
+
+function renderResults(results, project) {
+  const ok = results.filter(r => r.exists && !r.data.noCode);
+  const miss = results.filter(r => !r.exists || r.data.noCode);
+
+  document.getElementById('stats').style.display = 'flex';
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-val">${results.length}</div><div class="stat-lbl">Уникальных файлов</div></div>
+    <div class="stat"><div class="stat-val green">${ok.length}</div><div class="stat-lbl">✅ Есть</div></div>
+    <div class="stat"><div class="stat-val red">${miss.length}</div><div class="stat-lbl">❌ Отсутствуют</div></div>
+  `;
+
+  document.getElementById('filterBar').style.display = 'flex';
+
+  const filtered = currentFilter === 'ok' ? ok : currentFilter === 'miss' ? miss : results;
+  const sorted = [...filtered].sort((a, b) => {
+    if (a.exists === b.exists) return (a.data.file||'').localeCompare(b.data.file||'');
+    return a.exists ? 1 : -1; // missing first
+  });
+
+  document.getElementById('grid').innerHTML = sorted.map(r => {
+    if (r.data.noCode) {
+      return `<div class="card miss">
+        <span class="card-badge badge-miss">нет plan_code</span>
+        <div class="card-file">${r.data.room_nos.join(', ')}</div>
+        <div class="card-units">нет кода в базе</div>
+      </div>`;
+    }
+    return `<div class="card ${r.exists ? 'ok' : 'miss'}">
+      <span class="card-badge ${r.exists ? 'badge-ok' : 'badge-miss'}">${r.exists ? '✅ есть' : '❌ нет файла'}</span>
+      <div class="card-file">${r.data.file}</div>
+      <div class="card-units">${r.data.room_nos.length} юнит${r.data.room_nos.length > 4 ? 'ов' : r.data.room_nos.length > 1 ? 'а' : ''}: ${r.data.room_nos.slice(0,4).join(', ')}${r.data.room_nos.length > 4 ? '...' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  ['all','miss','ok'].forEach(x => document.getElementById('f-'+x).classList.toggle('act', x === f));
+  renderResults(allResults, document.getElementById('projectSel').value);
+}
+</script>
+</body>
+</html>
