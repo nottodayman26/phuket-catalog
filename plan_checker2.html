@@ -76,7 +76,9 @@ async function run() {
   const bar = document.getElementById('bar');
   pg.style.display = 'block'; bar.style.width = '0%';
 
-  const res = await fetch(`${SB}/units?room_no=like.${proj}*&select=room_no,area_sqm,plan_code&limit=2000`, {
+  const prefixes = { VIK: 'VK', OLN: 'ON', KAT: 'KK', BAN: 'BN' };
+  const prefix = prefixes[proj] || proj;
+  const res = await fetch(`${SB}/units?room_no=like.${prefix}*&select=room_no,area_sqm,plan_code&limit=2000`, {
     headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }
   }).catch(() => null);
 
