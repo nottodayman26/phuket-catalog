@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Flox — Проверка планировок</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: #f7f7f5; color: #1a1a1a; padding: 24px; }
+h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.sub { color: #888; font-size: 12px; margin-bottom: 20px; }
+.row { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+select { padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 13px; background: #fff; }
+button { padding: 8px 18px; border-radius: 8px; background: #5E17EB; color: #fff; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.progress { height: 4px; background: #eee; border-radius: 2px; margin-bottom: 16px; display: none; }
+.bar { height: 100%; background: #5E17EB; border-radius: 2px; width: 0; transition: width .2s; }
+.stats { display: flex; gap: 10px; margin-bottom: 16px; display: none; }
+.stat { background: #fff; border-radius: 10px; border: 1px solid #eee; padding: 10px 16px; min-width: 90px; }
+.stat-n { font-size: 22px; font-weight: 700; }
+.stat-n.g { color: #16a34a; } .stat-n.r { color: #dc2626; }
+.stat-l { font-size: 11px; color: #888; }
+.filters { display: none; gap: 8px; margin-bottom: 14px; }
+.fb { padding: 4px 14px; border-radius: 20px; border: 1px solid #ddd; background: #fff; font-size: 12px; cursor: pointer; }
+.fb.act { background: #5E17EB; color: #fff; border-color: #5E17EB; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.card { background: #fff; border-radius: 10px; border: 1px solid #eee; padding: 10px 12px; font-size: 12px; }
+.card.ok { border-left: 3px solid #22c55e; }
+.card.no { border-left: 3px solid #ef4444; background: #fff8f8; }
+.card-f { font-weight: 600; font-size: 12px; margin-bottom: 3px; word-break: break-all; }
+.card-u { color: #888; font-size: 11px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; margin-bottom: 4px; }
+.bok { background: #dcfce7; color: #16a34a; }
+.bno { background: #fee2e2; color: #dc2626; }
+.bnc { background: #fef9c3; color: #854d0e; }
+</style>
+</head>
+<body>
+<h1>Проверка планировок юнитов</h1>
+<div class="sub">Проверяет наличие JPG-файлов на GitHub Pages для каждого уникального plan_code</div>
+
+<div class="row">
+  <select id="proj">
+    <option value="VIK">VIK — The Title Vivana</option>
+    <option value="KAT">KAT — KataBello</option>
+    <option value="OLN">OLN — The Olive Naiyang</option>
+    <option value="BAN">BAN — Balcony Naiyang</option>
+  </select>
+  <button id="btn" onclick="run()">Проверить</button>
+</div>
+
+<div class="progress" id="pg"><div class="bar" id="bar"></div></div>
+<div class="stats" id="stats"></div>
+<div class="filters" id="filters">
+  <button class="fb act" onclick="filter('all')" id="fa">Все</button>
+  <button class="fb" onclick="filter('no')" id="fn">❌ Нет файла</button>
+  <button class="fb" onclick="filter('ok')" id="fo">✅ Есть</button>
+</div>
+<div class="grid" id="grid"></div>
+
+<script>
+const SB = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
+const BASE = 'https://nottodayman26.github.io/phuket-catalog/img/';
+let all = [], cur = 'all';
+
+async function run() {
+  const proj = document.getElementById('proj').value;
+  const btn = document.getElementById('btn');
+  btn.disabled = true; btn.textContent = 'Загружаю...';
+  document.getElementById('stats').style.display = 'none';
+  document.getElementById('filters').style.display = 'none';
+  document.getElementById('grid').innerHTML = '';
+  all = [];
+
+  const pg = document.getElementById('pg');
+  const bar = document.getElementById('bar');
+  pg.style.display = 'block'; bar.style.width = '0%';
+
+  const res = await fetch(`${SB}/units?room_no=like.${proj}*&select=room_no,area_sqm,plan_code&limit=2000`, {
+    headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }
+  }).catch(() => null);
+
+  if (!res || !res.ok) {
+    document.getElementById('grid').innerHTML = '<div style="color:#dc2626;font-size:13px">Ошибка запроса к Supabase. Проверь подключение к интернету.</div>';
+    btn.disabled = false; btn.textContent = 'Проверить';
+    pg.style.display = 'none';
+    return;
+  }
+
+  const units = await res.json();
+  bar.style.width = '30%';
+
+  const map = {};
+  for (const u of units) {
+    if (!u.plan_code || !u.area_sqm) {
+      map['__nc_' + u.room_no] = { file: null, rooms: [u.room_no], noCode: true };
+      continue;
+    }
+    const fname = `${Number(u.area_sqm).toFixed(2)}_${u.plan_code}.jpg`;
+    if (!map[fname]) map[fname] = { file: fname, rooms: [] };
+    map[fname].rooms.push(u.room_no);
+  }
+
+  const entries = Object.values(map);
+  const total = entries.length;
+  let done = 0;
+
+  for (let i = 0; i < entries.length; i += 8) {
+    const batch = entries.slice(i, i + 8);
+    const res2 = await Promise.all(batch.map(e => {
+      if (!e.file) return Promise.resolve({ ...e, exists: false });
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve({ ...e, exists: true });
+        img.onerror = () => resolve({ ...e, exists: false });
+        img.src = BASE + `${proj}/units/${encodeURIComponent(e.file)}`;
+      });
+    }));
+    all.push(...res2);
+    done += batch.length;
+    bar.style.width = (30 + Math.round(done / total * 70)) + '%';
+  }
+
+  render();
+  btn.disabled = false; btn.textContent = 'Проверить';
+  pg.style.display = 'none';
+}
+
+function filter(f) {
+  cur = f;
+  ['all','no','ok'].forEach(x => document.getElementById('f'+x[0]).classList.toggle('act', x === f));
+  render();
+}
+
+function render() {
+  const ok = all.filter(r => r.exists && !r.noCode);
+  const no = all.filter(r => !r.exists || r.noCode);
+  const s = document.getElementById('stats');
+  s.style.display = 'flex';
+  s.innerHTML = `
+    <div class="stat"><div class="stat-n">${all.length}</div><div class="stat-l">Всего файлов</div></div>
+    <div class="stat"><div class="stat-n g">${ok.length}</div><div class="stat-l">✅ Есть</div></div>
+    <div class="stat"><div class="stat-n r">${no.length}</div><div class="stat-l">❌ Нет</div></div>
+  `;
+  document.getElementById('filters').style.display = 'flex';
+
+  const show = cur === 'ok' ? ok : cur === 'no' ? no : [...no, ...ok];
+  document.getElementById('grid').innerHTML = show.map(r => {
+    if (r.noCode) return `<div class="card no"><span class="badge bnc">нет plan_code</span><div class="card-f">${r.rooms.join(', ')}</div></div>`;
+    const rr = r.rooms.slice(0,5).join(', ') + (r.rooms.length > 5 ? '…' : '');
+    return `<div class="card ${r.exists ? 'ok' : 'no'}">
+      <span class="badge ${r.exists ? 'bok' : 'bno'}">${r.exists ? '✅ есть' : '❌ нет файла'}</span>
+      <div class="card-f">${r.file}</div>
+      <div class="card-u">${r.rooms.length} юнит${r.rooms.length > 4 ? 'ов' : r.rooms.length > 1 ? 'а' : ''}: ${rr}</div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
