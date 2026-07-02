@@ -325,8 +325,9 @@ input,button{font-family:inherit;}
 .pres-empty i{font-size:48px;}
 .pres-empty-sub{font-size:12px;color:var(--muted);margin-top:4px;}
 .pres-units{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
-.pres-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;}
-.pres-card-img{background:var(--surface-2);height:160px;display:flex;align-items:center;justify-content:center;border-bottom:0.5px solid var(--line-2);overflow:hidden;position:relative;}
+.pres-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease;}
+.pres-card:hover{transform:scale(1.03);box-shadow:0 6px 20px rgba(0,0,0,0.1);}
+.pres-card-img{background:#ffffff;height:160px;display:flex;align-items:center;justify-content:center;border-bottom:0.5px solid var(--line-2);overflow:hidden;position:relative;}
 .pres-card-img img{width:100%;height:100%;object-fit:contain;}
 .pres-card-img .pres-card-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;}
 .badge-avail{background:#dcfce7;color:#15803d;}
@@ -349,6 +350,18 @@ input,button{font-family:inherit;}
 .pres-cb-label input{accent-color:var(--accent);cursor:pointer;}
 .pres-cb-label.checked{background:rgba(94,23,235,.08);border-color:rgba(94,23,235,.3);color:var(--text);}
 .pres-share-result{margin-top:20px;padding:16px;background:var(--surface);border:0.5px solid var(--line-2);border-radius:10px;}
+.pres-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:500;opacity:0;pointer-events:none;transition:opacity .25s;}
+.pres-drawer-overlay.vis{opacity:1;pointer-events:all;}
+.pres-drawer{position:fixed;top:0;right:0;height:100vh;width:400px;max-width:95vw;background:var(--surface);box-shadow:-8px 0 32px rgba(0,0,0,0.18);z-index:501;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;}
+.pres-drawer.vis{transform:translateX(0);}
+.pres-drawer-head{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 16px;border-bottom:0.5px solid var(--line);}
+.pres-drawer-title{font-size:16px;font-weight:600;color:var(--text);}
+.pres-drawer-close{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;padding:4px;}
+.pres-drawer-body{flex:1;overflow-y:auto;padding:20px;}
+.pres-drawer-foot{padding:16px 20px;border-top:0.5px solid var(--line);}
+.pres-drawer-confirm{width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s;}
+.pres-drawer-confirm:hover{opacity:.85;}
+.pres-drawer-confirm:disabled{opacity:.5;cursor:not-allowed;}
 .pres-share-label{font-size:12px;color:var(--muted);margin-bottom:8px;}
 .pres-share-row{display:flex;gap:8px;}
 .pres-share-row input{flex:1;padding:8px 12px;border-radius:8px;border:0.5px solid var(--line-2);background:var(--surface-2);color:var(--text);font-size:12px;font-family:inherit;}
@@ -475,6 +488,31 @@ input,button{font-family:inherit;}
         <button onclick="copyPresLink()"><i class="ti ti-copy"></i></button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- PRESENTATION BLOCKS DRAWER -->
+<div class="pres-drawer-overlay" id="presDrawerOverlay" onclick="closePresDrawer()"></div>
+<div class="pres-drawer" id="presDrawer">
+  <div class="pres-drawer-head">
+    <div class="pres-drawer-title">Блоки о проектах</div>
+    <button class="pres-drawer-close" onclick="closePresDrawer()">✕</button>
+  </div>
+  <div class="pres-drawer-body">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Выберите какую информацию о проекте увидит клиент</div>
+    <div id="presDrawerBlocksList"></div>
+    <div id="presDrawerShareResult" style="display:none">
+      <div class="pres-share-result">
+        <div class="pres-share-label">Ссылка для клиента</div>
+        <div class="pres-share-row">
+          <input type="text" id="presDrawerUrl" readonly onclick="this.select()">
+          <button onclick="copyPresDrawerLink()"><i class="ti ti-copy"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="pres-drawer-foot">
+    <button class="pres-drawer-confirm" id="presDrawerConfirm" onclick="confirmPresentation()"><i class="ti ti-link"></i> Сформировать ссылку</button>
   </div>
 </div>
 
@@ -1567,8 +1605,8 @@ function renderPresCards(units, raw, projMap) {
         <div style="display:none;align-items:center;justify-content:center;width:100%;height:100%;position:absolute;inset:0"><i class="ti ti-layout-2" style="font-size:40px;color:var(--muted)"></i></div>`;
     }
 
-    return `<div class="pres-card" id="pc-${u.room_no}">
-      <button class="pres-card-remove" onclick="removeFromPresentation('${u.room_no}')" title="Удалить">✕</button>
+    return `<div class="pres-card" id="pc-${u.room_no}" onclick="window.open('unit.html?unit=${u.room_no}&project=${rawEntry?.project || ''}','_blank')">
+      <button class="pres-card-remove" onclick="event.stopPropagation();removeFromPresentation('${u.room_no}')" title="Удалить">✕</button>
       <div class="pres-card-img">
         ${imgHtml}
         <span class="pres-card-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">${isAvail ? 'Свободен' : 'Продан'}</span>
@@ -1606,14 +1644,15 @@ function renderPresBlocks(projectIds, projMap) {
   }).join('');
 }
 
-function toggleBlock(pid, key, cb) {
+function toggleBlock(pid, key, cb, prefix) {
+  prefix = prefix || 'pbl-';
   if (!presState.projectBlocks[pid]) presState.projectBlocks[pid] = [];
   if (cb.checked) {
     if (!presState.projectBlocks[pid].includes(key)) presState.projectBlocks[pid].push(key);
   } else {
     presState.projectBlocks[pid] = presState.projectBlocks[pid].filter(k => k !== key);
   }
-  const lbl = document.getElementById(`pbl-${pid}-${key}`);
+  const lbl = document.getElementById(`${prefix}${pid}-${key}`);
   if (lbl) lbl.classList.toggle('checked', cb.checked);
 }
 
@@ -1630,16 +1669,46 @@ function clearPresentation() {
   loadPresentation();
 }
 
-async function sharePresentation() {
-  const btn = document.querySelector('.pres-share-btn');
+function sharePresentation() {
+  // Заполняем шторку блоками и открываем её
+  const projectIds = [...new Set(presState.units.map(u => u.project))];
+  const el = document.getElementById('presDrawerBlocksList');
+
+  // Загружаем имена проектов из уже загруженных JSON (если есть)
+  el.innerHTML = projectIds.map(pid => {
+    const selected = presState.projectBlocks[pid] || ['description','facilities','payment_schedule'];
+    if (!presState.projectBlocks[pid]) presState.projectBlocks[pid] = [...selected];
+    return `<div class="pres-project-block" style="background:var(--surface-2);border:0.5px solid var(--line-2);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div class="pres-project-name">${pid}</div>
+      <div class="pres-checkboxes">
+        ${PRES_BLOCKS.map(b => `
+          <label class="pres-cb-label ${selected.includes(b.key) ? 'checked' : ''}" id="pdbl-${pid}-${b.key}">
+            <input type="checkbox" ${selected.includes(b.key) ? 'checked' : ''} onchange="toggleBlock('${pid}','${b.key}',this,'pdbl-')"> ${b.label}
+          </label>
+        `).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('presDrawerShareResult').style.display = 'none';
+  document.getElementById('presDrawerConfirm').disabled = false;
+  document.getElementById('presDrawerConfirm').innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
+  document.getElementById('presDrawerOverlay').classList.add('vis');
+  document.getElementById('presDrawer').classList.add('vis');
+}
+
+function closePresDrawer() {
+  document.getElementById('presDrawerOverlay').classList.remove('vis');
+  document.getElementById('presDrawer').classList.remove('vis');
+}
+
+async function confirmPresentation() {
+  const btn = document.getElementById('presDrawerConfirm');
   btn.disabled = true;
-  btn.textContent = 'Сохраняю…';
+  btn.innerHTML = 'Сохраняю…';
 
   const agent = JSON.parse(localStorage.getItem('flox-agent') || 'null');
-  const body = {
-    units: presState.units,
-    project_blocks: presState.projectBlocks,
-  };
+  const body = { units: presState.units, project_blocks: presState.projectBlocks };
   if (agent?.id) body.agent_id = agent.id;
 
   const r = await fetch(`${SUPABASE_URL}/presentations`, {
@@ -1659,12 +1728,13 @@ async function sharePresentation() {
   if (!r.ok) { alert('Ошибка при сохранении'); return; }
   const [data] = await r.json();
   const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${data.id}`;
-  document.getElementById('presShareUrl').value = url;
-  document.getElementById('presShareResult').style.display = 'block';
+  document.getElementById('presDrawerUrl').value = url;
+  document.getElementById('presDrawerShareResult').style.display = 'block';
+  btn.innerHTML = '✅ Ссылка готова';
 }
 
-function copyPresLink() {
-  const input = document.getElementById('presShareUrl');
+function copyPresDrawerLink() {
+  const input = document.getElementById('presDrawerUrl');
   input.select();
   navigator.clipboard.writeText(input.value).catch(() => document.execCommand('copy'));
   const btn = input.nextElementSibling;
