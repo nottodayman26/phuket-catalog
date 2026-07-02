@@ -519,7 +519,7 @@ input,button{font-family:inherit;}
 </div>
 
 <!-- CLEAR PRESENTATION CONFIRM -->
-<div class="modal-overlay" id="clearPresModal" onclick="if(event.target===this)closeClearPresModal()" style="display:none">
+<div class="modal-overlay" id="clearPresModal" onclick="if(event.target===this)closeClearPresModal()">
   <div class="modal" style="max-width:360px">
     <div class="modal-title">Очистить презентацию?</div>
     <div style="font-size:13px;color:var(--muted);margin:8px 0 20px">Все добавленные юниты будут удалены из презентации. Это действие нельзя отменить.</div>
@@ -1691,12 +1691,11 @@ function removeFromPresentation(roomNo) {
 }
 
 function confirmClearPresentation() {
-  const modal = document.getElementById('clearPresModal');
-  modal.style.display = 'flex';
+  document.getElementById('clearPresModal').classList.add('vis');
 }
 
 function closeClearPresModal() {
-  document.getElementById('clearPresModal').style.display = 'none';
+  document.getElementById('clearPresModal').classList.remove('vis');
 }
 
 function clearPresentation() {
