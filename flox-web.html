@@ -313,6 +313,46 @@ input,button{font-family:inherit;}
 
 /* ══ ACTIVITY PAGE ══ */
 .activity-page{padding:24px;max-width:900px;margin:0 auto;}
+.pres-page{padding:24px;max-width:1000px;margin:0 auto;}
+.pres-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.pres-actions{display:flex;gap:10px;align-items:center;}
+.pres-clear-btn{padding:8px 14px;border-radius:8px;border:0.5px solid var(--line-2);background:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.pres-clear-btn:hover{color:var(--text);border-color:var(--line);}
+.pres-share-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s;}
+.pres-share-btn:hover{opacity:.85;}
+.pres-share-btn:disabled{opacity:.5;cursor:not-allowed;}
+.pres-empty{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted);padding:80px 24px;text-align:center;font-size:14px;}
+.pres-empty i{font-size:48px;}
+.pres-empty-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+.pres-units{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
+.pres-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;}
+.pres-card-img{background:var(--surface-2);height:160px;display:flex;align-items:center;justify-content:center;border-bottom:0.5px solid var(--line-2);overflow:hidden;position:relative;}
+.pres-card-img img{width:100%;height:100%;object-fit:contain;}
+.pres-card-img .pres-card-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;}
+.badge-avail{background:#dcfce7;color:#15803d;}
+.badge-sold{background:#fee2e2;color:#dc2626;}
+.pres-card-body{padding:12px;}
+.pres-card-proj{font-size:11px;color:var(--muted);margin-bottom:2px;}
+.pres-card-num{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.pres-card-rows{display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:11px;margin-bottom:8px;}
+.pres-card-rows span:nth-child(odd){color:var(--muted);}
+.pres-card-rows span:nth-child(even){color:var(--text);text-align:right;}
+.pres-card-price{padding-top:8px;border-top:0.5px solid var(--line);font-size:14px;font-weight:600;color:var(--text);}
+.pres-card-remove{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.45);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;border:none;z-index:2;}
+.pres-blocks{margin-top:8px;border-top:0.5px solid var(--line);padding-top:20px;}
+.pres-blocks-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;}
+.pres-project-block{background:var(--surface);border:0.5px solid var(--line-2);border-radius:10px;padding:14px;margin-bottom:10px;}
+.pres-project-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;}
+.pres-checkboxes{display:flex;flex-wrap:wrap;gap:8px;}
+.pres-cb-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;padding:5px 10px;border-radius:8px;border:0.5px solid var(--line-2);background:none;transition:all .15s;user-select:none;}
+.pres-cb-label:hover{border-color:var(--line);}
+.pres-cb-label input{accent-color:var(--accent);cursor:pointer;}
+.pres-cb-label.checked{background:rgba(94,23,235,.08);border-color:rgba(94,23,235,.3);color:var(--text);}
+.pres-share-result{margin-top:20px;padding:16px;background:var(--surface);border:0.5px solid var(--line-2);border-radius:10px;}
+.pres-share-label{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.pres-share-row{display:flex;gap:8px;}
+.pres-share-row input{flex:1;padding:8px 12px;border-radius:8px;border:0.5px solid var(--line-2);background:var(--surface-2);color:var(--text);font-size:12px;font-family:inherit;}
+.pres-share-row button{padding:8px 12px;border-radius:8px;border:0.5px solid var(--line-2);background:none;color:var(--text);cursor:pointer;font-size:14px;}
 .activity-list{display:flex;flex-direction:column;gap:10px;}
 .activity-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default;}
 .activity-card:hover{transform:scale(1.02);border-color:var(--accent);box-shadow:0 4px 20px rgba(94,23,235,0.1);}
@@ -405,6 +445,36 @@ input,button{font-family:inherit;}
   <div class="activity-page">
     <div class="page-title">Последняя активность</div>
     <div class="activity-list" id="activityList"><div class="loader">Загрузка…</div></div>
+  </div>
+</div>
+
+<!-- PRESENTATION PAGE -->
+<div class="page" id="page-presentation">
+  <div class="pres-page">
+    <div class="pres-header">
+      <div class="page-title">Презентации</div>
+      <div class="pres-actions" id="presActions" style="display:none">
+        <button class="pres-clear-btn" onclick="clearPresentation()">Очистить всё</button>
+        <button class="pres-share-btn" onclick="sharePresentation()"><i class="ti ti-link"></i> Сформировать ссылку</button>
+      </div>
+    </div>
+    <div id="presEmpty" class="pres-empty">
+      <i class="ti ti-layout-2"></i>
+      <div>Нет добавленных юнитов</div>
+      <div class="pres-empty-sub">Откройте страницу юнита и нажмите «Добавить в презентацию»</div>
+    </div>
+    <div id="presUnits" class="pres-units"></div>
+    <div id="presBlocks" class="pres-blocks" style="display:none">
+      <div class="pres-blocks-title">Блоки о проектах</div>
+      <div id="presBlocksList"></div>
+    </div>
+    <div id="presShareResult" class="pres-share-result" style="display:none">
+      <div class="pres-share-label">Ссылка для клиента</div>
+      <div class="pres-share-row">
+        <input type="text" id="presShareUrl" readonly onclick="this.select()">
+        <button onclick="copyPresLink()"><i class="ti ti-copy"></i></button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -548,6 +618,7 @@ function setPage(name) {
   document.querySelector(`[data-page="${name}"]`)?.classList.add('act');
   if (name === 'offers') loadOffers();
   if (name === 'activity') loadActivity();
+  if (name === 'presentation') loadPresentation();
 }
 
 // ── TYPE SELECTOR (top) ───────────────────
@@ -1402,6 +1473,203 @@ async function loadUnitCount() {
   } catch(e) {
     document.getElementById('unitCount').textContent = '700';
   }
+}
+
+// ── ПРЕЗЕНТАЦИИ ──────────────────────────────────────────────────────────────
+
+const PRES_BLOCKS = [
+  { key: 'description',     label: 'О проекте' },
+  { key: 'facilities',      label: 'Инфраструктура' },
+  { key: 'nearby',          label: 'Рядом' },
+  { key: 'payment_schedule',label: 'График платежей' },
+  { key: 'maintenance',     label: 'Обслуживание' },
+  { key: 'files',           label: 'Файлы' },
+];
+
+// Состояние: { units: [{room_no, project}], projectBlocks: {VIK: ['description',...]} }
+let presState = { units: [], projectBlocks: {} };
+
+async function loadPresentation() {
+  const raw = JSON.parse(localStorage.getItem('flox-presentation') || '[]');
+  presState.units = raw;
+
+  const empty = document.getElementById('presEmpty');
+  const unitsEl = document.getElementById('presUnits');
+  const blocksEl = document.getElementById('presBlocks');
+  const actionsEl = document.getElementById('presActions');
+  const shareResult = document.getElementById('presShareResult');
+
+  if (!raw.length) {
+    empty.style.display = 'flex';
+    unitsEl.innerHTML = '';
+    blocksEl.style.display = 'none';
+    actionsEl.style.display = 'none';
+    shareResult.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  actionsEl.style.display = 'flex';
+  shareResult.style.display = 'none';
+  unitsEl.innerHTML = '<div class="loader">Загрузка…</div>';
+
+  // Получаем данные юнитов из Supabase
+  const roomNos = raw.map(u => u.room_no);
+  const r = await fetch(`${SUPABASE_URL}/units?room_no=in.(${roomNos.map(r=>`"${r}"`).join(',')})&select=room_no,tower,floor,room_type,area_sqm,selling_price,status,plan_code`, {
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+  });
+  const units = await r.json();
+
+  // Получаем данные проектов
+  const projectIds = [...new Set(raw.map(u => u.project))];
+  const projMap = {};
+  for (const pid of projectIds) {
+    try {
+      const pj = await fetch(`projects/${pid}.json`);
+      if (pj.ok) projMap[pid] = await pj.json();
+    } catch(e) {}
+  }
+
+  // Инициализируем projectBlocks если нет
+  for (const pid of projectIds) {
+    if (!presState.projectBlocks[pid]) {
+      presState.projectBlocks[pid] = ['description', 'facilities', 'payment_schedule'];
+    }
+  }
+
+  renderPresCards(units, raw, projMap);
+  renderPresBlocks(projectIds, projMap);
+  blocksEl.style.display = 'block';
+}
+
+function fmtMlnPres(n) {
+  if (!n) return '—';
+  return n >= 1000000 ? (n/1e6).toFixed(2).replace(/\.?0+$/, '') + ' млн ฿' : Math.round(n).toLocaleString('ru') + ' ฿';
+}
+
+function renderPresCards(units, raw, projMap) {
+  const el = document.getElementById('presUnits');
+  if (!units.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = units.map(u => {
+    const rawEntry = raw.find(r => r.room_no === u.room_no);
+    const proj = rawEntry ? projMap[rawEntry.project] : null;
+    const projName = proj ? proj.name : (rawEntry?.project || '');
+    const projCode = rawEntry?.project || '';
+    const isAvail = u.status === 'available';
+    const cat = u.room_type ? u.room_type.replace(/\b\w/g, l => l.toUpperCase()) : '—';
+
+    // Планировка
+    let imgHtml = `<i class="ti ti-layout-2" style="font-size:40px;color:var(--muted)"></i>`;
+    if (u.plan_code && u.area_sqm) {
+      const fname = `${Number(u.area_sqm).toFixed(2)}_${u.plan_code}.jpg`;
+      imgHtml = `<img src="img/${projCode}/units/${encodeURIComponent(fname)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div style="display:none;align-items:center;justify-content:center;width:100%;height:100%;position:absolute;inset:0"><i class="ti ti-layout-2" style="font-size:40px;color:var(--muted)"></i></div>`;
+    }
+
+    return `<div class="pres-card" id="pc-${u.room_no}">
+      <button class="pres-card-remove" onclick="removeFromPresentation('${u.room_no}')" title="Удалить">✕</button>
+      <div class="pres-card-img">
+        ${imgHtml}
+        <span class="pres-card-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">${isAvail ? 'Свободен' : 'Продан'}</span>
+      </div>
+      <div class="pres-card-body">
+        <div class="pres-card-proj">${projName}</div>
+        <div class="pres-card-num">${u.room_no}</div>
+        <div class="pres-card-rows">
+          <span>Тип</span><span>${cat}</span>
+          <span>Площадь</span><span>${u.area_sqm} м²</span>
+          <span>Этаж</span><span>${u.floor} / ${proj?.floors || '—'}</span>
+        </div>
+        <div class="pres-card-price">${fmtMlnPres(u.selling_price)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPresBlocks(projectIds, projMap) {
+  const el = document.getElementById('presBlocksList');
+  el.innerHTML = projectIds.map(pid => {
+    const proj = projMap[pid];
+    const name = proj ? proj.name : pid;
+    const selected = presState.projectBlocks[pid] || [];
+    return `<div class="pres-project-block">
+      <div class="pres-project-name">${name}</div>
+      <div class="pres-checkboxes">
+        ${PRES_BLOCKS.map(b => `
+          <label class="pres-cb-label ${selected.includes(b.key) ? 'checked' : ''}" id="pbl-${pid}-${b.key}">
+            <input type="checkbox" ${selected.includes(b.key) ? 'checked' : ''} onchange="toggleBlock('${pid}','${b.key}',this)"> ${b.label}
+          </label>
+        `).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleBlock(pid, key, cb) {
+  if (!presState.projectBlocks[pid]) presState.projectBlocks[pid] = [];
+  if (cb.checked) {
+    if (!presState.projectBlocks[pid].includes(key)) presState.projectBlocks[pid].push(key);
+  } else {
+    presState.projectBlocks[pid] = presState.projectBlocks[pid].filter(k => k !== key);
+  }
+  const lbl = document.getElementById(`pbl-${pid}-${key}`);
+  if (lbl) lbl.classList.toggle('checked', cb.checked);
+}
+
+function removeFromPresentation(roomNo) {
+  let raw = JSON.parse(localStorage.getItem('flox-presentation') || '[]');
+  raw = raw.filter(u => u.room_no !== roomNo);
+  localStorage.setItem('flox-presentation', JSON.stringify(raw));
+  document.getElementById(`pc-${roomNo}`)?.remove();
+  if (!raw.length) loadPresentation();
+}
+
+function clearPresentation() {
+  localStorage.removeItem('flox-presentation');
+  loadPresentation();
+}
+
+async function sharePresentation() {
+  const btn = document.querySelector('.pres-share-btn');
+  btn.disabled = true;
+  btn.textContent = 'Сохраняю…';
+
+  const agent = JSON.parse(localStorage.getItem('flox-agent') || 'null');
+  const body = {
+    units: presState.units,
+    project_blocks: presState.projectBlocks,
+  };
+  if (agent?.id) body.agent_id = agent.id;
+
+  const r = await fetch(`${SUPABASE_URL}/presentations`, {
+    method: 'POST',
+    headers: {
+      apikey: SB_KEY,
+      Authorization: `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
+
+  if (!r.ok) { alert('Ошибка при сохранении'); return; }
+  const [data] = await r.json();
+  const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${data.id}`;
+  document.getElementById('presShareUrl').value = url;
+  document.getElementById('presShareResult').style.display = 'block';
+}
+
+function copyPresLink() {
+  const input = document.getElementById('presShareUrl');
+  input.select();
+  navigator.clipboard.writeText(input.value).catch(() => document.execCommand('copy'));
+  const btn = input.nextElementSibling;
+  btn.innerHTML = '<i class="ti ti-check"></i>';
+  setTimeout(() => btn.innerHTML = '<i class="ti ti-copy"></i>', 2000);
 }
 </script>
 
