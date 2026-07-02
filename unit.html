@@ -35,13 +35,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 /* ── LAYOUT ── */
 .page-body{display:grid;grid-template-columns:1fr 300px;min-height:calc(100vh - 104px)}
-.main{padding:24px;display:flex;flex-direction:column;gap:20px;border-right:0.5px solid var(--line)}
+.main{padding:24px;display:flex;flex-direction:column;gap:20px}
 .sidebar{padding:20px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 104px);overflow-y:auto;position:sticky;top:104px}
 
 /* ── UNIT HEADER ── */
-.unit-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
-.unit-project-name{font-size:28px;font-weight:700;margin-bottom:4px;color:var(--text)}
-.unit-name{font-size:15px;font-weight:600;color:var(--muted)}
+.unit-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.unit-name{font-size:20px;font-weight:700;margin-bottom:4px}
 .unit-meta{font-size:13px;color:var(--muted)}
 .status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap}
 .badge-avail{background:rgba(123,175,110,0.15);color:var(--green)}
@@ -57,23 +56,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .two-col{display:block}
 
 /* ── PLAN ── */
-.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:sticky;top:124px;height:480px;max-height:calc(100vh - 144px);display:flex;align-items:center;justify-content:center}
+.plan-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;min-height:600px;display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
 .plan-placeholder i{font-size:56px}
 .plan-placeholder span{font-size:13px}
-.plan-track{display:flex;width:100%;height:100%;position:absolute;inset:0;transition:transform .3s ease}
-.plan-slide{flex:0 0 100%;position:relative;width:100%;height:100%}
-.plan-slide img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
-.plan-slide-label{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.55);color:#fff;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;z-index:2}
-.plan-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
-.plan-dot{width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,0.2);transition:background .2s}
-.plan-dot.act{background:rgba(0,0,0,0.65)}
-.plan-arrow{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.9);border:0.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;color:#1a1a1a;font-size:18px;transition:background .15s,opacity .15s;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
-.plan-arrow:hover{background:#fff}
-.plan-arrow.left{left:12px}
-.plan-arrow.right{right:12px}
-.plan-arrow.disabled{opacity:0;pointer-events:none}
 
 /* ── PARAMS ── */
 .params-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden}
@@ -83,9 +70,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .p-val{font-weight:500}
 
 /* ── SIDEBAR CARDS ── */
-.sc{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;padding:14px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease}
-.sc:hover{transform:scale(1.02);box-shadow:0 6px 20px rgba(0,0,0,0.1)}
-.sc.accent-border{border-color:var(--line-2)}
+.sc{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;padding:14px}
+.sc.accent-border{border-color:rgba(94,23,235,0.5)}
 .sc-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
 .sc-price{font-size:26px;font-weight:700;margin-bottom:2px}
 .sc-price-exact{font-size:12px;color:var(--muted);margin-bottom:11px}
@@ -96,7 +82,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .sc-row .green{color:var(--green)}
 .sc-row .red{color:var(--red)}
 
-.rew-pct{font-size:22px;font-weight:700;margin:4px 0 8px}
+.rew-pct{font-size:26px;font-weight:700;margin:4px 0 8px}
 .rew-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
 .rew-row span{color:var(--muted)}
 .rew-row b{font-weight:500}
@@ -105,8 +91,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 /* ── ADD TO PRESENTATION ── */
 .add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
-.book-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:10px;background:none;color:var(--muted);border:0.5px solid var(--line-2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:8px}
-.book-btn:hover{color:var(--text);border-color:var(--line)}
 .add-btn:hover{opacity:.88}
 .add-btn.added{background:var(--green);opacity:1}
 
@@ -205,178 +189,6 @@ async function processUnit(u) {
   renderUnit(u, proj, projData);
 }
 
-function loadPlanImage(u, proj) {
-  const code = proj.code || projectId || '';
-  const base = location.pathname.replace(/\/[^\/]*$/, '/');
-  const slides = [];
-
-  // Слайд 1: планировка юнита — {площадь}_{plan_code}.jpg
-  if (code && u.plan_code && u.area_sqm) {
-    const areaStr = Number(u.area_sqm).toFixed(2);
-    const fileName = `${areaStr}_${u.plan_code}.jpg`;
-    slides.push({
-      path: `${base}img/${code}/units/${encodeURIComponent(fileName)}`,
-      label: 'Планировка юнита',
-      alt: `Планировка ${u.room_no}`
-    });
-  }
-
-  // Слайд 2: поэтажный план — {корпус кириллицей}{этаж}.jpg, например с5.jpg
-  // Соответствие латиница→кириллица: A→а, B→б, C→с, D→д
-  const TOWER_CYR = { A: 'а', B: 'б', C: 'с', D: 'д' };
-  if (code && u.tower && u.floor) {
-    const towerCyr = TOWER_CYR[String(u.tower).toUpperCase()] || String(u.tower).toLowerCase();
-    const fileName = `${towerCyr}${u.floor}.jpg`;
-    slides.push({
-      path: `${base}img/${code}/floor-plans/${encodeURIComponent(fileName)}`,
-      label: `Поэтажный план · Корпус ${u.tower} · Этаж ${u.floor}`,
-      alt: `Поэтажный план, корпус ${u.tower}, этаж ${u.floor}`
-    });
-  }
-
-  // Слайд 3: мастер-план — страница (этаж + 1), с ведущими нулями до 4 знаков
-  // этаж 1 → page-0002, этаж 8 → page-0009
-  if (code && u.floor) {
-    const pageNum = String(Number(u.floor) + 1).padStart(4, '0');
-    const fileName = `мастер план_page-${pageNum}.jpg`;
-    slides.push({
-      path: `${base}img/${code}/masterplan/${encodeURIComponent(fileName)}`,
-      label: `Мастер-план · Этаж ${u.floor}`,
-      alt: `Мастер-план, этаж ${u.floor}`
-    });
-  }
-
-  if (!slides.length) return; // нет данных вообще — плейсхолдер остаётся
-
-  // Проверяем существование каждого слайда параллельно, сохраняя порядок
-  Promise.all(slides.map(s => new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => resolve(s);
-    img.onerror = () => resolve(null);
-    img.src = s.path;
-  }))).then(results => {
-    const found = results.filter(Boolean);
-    if (!found.length) return; // ни один файл не нашёлся — плейсхолдер остаётся
-    renderPlanCarousel(found);
-  });
-}
-
-function renderPlanCarousel(slides) {
-  const card = document.getElementById('planCard');
-  const placeholder = document.getElementById('planPlaceholder');
-  if (!card || !placeholder) return;
-  placeholder.remove();
-
-  const track = document.createElement('div');
-  track.className = 'plan-track';
-  track.id = 'planTrack';
-
-  slides.forEach(s => {
-    const slide = document.createElement('div');
-    slide.className = 'plan-slide';
-    const img = document.createElement('img');
-    img.src = s.path;
-    img.alt = s.alt;
-    slide.appendChild(img);
-    track.appendChild(slide);
-  });
-  card.appendChild(track);
-
-  if (slides.length > 1) {
-    const labelEl = document.createElement('div');
-    labelEl.className = 'plan-slide-label';
-    labelEl.id = 'planSlideLabel';
-    labelEl.textContent = slides[0].label;
-    card.appendChild(labelEl);
-
-    const dotsEl = document.createElement('div');
-    dotsEl.className = 'plan-dots';
-    slides.forEach((_, i) => {
-      const dot = document.createElement('div');
-      dot.className = 'plan-dot' + (i === 0 ? ' act' : '');
-      dotsEl.appendChild(dot);
-    });
-    card.appendChild(dotsEl);
-
-    const arrowLeft = document.createElement('div');
-    arrowLeft.className = 'plan-arrow left disabled';
-    arrowLeft.innerHTML = '<i class="ti ti-chevron-left"></i>';
-    card.appendChild(arrowLeft);
-
-    const arrowRight = document.createElement('div');
-    arrowRight.className = 'plan-arrow right';
-    arrowRight.innerHTML = '<i class="ti ti-chevron-right"></i>';
-    card.appendChild(arrowRight);
-
-    initPlanSwipe(card, track, slides, dotsEl, labelEl, arrowLeft, arrowRight);
-  }
-}
-
-function initPlanSwipe(card, track, slides, dotsEl, labelEl, arrowLeft, arrowRight) {
-  let current = 0;
-  let startX = 0;
-  let deltaX = 0;
-  let dragging = false;
-
-  function goTo(idx) {
-    current = Math.max(0, Math.min(slides.length - 1, idx));
-    track.style.transform = `translateX(-${current * 100}%)`;
-    labelEl.textContent = slides[current].label;
-    [...dotsEl.children].forEach((d, i) => d.classList.toggle('act', i === current));
-    arrowLeft.classList.toggle('disabled', current === 0);
-    arrowRight.classList.toggle('disabled', current === slides.length - 1);
-  }
-
-  arrowLeft.addEventListener('click', () => goTo(current - 1));
-  arrowRight.addEventListener('click', () => goTo(current + 1));
-
-  card.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    dragging = true;
-    track.style.transition = 'none';
-  }, { passive: true });
-
-  card.addEventListener('touchmove', e => {
-    if (!dragging) return;
-    deltaX = e.touches[0].clientX - startX;
-    track.style.transform = `translateX(calc(-${current * 100}% + ${deltaX}px))`;
-  }, { passive: true });
-
-  card.addEventListener('touchend', () => {
-    dragging = false;
-    track.style.transition = 'transform .3s ease';
-    if (Math.abs(deltaX) > 60) {
-      goTo(current + (deltaX < 0 ? 1 : -1));
-    } else {
-      goTo(current);
-    }
-    deltaX = 0;
-  });
-
-  // Поддержка свайпа мышью на десктопе (drag)
-  card.addEventListener('mousedown', e => {
-    startX = e.clientX;
-    dragging = true;
-    track.style.transition = 'none';
-  });
-  window.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    deltaX = e.clientX - startX;
-    track.style.transform = `translateX(calc(-${current * 100}% + ${deltaX}px))`;
-  });
-  window.addEventListener('mouseup', () => {
-    if (!dragging) return;
-    dragging = false;
-    track.style.transition = 'transform .3s ease';
-    if (Math.abs(deltaX) > 60) {
-      goTo(current + (deltaX < 0 ? 1 : -1));
-    } else {
-      goTo(current);
-    }
-    deltaX = 0;
-  });
-}
-
 function renderUnit(u, proj, pd) {
   const isAvail = u.status === 'available';
   const projectColor = pd?.color || proj.color || '#5E17EB';
@@ -404,31 +216,29 @@ function renderUnit(u, proj, pd) {
 
   // MAIN
   document.getElementById('mainContent').innerHTML = `
-    <div id="unitTopBlock">
-      <div class="unit-header">
-        <div>
-          <div class="unit-project-name">${proj.name || proj.code}</div>
-          <div class="unit-name">${u.room_no} · ${cat}</div>
-        </div>
+    <div class="unit-header">
+      <div>
+        <div class="unit-name">${proj.name || proj.code}</div>
+        <div class="unit-name">${u.room_no} · ${cat}</div>
       </div>
+    </div>
 
-      <div class="actions">
-        <button class="act-btn" onclick="window.open('project.html?id=${proj.code}','_blank')">
-          <i class="ti ti-building"></i> Страница проекта
-        </button>
-        <button class="act-btn" onclick="window.print()">
-          <i class="ti ti-printer"></i> Печать
-        </button>
-        <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
-          <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
-          ${isAvail ? 'Свободен' : 'Продан'}
-        </div>
+    <div class="actions">
+      <button class="act-btn" onclick="window.open('project.html?id=${proj.code}','_blank')">
+        <i class="ti ti-building"></i> Страница проекта
+      </button>
+      <button class="act-btn" onclick="window.print()">
+        <i class="ti ti-printer"></i> Печать
+      </button>
+      <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
+        <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
+        ${isAvail ? 'Свободен' : 'Продан'}
       </div>
     </div>
 
     <div class="two-col">
       <div class="plan-card" id="planCard">
-        <div class="plan-placeholder" id="planPlaceholder">
+        <div class="plan-placeholder">
           <i class="ti ti-layout-2"></i>
           <span>Планировка появится позже</span>
         </div>
@@ -436,11 +246,8 @@ function renderUnit(u, proj, pd) {
     </div>
   `;
 
-  loadPlanImage(u, proj);
-
   // SIDEBAR
   document.getElementById('sidebarContent').innerHTML = `
-    <div id="sidebarSpacer" style="height:0"></div>
     <div class="sc">
       <div class="sc-label">Цена</div>
       <div class="sc-price">${fmtMln(u.selling_price)}</div>
@@ -460,7 +267,7 @@ function renderUnit(u, proj, pd) {
         <div class="sc-label" style="margin:0">Вознаграждение</div>
         <span style="font-size:14px">💰</span>
       </div>
-      <div class="rew-pct" id="rewAmount">0 ฿</div>
+      <div class="rew-pct">${pct}%</div>
       <div class="rew-row"><span>Шкала</span><b>${scale}</b></div>
       <div class="rew-row"><span>Срок выплаты</span><b>${days}</b></div>
       <button class="rew-btn" onclick="return false">💵 Таблица вознаграждений</button>
@@ -469,11 +276,6 @@ function renderUnit(u, proj, pd) {
     <button class="add-btn" id="addBtn" onclick="togglePresentation()">
       <i class="ti ti-presentation" style="font-size:16px"></i>
       <span id="addBtnLabel">Добавить в презентацию</span>
-    </button>
-
-    <button class="book-btn" onclick="return false">
-      <i class="ti ti-calendar-check" style="font-size:16px"></i>
-      Забронировать
     </button>
 
     <div class="proj-info">
@@ -490,37 +292,7 @@ function renderUnit(u, proj, pd) {
   const _m = localStorage.getItem('flox-meeting') === 'true';
   document.querySelectorAll('.reward-section').forEach(el => el.style.display = _m ? 'none' : '');
   initPresentation();
-  alignSidebarToPlan();
-  animateRewardAmount(u.selling_price, pct);
 }
-
-function animateRewardAmount(sellingPrice, pct) {
-  const el = document.getElementById('rewAmount');
-  if (!el || !sellingPrice || !pct) return;
-  const target = Math.round(sellingPrice * pct / 100);
-  const dur = 900;
-  const start = performance.now();
-  function step(now) {
-    const t = Math.min(1, (now - start) / dur);
-    const ease = 1 - Math.pow(1 - t, 3);
-    const val = Math.round(target * ease);
-    el.textContent = val.toLocaleString('ru') + ' ฿';
-    if (t < 1) requestAnimationFrame(step);
-    else el.textContent = target.toLocaleString('ru') + ' ฿';
-  }
-  requestAnimationFrame(step);
-}
-
-function alignSidebarToPlan() {
-  const topBlock = document.getElementById('unitTopBlock');
-  const spacer = document.getElementById('sidebarSpacer');
-  if (!topBlock || !spacer) return;
-  const mainGap = parseFloat(getComputedStyle(document.querySelector('.main')).rowGap || 20);
-  const sidebarGap = parseFloat(getComputedStyle(document.getElementById('sidebarContent')).rowGap || 12);
-  const targetHeight = topBlock.offsetHeight + mainGap - sidebarGap;
-  spacer.style.height = Math.max(0, targetHeight) + 'px';
-}
-window.addEventListener('resize', () => { if (document.getElementById('unitTopBlock')) alignSidebarToPlan(); });
 
 function showError(msg) {
   document.getElementById('mainContent').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted)">${msg}</div>`;
