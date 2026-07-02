@@ -340,6 +340,11 @@ input,button{font-family:inherit;}
 .pres-card-rows span:nth-child(even){color:var(--text);text-align:right;}
 .pres-card-price{padding-top:8px;border-top:0.5px solid var(--line);font-size:14px;font-weight:600;color:var(--text);}
 .pres-card-remove{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.45);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;border:none;z-index:2;}
+.pres-card.selected{border:2px solid #5E17EB;box-shadow:0 0 0 3px rgba(94,23,235,0.15);}
+.pres-card-img{background:#ffffff;height:160px;display:flex;align-items:center;justify-content:center;border-bottom:0.5px solid var(--line-2);overflow:hidden;position:relative;cursor:pointer;}
+.pres-card-body-wrap{cursor:default;}
+.pres-delete-btn{padding:8px 14px;border-radius:8px;border:0.5px solid #ef4444;background:none;color:#ef4444;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;display:none;}
+.pres-delete-btn:hover{background:#fee2e2;}
 .pres-blocks{margin-top:8px;border-top:0.5px solid var(--line);padding-top:20px;}
 .pres-blocks-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;}
 .pres-project-block{background:var(--surface);border:0.5px solid var(--line-2);border-radius:10px;padding:14px;margin-bottom:10px;}
@@ -467,6 +472,7 @@ input,button{font-family:inherit;}
     <div class="pres-header">
       <div class="page-title">Презентации</div>
       <div class="pres-actions" id="presActions" style="display:none">
+        <button class="pres-delete-btn" id="presDeleteBtn" onclick="deleteSelectedUnits()">Удалить выбранные</button>
         <button class="pres-clear-btn" onclick="clearPresentation()">Очистить всё</button>
         <button class="pres-share-btn" onclick="sharePresentation()"><i class="ti ti-link"></i> Сформировать ссылку</button>
       </div>
@@ -1595,13 +1601,12 @@ function renderPresCards(units, raw, projMap) {
         <div style="display:none;align-items:center;justify-content:center;width:100%;height:100%;position:absolute;inset:0"><i class="ti ti-layout-2" style="font-size:40px;color:var(--muted)"></i></div>`;
     }
 
-    return `<div class="pres-card" id="pc-${u.room_no}" onclick="window.open('unit.html?unit=${u.room_no}&project=${rawEntry?.project || ''}','_blank')">
-      <button class="pres-card-remove" onclick="event.stopPropagation();removeFromPresentation('${u.room_no}')" title="Удалить">✕</button>
-      <div class="pres-card-img">
+    return `<div class="pres-card" id="pc-${u.room_no}">
+      <div class="pres-card-img" onclick="window.open('unit.html?unit=${u.room_no}&project=${rawEntry?.project || ''}','_blank')">
         ${imgHtml}
         <span class="pres-card-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">${isAvail ? 'Свободен' : 'Продан'}</span>
       </div>
-      <div class="pres-card-body">
+      <div class="pres-card-body" onclick="togglePresCardSelect('${u.room_no}')">
         <div class="pres-card-proj">${projName}</div>
         <div class="pres-card-num">${u.room_no}</div>
         <div class="pres-card-rows">
@@ -1644,6 +1649,25 @@ function toggleBlock(pid, key, cb, prefix) {
   }
   const lbl = document.getElementById(`${prefix}${pid}-${key}`);
   if (lbl) lbl.classList.toggle('checked', cb.checked);
+}
+
+function togglePresCardSelect(roomNo) {
+  const card = document.getElementById(`pc-${roomNo}`);
+  if (!card) return;
+  card.classList.toggle('selected');
+  const anySelected = document.querySelectorAll('.pres-card.selected').length > 0;
+  document.getElementById('presDeleteBtn').style.display = anySelected ? 'block' : 'none';
+}
+
+function deleteSelectedUnits() {
+  const selected = [...document.querySelectorAll('.pres-card.selected')].map(el => el.id.replace('pc-', ''));
+  if (!selected.length) return;
+  let raw = JSON.parse(localStorage.getItem('flox-presentation') || '[]');
+  raw = raw.filter(u => !selected.includes(u.room_no));
+  localStorage.setItem('flox-presentation', JSON.stringify(raw));
+  selected.forEach(r => document.getElementById(`pc-${r}`)?.remove());
+  document.getElementById('presDeleteBtn').style.display = 'none';
+  if (!raw.length) loadPresentation();
 }
 
 function removeFromPresentation(roomNo) {
