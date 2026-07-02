@@ -1535,7 +1535,6 @@ const PRES_BLOCKS = [
   { key: 'project_name',    label: 'Название проекта' },
   { key: 'developer',       label: 'Застройщик' },
   { key: 'description',     label: 'О проекте' },
-  { key: 'facilities',      label: 'Инфраструктура' },
   { key: 'nearby',          label: 'Карта' },
   { key: 'gallery',         label: 'Рендеры и фото' },
   { key: 'payment_schedule',label: 'График платежей' },
@@ -1586,7 +1585,7 @@ async function loadPresentation() {
 
   for (const pid of projectIds) {
     if (!presState.projectBlocks[pid]) {
-      presState.projectBlocks[pid] = ['project_name', 'developer', 'description', 'facilities', 'payment_schedule'];
+      presState.projectBlocks[pid] = ['project_name', 'developer', 'description', 'payment_schedule'];
     }
   }
 
@@ -1716,10 +1715,10 @@ function sharePresentation() {
 
   // Загружаем имена проектов из уже загруженных JSON (если есть)
   el.innerHTML = projectIds.map(pid => {
-    const selected = presState.projectBlocks[pid] || ['project_name','developer','description','facilities','payment_schedule'];
+    const selected = presState.projectBlocks[pid] || ['project_name','developer','description','payment_schedule'];
     if (!presState.projectBlocks[pid]) presState.projectBlocks[pid] = [...selected];
     const projName = presState.projMap?.[pid]?.name || pid;
-    return `<div class="pres-project-block" style="background:var(--surface-2);border:0.5px solid var(--line-2);border-radius:10px;padding:14px;margin-bottom:10px;">
+    return `<div class="pres-project-block">
       <div class="pres-project-name">${projName}</div>
       <div class="pres-checkboxes">
         ${PRES_BLOCKS.map(b => `
