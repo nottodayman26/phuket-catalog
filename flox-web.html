@@ -477,10 +477,6 @@ input,button{font-family:inherit;}
       <div class="pres-empty-sub">Откройте страницу юнита и нажмите «Добавить в презентацию»</div>
     </div>
     <div id="presUnits" class="pres-units"></div>
-    <div id="presBlocks" class="pres-blocks" style="display:none">
-      <div class="pres-blocks-title">Блоки о проектах</div>
-      <div id="presBlocksList"></div>
-    </div>
     <div id="presShareResult" class="pres-share-result" style="display:none">
       <div class="pres-share-label">Ссылка для клиента</div>
       <div class="pres-share-row">
@@ -1533,14 +1529,12 @@ async function loadPresentation() {
 
   const empty = document.getElementById('presEmpty');
   const unitsEl = document.getElementById('presUnits');
-  const blocksEl = document.getElementById('presBlocks');
   const actionsEl = document.getElementById('presActions');
   const shareResult = document.getElementById('presShareResult');
 
   if (!raw.length) {
     empty.style.display = 'flex';
     unitsEl.innerHTML = '';
-    blocksEl.style.display = 'none';
     actionsEl.style.display = 'none';
     shareResult.style.display = 'none';
     return;
@@ -1551,14 +1545,12 @@ async function loadPresentation() {
   shareResult.style.display = 'none';
   unitsEl.innerHTML = '<div class="loader">Загрузка…</div>';
 
-  // Получаем данные юнитов из Supabase
   const roomNos = raw.map(u => u.room_no);
   const r = await fetch(`${SUPABASE_URL}/units?room_no=in.(${roomNos.map(r=>`"${r}"`).join(',')})&select=room_no,tower,floor,room_type,area_sqm,selling_price,status,plan_code`, {
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
   });
   const units = await r.json();
 
-  // Получаем данные проектов
   const projectIds = [...new Set(raw.map(u => u.project))];
   const projMap = {};
   for (const pid of projectIds) {
@@ -1567,8 +1559,8 @@ async function loadPresentation() {
       if (pj.ok) projMap[pid] = await pj.json();
     } catch(e) {}
   }
+  presState.projMap = projMap;
 
-  // Инициализируем projectBlocks если нет
   for (const pid of projectIds) {
     if (!presState.projectBlocks[pid]) {
       presState.projectBlocks[pid] = ['description', 'facilities', 'payment_schedule'];
@@ -1576,8 +1568,6 @@ async function loadPresentation() {
   }
 
   renderPresCards(units, raw, projMap);
-  renderPresBlocks(projectIds, projMap);
-  blocksEl.style.display = 'block';
 }
 
 function fmtMlnPres(n) {
@@ -1678,8 +1668,9 @@ function sharePresentation() {
   el.innerHTML = projectIds.map(pid => {
     const selected = presState.projectBlocks[pid] || ['description','facilities','payment_schedule'];
     if (!presState.projectBlocks[pid]) presState.projectBlocks[pid] = [...selected];
+    const projName = presState.projMap?.[pid]?.name || pid;
     return `<div class="pres-project-block" style="background:var(--surface-2);border:0.5px solid var(--line-2);border-radius:10px;padding:14px;margin-bottom:10px;">
-      <div class="pres-project-name">${pid}</div>
+      <div class="pres-project-name">${projName}</div>
       <div class="pres-checkboxes">
         ${PRES_BLOCKS.map(b => `
           <label class="pres-cb-label ${selected.includes(b.key) ? 'checked' : ''}" id="pdbl-${pid}-${b.key}">
