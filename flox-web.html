@@ -472,8 +472,8 @@ input,button{font-family:inherit;}
     <div class="pres-header">
       <div class="page-title">Презентации</div>
       <div class="pres-actions" id="presActions" style="display:none">
-        <button class="pres-delete-btn" id="presDeleteBtn" onclick="deleteSelectedUnits()">Удалить выбранные</button>
-        <button class="pres-clear-btn" onclick="clearPresentation()">Очистить всё</button>
+        <button class="pres-delete-btn" id="presDeleteBtn" onclick="deleteSelectedUnits()">Удалить</button>
+        <button class="pres-clear-btn" onclick="confirmClearPresentation()">Очистить всё</button>
         <button class="pres-share-btn" onclick="sharePresentation()"><i class="ti ti-link"></i> Сформировать ссылку</button>
       </div>
     </div>
@@ -515,6 +515,18 @@ input,button{font-family:inherit;}
   </div>
   <div class="pres-drawer-foot">
     <button class="pres-drawer-confirm" id="presDrawerConfirm" onclick="confirmPresentation()"><i class="ti ti-link"></i> Сформировать ссылку</button>
+  </div>
+</div>
+
+<!-- CLEAR PRESENTATION CONFIRM -->
+<div class="modal-overlay" id="clearPresModal" onclick="if(event.target===this)closeClearPresModal()" style="display:none">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">Очистить презентацию?</div>
+    <div style="font-size:13px;color:var(--muted);margin:8px 0 20px">Все добавленные юниты будут удалены из презентации. Это действие нельзя отменить.</div>
+    <div class="modal-actions">
+      <button class="modal-clear" onclick="closeClearPresModal()">Отмена</button>
+      <button class="modal-apply" style="background:#ef4444;border-color:#ef4444" onclick="clearPresentation()">Очистить всё</button>
+    </div>
   </div>
 </div>
 
@@ -1678,7 +1690,17 @@ function removeFromPresentation(roomNo) {
   if (!raw.length) loadPresentation();
 }
 
+function confirmClearPresentation() {
+  const modal = document.getElementById('clearPresModal');
+  modal.style.display = 'flex';
+}
+
+function closeClearPresModal() {
+  document.getElementById('clearPresModal').style.display = 'none';
+}
+
 function clearPresentation() {
+  closeClearPresModal();
   localStorage.removeItem('flox-presentation');
   loadPresentation();
 }
