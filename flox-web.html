@@ -516,11 +516,7 @@ input,button{font-family:inherit;}
     </div>
   </div>
   <div class="pres-drawer-foot">
-    <div style="margin-bottom:10px">
-      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Имя клиента <span style="color:var(--red)">*</span></label>
-      <input type="text" id="presClientName" placeholder="Например: Иван Петров" style="width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--line-2);background:var(--surface-2);color:var(--text);font-size:13px;font-family:inherit;outline:none;" oninput="document.getElementById('presDrawerConfirm').disabled=!this.value.trim()">
-    </div>
-    <button class="pres-drawer-confirm" id="presDrawerConfirm" onclick="confirmPresentation()" disabled><i class="ti ti-link"></i> Сформировать ссылку</button>
+    <button class="pres-drawer-confirm" id="presDrawerConfirm" onclick="confirmPresentation()"><i class="ti ti-link"></i> Сформировать ссылку</button>
   </div>
 </div>
 
@@ -1266,7 +1262,7 @@ async function loadActivity() {
   // Загружаем старые офферы и новые презентации параллельно
   const [offersRes, presRes] = await Promise.all([
     h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,unit_ids&order=created_at.desc&limit=20`),
-    h(`${SUPABASE_URL}/presentations?agent_id=eq.${AGENT.id}&select=id,units,created_at,client_name&order=created_at.desc&limit=20`)
+    h(`${SUPABASE_URL}/presentations?agent_id=eq.${AGENT.id}&select=id,units,created_at&order=created_at.desc&limit=20`)
   ]);
   const offers = await offersRes.json();
   const presentations = await presRes.json();
@@ -1281,7 +1277,7 @@ async function loadActivity() {
     presCards = presentations.map(p => {
       const views = Array.isArray(presViews) ? presViews.filter(v => v.presentation_id === p.id) : [];
       const units = Array.isArray(p.units) ? p.units.length : 0;
-      const label = p.client_name || (p.units?.[0]?.project ? `Презентация · ${p.units.map(u=>u.room_no).slice(0,3).join(', ')}${p.units.length>3?'…':''}` : 'Презентация');
+      const label = p.units?.[0]?.project ? `Презентация · ${p.units.map(u=>u.room_no).slice(0,3).join(', ')}${p.units.length>3?'…':''}` : 'Презентация';
 
       if (!views.length) {
         return `<div class="activity-card">
@@ -1606,7 +1602,7 @@ const PRES_BLOCKS = [
 ];
 
 // Состояние: { units: [{room_no, project}], projectBlocks: {VIK: ['description',...]} }
-let presState = { units: [], projectBlocks: {} };
+let presState = { units: [], projectBlocks: {}, currentId: null };
 
 async function loadPresentation() {
   const raw = JSON.parse(localStorage.getItem('flox-presentation') || '[]');
@@ -1746,6 +1742,7 @@ function deleteSelectedUnits() {
   localStorage.setItem('flox-presentation', JSON.stringify(raw));
   selected.forEach(r => document.getElementById(`pc-${r}`)?.remove());
   document.getElementById('presDeleteBtn').style.display = 'none';
+  presState.currentId = null; // сброс — изменился состав
   if (!raw.length) loadPresentation();
 }
 
@@ -1794,9 +1791,8 @@ function sharePresentation() {
   }).join('');
 
   document.getElementById('presDrawerShareResult').style.display = 'none';
-  document.getElementById('presDrawerConfirm').disabled = true;
+  document.getElementById('presDrawerConfirm').disabled = false;
   document.getElementById('presDrawerConfirm').innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
-  document.getElementById('presClientName').value = '';
   document.getElementById('presDrawerOverlay').classList.add('vis');
   document.getElementById('presDrawer').classList.add('vis');
 }
@@ -1818,19 +1814,12 @@ async function confirmPresentation() {
 
   const r = await fetch(`${SUPABASE_URL}/presentations`, {
     method: 'POST',
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation'
-    },
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
     body: JSON.stringify(body)
   });
 
   btn.disabled = false;
-  btn.innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
-
-  if (!r.ok) { alert('Ошибка при сохранении'); return; }
+  if (!r.ok) { alert('Ошибка при сохранении'); btn.innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку'; return; }
   const [data] = await r.json();
   const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${data.id}`;
   document.getElementById('presDrawerUrl').value = url;
