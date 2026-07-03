@@ -313,6 +313,13 @@ async function init() {
   if (!rows.length) { showError('Подборка не найдена или ссылка устарела'); return; }
   const pres = rows[0];
 
+  // Логируем каждый просмотр
+  fetch(`${SB_URL}/presentation_views`, {
+    method: 'POST',
+    headers: { ...HDR, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ presentation_id: id })
+  }).catch(() => {});
+
   const units_meta = pres.units || [];
   const project_blocks = pres.project_blocks || {};
 

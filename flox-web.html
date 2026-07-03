@@ -1258,56 +1258,115 @@ async function loadActivity() {
     </div>`;
     return;
   }
-  const r = await h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,unit_ids&order=created_at.desc&limit=20`);
-  const offers = await r.json();
-  if (!offers.length) { el.innerHTML = '<div class="empty-page">Нет активности</div>'; return; }
 
-  const ids = offers.map(o=>o.id).join(',');
-  const [vr,br,pvr] = await Promise.all([
-    h(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id`),
-    h(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`),
-    h(`${SUPABASE_URL}/offer_viewing_requests?offer_id=in.(${ids})&select=offer_id,unit_id,requested_date`)
+  // Загружаем старые офферы и новые презентации параллельно
+  const [offersRes, presRes] = await Promise.all([
+    h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,unit_ids&order=created_at.desc&limit=20`),
+    h(`${SUPABASE_URL}/presentations?agent_id=eq.${AGENT.id}&select=id,units,created_at&order=created_at.desc&limit=20`)
   ]);
-  const views = await vr.json();
-  const bookings = await br.json();
-  const viewingRaw = await pvr.json();
-  const viewingReqs = Array.isArray(viewingRaw) ? viewingRaw : [];
-  const viewMap = views.reduce((m,v)=>{m[v.offer_id]=(m[v.offer_id]||0)+1;return m;},{});
-  const bookMap = bookings.reduce((m,b)=>{(m[b.offer_id]=m[b.offer_id]||[]).push(b.units?.room_no);return m;},{});
-  // Load room_no for viewing requests
-  const vrUnitIds = [...new Set(viewingReqs.map(r=>r.unit_id).filter(Boolean))];
-  let unitRoomMap = {};
-  if (vrUnitIds.length) {
-    const ur = await h(`${SUPABASE_URL}/units?id=in.(${vrUnitIds.join(',')})&select=id,room_no`);
-    const unitRows = await ur.json();
-    if (Array.isArray(unitRows)) unitRows.forEach(u => { unitRoomMap[u.id] = u.room_no; });
-  }
-  const viewingMap = viewingReqs.reduce((m,r)=>{
-    (m[r.offer_id]=m[r.offer_id]||[]).push({
-      room: unitRoomMap[r.unit_id] || '—',
-      date: r.requested_date
-    });
-    return m;
-  },{});
+  const offers = await offersRes.json();
+  const presentations = await presRes.json();
 
-  el.innerHTML = offers.map(o => {
-    const vc = viewMap[o.id]||0, bc = bookMap[o.id]||[], vreqs = viewingMap[o.id]||[];
-    const units = (o.unit_ids||[]).length;
-    let events = [];
-    if (vc) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>Открыто ${vc} раз${vc===1?'':'а'}</div>`);
-    if (bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--red)"></div>Хочет забронировать: ${bc.join(', ')}</div>`);
-    if (vreqs.length) vreqs.forEach(r => {
-      const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';
-      events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--green)"></div>Запись на просмотр — ${dateStr}</div>`);
+  // ── Активность из презентаций ──────────────────────────────
+  let presCards = [];
+  if (Array.isArray(presentations) && presentations.length) {
+    const presIds = presentations.map(p => p.id).join(',');
+    const pvRes = await h(`${SUPABASE_URL}/presentation_views?presentation_id=in.(${presIds})&select=presentation_id,viewed_at&order=viewed_at.desc`);
+    const presViews = await pvRes.json();
+
+    presCards = presentations.map(p => {
+      const views = Array.isArray(presViews) ? presViews.filter(v => v.presentation_id === p.id) : [];
+      const units = Array.isArray(p.units) ? p.units.length : 0;
+      const label = p.units?.[0]?.project ? `Презентация · ${p.units.map(u=>u.room_no).slice(0,3).join(', ')}${p.units.length>3?'…':''}` : 'Презентация';
+
+      if (!views.length) {
+        return `<div class="activity-card">
+          <div class="act-client">${label}</div>
+          <div class="act-count">${units} объект${units===1?'':units<5?'а':'ов'} · ${timeAgo(p.created_at)}</div>
+          <div class="act-events"><div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div></div>
+        </div>`;
+      }
+
+      // Группируем просмотры по дням
+      const byDay = {};
+      views.forEach(v => {
+        const day = new Date(v.viewed_at).toLocaleDateString('ru-RU', {day:'numeric',month:'long'});
+        byDay[day] = (byDay[day] || 0) + 1;
+      });
+
+      const events = Object.entries(byDay).map(([day, cnt]) =>
+        `<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>${day} — открыто ${cnt} раз${cnt===1?'':'а'}</div>`
+      ).join('');
+
+      return `<div class="activity-card">
+        <div class="act-client">${label}</div>
+        <div class="act-count">${units} объект${units===1?'':units<5?'а':'ов'} · ${timeAgo(p.created_at)}</div>
+        <div class="act-events">${events}</div>
+      </div>`;
     });
-    if (!vc&&!bc.length&&!vreqs.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
-    return `
-      <div class="activity-card">
+  }
+
+  // ── Активность из старых офферов ──────────────────────────
+  let offerCards = [];
+  if (Array.isArray(offers) && offers.length) {
+    const ids = offers.map(o=>o.id).join(',');
+    const [vr,br,pvr] = await Promise.all([
+      h(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id,viewed_at&order=viewed_at.desc`),
+      h(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`),
+      h(`${SUPABASE_URL}/offer_viewing_requests?offer_id=in.(${ids})&select=offer_id,unit_id,requested_date`)
+    ]);
+    const views = await vr.json();
+    const bookings = await br.json();
+    const viewingRaw = await pvr.json();
+    const viewingReqs = Array.isArray(viewingRaw) ? viewingRaw : [];
+
+    const bookMap = bookings.reduce((m,b)=>{(m[b.offer_id]=m[b.offer_id]||[]).push(b.units?.room_no);return m;},{});
+    const vrUnitIds = [...new Set(viewingReqs.map(r=>r.unit_id).filter(Boolean))];
+    let unitRoomMap = {};
+    if (vrUnitIds.length) {
+      const ur = await h(`${SUPABASE_URL}/units?id=in.(${vrUnitIds.join(',')})&select=id,room_no`);
+      const unitRows = await ur.json();
+      if (Array.isArray(unitRows)) unitRows.forEach(u => { unitRoomMap[u.id] = u.room_no; });
+    }
+    const viewingMap = viewingReqs.reduce((m,r)=>{
+      (m[r.offer_id]=m[r.offer_id]||[]).push({ room: unitRoomMap[r.unit_id]||'—', date: r.requested_date });
+      return m;
+    },{});
+
+    offerCards = offers.map(o => {
+      const offerViews = Array.isArray(views) ? views.filter(v => v.offer_id === o.id) : [];
+      const bc = bookMap[o.id]||[], vreqs = viewingMap[o.id]||[];
+      const units = (o.unit_ids||[]).length;
+      let events = [];
+
+      // Группируем просмотры по дням
+      if (offerViews.length) {
+        const byDay = {};
+        offerViews.forEach(v => {
+          const day = new Date(v.viewed_at||Date.now()).toLocaleDateString('ru-RU', {day:'numeric',month:'long'});
+          byDay[day] = (byDay[day] || 0) + 1;
+        });
+        Object.entries(byDay).forEach(([day, cnt]) => {
+          events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>${day} — открыто ${cnt} раз${cnt===1?'':'а'}</div>`);
+        });
+      }
+      if (bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--red)"></div>Хочет забронировать: ${bc.join(', ')}</div>`);
+      vreqs.forEach(r => {
+        const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';
+        events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--green)"></div>Запись на просмотр — ${dateStr}</div>`);
+      });
+      if (!events.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
+
+      return `<div class="activity-card">
         <div class="act-client">${o.client_name||'Клиент'}</div>
         <div class="act-count">${units} объект${units===1?'':'ов'} · ${timeAgo(o.created_at)}</div>
         <div class="act-events">${events.join('')}</div>
       </div>`;
-  }).join('');
+    });
+  }
+
+  const all = [...presCards, ...offerCards];
+  el.innerHTML = all.length ? all.join('') : '<div class="empty-page">Нет активности</div>';
 }
 
 // ── AGENT ─────────────────────────────────
