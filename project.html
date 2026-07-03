@@ -421,20 +421,35 @@ a { color: inherit; text-decoration: none; }
 .ut-price { color: var(--project-color); font-weight: 600; }
 .unit-num-link { font-weight: 600; color: var(--text); text-decoration: none; display: inline-block; transition: transform .15s ease; }
 .unit-num-link:hover { transform: scale(1.08); }
-.ut-plan-th { width: 52px; }
 .ut-plan-cell { padding: 6px 16px !important; }
 .ut-plan-link {
   display: block; width: 40px; height: 40px; border-radius: 8px;
   overflow: hidden; background: #ffffff; border: 1px solid var(--line-2);
   transition: transform .15s ease, border-color .15s ease;
 }
-.ut-plan-link:hover { transform: scale(1.12); border-color: var(--project-color); }
+.ut-plan-link:hover { transform: scale(1.12); border-color: var(--muted-2); }
 .ut-plan-thumb { width: 100%; height: 100%; object-fit: contain; display: block; }
 .ut-plan-fallback {
   display: none; width: 100%; height: 100%;
   align-items: center; justify-content: center;
   color: var(--muted); font-size: 13px;
 }
+.plan-hover-preview {
+  display: none; position: fixed; z-index: 500;
+  background: #ffffff; border-radius: 12px; padding: 8px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+.plan-hover-preview img { display: block; max-width: 260px; max-height: 260px; border-radius: 6px; }
+
+/* Равные колонки в таблице юнитов */
+.units-table { table-layout: fixed; }
+.units-table th:nth-child(1), .units-table td:nth-child(1) { width: 92px; }
+.units-table th:nth-child(2), .units-table td:nth-child(2) { width: 64px; }
+.units-table th:nth-child(3), .units-table td:nth-child(3) { width: 52px; }
+.units-table th:nth-child(4), .units-table td:nth-child(4) { width: 140px; }
+.units-table th:nth-child(5), .units-table td:nth-child(5) { width: 84px; }
+.units-table th:nth-child(6), .units-table td:nth-child(6) { width: 110px; }
 .units-loading { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
 .units-empty { padding: 32px 16px; text-align: center; color: var(--muted); font-size: 13px; }
 
@@ -812,6 +827,11 @@ body.light .page-footer {
   <div class="lb-counter" id="lbCounter"></div>
 </div>
 
+<!-- PLAN HOVER PREVIEW -->
+<div class="plan-hover-preview" id="planHoverPreview">
+  <img id="planHoverPreviewImg" src="" alt=""/>
+</div>
+
 <script>
 const fmt = n => new Intl.NumberFormat('ru-RU').format(n);
 const fmtMln = n => n >= 1000000 ? (n/1000000).toFixed(1).replace('.0','') + ' млн ฿' : fmt(n) + ' ฿';
@@ -1186,7 +1206,7 @@ function renderUnitsTree(d, units) {
                 <th onclick="thSort('tbl-${tid}','room_no',this)" title="Сортировка по номеру">Номер</th>
                 <th class="ut-plan-th">План</th>
                 <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
-                <th onclick="thSort('tbl-${tid}','room_type',this)">Планировка</th>
+                <th onclick="thSort('tbl-${tid}','room_type',this)">Тип</th>
                 <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
                 <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
                 <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
@@ -1285,7 +1305,7 @@ function renderFlatList(units) {
                 <th onclick="thSort('tbl-${tid}','room_no',this)">Номер</th>
                 <th class="ut-plan-th">План</th>
                 <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
-                <th onclick="thSort('tbl-${tid}','room_type',this)">Планировка</th>
+                <th onclick="thSort('tbl-${tid}','room_type',this)">Тип</th>
                 <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
                 <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
                 <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
@@ -1508,7 +1528,8 @@ function renderUnitRows(units) {
       planCell = `
         <a href="${unitUrl}" target="_blank" class="ut-plan-link">
           <img class="ut-plan-thumb" src="${planSrc}" alt="Планировка ${u.room_no}" loading="lazy"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+               onmouseenter="showPlanPreview(this)" onmouseleave="hidePlanPreview()">
           <span class="ut-plan-fallback">—</span>
         </a>`;
     } else {
@@ -1525,6 +1546,30 @@ function renderUnitRows(units) {
       <td><span class="ut-status-dot ${u.status==='available'?'ut-available':'ut-sold'}"></span>${u.status==='available'?'Свободен':'Продан'}</td>
     </tr>`;
   }).join('');
+}
+
+// ── Всплывающий предпросмотр планировки при наведении ──────────────────────
+function showPlanPreview(imgEl) {
+  const preview = document.getElementById('planHoverPreview');
+  const previewImg = document.getElementById('planHoverPreviewImg');
+  if (!preview || !previewImg) return;
+  previewImg.src = imgEl.src;
+  preview.style.display = 'block';
+
+  const rect = imgEl.getBoundingClientRect();
+  const previewSize = 276; // ширина/высота окна с учётом паддинга
+  let left = rect.right + 14;
+  let top = rect.top + rect.height / 2 - previewSize / 2;
+  if (left + previewSize > window.innerWidth - 10) left = rect.left - previewSize - 14;
+  if (left < 10) left = 10;
+  if (top < 10) top = 10;
+  if (top + previewSize > window.innerHeight - 10) top = window.innerHeight - previewSize - 10;
+  preview.style.left = left + 'px';
+  preview.style.top = top + 'px';
+}
+function hidePlanPreview() {
+  const preview = document.getElementById('planHoverPreview');
+  if (preview) preview.style.display = 'none';
 }
 
 // Состояние сортировки каждой таблицы
