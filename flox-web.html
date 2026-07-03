@@ -1851,7 +1851,12 @@ async function confirmPresentation() {
   });
 
   btn.disabled = false;
-  if (!r.ok) { alert('Ошибка при сохранении'); btn.innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку'; return; }
+  if (!r.ok) {
+    const errText = await r.text();
+    console.error('Ошибка сохранения презентации:', r.status, errText);
+    btn.innerHTML = `❌ Ошибка: ${r.status}`;
+    return;
+  }
   const [data] = await r.json();
   const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${data.id}`;
   document.getElementById('presDrawerUrl').value = url;
