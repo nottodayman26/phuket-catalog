@@ -10,7 +10,7 @@ const CSS = `
 .flox-tb-logo{font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);text-decoration:none;margin-right:32px;display:flex;align-items:center;overflow:hidden;max-width:120px;transition:opacity .25s ease,max-width .25s ease,margin-right .25s ease;}
 .flox-tb-logo.meeting-hidden{opacity:0;max-width:0;margin-right:0;pointer-events:none;}
 .flox-tb-logo-dot{width:6px;height:6px;border-radius:50%;background:#FF6B6B;margin-left:1px;margin-bottom:9px;flex-shrink:0;vertical-align:bottom;display:inline-block;}
-.flox-tb-nav{display:flex;align-items:center;gap:2px;flex:1;}
+.flox-tb-nav{display:flex;align-items:center;gap:2px;flex:1;margin-left:-14px;}
 .flox-tb-item{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;text-decoration:none;background:none;border:none;font-family:inherit;}
 .flox-tb-item:hover{background:var(--surface-2);color:var(--text);}
 .flox-tb-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
