@@ -516,7 +516,11 @@ input,button{font-family:inherit;}
     </div>
   </div>
   <div class="pres-drawer-foot">
-    <button class="pres-drawer-confirm" id="presDrawerConfirm" onclick="confirmPresentation()"><i class="ti ti-link"></i> Сформировать ссылку</button>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Имя клиента <span style="color:var(--red)">*</span></label>
+      <input type="text" id="presClientName" placeholder="Например: Иван Петров" style="width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--line-2);background:var(--surface-2);color:var(--text);font-size:13px;font-family:inherit;outline:none;" oninput="document.getElementById('presDrawerConfirm').disabled=!this.value.trim()">
+    </div>
+    <button class="pres-drawer-confirm" id="presDrawerConfirm" onclick="confirmPresentation()" disabled><i class="ti ti-link"></i> Сформировать ссылку</button>
   </div>
 </div>
 
@@ -1221,12 +1225,32 @@ async function loadOffers() {
   }
   const r = await h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,slug,unit_ids&order=created_at.desc`);
   const offers = await r.json();
-  if (!offers.length) { el.innerHTML = '<div class="empty-page">Нет предложений</div>'; return; }
-  el.innerHTML = offers.map(o => {
+  const presR = await h(`${SUPABASE_URL}/presentations?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,units&order=created_at.desc&limit=50`);
+  const presentations = await presR.json();
+
+  const allEmpty = (!Array.isArray(offers) || !offers.length) && (!Array.isArray(presentations) || !presentations.length);
+  if (allEmpty) { el.innerHTML = '<div class="empty-page">Нет предложений</div>'; return; }
+
+  const presCards = Array.isArray(presentations) ? presentations.map(p => {
+    const units = Array.isArray(p.units) ? p.units.length : 0;
+    const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${p.id}`;
+    return `<div class="offer-card">
+        <div class="offer-card-top">
+          <div class="offer-client">${p.client_name || 'Клиент'}</div>
+          <div class="offer-time">${timeAgo(p.created_at)}</div>
+        </div>
+        <div class="offer-meta">${units} объект${units===1?'':units<5?'а':'ов'} в подборке</div>
+        <div class="offer-url">
+          <span class="offer-url-text">${url}</span>
+          <button class="offer-copy" onclick="copyUrl('${url}',this)">Копировать</button>
+        </div>
+      </div>`;
+  }) : [];
+
+  const offerCards = Array.isArray(offers) ? offers.map(o => {
     const units = (o.unit_ids||[]).length;
     const url = `https://nottodayman26.github.io/phuket-catalog/offer.html?slug=${o.slug}`;
-    return `
-      <div class="offer-card">
+    return `<div class="offer-card">
         <div class="offer-card-top">
           <div class="offer-client">${o.client_name||'Клиент'}</div>
           <div class="offer-time">${timeAgo(o.created_at)}</div>
@@ -1237,7 +1261,9 @@ async function loadOffers() {
           <button class="offer-copy" onclick="copyUrl('${url}',this)">Копировать</button>
         </div>
       </div>`;
-  }).join('');
+  }) : [];
+
+  el.innerHTML = [...presCards, ...offerCards].join('');
 }
 
 function copyUrl(url, btn) {
@@ -1277,7 +1303,7 @@ async function loadActivity() {
     presCards = presentations.map(p => {
       const views = Array.isArray(presViews) ? presViews.filter(v => v.presentation_id === p.id) : [];
       const units = Array.isArray(p.units) ? p.units.length : 0;
-      const label = p.units?.[0]?.project ? `Презентация · ${p.units.map(u=>u.room_no).slice(0,3).join(', ')}${p.units.length>3?'…':''}` : 'Презентация';
+      const label = p.client_name || (p.units?.length ? `Презентация · ${p.units.map(u=>u.room_no).slice(0,3).join(', ')}${p.units.length>3?'…':''}` : 'Презентация');
 
       if (!views.length) {
         return `<div class="activity-card">
@@ -1769,11 +1795,16 @@ function clearPresentation() {
 }
 
 function sharePresentation() {
-  // Заполняем шторку блоками и открываем её
-  const projectIds = [...new Set(presState.units.map(u => u.project))];
+  // Если есть выбранные карточки — берём только их, иначе все
+  const selectedCards = [...document.querySelectorAll('.pres-card.selected')];
+  const unitsToSend = selectedCards.length
+    ? presState.units.filter(u => selectedCards.some(c => c.id === `pc-${u.room_no}`))
+    : presState.units;
+  presState.unitsToSend = unitsToSend;
+
+  const projectIds = [...new Set(unitsToSend.map(u => u.project))];
   const el = document.getElementById('presDrawerBlocksList');
 
-  // Загружаем имена проектов из уже загруженных JSON (если есть)
   el.innerHTML = projectIds.map(pid => {
     const selected = presState.projectBlocks[pid] || ['project_name','developer','description','payment_schedule'];
     if (!presState.projectBlocks[pid]) presState.projectBlocks[pid] = [...selected];
@@ -1791,8 +1822,9 @@ function sharePresentation() {
   }).join('');
 
   document.getElementById('presDrawerShareResult').style.display = 'none';
-  document.getElementById('presDrawerConfirm').disabled = false;
+  document.getElementById('presDrawerConfirm').disabled = true;
   document.getElementById('presDrawerConfirm').innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
+  document.getElementById('presClientName').value = '';
   document.getElementById('presDrawerOverlay').classList.add('vis');
   document.getElementById('presDrawer').classList.add('vis');
 }
@@ -1809,7 +1841,7 @@ async function confirmPresentation() {
 
   const agent = JSON.parse(localStorage.getItem('flox-agent') || 'null');
   const clientName = document.getElementById('presClientName').value.trim();
-  const body = { units: presState.units, project_blocks: presState.projectBlocks, client_name: clientName };
+  const body = { units: presState.unitsToSend || presState.units, project_blocks: presState.projectBlocks, client_name: clientName };
   if (agent?.id) body.agent_id = agent.id;
 
   const r = await fetch(`${SUPABASE_URL}/presentations`, {
