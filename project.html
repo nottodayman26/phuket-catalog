@@ -421,6 +421,20 @@ a { color: inherit; text-decoration: none; }
 .ut-price { color: var(--project-color); font-weight: 600; }
 .unit-num-link { font-weight: 600; color: var(--text); text-decoration: none; display: inline-block; transition: transform .15s ease; }
 .unit-num-link:hover { transform: scale(1.08); }
+.ut-plan-th { width: 52px; }
+.ut-plan-cell { padding: 6px 16px !important; }
+.ut-plan-link {
+  display: block; width: 40px; height: 40px; border-radius: 8px;
+  overflow: hidden; background: #ffffff; border: 1px solid var(--line-2);
+  transition: transform .15s ease, border-color .15s ease;
+}
+.ut-plan-link:hover { transform: scale(1.12); border-color: var(--project-color); }
+.ut-plan-thumb { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ut-plan-fallback {
+  display: none; width: 100%; height: 100%;
+  align-items: center; justify-content: center;
+  color: var(--muted); font-size: 13px;
+}
 .units-loading { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
 .units-empty { padding: 32px 16px; text-align: center; color: var(--muted); font-size: 13px; }
 
@@ -1104,7 +1118,7 @@ async function loadUnits(d) {
     const projectId = projData[0].id;
 
     const res = await fetch(
-      `${SB_URL}/units?project_id=eq.${projectId}&select=room_no,tower,floor,room_type,area_sqm,selling_price,status&order=selling_price.asc&limit=1000`,
+      `${SB_URL}/units?project_id=eq.${projectId}&select=room_no,tower,floor,room_type,area_sqm,selling_price,status,plan_code&order=selling_price.asc&limit=1000`,
       { headers: SB_HEADERS }
     );
     _allUnits = await res.json();
@@ -1170,6 +1184,7 @@ function renderUnitsTree(d, units) {
             <table class="units-table" id="tbl-${tid}">
               <thead><tr>
                 <th onclick="thSort('tbl-${tid}','room_no',this)" title="Сортировка по номеру">Номер</th>
+                <th class="ut-plan-th">План</th>
                 <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
                 <th onclick="thSort('tbl-${tid}','room_type',this)">Планировка</th>
                 <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
@@ -1268,6 +1283,7 @@ function renderFlatList(units) {
             <table class="units-table" id="tbl-${tid}">
               <thead><tr>
                 <th onclick="thSort('tbl-${tid}','room_no',this)">Номер</th>
+                <th class="ut-plan-th">План</th>
                 <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
                 <th onclick="thSort('tbl-${tid}','room_type',this)">Планировка</th>
                 <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
@@ -1480,15 +1496,35 @@ function resetUnitFilters() {
 
 function renderUnitRows(units) {
   const projId = window._currentProjectData?.id || '';
-  return units.map(u => `
+  const base = location.pathname.replace(/\/[^\/]*$/, "/");
+  return units.map(u => {
+    const unitUrl = `unit.html?unit=${encodeURIComponent(u.room_no)}&project=${projId}`;
+    // Миниатюра планировки — тот же файл, что показывает unit.html:
+    // img/{проект}/units/{площадь с 2 знаками}_{plan_code}.jpg
+    let planCell;
+    if (projId && u.plan_code && u.area_sqm) {
+      const fileName = `${Number(u.area_sqm).toFixed(2)}_${u.plan_code}.jpg`;
+      const planSrc = `${base}img/${projId}/units/${encodeURIComponent(fileName)}`;
+      planCell = `
+        <a href="${unitUrl}" target="_blank" class="ut-plan-link">
+          <img class="ut-plan-thumb" src="${planSrc}" alt="Планировка ${u.room_no}" loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <span class="ut-plan-fallback">—</span>
+        </a>`;
+    } else {
+      planCell = `<a href="${unitUrl}" target="_blank" class="ut-plan-link"><span class="ut-plan-fallback" style="display:flex">—</span></a>`;
+    }
+    return `
     <tr>
-      <td><a href="unit.html?unit=${encodeURIComponent(u.room_no)}&project=${projId}" class="unit-num-link" target="_blank">${u.room_no}</a></td>
+      <td><a href="${unitUrl}" class="unit-num-link" target="_blank">${u.room_no}</a></td>
+      <td class="ut-plan-cell">${planCell}</td>
       <td>${u.floor}</td>
       <td style="color:var(--muted);font-size:11px">${u.room_type}</td>
       <td>${u.area_sqm} м²</td>
       <td class="ut-price" data-price="${u.selling_price}">${fmtMln(u.selling_price)}</td>
       <td><span class="ut-status-dot ${u.status==='available'?'ut-available':'ut-sold'}"></span>${u.status==='available'?'Свободен':'Продан'}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 // Состояние сортировки каждой таблицы
@@ -1513,26 +1549,26 @@ function thSort(tblId, col, th) {
     let av, bv;
     if (col === 'status') {
       // available сначала (dir=1), sold сначала (dir=-1)
-      av = a.cells[5]?.textContent.includes('Свободен') ? 0 : 1;
-      bv = b.cells[5]?.textContent.includes('Свободен') ? 0 : 1;
+      av = a.cells[6]?.textContent.includes('Свободен') ? 0 : 1;
+      bv = b.cells[6]?.textContent.includes('Свободен') ? 0 : 1;
     } else if (col === 'room_no') {
       av = a.cells[0]?.textContent || '';
       bv = b.cells[0]?.textContent || '';
       return dir * av.localeCompare(bv, undefined, { numeric: true });
     } else if (col === 'floor') {
-      av = parseInt(a.cells[1]?.textContent) || 0;
-      bv = parseInt(b.cells[1]?.textContent) || 0;
+      av = parseInt(a.cells[2]?.textContent) || 0;
+      bv = parseInt(b.cells[2]?.textContent) || 0;
     } else if (col === 'room_type') {
-      av = a.cells[2]?.textContent || '';
-      bv = b.cells[2]?.textContent || '';
+      av = a.cells[3]?.textContent || '';
+      bv = b.cells[3]?.textContent || '';
       return dir * av.localeCompare(bv);
     } else if (col === 'area_sqm') {
-      av = parseFloat(a.cells[3]?.textContent) || 0;
-      bv = parseFloat(b.cells[3]?.textContent) || 0;
+      av = parseFloat(a.cells[4]?.textContent) || 0;
+      bv = parseFloat(b.cells[4]?.textContent) || 0;
     } else if (col === 'selling_price') {
       // Парсим из fmtMln — берём data-price если есть, иначе текст
-      av = parseFloat(a.cells[4]?.dataset?.price || a.cells[4]?.textContent.replace(/[^\d.]/g,'')) || 0;
-      bv = parseFloat(b.cells[4]?.dataset?.price || b.cells[4]?.textContent.replace(/[^\d.]/g,'')) || 0;
+      av = parseFloat(a.cells[5]?.dataset?.price || a.cells[5]?.textContent.replace(/[^\d.]/g,'')) || 0;
+      bv = parseFloat(b.cells[5]?.dataset?.price || b.cells[5]?.textContent.replace(/[^\d.]/g,'')) || 0;
     }
     return dir * (av - bv);
   });
