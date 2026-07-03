@@ -1288,7 +1288,7 @@ async function loadActivity() {
   // Загружаем старые офферы и новые презентации параллельно
   const [offersRes, presRes] = await Promise.all([
     h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,unit_ids&order=created_at.desc&limit=20`),
-    h(`${SUPABASE_URL}/presentations?agent_id=eq.${AGENT.id}&select=id,units,created_at&order=created_at.desc&limit=20`)
+    h(`${SUPABASE_URL}/presentations?agent_id=eq.${AGENT.id}&select=id,units,created_at,client_name&order=created_at.desc&limit=20`)
   ]);
   const offers = await offersRes.json();
   const presentations = await presRes.json();
