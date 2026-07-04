@@ -927,6 +927,7 @@ function renderProject(d) {
           <div class="tab" data-target="s-visual">Рендеры и фото</div>
           <div class="tab" data-target="s-payment">График платежей</div>
           <div class="tab" data-target="s-floors">Поэтажный план</div>
+          <div class="tab" data-target="s-construction">Этапы строительства</div>
           <div class="tab" data-target="s-maint">Обслуживание</div>
           <div class="tab" data-target="s-files">Файлы</div>
         </div>
@@ -937,6 +938,7 @@ function renderProject(d) {
     <div id="s-visual"  class="page-section">${renderVisual(d)}</div>
     <div id="s-payment" class="page-section">${renderPayment(d)}</div>
     <div id="s-floors"  class="page-section">${renderFloors(d)}</div>
+    <div id="s-construction" class="page-section">${renderConstruction(d)}</div>
     <div id="s-maint"   class="page-section">${renderMaint(d)}</div>
     <div id="s-files"   class="page-section">${renderFiles(d)}</div>
   `;
@@ -955,7 +957,7 @@ function renderProject(d) {
   });
 
   // Активная вкладка при скролле
-  const sectionIds = ['s-units','s-about','s-map','s-visual','s-payment','s-floors','s-maint','s-files'];
+  const sectionIds = ['s-units','s-about','s-map','s-visual','s-payment','s-floors','s-construction','s-maint','s-files'];
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -1926,6 +1928,51 @@ function renderFloors(d) {
     <div class="sec-title">Поэтажный план</div>
     <div class="visual-tabs">${floorTabs}${mpTab}</div>
     ${floorPanels}${mpPanel}`;
+}
+
+function renderConstruction(d) {
+  const stages = d.construction_progress;
+  const base = location.pathname.replace(/\/[^\/]*$/, "/");
+
+  const makeSlider = (files, sliderId, imgBase) => {
+    if (!files || !files.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Фото появятся позже</div>`;
+    return `
+      <div class="visual-slider" id="${sliderId}"
+        data-idx="0" data-count="${files.length}"
+        onmousedown="sliderDragStart(event,'${sliderId}')"
+        ontouchstart="sliderTouchStart(event,'${sliderId}')">
+        <div class="visual-slides" id="${sliderId}-slides">
+          ${files.map((f, i) => `
+            <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
+              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:contain;background:var(--surface-2)"/>
+            </div>`).join('')}
+        </div>
+        <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>
+        <button class="visual-arrow next" onclick="sliderNav('${sliderId}',1);event.stopPropagation()">›</button>
+        <div class="visual-counter" id="${sliderId}-counter">1 / ${files.length}</div>
+      </div>`;
+  };
+
+  // Вкладки по датам съёмки
+  const cpBase = `${base}img/${d.id}/stroyka/`;
+  const stageTabs = (stages || []).map((s, i) =>
+    `<button class="visual-tab ${i===0?'act':''}" onclick="switchVisualTab(this,'cp-${i}')">${s.label}</button>`
+  ).join('');
+  const stagePanels = (stages || []).map((s, i) =>
+    `<div class="visual-panel ${i===0?'act':''}" id="cp-${i}">${makeSlider(s.files, 'csl-'+i, cpBase)}</div>`
+  ).join('');
+
+  const hasStages = stages && stages.length;
+  if (!hasStages) return `
+    <div class="sec-title">Этапы строительства</div>
+    <div class="visual-slider" style="cursor:default">
+      <img src="${base}img/common/netetapov.png" alt="Застройщик не публиковал этапы строительства этого проекта" style="width:100%;height:100%;object-fit:cover;display:block"/>
+    </div>`;
+
+  return `
+    <div class="sec-title">Этапы строительства</div>
+    <div class="visual-tabs">${stageTabs}</div>
+    ${stagePanels}`;
 }
 
 function renderPayment(d) {
