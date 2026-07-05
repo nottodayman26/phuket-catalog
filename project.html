@@ -173,14 +173,18 @@ a { color: inherit; text-decoration: none; }
   padding: 8px;
 }
 .tabs-nav-arrow {
-  display: none; align-items: center; justify-content: center;
+  /* Место под стрелку зарезервировано всегда (display не меняем),
+     иначе её появление/исчезание меняло бы доступную ширину бара
+     и сбивало расчёт «докуда можно докрутить» */
+  display: flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
   border: 1px solid var(--line-2); background: var(--surface);
   color: var(--muted); cursor: pointer; font-size: 15px;
-  transition: border-color .15s, color .15s;
+  transition: border-color .15s, color .15s, opacity .15s;
+  visibility: hidden; opacity: 0; pointer-events: none;
 }
 .tabs-nav-arrow:hover { color: var(--text); border-color: var(--project-color); }
-.tabs-wrap.overflowing .tabs-nav-arrow { display: flex; }
+.tabs-nav-arrow.show { visibility: visible; opacity: 1; pointer-events: auto; }
 .tabs {
   display: flex; gap: 2px; flex: 1; min-width: 0;
   overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth;
@@ -188,26 +192,28 @@ a { color: inherit; text-decoration: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  min-width: 84px; padding: 8px 6px; border-radius: 12px;
+  min-width: 88px; padding: 8px 6px; border-radius: 12px;
   cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  transition: background .15s;
 }
-.tab:hover { background: var(--surface-2); }
 .tab-icon-circle {
-  width: 38px; height: 38px; border-radius: 50%;
+  width: 52px; height: 52px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: var(--project-soft);
-  transition: background .15s;
+  transition: background .15s, transform .15s, opacity .2s;
 }
 .tab-icon-circle svg {
-  width: 18px; height: 18px; fill: none; stroke: var(--project-color);
+  width: 24px; height: 24px; fill: none; stroke: var(--project-color);
   stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
 }
 .tab-label {
   font-size: 11px; font-weight: 500; color: var(--muted);
-  text-align: center; line-height: 1.2; white-space: normal; max-width: 84px;
+  text-align: center; line-height: 1.2; white-space: normal; max-width: 88px;
 }
-.tab.act .tab-icon-circle { background: var(--project-color); }
+/* Hover — подсвечивается только сам круг иконки, не весь блок вкладки */
+.tab:not(.act):hover .tab-icon-circle { background: var(--surface-3); transform: scale(1.06); opacity: 0.85; }
+/* Неактивные иконки — полупрозрачные, активная выделяется на их фоне */
+.tab:not(.act) .tab-icon-circle { opacity: 0.5; }
+.tab.act .tab-icon-circle { background: var(--project-color); opacity: 1; }
 .tab.act .tab-icon-circle svg { stroke: #fff; }
 .tab.act .tab-label { color: var(--project-color); font-weight: 600; }
 
@@ -931,10 +937,13 @@ const STATUS_RU = {"Under Construction":"Строится","Ready to Move":"Сд
 
 // ── Бар вкладок: иконки + прокрутка ────────────────────────────────────────
 function updateTabsArrows() {
-  const wrap = document.getElementById('tabsWrap');
   const scroll = document.getElementById('tabsScroll');
-  if (!wrap || !scroll) return;
-  wrap.classList.toggle('overflowing', scroll.scrollWidth > scroll.clientWidth + 2);
+  const left = document.getElementById('tabsArrowLeft');
+  const right = document.getElementById('tabsArrowRight');
+  if (!scroll || !left || !right) return;
+  const maxScroll = scroll.scrollWidth - scroll.clientWidth;
+  left.classList.toggle('show', scroll.scrollLeft > 2);
+  right.classList.toggle('show', scroll.scrollLeft < maxScroll - 2);
 }
 function scrollTabs(dir) {
   const scroll = document.getElementById('tabsScroll');
@@ -1029,9 +1038,15 @@ function renderProject(d) {
 
   // Активная вкладка при скролле
   const sectionIds = ['s-units','s-about','s-map','s-visual','s-payment','s-floors','s-construction','s-maint','s-files'];
+  let _lastActiveTabTarget = null;
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
+        // Дёргаем автопрокрутку бара вкладок только при РЕАЛЬНОЙ смене активной вкладки,
+        // а не при каждом повторном срабатывании обсервера (например, из-за догрузки картинок) —
+        // иначе это перебивает ручную прокрутку бара стрелками/пальцем
+        if (_lastActiveTabTarget === entry.target.id) return;
+        _lastActiveTabTarget = entry.target.id;
         document.querySelectorAll('.tab').forEach(t => {
           const isAct = t.dataset.target === entry.target.id;
           t.classList.toggle('act', isAct);
@@ -1042,9 +1057,11 @@ function renderProject(d) {
   }, { rootMargin: '-108px 0px -55% 0px', threshold: 0 });
   sectionIds.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
 
-  // Стрелки прокрутки бара вкладок — показываем только если иконки не помещаются
+  // Стрелки прокрутки бара вкладок — каждая появляется только если есть куда листать в её сторону
   updateTabsArrows();
   window.addEventListener('resize', updateTabsArrows);
+  const tabsScrollEl = document.getElementById('tabsScroll');
+  if (tabsScrollEl) tabsScrollEl.addEventListener('scroll', updateTabsArrows);
 
   applyMeetingMode();
 
