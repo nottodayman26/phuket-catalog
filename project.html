@@ -244,7 +244,7 @@ a { color: inherit; text-decoration: none; }
 /* ── PANELS / SECTIONS ─── */
 .panel { display: block; }
 .page-section {
-  padding-top: 52px; padding-bottom: 28px;
+  padding-top: 24px; padding-bottom: 28px;
   scroll-margin-top: 108px;
 }
 
@@ -279,10 +279,12 @@ a { color: inherit; text-decoration: none; }
 .us-price { color: var(--project-color); }
 
 /* ── UNIT SEARCH BAR ─── */
+/* Сама поисковая строка — самостоятельная "таблетка", крупнее прежней;
+   фильтры больше не вложены внутрь неё (не "таблетка в таблетке") */
 .unit-search-bar {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 10px;
   background: var(--surface); border: 1px solid var(--line-2);
-  border-radius: 12px; padding: 7px 12px; margin-bottom: 12px;
+  border-radius: 14px; padding: 13px 18px; margin-bottom: 12px;
   transition: border-color .2s, box-shadow .2s;
 }
 .unit-search-bar:focus-within {
@@ -290,14 +292,14 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 0 0 3px rgba(94,23,235,0.1);
 }
 .unit-search-icon { color: var(--muted); flex-shrink:0; display:flex; align-items:center; }
-.unit-search-icon svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8; }
+.unit-search-icon svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.7; }
 .unit-search-input {
   flex:1; border:none; outline:none; background:transparent;
-  font-size:13px; color:var(--text); font-family:inherit; min-width:0;
+  font-size:15px; color:var(--text); font-family:inherit; min-width:0;
 }
 .unit-search-input::placeholder { color:var(--muted); }
-.unit-search-divider { width:1px; height:18px; background:var(--line-2); flex-shrink:0; margin:0 4px; }
-.unit-search-filters { display:flex; align-items:center; gap:5px; flex-shrink:0; flex-wrap:nowrap; }
+/* Отдельная строка с фильтрами — под поисковой строкой, без обёртки-таблетки */
+.unit-filters-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom: 14px; }
 .usf-btn {
   display:flex; align-items:center; gap:3px;
   font-size:11px; font-weight:500; color:var(--muted);
@@ -312,6 +314,7 @@ a { color: inherit; text-decoration: none; }
   font-size:11px; color:var(--muted); cursor:pointer; padding:4px 6px;
   border-radius:6px; font-family:inherit; background:none; border:none;
   transition:color .15s, transform .2s;
+  margin-left: auto;
 }
 .usf-reset:hover { color:var(--project-color); transform:scale(1.05); }
 
@@ -337,7 +340,8 @@ a { color: inherit; text-decoration: none; }
 .uf-btn-custom svg { opacity: .5; flex-shrink: 0; transition: transform .2s; }
 .uf-btn-custom.open svg { transform: rotate(180deg); opacity: 1; }
 
-/* Дропдаун-панель */
+/* Дропдаун-панель. Плавная анимация без "перебора" (без пружинного отскока —
+   он и читался как дёрганость), только мягкий ease-out. */
 .uf-dropdown {
   display: block; position: fixed;
   background: var(--surface); border: 1px solid var(--line-2);
@@ -345,10 +349,15 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 8px 32px rgba(0,0,0,0.22);
   overflow: hidden;
   opacity: 0; pointer-events: none;
-  transform: translateY(-8px) scale(0.96);
+  transform: translateY(-4px) scale(0.98);
   transform-origin: top left;
-  transition: opacity .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.34,1.56,.64,1);
+  transition: opacity .16s cubic-bezier(.22,1,.36,1), transform .16s cubic-bezier(.22,1,.36,1);
 }
+/* Навешивается на секунду через JS, когда один дропдаун мгновенно уступает
+   место другому (наведение с одного фильтра сразу на соседний) — без этого
+   старый успевал доиграть анимацию закрытия поверх/рядом с новым, и казалось,
+   что окна прыгают и перекрывают друг друга */
+.uf-dropdown.no-anim { transition: none !important; }
 .uf-dropdown.open {
   opacity: 1; pointer-events: all;
   transform: translateY(0) scale(1);
@@ -409,19 +418,22 @@ a { color: inherit; text-decoration: none; }
 .uf-overlay.open { display: block; }
 
 /* ── UNITS STRUCTURE — вариант 3 ─── */
+/* Корпус вынесен из таблицы: заголовок — обычная строка над карточкой,
+   без белого прямоугольника; сама карточка теперь содержит только таблицу
+   типов/юнитов, поэтому её верхние углы нужно скруглять отдельно. */
+.building-block-wrap { margin-bottom: 18px; }
+.building-block-wrap:last-child { margin-bottom: 0; }
+.building-heading {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 2px 4px 10px;
+}
+.building-heading-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.building-heading-count { font-size: 12px; color: var(--muted); font-weight: 400; white-space: nowrap; }
 .building-section {
   background: var(--surface); border: 0.5px solid var(--line-2);
-  border-radius: 12px; overflow: hidden; margin-bottom: 10px;
+  border-radius: 12px; overflow: hidden;
 }
-.building-section-header {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1fr 44px;
-  align-items: center;
-  padding: 13px 16px;
-  border-bottom: 0.5px solid var(--line);
-}
-.building-section-title { font-size: 14px; font-weight: 700; color: var(--text); }
-.building-section-count { font-size: 12px; color: var(--muted); font-weight: 400; text-align: center; grid-column: 2 / 5; }
+.building-section.hidden { display: none; }
 
 /* Строки типов — та же сетка из 5 равных долей, что и заголовок корпуса,
    плюс узкая колонка под шеврон, чтобы обе строки были одного масштаба. */
@@ -1193,19 +1205,21 @@ function renderUnits(d) {
   setTimeout(() => loadUnits(d), 50);
 
   const buildingSkeleton = d.buildings.map((b, bi) => `
-    <div class="building-section" id="bsec-${bi}">
-      <div class="building-section-header">
-        <span class="building-section-title">Корпус ${b}</span>
-        <span class="building-section-count" id="bcount-${bi}">загрузка...</span>
+    <div class="building-block-wrap" id="bsec-${bi}">
+      <div class="building-heading">
+        <span class="building-heading-title">Корпус ${b}</span>
+        <span class="building-heading-count" id="bcount-${bi}">загрузка...</span>
       </div>
-      <div id="btypes-${bi}"></div>
+      <div class="building-section" id="bcard-${bi}">
+        <div id="btypes-${bi}"></div>
+      </div>
     </div>`).join('');
 
   return `
     <div id="units-filters-wrap" style="display:none">
       <div class="uf-overlay" id="uf-overlay" onclick="closeAllDropdowns()"></div>
 
-      <!-- Поисковая строка с фильтрами внутри -->
+      <!-- Поисковая строка — самостоятельная таблетка, без фильтров внутри -->
       <div class="unit-search-bar">
         <div class="unit-search-icon">
           <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
@@ -1213,8 +1227,10 @@ function renderUnits(d) {
         <input class="unit-search-input" id="unit-search-input"
           placeholder="Введите номер юнита"
           oninput="onUnitSearch(this.value)"/>
-        <div class="unit-search-divider"></div>
-        <div class="unit-search-filters">
+      </div>
+
+      <!-- Фильтры — отдельной строкой под поисковой строкой -->
+      <div class="unit-filters-row">
 
           <!-- Тип -->
           <div onmouseenter="openUfDropdown('uf-type-dd','uf-type-btn')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')" style="position:relative">
@@ -1271,7 +1287,6 @@ function renderUnits(d) {
 
           <!-- Сброс -->
           <button class="usf-reset" onclick="resetUnitFilters()">↺ Сбросить</button>
-        </div>
       </div>
 
       <div class="units-count" id="units-count"></div>
@@ -1372,6 +1387,11 @@ function renderUnitsTree(d, units) {
     const el = document.getElementById('btypes-' + bi);
     if (el) el.innerHTML = typesHtml;
 
+    // Если в корпусе нет юнитов — прячем белую карточку-таблицу совсем,
+    // остаётся только заголовок "Корпус X" с надписью "Нет юнитов" справа
+    const cardEl = document.getElementById('bcard-' + bi);
+    if (cardEl) cardEl.classList.toggle('hidden', !bUnits.length);
+
     // Перемещаем секцию без юнитов в конец DOM
     const sec = document.getElementById('bsec-' + bi);
     if (sec && !bUnits.length) {
@@ -1402,12 +1422,14 @@ function toggleGrouping() {
     const wrap = document.getElementById('units-tree-wrap');
     if (wrap) {
       wrap.innerHTML = window._currentProjectData.buildings.map((b, bi) => `
-        <div class="building-section" id="bsec-${bi}">
-          <div class="building-section-header">
-            <span class="building-section-title">Корпус ${b}</span>
-            <span class="building-section-count" id="bcount-${bi}">загрузка...</span>
+        <div class="building-block-wrap" id="bsec-${bi}">
+          <div class="building-heading">
+            <span class="building-heading-title">Корпус ${b}</span>
+            <span class="building-heading-count" id="bcount-${bi}">загрузка...</span>
           </div>
-          <div id="btypes-${bi}"></div>
+          <div class="building-section" id="bcard-${bi}">
+            <div id="btypes-${bi}"></div>
+          </div>
         </div>`).join('');
     }
   }
@@ -1480,9 +1502,15 @@ function onUnitSearch(val) {
 const _ufTimers = {};
 function openUfDropdown(ddId, btnId) {
   cancelUfClose(ddId);
-  // Закрываем все остальные
+  // Закрываем все остальные МГНОВЕННО, без анимации — иначе старое окно
+  // доигрывает плавное закрытие поверх/рядом с новым, и они визуально
+  // перекрываются друг с другом при быстром переходе между фильтрами
   document.querySelectorAll('.uf-dropdown.open').forEach(d => {
-    if (d.id !== ddId) d.classList.remove('open');
+    if (d.id !== ddId) {
+      d.classList.add('no-anim');
+      d.classList.remove('open');
+      requestAnimationFrame(() => requestAnimationFrame(() => d.classList.remove('no-anim')));
+    }
   });
   document.querySelectorAll('.uf-btn-custom.open').forEach(b => {
     if (b.id !== btnId) b.classList.remove('open');
