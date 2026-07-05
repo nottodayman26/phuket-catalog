@@ -141,6 +141,9 @@ a { color: inherit; text-decoration: none; }
   display: grid; grid-template-columns: 1fr 310px; gap: 24px;
   padding: 24px 20px;
 }
+/* Без этого длинный контент (например, бар вкладок) может распирать
+   колонку шире её доли в гриде и толкать сайдбар/страницу за экран */
+.main-col { min-width: 0; }
 @media(max-width:900px) {
   .body-wrap { grid-template-columns: 1fr; }
   .sidebar-col { order: -1; }
