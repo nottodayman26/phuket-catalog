@@ -161,7 +161,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--green-soft); color: var(--green);
 }
 
-/* ── TABS ─── */
+/* ── TABS (иконки + подписи, с прокруткой) ─── */
 .tabs-wrap {
   position: sticky; top: 52px; z-index: 90;
   background: var(--surface);
@@ -169,21 +169,47 @@ a { color: inherit; text-decoration: none; }
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.06);
   margin-bottom: 0;
+  display: flex; align-items: center; gap: 4px;
+  padding: 8px;
 }
+.tabs-nav-arrow {
+  display: none; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  border: 1px solid var(--line-2); background: var(--surface);
+  color: var(--muted); cursor: pointer; font-size: 15px;
+  transition: border-color .15s, color .15s;
+}
+.tabs-nav-arrow:hover { color: var(--text); border-color: var(--project-color); }
+.tabs-wrap.overflowing .tabs-nav-arrow { display: flex; }
 .tabs {
-  display: flex; gap: 0;
-  overflow-x: auto; scrollbar-width: none;
-  max-width: 1200px; margin: 0 auto; padding: 0 8px;
+  display: flex; gap: 2px; flex: 1; min-width: 0;
+  overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
-  padding: 10px 16px; font-size: 13px; font-weight: 500;
-  color: var(--muted); cursor: pointer; white-space: nowrap;
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
-  transition: color .15s, border-color .15s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  min-width: 84px; padding: 8px 6px; border-radius: 12px;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: background .15s;
 }
-.tab:hover { color: var(--text); }
-.tab.act { color: var(--project-color); border-bottom-color: var(--project-color); font-weight: 600; }
+.tab:hover { background: var(--surface-2); }
+.tab-icon-circle {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--project-soft);
+  transition: background .15s;
+}
+.tab-icon-circle svg {
+  width: 18px; height: 18px; fill: none; stroke: var(--project-color);
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+.tab-label {
+  font-size: 11px; font-weight: 500; color: var(--muted);
+  text-align: center; line-height: 1.2; white-space: normal; max-width: 84px;
+}
+.tab.act .tab-icon-circle { background: var(--project-color); }
+.tab.act .tab-icon-circle svg { stroke: #fff; }
+.tab.act .tab-label { color: var(--project-color); font-weight: 600; }
 
 /* ── PANELS / SECTIONS ─── */
 .panel { display: block; }
@@ -903,6 +929,19 @@ async function loadProject() {
 
 const STATUS_RU = {"Under Construction":"Строится","Ready to Move":"Сдан","Completed":"Завершён","Pre-Launch":"Предпродажа"};
 
+// ── Бар вкладок: иконки + прокрутка ────────────────────────────────────────
+function updateTabsArrows() {
+  const wrap = document.getElementById('tabsWrap');
+  const scroll = document.getElementById('tabsScroll');
+  if (!wrap || !scroll) return;
+  wrap.classList.toggle('overflowing', scroll.scrollWidth > scroll.clientWidth + 2);
+}
+function scrollTabs(dir) {
+  const scroll = document.getElementById('tabsScroll');
+  if (!scroll) return;
+  scroll.scrollBy({ left: dir * 240, behavior: 'smooth' });
+}
+
 function renderProject(d) {
   document.documentElement.style.setProperty('--project-color', d.color || '#5E17EB');
   const soft = d.color ? d.color + '22' : 'rgba(94,23,235,0.18)';
@@ -922,18 +961,47 @@ function renderProject(d) {
         <span class="proj-badge">${STATUS_RU[d.status] || d.status}</span>
       </div>
     </div>
-    <div class="tabs-wrap">
-      <div class="tabs">
-          <div class="tab act" data-target="s-units">Юниты</div>
-          <div class="tab" data-target="s-about">О проекте</div>
-          <div class="tab" data-target="s-map">Карта</div>
-          <div class="tab" data-target="s-visual">Рендеры и фото</div>
-          <div class="tab" data-target="s-payment">График платежей</div>
-          <div class="tab" data-target="s-floors">Поэтажный план</div>
-          <div class="tab" data-target="s-construction">Этапы строительства</div>
-          <div class="tab" data-target="s-maint">Обслуживание</div>
-          <div class="tab" data-target="s-files">Файлы</div>
+    <div class="tabs-wrap" id="tabsWrap">
+      <button class="tabs-nav-arrow" id="tabsArrowLeft" onclick="scrollTabs(-1)" aria-label="Прокрутить влево">‹</button>
+      <div class="tabs" id="tabsScroll">
+          <div class="tab act" data-target="s-units">
+            <div class="tab-icon-circle"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg></div>
+            <div class="tab-label">Юниты</div>
+          </div>
+          <div class="tab" data-target="s-about">
+            <div class="tab-icon-circle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.01"/></svg></div>
+            <div class="tab-label">О проекте</div>
+          </div>
+          <div class="tab" data-target="s-map">
+            <div class="tab-icon-circle"><svg viewBox="0 0 24 24"><path d="M9 4l-6 2v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg></div>
+            <div class="tab-label">Карта</div>
+          </div>
+          <div class="tab" data-target="s-visual">
+            <div class="tab-icon-circle"><svg viewBox="0 0 24 24"><path d="M4 8a2 2 0 0 1 2-2h1.2l1.5-2.2a1 1 0 0 1 .8-.4h5a1 1 0 0 1 .8.4L16.8 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.3"/></svg></div>
+            <div class="tab-label">Рендеры и фото</div>
+          </div>
+          <div class="tab" data-target="s-payment">
+            <div class="tab-icon-circle"><svg viewBox="0 0 24 24"><circle cx="7.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="7.5" r="2.5"/><path d="M6 18L18 6"/></svg></div>
+            <div class="tab-label">График платежей</div>
+          </div>
+          <div class="tab" data-target="s-floors">
+            <div class="tab-icon-circle"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></div>
+            <div class="tab-label">Поэтажный план</div>
+          </div>
+          <div class="tab" data-target="s-construction">
+            <div class="tab-icon-circle"><svg viewBox="0 0 24 24"><path d="M4 21V10l5-3 5 3v11"/><path d="M14 21V6l4-2 2 1v16"/><path d="M4 21h16"/></svg></div>
+            <div class="tab-label">Этапы строительства</div>
+          </div>
+          <div class="tab" data-target="s-maint">
+            <div class="tab-icon-circle"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a3 3 0 0 0-4.2 4.2L4 17v3h3l6.5-6.5a3 3 0 0 0 4.2-4.2l-2.3 2.3-2-2 2.3-2.3z"/></svg></div>
+            <div class="tab-label">Обслуживание</div>
+          </div>
+          <div class="tab" data-target="s-files">
+            <div class="tab-icon-circle"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+            <div class="tab-label">Файлы</div>
+          </div>
         </div>
+      <button class="tabs-nav-arrow" id="tabsArrowRight" onclick="scrollTabs(1)" aria-label="Прокрутить вправо">›</button>
     </div>
     <div id="s-units"   class="page-section">${renderUnits(d)}</div>
     <div id="s-about"   class="page-section">${renderAbout(d)}</div>
@@ -964,13 +1032,19 @@ function renderProject(d) {
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        document.querySelectorAll('.tab').forEach(t =>
-          t.classList.toggle('act', t.dataset.target === entry.target.id)
-        );
+        document.querySelectorAll('.tab').forEach(t => {
+          const isAct = t.dataset.target === entry.target.id;
+          t.classList.toggle('act', isAct);
+          if (isAct) t.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+        });
       }
     });
   }, { rootMargin: '-108px 0px -55% 0px', threshold: 0 });
   sectionIds.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
+
+  // Стрелки прокрутки бара вкладок — показываем только если иконки не помещаются
+  updateTabsArrows();
+  window.addEventListener('resize', updateTabsArrows);
 
   applyMeetingMode();
 
