@@ -23,11 +23,21 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .page-wrap{max-width:1200px;margin:0 auto;}
 
 /* ── шапка ── */
-.top-bar{background:var(--night);padding:18px 20px 24px;}
-.top-bar-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
-.flox-logo{font-weight:700;font-size:18px;letter-spacing:-.05em;color:#fff;display:flex;align-items:center;}
-.flox-dot{width:5px;height:5px;border-radius:50%;background:var(--red);margin-left:1px;margin-bottom:7px;}
-.top-count{font-size:12px;color:rgba(255,255,255,.5);font-weight:500;}
+/* Белый лейбл: клиент не должен видеть брендинг Flox — вместо логотипа
+   показываем только инициалы агента, который прислал подборку (если они
+   известны). Если инициалов нет — шапку не показываем вовсе. */
+.top-bar{background:var(--night);padding:14px 20px;}
+.top-bar-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;}
+.agent-avatar{
+  width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;letter-spacing:.02em;
+}
+
+/* ── вступление ── */
+.intro{max-width:1200px;margin:0 auto;padding:28px 20px 4px;}
+.intro-title{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;}
+.intro-sub{font-size:13px;color:var(--muted);}
 
 /* ── карточки юнитов ── */
 /* Сетка вместо одной сплошной колонки — на мобильном по-прежнему одна
@@ -39,7 +49,14 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
   display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
   gap:16px;align-items:start;
 }
-.unit-card{background:#fff;border-radius:16px;border:0.5px solid var(--line);overflow:hidden;}
+/* Карточка теперь целиком ссылка на страницу юнита — увеличивается при
+   наведении, как аналогичные карточки в project.html/floxweb.html. */
+.unit-card{
+  display:block;background:#fff;border-radius:16px;border:0.5px solid var(--line);
+  overflow:hidden;text-decoration:none;color:inherit;cursor:pointer;
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease;
+}
+.unit-card:hover{transform:scale(1.02);box-shadow:0 8px 28px rgba(0,0,0,.1);}
 .unit-plan{background:#fff;height:220px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-bottom:0.5px solid var(--line);}
 .unit-plan img{width:100%;height:100%;object-fit:contain;}
 .unit-plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;color:#ccc;}
@@ -64,53 +81,23 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 /* инфо */
 .unit-info{padding:14px 16px;}
 .unit-proj{font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
-.unit-num{font-size:17px;font-weight:700;margin-bottom:8px;}
-.unit-rows{display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:12px;margin-bottom:10px;}
-.unit-rows span:nth-child(odd){color:var(--muted);}
-.unit-rows span:nth-child(even){text-align:right;font-weight:500;}
-.unit-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:0.5px solid var(--line);}
-.unit-price{font-size:16px;font-weight:700;}
+.unit-num{font-size:17px;font-weight:700;margin-bottom:10px;}
 .unit-sold-card{opacity:.45;}
 
-/* ── раскрывающийся блок проекта ── */
-.proj-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;border-top:0.5px solid var(--line);background:#fff;user-select:none;}
-.proj-toggle-label{font-size:12px;font-weight:600;color:var(--accent);}
-.proj-toggle-icon{font-size:16px;color:var(--accent);transition:transform .25s;}
-.proj-toggle-icon.open{transform:rotate(180deg);}
-.proj-content{display:none;padding:16px;border-top:0.5px solid var(--line);background:#fff;}
-.proj-content.vis{display:block;}
-.proj-name{font-size:18px;font-weight:700;margin-bottom:2px;}
-.proj-dev{font-size:12px;color:var(--muted);margin-bottom:14px;}
-.proj-section{margin-bottom:16px;}
-.proj-section-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
-.proj-desc{font-size:13px;line-height:1.6;color:#1C1C2E;}
-.proj-facility-list{display:flex;flex-wrap:wrap;gap:6px;}
-.proj-facility{background:#fff;border:0.5px solid var(--line);border-radius:20px;padding:4px 10px;font-size:12px;color:#1C1C2E;}
-.proj-nearby-list{display:flex;flex-direction:column;gap:6px;}
-.proj-nearby-item{display:flex;justify-content:space-between;font-size:12px;padding:8px 10px;background:#fff;border-radius:8px;border:0.5px solid var(--line);}
-.proj-nearby-left{display:flex;align-items:center;gap:6px;}
-.proj-nearby-time{color:var(--muted);}
-.pay-table{width:100%;border-collapse:collapse;font-size:12px;}
-.pay-table td{padding:7px 4px;border-bottom:0.5px solid var(--line);}
-.pay-table tr:last-child td{border-bottom:none;}
-.pay-table td:last-child{text-align:right;font-weight:600;}
-.maint-row{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:0.5px solid var(--line);}
-.maint-row:last-child{border-bottom:none;}
-.maint-label{color:var(--muted);}
-.files-list{display:flex;flex-direction:column;gap:8px;}
-.file-item{display:flex;align-items:center;gap:10px;background:#fff;border:0.5px solid var(--line);border-radius:10px;padding:10px 12px;text-decoration:none;color:#1C1C2E;}
-.file-icon{font-size:18px;color:var(--accent);}
-.file-name{font-size:13px;font-weight:500;}
-
-/* ── галерея в блоке проекта ── */
-.proj-gallery{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-.proj-gallery img{width:100%;height:100px;object-fit:cover;border-radius:8px;cursor:pointer;}
-
-/* ── футер ── */
-.footer{max-width:1200px;margin:0 auto;padding:24px 20px;text-align:center;}
-.footer-logo{font-weight:700;font-size:16px;letter-spacing:-.05em;color:var(--night);display:inline-flex;align-items:center;margin-bottom:6px;}
-.footer-dot{width:5px;height:5px;border-radius:50%;background:var(--red);margin-left:1px;margin-bottom:6px;}
-.footer-sub{font-size:11px;color:var(--muted);}
+/* ── блок цены и параметров ── */
+/* Скопировано из блока "Цена" в unit.html (sc/sc-price/sc-row), кроме
+   строки "Проект" — она не нужна, название проекта уже стоит заголовком
+   выше (.unit-proj). Так карточка в оффере несёт столько же информации,
+   сколько и страница юнита. */
+.unit-price-big{font-size:22px;font-weight:700;margin-bottom:2px;}
+.unit-price-exact{font-size:12px;color:var(--muted);margin-bottom:12px;}
+.unit-full-rows{border-top:0.5px solid var(--line);}
+.unit-full-row{display:flex;justify-content:space-between;font-size:12px;padding:9px 0;border-bottom:0.5px solid var(--line);}
+.unit-full-row:last-child{border-bottom:none;}
+.unit-full-row span{color:var(--muted);}
+.unit-full-row b{font-weight:600;}
+.unit-full-row b.green{color:#15803d;}
+.unit-full-row b.red{color:#dc2626;}
 
 /* ── лоадер ── */
 .loader-wrap{padding:60px 20px;text-align:center;color:var(--muted);font-size:14px;}
@@ -121,20 +108,19 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 </head>
 <body>
 
-<div class="top-bar">
+<div class="top-bar" id="topBar" style="display:none">
   <div class="top-bar-inner">
-    <div class="flox-logo">flox<span class="flox-dot"></span></div>
-    <div class="top-count" id="topCount"></div>
+    <div class="agent-avatar" id="agentAvatar"></div>
   </div>
+</div>
+
+<div class="intro" id="intro" style="display:none">
+  <div class="intro-title" id="introTitle"></div>
+  <div class="intro-sub" id="introSub"></div>
 </div>
 
 <div id="main">
   <div class="loader-wrap">Загружаем подборку…</div>
-</div>
-
-<div class="footer">
-  <div class="footer-logo">flox<span class="footer-dot"></span></div>
-  <div class="footer-sub">Сервис для агентов недвижимости Пхукета</div>
 </div>
 
 <script>
@@ -246,79 +232,10 @@ async function loadSlides(u, projCode) {
   return found.filter(Boolean);
 }
 
-// ── Блоки о проекте ──────────────────────────────────────────
-function renderProjBlocks(projData, blocks) {
-  const parts = [];
-
-  if (blocks.includes('project_name') || blocks.includes('developer')) {
-    let h = '';
-    if (blocks.includes('project_name')) h += `<div class="proj-name">${projData.name || ''}</div>`;
-    if (blocks.includes('developer')) h += `<div class="proj-dev">${projData.developer || ''}</div>`;
-    parts.push(h);
-  }
-
-  if (blocks.includes('description') && projData.description) {
-    parts.push(`<div class="proj-section">
-      <div class="proj-section-title">О проекте</div>
-      <div class="proj-desc">${projData.description}</div>
-    </div>`);
-  }
-
-  if (blocks.includes('nearby') && projData.nearby?.length) {
-    parts.push(`<div class="proj-section">
-      <div class="proj-section-title">Рядом</div>
-      <div class="proj-nearby-list">
-        ${projData.nearby.map(n => `<div class="proj-nearby-item">
-          <div class="proj-nearby-left"><span>${n.icon||''}</span><span>${n.name}</span></div>
-          <span class="proj-nearby-time">${n.time || ''} · ${n.dist || ''}</span>
-        </div>`).join('')}
-      </div>
-    </div>`);
-  }
-
-  if (blocks.includes('gallery') && projData.gallery?.local?.length) {
-    const imgs = projData.gallery.local.slice(0, 6).map(f =>
-      `<img src="${BASE}img/${projData.id}/${f}" alt="" loading="lazy" onerror="this.style.display='none'">`
-    ).join('');
-    parts.push(`<div class="proj-section">
-      <div class="proj-section-title">Рендеры и фото</div>
-      <div class="proj-gallery">${imgs}</div>
-    </div>`);
-  }
-
-  if (blocks.includes('payment_schedule') && projData.payment_schedule?.length) {
-    const rows = projData.payment_schedule.map(s =>
-      `<tr><td>${s.stage}${s.note ? ' <span style="color:var(--muted);font-size:11px">'+s.note+'</span>' : ''}</td><td>${s.percent ? s.percent+'%' : '—'}</td></tr>`
-    ).join('');
-    parts.push(`<div class="proj-section">
-      <div class="proj-section-title">График платежей</div>
-      <table class="pay-table">${rows}</table>
-    </div>`);
-  }
-
-  if (blocks.includes('maintenance') && projData.maintenance) {
-    const m = projData.maintenance;
-    parts.push(`<div class="proj-section">
-      <div class="proj-section-title">Обслуживание</div>
-      ${m.common_fee?.amount ? `<div class="maint-row"><span class="maint-label">Common fee</span><span>${m.common_fee.amount} ${m.common_fee.unit||''}</span></div>` : ''}
-      ${m.sinking_fund?.amount ? `<div class="maint-row"><span class="maint-label">Sinking fund</span><span>${m.sinking_fund.amount} ${m.sinking_fund.unit||''}</span></div>` : ''}
-    </div>`);
-  }
-
-  if (blocks.includes('files') && projData.files?.length) {
-    const items = projData.files.map(f =>
-      `<a class="file-item" href="${f.url}" target="_blank">
-        <i class="ti ti-file-type-pdf file-icon"></i>
-        <span class="file-name">${f.name}</span>
-      </a>`
-    ).join('');
-    parts.push(`<div class="proj-section">
-      <div class="proj-section-title">Файлы</div>
-      <div class="files-list">${items}</div>
-    </div>`);
-  }
-
-  return parts.join('');
+// ── Инициалы агента (для аватара вместо логотипа) ─────────────
+function computeInitials(fullName) {
+  if (!fullName) return '';
+  return fullName.trim().split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
 }
 
 // ── Главная логика ────────────────────────────────────────────
@@ -339,7 +256,6 @@ async function init() {
   }).catch(() => {});
 
   const units_meta = pres.units || [];
-  const project_blocks = pres.project_blocks || {};
 
   if (!units_meta.length) { showError('В подборке нет юнитов'); return; }
 
@@ -356,7 +272,30 @@ async function init() {
     } catch(e) {}
   }
 
-  document.getElementById('topCount').textContent = `${units.length} объект${units.length===1?'':units.length<5?'а':'ов'}`;
+  // Инициалы агента — вместо логотипа Flox (белый лейбл, клиент не должен
+  // видеть брендинг сервиса). Если агента нет/не нашёлся — просто не
+  // показываем шапку вообще, а не пустую тёмную полосу.
+  let agentInitials = '';
+  if (pres.agent_id) {
+    try {
+      const ar = await fetch(`${SB_URL}/agents?id=eq.${pres.agent_id}&select=full_name`, { headers: HDR });
+      const agents = await ar.json();
+      if (agents.length) agentInitials = computeInitials(agents[0].full_name);
+    } catch(e) {}
+  }
+  if (agentInitials) {
+    document.getElementById('agentAvatar').textContent = agentInitials;
+    document.getElementById('topBar').style.display = 'block';
+  }
+
+  // Вступление — персонализируем именем клиента, если оно указано агентом
+  const count = units.length;
+  const countLabel = `${count} вариант${count === 1 ? '' : count < 5 ? 'а' : 'ов'}`;
+  document.getElementById('introTitle').textContent = pres.client_name
+    ? `Подборка для ${pres.client_name}`
+    : 'Презентация для вас!';
+  document.getElementById('introSub').textContent = `${countLabel}, подобранных специально для вас`;
+  document.getElementById('intro').style.display = 'block';
 
   const html = units_meta.map(meta => {
     const u = units.find(x => x.room_no === meta.room_no);
@@ -365,9 +304,11 @@ async function init() {
     const isAvail = u.status === 'available';
     const cat = catRu(u.room_type);
     const projName = proj?.name || meta.project || '';
-    const blocks = project_blocks[meta.project] || [];
+    const exactPrice = u.selling_price ? Math.round(u.selling_price).toLocaleString('ru') + ' ฿' : '—';
+    const pricePerSqm = u.price_per_sqm ? Math.round(u.price_per_sqm).toLocaleString('ru') + ' ฿' : '—';
+    const unitUrl = `unit.html?unit=${encodeURIComponent(u.room_no)}&project=${encodeURIComponent(meta.project || '')}&client=1${agentInitials ? '&agent=' + encodeURIComponent(agentInitials) : ''}`;
 
-    return `<div class="unit-card${isAvail ? '' : ' unit-sold-card'}" id="uc-${u.room_no}">
+    return `<a class="unit-card${isAvail ? '' : ' unit-sold-card'}" id="uc-${u.room_no}" href="${unitUrl}" target="_blank" rel="noopener">
       <div class="unit-plan">
         <div class="unit-plan-placeholder">
           <i class="ti ti-layout-2"></i>
@@ -378,24 +319,19 @@ async function init() {
       <div class="unit-info">
         <div class="unit-proj">${projName}</div>
         <div class="unit-num">${u.room_no}</div>
-        <div class="unit-rows">
-          <span>Тип</span><span>${cat}</span>
-          <span>Площадь</span><span>${u.area_sqm} м²</span>
-          <span>Этаж</span><span>${u.floor}${proj?.floors ? ' / '+proj.floors : ''}</span>
-        </div>
-        <div class="unit-bottom">
-          <span class="unit-price">${fmtMln(u.selling_price)}</span>
+        <div class="unit-price-big">${fmtMln(u.selling_price)}</div>
+        <div class="unit-price-exact">${exactPrice}</div>
+        <div class="unit-full-rows">
+          <div class="unit-full-row"><span>Корпус</span><b>${u.tower || '—'}</b></div>
+          <div class="unit-full-row"><span>Этаж</span><b>${u.floor}${proj?.floors ? ' / '+proj.floors : ''}</b></div>
+          <div class="unit-full-row"><span>Тип</span><b>${cat}</b></div>
+          <div class="unit-full-row"><span>Площадь</span><b>${u.area_sqm} м²</b></div>
+          <div class="unit-full-row"><span>За м²</span><b>${pricePerSqm}</b></div>
+          <div class="unit-full-row"><span>Номер</span><b>${u.room_no}</b></div>
+          <div class="unit-full-row"><span>Статус</span><b class="${isAvail ? 'green' : 'red'}">${isAvail ? 'Свободен' : 'Продан'}</b></div>
         </div>
       </div>
-      ${blocks.length ? `
-      <div class="proj-toggle" onclick="toggleProj('pt-${u.room_no}')">
-        <span class="proj-toggle-label">О проекте</span>
-        <i class="ti ti-chevron-down proj-toggle-icon" id="pti-${u.room_no}"></i>
-      </div>
-      <div class="proj-content" id="pt-${u.room_no}">
-        ${proj ? renderProjBlocks(proj, blocks) : ''}
-      </div>` : ''}
-    </div>`;
+    </a>`;
   }).join('');
 
   document.getElementById('main').innerHTML = `<div class="units">${html}</div>`;
@@ -414,14 +350,6 @@ async function init() {
       if (ph) ph.querySelector('span').textContent = 'Планировка появится позже';
     }
   }
-}
-
-function toggleProj(id) {
-  const content = document.getElementById(id);
-  const roomNo = id.replace('pt-', '');
-  const icon = document.getElementById(`pti-${roomNo}`);
-  content.classList.toggle('vis');
-  icon.classList.toggle('open');
 }
 
 function showError(msg) {

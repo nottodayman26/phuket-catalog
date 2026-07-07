@@ -27,6 +27,14 @@ body.light{
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
 
 
+/* ── КЛИЕНТСКАЯ ШАПКА (белый лейбл, без брендинга Flox) ── */
+/* Показывается вместо обычной внутренней панели (topbar.js — поиск,
+   инструменты, клиенты, аккаунт агента), когда страница открыта клиентом
+   по ссылке из подборки (?client=1) — там эта навигация не нужна и не
+   должна быть видна человеку, который не является агентом. */
+.client-topbar{background:#1C1C2E;padding:14px 20px;display:none;align-items:center}
+.client-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+
 /* ── BREADCRUMB ── */
 .breadcrumb{display:flex;align-items:center;gap:6px;padding:12px 24px;font-size:12px;color:var(--muted);border-bottom:0.5px solid var(--line)}
 .breadcrumb a{color:var(--muted);text-decoration:none;transition:color .15s}
@@ -125,10 +133,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 <body>
 
 <div id="flox-topbar" data-page="unit"></div>
+<div class="client-topbar" id="clientTopbar">
+  <div class="client-avatar" id="clientAvatar"></div>
+</div>
 
 <div class="breadcrumb" id="breadcrumb">
-  <a href="flox-web.html">Поиск</a>
-  <i class="ti ti-chevron-right" style="font-size:11px"></i>
+  <a href="flox-web.html" id="bc-search">Поиск</a>
+  <i class="ti ti-chevron-right" id="bc-search-chevron" style="font-size:11px"></i>
   <a href="#" id="bc-project">—</a>
   <i class="ti ti-chevron-right" style="font-size:11px"></i>
   <span class="cur" id="bc-unit">—</span>
@@ -153,6 +164,28 @@ const SB = { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}`, Ac
 const params = new URLSearchParams(location.search);
 const roomNo = params.get('unit');
 const projectId = params.get('project');
+
+// Клиентский режим (?client=1) — страница открыта по ссылке из подборки
+// (offer.html), а не изнутри агентского интерфейса. Здесь не должно быть
+// внутренней навигации (topbar.js — поиск/инструменты/клиенты/аккаунт),
+// вознаграждения агента и кнопок "Добавить в презентацию"/"Забронировать" —
+// это агентские инструменты, а не то, что нужно видеть покупателю.
+const isClientMode = params.get('client') === '1';
+const clientAgentInitials = params.get('agent') || '';
+
+if (isClientMode) {
+  const flox = document.getElementById('flox-topbar');
+  if (flox) flox.style.display = 'none';
+  const ct = document.getElementById('clientTopbar');
+  if (clientAgentInitials) {
+    document.getElementById('clientAvatar').textContent = clientAgentInitials;
+    ct.style.display = 'flex';
+  }
+  // Ссылка "Поиск" ведёт во внутренний поиск, требующий входа через Telegram —
+  // клиенту она не нужна и не должна быть доступна.
+  document.getElementById('bc-search')?.remove();
+  document.getElementById('bc-search-chevron')?.remove();
+}
 
 function fmtMln(v) {
   const m = v / 1000000;
@@ -488,8 +521,17 @@ function renderUnit(u, proj, pd) {
 
   // Применяем режим встречи ПОСЛЕ того как DOM отрендерен
   const _m = localStorage.getItem('flox-meeting') === 'true';
-  document.querySelectorAll('.reward-section').forEach(el => el.style.display = _m ? 'none' : '');
-  initPresentation();
+  document.querySelectorAll('.reward-section').forEach(el => el.style.display = (_m || isClientMode) ? 'none' : '');
+
+  // В клиентском режиме "Добавить в презентацию"/"Забронировать" — это
+  // агентские инструменты (пишут в локальный localStorage того, кто открыл
+  // страницу), клиенту они ни к чему и только путают.
+  if (isClientMode) {
+    document.getElementById('addBtn')?.remove();
+    document.querySelector('.book-btn')?.remove();
+  } else {
+    initPresentation();
+  }
   alignSidebarToPlan();
   animateRewardAmount(u.selling_price, pct);
 }
@@ -570,6 +612,6 @@ window._pageMeetingCallback = function(m) {
 loadUnit();
 </script>
 <script src="topbar.js"></script>
-<script>floxTopbar.init({activePage:'unit'});</script>
+<script>if (!isClientMode) floxTopbar.init({activePage:'unit'});</script>
 </body>
 </html>
