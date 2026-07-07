@@ -187,7 +187,7 @@ input,button{font-family:inherit;}
 .pc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:3px;}
 .pc-name{font-size:15px;font-weight:600;}
 .pc-name-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.pc-q{font-size:11px;color:var(--muted);background:var(--surface-2);border:0.5px solid var(--line-2);padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.pc-q{font-size:10px;font-weight:500;color:var(--muted);background:var(--surface-3);padding:3px 9px;border-radius:20px;white-space:nowrap;}
 .pc-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
 .pc-types{display:flex;flex-direction:column;gap:6px;flex:1;}
 .pc-type-row{display:flex;justify-content:space-between;align-items:center;}
@@ -307,19 +307,20 @@ input,button{font-family:inherit;}
 .offer-client{font-size:15px;font-weight:600;}
 .offer-time{font-size:12px;color:var(--muted);}
 .offer-meta{font-size:12px;color:var(--muted);margin-bottom:10px;}
-.offer-url{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:8px;padding:8px 12px;}
-.offer-url-text{font-size:12px;color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.offer-copy{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent);border:none;cursor:pointer;white-space:nowrap;}
+.offer-url{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:8px;padding:8px 12px;cursor:pointer;}
+.offer-url-text{font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.offer-copy{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent);border:none;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;}
+.offer-copy.copied{background:var(--green-soft);color:var(--green);}
 
 /* ══ ACTIVITY PAGE ══ */
 .activity-page{padding:24px;max-width:900px;margin:0 auto;}
 .pres-page{padding:24px;max-width:1000px;margin:0 auto;}
 .pres-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
 .pres-actions{display:flex;gap:10px;align-items:center;}
-.pres-clear-btn{padding:8px 14px;border-radius:8px;border:0.5px solid var(--line-2);background:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;}
-.pres-clear-btn:hover{color:var(--text);border-color:var(--line);}
-.pres-share-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s;}
-.pres-share-btn:hover{opacity:.85;}
+.pres-clear-btn{padding:8px 14px;border-radius:10px;border:0.5px solid var(--line-2);background:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;transition:color .15s,border-color .15s,transform .2s cubic-bezier(.34,1.56,.64,1);}
+.pres-clear-btn:hover{color:var(--text);border-color:var(--line);transform:scale(1.06);}
+.pres-share-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .2s cubic-bezier(.34,1.56,.64,1);}
+.pres-share-btn:hover{opacity:.85;transform:scale(1.06);}
 .pres-share-btn:disabled{opacity:.5;cursor:not-allowed;}
 .pres-empty{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted);padding:80px 24px;text-align:center;font-size:14px;}
 .pres-empty i{font-size:48px;}
@@ -344,16 +345,16 @@ input,button{font-family:inherit;}
 .pres-card.sold{opacity:0.45;}
 .pres-card-img{background:#ffffff;height:160px;display:flex;align-items:center;justify-content:center;border-bottom:0.5px solid var(--line-2);overflow:hidden;position:relative;cursor:pointer;}
 .pres-card-body-wrap{cursor:default;}
-.pres-delete-btn{padding:8px 14px;border-radius:8px;border:0.5px solid #ef4444;background:none;color:#ef4444;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;display:none;}
-.pres-delete-btn:hover{background:#fee2e2;}
+.pres-delete-btn{padding:8px 14px;border-radius:10px;border:0.5px solid #ef4444;background:none;color:#ef4444;font-size:13px;cursor:pointer;font-family:inherit;transition:background .15s,transform .2s cubic-bezier(.34,1.56,.64,1);display:none;}
+.pres-delete-btn:hover{background:#fee2e2;transform:scale(1.06);}
 .pres-blocks{margin-top:8px;border-top:0.5px solid var(--line);padding-top:20px;}
 .pres-blocks-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;}
 .pres-project-block{padding:0 0 16px;margin-bottom:16px;border-bottom:0.5px solid var(--line);}
 .pres-project-block:last-child{border-bottom:none;margin-bottom:0;}
 .pres-project-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;}
 .pres-checkboxes{display:flex;flex-wrap:wrap;gap:8px;}
-.pres-cb-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;padding:5px 10px;border-radius:8px;border:0.5px solid var(--line-2);background:none;transition:all .15s;user-select:none;}
-.pres-cb-label:hover{border-color:var(--line);}
+.pres-cb-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;padding:5px 10px;border-radius:8px;border:0.5px solid var(--line-2);background:none;transition:border-color .15s,background .15s,transform .2s cubic-bezier(.34,1.56,.64,1);user-select:none;}
+.pres-cb-label:hover{border-color:var(--line);transform:scale(1.06);}
 .pres-cb-label input{accent-color:var(--accent);cursor:pointer;}
 .pres-cb-label.checked{background:rgba(94,23,235,.08);border-color:rgba(94,23,235,.3);color:var(--text);}
 .pres-share-result{margin-top:20px;padding:16px;background:var(--surface);border:0.5px solid var(--line-2);border-radius:10px;}
@@ -505,22 +506,21 @@ input,button{font-family:inherit;}
   <div class="pres-drawer-body">
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Выберите какую информацию о проекте увидит клиент</div>
     <div id="presDrawerBlocksList"></div>
-    <div id="presDrawerShareResult" style="display:none">
+  </div>
+  <div class="pres-drawer-foot">
+    <div id="presDrawerShareResult" style="display:none;margin-bottom:14px">
       <div class="pres-share-result">
         <div class="pres-share-label">Ссылка для клиента</div>
         <div class="pres-share-row">
           <input type="text" id="presDrawerUrl" readonly onclick="this.select()">
-          <button onclick="copyPresDrawerLink()"><i class="ti ti-copy"></i></button>
         </div>
       </div>
     </div>
-  </div>
-  <div class="pres-drawer-foot">
     <div style="margin-bottom:10px">
       <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Имя клиента <span style="color:var(--red)">*</span></label>
-      <input type="text" id="presClientName" placeholder="Например: Иван Петров" style="width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--line-2);background:var(--surface-2);color:var(--text);font-size:13px;font-family:inherit;outline:none;" oninput="document.getElementById('presDrawerConfirm').disabled=!this.value.trim()">
+      <input type="text" id="presClientName" placeholder="Например: Иван Петров" style="width:100%;padding:9px 12px;border-radius:8px;border:none;background:none;color:var(--text);font-size:13px;font-family:inherit;outline:none;" oninput="document.getElementById('presDrawerConfirm').disabled=!this.value.trim()">
     </div>
-    <button class="pres-drawer-confirm" id="presDrawerConfirm" onclick="confirmPresentation()" disabled><i class="ti ti-link"></i> Сформировать ссылку</button>
+    <button class="pres-drawer-confirm" id="presDrawerConfirm" onclick="handlePresDrawerConfirm()" disabled><i class="ti ti-link"></i> Сформировать ссылку</button>
   </div>
 </div>
 
@@ -1240,9 +1240,9 @@ async function loadOffers() {
           <div class="offer-time">${timeAgo(p.created_at)}</div>
         </div>
         <div class="offer-meta">${units} объект${units===1?'':units<5?'а':'ов'} в подборке</div>
-        <div class="offer-url">
+        <div class="offer-url" onclick="copyUrl('${url}',this.querySelector('.offer-copy'))">
           <span class="offer-url-text">${url}</span>
-          <button class="offer-copy" onclick="copyUrl('${url}',this)">Копировать</button>
+          <button class="offer-copy">Копировать</button>
         </div>
       </div>`;
   }) : [];
@@ -1256,9 +1256,9 @@ async function loadOffers() {
           <div class="offer-time">${timeAgo(o.created_at)}</div>
         </div>
         <div class="offer-meta">${units} объект${units===1?'':'ов'} в подборке</div>
-        <div class="offer-url">
+        <div class="offer-url" onclick="copyUrl('${url}',this.querySelector('.offer-copy'))">
           <span class="offer-url-text">${url}</span>
-          <button class="offer-copy" onclick="copyUrl('${url}',this)">Копировать</button>
+          <button class="offer-copy">Копировать</button>
         </div>
       </div>`;
   }) : [];
@@ -1268,8 +1268,10 @@ async function loadOffers() {
 
 function copyUrl(url, btn) {
   navigator.clipboard.writeText(url).then(() => {
+    if (!btn) return;
     btn.textContent = 'Скопировано ✓';
-    setTimeout(() => btn.textContent = 'Копировать', 2000);
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Копировать'; btn.classList.remove('copied'); }, 2000);
   });
 }
 
@@ -1629,6 +1631,11 @@ const PRES_BLOCKS = [
 
 // Состояние: { units: [{room_no, project}], projectBlocks: {VIK: ['description',...]} }
 let presState = { units: [], projectBlocks: {}, currentId: null };
+// Ссылка, уже сформированная и скопированная в текущем открытии шторки —
+// пока шторка не переоткрыта заново, кнопка просто копирует её повторно,
+// вместо того чтобы создавать новую презентацию на каждый клик.
+let _presDrawerUrl = null;
+let _presDrawerBtnTimer = null;
 
 async function loadPresentation() {
   const raw = JSON.parse(localStorage.getItem('flox-presentation') || '[]');
@@ -1825,6 +1832,7 @@ function sharePresentation() {
   document.getElementById('presDrawerConfirm').disabled = true;
   document.getElementById('presDrawerConfirm').innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
   document.getElementById('presClientName').value = '';
+  _presDrawerUrl = null; // новое открытие шторки — старая ссылка больше не актуальна
   document.getElementById('presDrawerOverlay').classList.add('vis');
   document.getElementById('presDrawer').classList.add('vis');
 }
@@ -1832,6 +1840,35 @@ function sharePresentation() {
 function closePresDrawer() {
   document.getElementById('presDrawerOverlay').classList.remove('vis');
   document.getElementById('presDrawer').classList.remove('vis');
+}
+
+// Единственная кнопка в шторке: пока ссылка ещё не сформирована — создаёт
+// презентацию; если уже сформирована в этом открытии шторки — просто копирует
+// её повторно, не создавая новую презентацию на каждый клик.
+async function handlePresDrawerConfirm() {
+  if (_presDrawerUrl) {
+    copyDrawerUrlToClipboard(_presDrawerUrl);
+    return;
+  }
+  await confirmPresentation();
+}
+
+async function copyDrawerUrlToClipboard(url) {
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch (e) {
+    try {
+      const input = document.getElementById('presDrawerUrl');
+      input.select();
+      document.execCommand('copy');
+    } catch (e2) {}
+  }
+  const btn = document.getElementById('presDrawerConfirm');
+  btn.innerHTML = '<i class="ti ti-check"></i> Ссылка скопирована';
+  clearTimeout(_presDrawerBtnTimer);
+  _presDrawerBtnTimer = setTimeout(() => {
+    btn.innerHTML = '<i class="ti ti-copy"></i> Копировать';
+  }, 3000);
 }
 
 async function confirmPresentation() {
@@ -1859,18 +1896,10 @@ async function confirmPresentation() {
   }
   const [data] = await r.json();
   const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${data.id}`;
+  _presDrawerUrl = url;
   document.getElementById('presDrawerUrl').value = url;
   document.getElementById('presDrawerShareResult').style.display = 'block';
-  btn.innerHTML = '✅ Ссылка готова';
-}
-
-function copyPresDrawerLink() {
-  const input = document.getElementById('presDrawerUrl');
-  input.select();
-  navigator.clipboard.writeText(input.value).catch(() => document.execCommand('copy'));
-  const btn = input.nextElementSibling;
-  btn.innerHTML = '<i class="ti ti-check"></i>';
-  setTimeout(() => btn.innerHTML = '<i class="ti ti-copy"></i>', 2000);
+  await copyDrawerUrlToClipboard(url);
 }
 </script>
 
