@@ -71,7 +71,8 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .slide-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2;}
 .slide-dot{width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.2);}
 .slide-dot.act{background:rgba(0,0,0,.6);}
-.slide-arrow{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.9);border:0.5px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;font-size:16px;color:#1C1C2E;transition:opacity .15s;}
+.slide-arrow{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.9);border:0.5px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;font-size:20px;color:#1C1C2E;transition:opacity .15s,background .15s;box-shadow:0 2px 10px rgba(0,0,0,.1);}
+.slide-arrow:hover{background:#fff;}
 .slide-arrow.left{left:10px;}
 .slide-arrow.right{right:10px;}
 .slide-arrow.dis{opacity:0;pointer-events:none;}
@@ -79,19 +80,25 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .unit-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:2;}
 .badge-avail{background:#dcfce7;color:#15803d;}
 .badge-sold{background:#fee2e2;color:#dc2626;}
-/* инфо — по умолчанию скрыта и красиво раскрывается по наведению на
-   карточку (остаётся видна только планировка со статус-беджем сверху). */
-.unit-info{
-  padding:0 16px;max-height:0;opacity:0;overflow:hidden;
-  transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .3s ease,padding .45s cubic-bezier(.4,0,.2,1);
-}
-.unit-card:hover .unit-info{padding:14px 16px;max-height:560px;opacity:1;}
-.unit-proj{font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
-.unit-num{font-size:17px;font-weight:700;margin-bottom:10px;}
+/* инфо — название проекта, номер, крупная цена и кнопка "Подробнее" видны
+   сразу (не только по наведению); а вот точная цена и полные параметры
+   (корпус/этаж/тип/площадь и т.д.) скрыты и красиво раскрываются по
+   наведению на карточку — см. .unit-hover-extra ниже. */
+.unit-info{padding:14px 16px;}
+/* Название проекта — крупнее и заметнее номера юнита (номер — как подпись). */
+.unit-proj{font-size:16px;font-weight:700;color:var(--night);margin-bottom:2px;letter-spacing:-.01em;}
+.unit-num{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;}
 .unit-sold-card{opacity:.45;}
 
-/* кнопка "Подробнее" — появляется вместе с остальной инфой при наведении,
-   у самой кнопки при этом свой отдельный hover-эффект (лёгкий подъём/подсветка). */
+/* точная цена + полные параметры — скрыты, раскрываются по наведению */
+.unit-hover-extra{
+  max-height:0;opacity:0;overflow:hidden;
+  transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .3s ease,margin .45s cubic-bezier(.4,0,.2,1);
+}
+.unit-card:hover .unit-hover-extra{max-height:400px;opacity:1;}
+
+/* кнопка "Подробнее" — видна всегда, но при раскрытии доп. инфы по наведению
+   спускается вниз вместе с ней; у самой кнопки свой hover-эффект (подъём/подсветка). */
 .unit-cta{
   display:flex;align-items:center;justify-content:center;gap:6px;
   margin-top:14px;padding:12px;border-radius:10px;
@@ -150,6 +157,13 @@ const BASE = location.pathname.replace(/\/[^\/]*$/, '/');
 function fmtMln(n) {
   if (!n) return '—';
   return n >= 1000000 ? (n/1e6).toFixed(2).replace(/\.?0+$/, '') + ' млн ฿' : Math.round(n).toLocaleString('ru') + ' ฿';
+}
+
+// Крупная цена на карточке видна сразу (до наведения) — без десятых,
+// целым числом миллионов, чтобы она хорошо читалась издалека.
+function fmtMlnWhole(n) {
+  if (!n) return '—';
+  return n >= 1000000 ? Math.round(n/1e6) + ' млн ฿' : Math.round(n).toLocaleString('ru') + ' ฿';
 }
 
 function catRu(rt) {
@@ -343,16 +357,18 @@ async function init() {
       <div class="unit-info">
         <div class="unit-proj">${projName}</div>
         <div class="unit-num">${u.room_no}</div>
-        <div class="unit-price-big">${fmtMln(u.selling_price)}</div>
-        <div class="unit-price-exact">${exactPrice}</div>
-        <div class="unit-full-rows">
-          <div class="unit-full-row"><span>Корпус</span><b>${u.tower || '—'}</b></div>
-          <div class="unit-full-row"><span>Этаж</span><b>${u.floor}${proj?.floors ? ' / '+proj.floors : ''}</b></div>
-          <div class="unit-full-row"><span>Тип</span><b>${cat}</b></div>
-          <div class="unit-full-row"><span>Площадь</span><b>${u.area_sqm} м²</b></div>
-          <div class="unit-full-row"><span>За м²</span><b>${pricePerSqm}</b></div>
-          <div class="unit-full-row"><span>Номер</span><b>${u.room_no}</b></div>
-          <div class="unit-full-row"><span>Статус</span><b class="${isAvail ? 'green' : 'red'}">${isAvail ? 'Свободен' : 'Продан'}</b></div>
+        <div class="unit-price-big">${fmtMlnWhole(u.selling_price)}</div>
+        <div class="unit-hover-extra">
+          <div class="unit-price-exact">${exactPrice}</div>
+          <div class="unit-full-rows">
+            <div class="unit-full-row"><span>Корпус</span><b>${u.tower || '—'}</b></div>
+            <div class="unit-full-row"><span>Этаж</span><b>${u.floor}${proj?.floors ? ' / '+proj.floors : ''}</b></div>
+            <div class="unit-full-row"><span>Тип</span><b>${cat}</b></div>
+            <div class="unit-full-row"><span>Площадь</span><b>${u.area_sqm} м²</b></div>
+            <div class="unit-full-row"><span>За м²</span><b>${pricePerSqm}</b></div>
+            <div class="unit-full-row"><span>Номер</span><b>${u.room_no}</b></div>
+            <div class="unit-full-row"><span>Статус</span><b class="${isAvail ? 'green' : 'red'}">${isAvail ? 'Свободен' : 'Продан'}</b></div>
+          </div>
         </div>
         <span class="unit-cta">Подробнее <i class="ti ti-arrow-right"></i></span>
       </div>

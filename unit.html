@@ -13,15 +13,18 @@
   --line:rgba(255,255,255,0.06);--line-2:rgba(255,255,255,0.1);
   --text:#ffffff;--muted:rgba(255,255,255,0.45);
   --accent:#5E17EB;--accent-soft:rgba(94,23,235,0.18);
-  --green:#7BAF6E;--red:#FF6B6B;--red-soft:rgba(255,107,107,0.15);
+  --green:#7BAF6E;--red:#FF6B6B;--red-soft:rgba(255,107,107,0.15);--green-soft:rgba(123,175,110,0.15);
   --project-color:#5E17EB;
 }
+/* Цвета статусов в светлой (клиентской) теме приведены к тем же оттенкам,
+   что и в offer.html (#15803d / #dc2626), чтобы "Свободен"/"Продан"
+   выглядели одинаково в подборке и на странице юнита. */
 body.light{
   --bg:#F5F5F7;--surface:#ffffff;--surface-2:#F5F5F7;--surface-3:#EBEBED;
   --line:rgba(0,0,0,0.06);--line-2:rgba(0,0,0,0.1);
   --text:#1a1a1a;--muted:rgba(0,0,0,0.45);
   --accent:#5E17EB;--accent-soft:rgba(94,23,235,0.1);
-  --green:#3B7A2E;--red:#D94040;--red-soft:rgba(217,64,64,0.1);
+  --green:#15803d;--red:#dc2626;--red-soft:#fee2e2;--green-soft:#dcfce7;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
@@ -52,9 +55,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .unit-name{font-size:15px;font-weight:600;color:var(--muted)}
 .unit-meta{font-size:13px;color:var(--muted)}
 .status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap}
-.badge-avail{background:rgba(123,175,110,0.15);color:var(--green)}
+.badge-avail{background:var(--green-soft);color:var(--green)}
 .badge-sold{background:var(--red-soft);color:var(--red)}
-.dot{width:6px;height:6px;border-radius:50%}
+/* Точка слева от статуса всегда мигает, как маяк — небольшая расходящаяся
+   пульсация вокруг ровно горящей точки, а не просто "точка есть/нет". */
+.dot{width:6px;height:6px;border-radius:50%;position:relative;animation:dot-pulse 1.8s ease-in-out infinite}
+.dot::after{content:'';position:absolute;inset:-4px;border-radius:50%;background:inherit;animation:dot-ring 1.8s ease-out infinite}
+@keyframes dot-pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes dot-ring{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.6);opacity:0}}
 
 /* ── ACTIONS ── */
 .actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -77,7 +85,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .plan-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
 .plan-dot{width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,0.2);transition:background .2s}
 .plan-dot.act{background:rgba(0,0,0,0.65)}
-.plan-arrow{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.9);border:0.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;color:#1a1a1a;font-size:18px;transition:background .15s,opacity .15s;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.plan-arrow{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.9);border:0.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;color:#1a1a1a;font-size:20px;transition:background .15s,opacity .15s;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
 .plan-arrow:hover{background:#fff}
 .plan-arrow.left{left:12px}
 .plan-arrow.right{right:12px}
