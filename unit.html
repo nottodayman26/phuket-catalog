@@ -174,6 +174,10 @@ const isClientMode = params.get('client') === '1';
 const clientAgentInitials = params.get('agent') || '';
 
 if (isClientMode) {
+  // Клиент всегда видит только светлую тему, независимо от того, в какой
+  // теме агент открывал эту страницу у себя.
+  document.body.classList.add('light');
+
   const flox = document.getElementById('flox-topbar');
   if (flox) flox.style.display = 'none';
   const ct = document.getElementById('clientTopbar');
@@ -181,10 +185,9 @@ if (isClientMode) {
     document.getElementById('clientAvatar').textContent = clientAgentInitials;
     ct.style.display = 'flex';
   }
-  // Ссылка "Поиск" ведёт во внутренний поиск, требующий входа через Telegram —
-  // клиенту она не нужна и не должна быть доступна.
-  document.getElementById('bc-search')?.remove();
-  document.getElementById('bc-search-chevron')?.remove();
+  // Хлебные крошки ведут на внутренний поиск и страницу проекта — клиенту
+  // это не нужно и не должно быть доступно.
+  document.getElementById('breadcrumb')?.remove();
 }
 
 function fmtMln(v) {
@@ -415,10 +418,14 @@ function renderUnit(u, proj, pd) {
   const projectColor = pd?.color || proj.color || '#5E17EB';
   document.documentElement.style.setProperty('--project-color', projectColor);
 
-  // Хлебные крошки
-  document.getElementById('bc-project').textContent = proj.name || proj.code;
-  document.getElementById('bc-project').href = `project.html?id=${proj.code}`;
-  document.getElementById('bc-unit').textContent = u.room_no;
+  // Хлебные крошки (в клиентском режиме блок целиком удалён ещё до рендера)
+  const bcProject = document.getElementById('bc-project');
+  if (bcProject) {
+    bcProject.textContent = proj.name || proj.code;
+    bcProject.href = `project.html?id=${proj.code}`;
+  }
+  const bcUnit = document.getElementById('bc-unit');
+  if (bcUnit) bcUnit.textContent = u.room_no;
   document.title = `Flox — ${u.room_no}`;
 
   // Тип (категория)
@@ -446,10 +453,10 @@ function renderUnit(u, proj, pd) {
       </div>
 
       <div class="actions">
-        <button class="act-btn" onclick="window.open('project.html?id=${proj.code}','_blank')">
+        <button class="act-btn" id="btnProjectPage" onclick="window.open('project.html?id=${proj.code}','_blank')">
           <i class="ti ti-building"></i> Страница проекта
         </button>
-        <button class="act-btn" onclick="window.print()">
+        <button class="act-btn" id="btnPrint" onclick="window.print()">
           <i class="ti ti-printer"></i> Печать
         </button>
         <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
@@ -510,7 +517,7 @@ function renderUnit(u, proj, pd) {
     </button>
 
     <div class="proj-info">
-      <div class="proj-row">
+      <div class="proj-row" id="projRowLink">
         <i class="ti ti-building-estate"></i>
         <a href="project.html?id=${proj.code}">${proj.name || proj.code}</a>
       </div>
@@ -529,6 +536,11 @@ function renderUnit(u, proj, pd) {
   if (isClientMode) {
     document.getElementById('addBtn')?.remove();
     document.querySelector('.book-btn')?.remove();
+    // Эти элементы ведут на внутреннюю страницу проекта — клиенту туда
+    // попадать не нужно (там агентские данные проекта, а не для клиента).
+    document.getElementById('btnProjectPage')?.remove();
+    document.getElementById('btnPrint')?.remove();
+    document.getElementById('projRowLink')?.remove();
   } else {
     initPresentation();
   }

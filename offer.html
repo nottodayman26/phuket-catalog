@@ -27,12 +27,13 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
    показываем только инициалы агента, который прислал подборку (если они
    известны). Если инициалов нет — шапку не показываем вовсе. */
 .top-bar{background:var(--night);padding:14px 20px;}
-.top-bar-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;}
+.top-bar-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:11px;}
 .agent-avatar{
   width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;
   display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:700;letter-spacing:.02em;
+  font-size:13px;font-weight:700;letter-spacing:.02em;flex-shrink:0;
 }
+.agent-name{color:#fff;font-size:13px;font-weight:500;}
 
 /* ── вступление ── */
 .intro{max-width:1200px;margin:0 auto;padding:28px 20px 4px;}
@@ -78,11 +79,27 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .unit-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:2;}
 .badge-avail{background:#dcfce7;color:#15803d;}
 .badge-sold{background:#fee2e2;color:#dc2626;}
-/* инфо */
-.unit-info{padding:14px 16px;}
+/* инфо — по умолчанию скрыта и красиво раскрывается по наведению на
+   карточку (остаётся видна только планировка со статус-беджем сверху). */
+.unit-info{
+  padding:0 16px;max-height:0;opacity:0;overflow:hidden;
+  transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .3s ease,padding .45s cubic-bezier(.4,0,.2,1);
+}
+.unit-card:hover .unit-info{padding:14px 16px;max-height:560px;opacity:1;}
 .unit-proj{font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
 .unit-num{font-size:17px;font-weight:700;margin-bottom:10px;}
 .unit-sold-card{opacity:.45;}
+
+/* кнопка "Подробнее" — появляется вместе с остальной инфой при наведении,
+   у самой кнопки при этом свой отдельный hover-эффект (лёгкий подъём/подсветка). */
+.unit-cta{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin-top:14px;padding:12px;border-radius:10px;
+  background:var(--accent);color:#fff;font-size:13px;font-weight:600;
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.unit-card:hover .unit-cta{box-shadow:0 6px 16px rgba(94,23,235,.3);}
+.unit-cta:hover{background:#4c12c9;transform:translateY(-1px);}
 
 /* ── блок цены и параметров ── */
 /* Скопировано из блока "Цена" в unit.html (sc/sc-price/sc-row), кроме
@@ -111,6 +128,7 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 <div class="top-bar" id="topBar" style="display:none">
   <div class="top-bar-inner">
     <div class="agent-avatar" id="agentAvatar"></div>
+    <div class="agent-name" id="agentName"></div>
   </div>
 </div>
 
@@ -198,8 +216,8 @@ function initCarousel(card, slides) {
       arL.classList.toggle('dis', cur === 0);
       arR.classList.toggle('dis', cur === slides.length - 1);
     }
-    arL.addEventListener('click', e => { e.stopPropagation(); goTo(cur - 1); });
-    arR.addEventListener('click', e => { e.stopPropagation(); goTo(cur + 1); });
+    arL.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); goTo(cur - 1); });
+    arR.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); goTo(cur + 1); });
 
     plan.addEventListener('touchstart', e => { sx = e.touches[0].clientX; dragging = true; track.style.transition = 'none'; }, { passive: true });
     plan.addEventListener('touchmove', e => { if (!dragging) return; dx = e.touches[0].clientX - sx; track.style.transform = `translateX(calc(-${cur*100}% + ${dx}px))`; }, { passive: true });
@@ -272,29 +290,35 @@ async function init() {
     } catch(e) {}
   }
 
-  // Инициалы агента — вместо логотипа Flox (белый лейбл, клиент не должен
-  // видеть брендинг сервиса). Если агента нет/не нашёлся — просто не
+  // Инициалы + имя агента — вместо логотипа Flox (белый лейбл, клиент не
+  // должен видеть брендинг сервиса). Если агента нет/не нашёлся — просто не
   // показываем шапку вообще, а не пустую тёмную полосу.
   let agentInitials = '';
+  let agentFullName = '';
   if (pres.agent_id) {
     try {
       const ar = await fetch(`${SB_URL}/agents?id=eq.${pres.agent_id}&select=full_name`, { headers: HDR });
       const agents = await ar.json();
-      if (agents.length) agentInitials = computeInitials(agents[0].full_name);
+      if (agents.length) {
+        agentFullName = agents[0].full_name || '';
+        agentInitials = computeInitials(agentFullName);
+      }
     } catch(e) {}
   }
   if (agentInitials) {
     document.getElementById('agentAvatar').textContent = agentInitials;
+    document.getElementById('agentName').textContent = agentFullName
+      ? `${agentFullName} — ваш личный агент по недвижимости`
+      : '';
     document.getElementById('topBar').style.display = 'block';
   }
 
-  // Вступление — персонализируем именем клиента, если оно указано агентом
+  // Вступление — унифицированный текст (без подстановки конкретного имени
+  // клиента из базы), одинаковый для всех.
   const count = units.length;
   const countLabel = `${count} вариант${count === 1 ? '' : count < 5 ? 'а' : 'ов'}`;
-  document.getElementById('introTitle').textContent = pres.client_name
-    ? `Подборка для ${pres.client_name}`
-    : 'Презентация для вас!';
-  document.getElementById('introSub').textContent = `${countLabel}, подобранных специально для вас`;
+  document.getElementById('introTitle').textContent = 'Подборка для Вас';
+  document.getElementById('introSub').textContent = `${countLabel}, подобранных специально под ваш запрос`;
   document.getElementById('intro').style.display = 'block';
 
   const html = units_meta.map(meta => {
@@ -330,6 +354,7 @@ async function init() {
           <div class="unit-full-row"><span>Номер</span><b>${u.room_no}</b></div>
           <div class="unit-full-row"><span>Статус</span><b class="${isAvail ? 'green' : 'red'}">${isAvail ? 'Свободен' : 'Продан'}</b></div>
         </div>
+        <span class="unit-cta">Подробнее <i class="ti ti-arrow-right"></i></span>
       </div>
     </a>`;
   }).join('');
