@@ -9,21 +9,37 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{background:#F7F3FF;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
+html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
 :root{
-  --night:#1C1C2E;--sand:#F7F3FF;--accent:#5E17EB;--red:#FF6B6B;
+  --night:#1C1C2E;--sand:#fff;--accent:#5E17EB;--red:#FF6B6B;
   --muted:#6B5A9E;--line:rgba(94,23,235,.12);--white:#ffffff;
 }
 
+/* ── общий контейнер страницы ── */
+/* На широких экранах контент раньше растягивался на всю ширину окна и
+   выглядел расплющенным (карточки шириной под 2000px при высоте плана
+   220px). Ограничиваем читаемую область так же, как это сделано в
+   project.html/unit.html (там — .body-wrap, max-width:1200px, по центру). */
+.page-wrap{max-width:1200px;margin:0 auto;}
+
 /* ── шапка ── */
-.top-bar{background:var(--night);padding:18px 20px 24px;display:flex;align-items:center;justify-content:space-between;}
+.top-bar{background:var(--night);padding:18px 20px 24px;}
+.top-bar-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
 .flox-logo{font-weight:700;font-size:18px;letter-spacing:-.05em;color:#fff;display:flex;align-items:center;}
 .flox-dot{width:5px;height:5px;border-radius:50%;background:var(--red);margin-left:1px;margin-bottom:7px;}
 .top-count{font-size:12px;color:rgba(255,255,255,.5);font-weight:500;}
 
 /* ── карточки юнитов ── */
-.units{padding:16px;}
-.unit-card{background:#fff;border-radius:16px;border:0.5px solid var(--line);margin-bottom:14px;overflow:hidden;}
+/* Сетка вместо одной сплошной колонки — на мобильном по-прежнему одна
+   колонка на всю ширину, а на широких экранах карточки естественно
+   выстраиваются в несколько столбцов (тот же приём, что и в units-grid
+   на project.html), вместо одной растянутой во всю ширину карточки. */
+.units{
+  max-width:1200px;margin:0 auto;padding:16px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:16px;align-items:start;
+}
+.unit-card{background:#fff;border-radius:16px;border:0.5px solid var(--line);overflow:hidden;}
 .unit-plan{background:#fff;height:220px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-bottom:0.5px solid var(--line);}
 .unit-plan img{width:100%;height:100%;object-fit:contain;}
 .unit-plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;color:#ccc;}
@@ -57,11 +73,11 @@ html,body{background:#F7F3FF;font-family:'Inter',system-ui,sans-serif;color:#1C1
 .unit-sold-card{opacity:.45;}
 
 /* ── раскрывающийся блок проекта ── */
-.proj-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;border-top:0.5px solid var(--line);background:#faf9ff;user-select:none;}
+.proj-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;border-top:0.5px solid var(--line);background:#fff;user-select:none;}
 .proj-toggle-label{font-size:12px;font-weight:600;color:var(--accent);}
 .proj-toggle-icon{font-size:16px;color:var(--accent);transition:transform .25s;}
 .proj-toggle-icon.open{transform:rotate(180deg);}
-.proj-content{display:none;padding:16px;border-top:0.5px solid var(--line);background:#faf9ff;}
+.proj-content{display:none;padding:16px;border-top:0.5px solid var(--line);background:#fff;}
 .proj-content.vis{display:block;}
 .proj-name{font-size:18px;font-weight:700;margin-bottom:2px;}
 .proj-dev{font-size:12px;color:var(--muted);margin-bottom:14px;}
@@ -91,7 +107,7 @@ html,body{background:#F7F3FF;font-family:'Inter',system-ui,sans-serif;color:#1C1
 .proj-gallery img{width:100%;height:100px;object-fit:cover;border-radius:8px;cursor:pointer;}
 
 /* ── футер ── */
-.footer{padding:24px 20px;text-align:center;}
+.footer{max-width:1200px;margin:0 auto;padding:24px 20px;text-align:center;}
 .footer-logo{font-weight:700;font-size:16px;letter-spacing:-.05em;color:var(--night);display:inline-flex;align-items:center;margin-bottom:6px;}
 .footer-dot{width:5px;height:5px;border-radius:50%;background:var(--red);margin-left:1px;margin-bottom:6px;}
 .footer-sub{font-size:11px;color:var(--muted);}
@@ -106,8 +122,10 @@ html,body{background:#F7F3FF;font-family:'Inter',system-ui,sans-serif;color:#1C1
 <body>
 
 <div class="top-bar">
-  <div class="flox-logo">flox<span class="flox-dot"></span></div>
-  <div class="top-count" id="topCount"></div>
+  <div class="top-bar-inner">
+    <div class="flox-logo">flox<span class="flox-dot"></span></div>
+    <div class="top-count" id="topCount"></div>
+  </div>
 </div>
 
 <div id="main">
