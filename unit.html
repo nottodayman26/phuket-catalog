@@ -35,8 +35,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    инструменты, клиенты, аккаунт агента), когда страница открыта клиентом
    по ссылке из подборки (?client=1) — там эта навигация не нужна и не
    должна быть видна человеку, который не является агентом. */
-.client-topbar{background:#1C1C2E;padding:14px 20px;display:none;align-items:center}
-.client-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.client-topbar{background:#1C1C2E;padding:14px 20px;display:none;align-items:center;gap:11px}
+.client-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.client-agent-name{color:#fff;font-size:13px;font-weight:500}
 
 /* ── BREADCRUMB ── */
 .breadcrumb{display:flex;align-items:center;gap:6px;padding:12px 24px;font-size:12px;color:var(--muted);border-bottom:0.5px solid var(--line)}
@@ -132,6 +133,54 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .proj-row a{color:var(--muted);text-decoration:none}
 .proj-row a:hover{color:var(--text)}
 
+/* ── КЛИЕНТСКИЕ ДЕЙСТВИЯ (бронь / запись на показ) ── */
+.client-book-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s}
+.client-book-btn:hover{opacity:.9}
+.client-viewing-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:none;color:var(--text);border:1.5px solid var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:8px}
+.client-viewing-btn:hover{background:var(--accent-soft)}
+
+/* Оверлей + шторка снизу с календарём */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.drawer-overlay.open{opacity:1;pointer-events:auto}
+.drawer{background:var(--surface);width:100%;max-width:420px;border-radius:20px 20px 0 0;padding:20px;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:86vh;overflow-y:auto}
+.drawer-overlay.open .drawer{transform:translateY(0)}
+@media (min-width:520px){
+  .drawer-overlay{align-items:center}
+  .drawer{border-radius:20px;transform:translateY(24px) scale(.97);opacity:0}
+  .drawer-overlay.open .drawer{transform:translateY(0) scale(1);opacity:1}
+}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.drawer-title{font-size:16px;font-weight:700}
+.drawer-close{width:30px;height:30px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px}
+.drawer-close:hover{color:var(--text)}
+
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-nav-btn{width:30px;height:30px;border-radius:8px;border:0.5px solid var(--line-2);background:var(--surface);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cal-nav-btn:disabled{opacity:.25;cursor:default}
+.cal-nav-btn:not(:disabled):hover{border-color:var(--accent)}
+.cal-month-label{font-size:13px;font-weight:600}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{text-align:center;font-size:11px;color:var(--muted);padding:4px 0;font-weight:600}
+.cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:13px;cursor:pointer;transition:background .15s,color .15s}
+.cal-cell:not(.empty):not(.past):hover{background:var(--accent-soft)}
+.cal-cell.past{color:var(--muted);opacity:.3;cursor:default}
+.cal-cell.selected{background:var(--accent);color:#fff;font-weight:700}
+.cal-cell.empty{cursor:default}
+
+.drawer-confirm{display:block;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:16px;transition:opacity .15s}
+.drawer-confirm:disabled{opacity:.35;cursor:default}
+.drawer-confirm:not(:disabled):hover{opacity:.9}
+
+/* Оверлей успешного действия */
+.success-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:110;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.success-overlay.open{opacity:1;pointer-events:auto}
+.success-box{background:var(--surface);border-radius:18px;padding:28px 24px;max-width:340px;text-align:center;transform:scale(.94);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.success-overlay.open .success-box{transform:scale(1)}
+.success-icon{font-size:40px;color:var(--green);margin-bottom:12px}
+.success-text{font-size:14px;line-height:1.5;margin-bottom:18px}
+.success-close{padding:10px 24px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.success-close:hover{opacity:.9}
+
 /* ── LOADING ── */
 .loading{display:flex;align-items:center;justify-content:center;min-height:300px}
 .spinner{width:28px;height:28px;border:2px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
@@ -143,6 +192,33 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 <div id="flox-topbar" data-page="unit"></div>
 <div class="client-topbar" id="clientTopbar">
   <div class="client-avatar" id="clientAvatar"></div>
+  <div class="client-agent-name" id="clientAgentName"></div>
+</div>
+
+<!-- Шторка записи на показ — календарь без прошедших дат -->
+<div class="drawer-overlay" id="viewingOverlay">
+  <div class="drawer" id="viewingDrawer">
+    <div class="drawer-header">
+      <div class="drawer-title">Выберите дату показа</div>
+      <button class="drawer-close" id="viewingClose" type="button"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="cal-nav">
+      <button class="cal-nav-btn" id="calPrev" type="button"><i class="ti ti-chevron-left"></i></button>
+      <div class="cal-month-label" id="calMonthLabel"></div>
+      <button class="cal-nav-btn" id="calNext" type="button"><i class="ti ti-chevron-right"></i></button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <button class="drawer-confirm" id="viewingConfirm" type="button" disabled>Подтвердить</button>
+  </div>
+</div>
+
+<!-- Оверлей с сообщением об успешной брони/записи -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-box">
+    <div class="success-icon"><i class="ti ti-circle-check"></i></div>
+    <div class="success-text" id="successText"></div>
+    <button class="success-close" id="successClose" type="button">Понятно</button>
+  </div>
 </div>
 
 <div class="breadcrumb" id="breadcrumb">
@@ -180,6 +256,11 @@ const projectId = params.get('project');
 // это агентские инструменты, а не то, что нужно видеть покупателю.
 const isClientMode = params.get('client') === '1';
 const clientAgentInitials = params.get('agent') || '';
+const clientAgentName = params.get('agentName') || '';
+// id презентации, из которой клиент перешёл по ссылке юнита (offer.html
+// добавляет его в каждую ссылку) — нужен, чтобы бронь/запись на показ можно
+// было привязать к правильному агенту и клиенту при уведомлении в Telegram.
+const presentationId = params.get('pres') || '';
 
 if (isClientMode) {
   // Клиент всегда видит только светлую тему, независимо от того, в какой
@@ -191,6 +272,9 @@ if (isClientMode) {
   const ct = document.getElementById('clientTopbar');
   if (clientAgentInitials) {
     document.getElementById('clientAvatar').textContent = clientAgentInitials;
+    if (clientAgentName) {
+      document.getElementById('clientAgentName').textContent = `${clientAgentName} — ваш личный агент по недвижимости`;
+    }
     ct.style.display = 'flex';
   }
   // Хлебные крошки ведут на внутренний поиск и страницу проекта — клиенту
@@ -503,6 +587,17 @@ function renderUnit(u, proj, pd) {
       <div class="sc-row"><span>Статус</span><b class="${isAvail ? 'green' : 'red'}">${isAvail ? 'Свободен' : 'Продан'}</b></div>
     </div>
 
+    ${isClientMode ? `
+    <button class="client-book-btn" id="clientBookBtn" type="button">
+      <i class="ti ti-calendar-check" style="font-size:16px"></i>
+      Забронировать
+    </button>
+    <button class="client-viewing-btn" id="clientViewingBtn" type="button">
+      <i class="ti ti-calendar-event" style="font-size:16px"></i>
+      Записаться на показ
+    </button>
+    ` : ''}
+
     <div class="sc accent-border reward-section">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div class="sc-label" style="margin:0">Вознаграждение</div>
@@ -549,6 +644,12 @@ function renderUnit(u, proj, pd) {
     document.getElementById('btnProjectPage')?.remove();
     document.getElementById('btnPrint')?.remove();
     document.getElementById('projRowLink')?.remove();
+
+    // Запоминаем текущий юнит для брони/записи на показ — кнопки навешены
+    // на элементы, отрисованные выше в этом же innerHTML.
+    clientUnit = u;
+    document.getElementById('clientBookBtn')?.addEventListener('click', submitBooking);
+    document.getElementById('clientViewingBtn')?.addEventListener('click', openViewingDrawer);
   } else {
     initPresentation();
   }
@@ -628,6 +729,136 @@ function togglePresentation() {
 window._pageMeetingCallback = function(m) {
   document.querySelectorAll('.reward-section').forEach(el => el.style.display = m ? 'none' : '');
 };
+
+// ── КЛИЕНТСКИЕ ДЕЙСТВИЯ: бронь и запись на показ ────────────────────────────
+// Пишем напрямую в Supabase (анонимным ключом, как и остальная страница).
+// Бот раз в 20 секунд вычитывает новые непрочитанные строки из этих таблиц
+// и шлёт уведомление агенту (и администратору) в Telegram — тот же
+// проверенный механизм, что уже работает для presentation_views.
+let clientUnit = null; // юнит, к которому относится текущая бронь/запись
+
+async function submitBooking() {
+  const btn = document.getElementById('clientBookBtn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  try {
+    await fetch(`${SUPABASE_URL}/presentation_bookings`, {
+      method: 'POST',
+      headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        presentation_id: presentationId || null,
+        unit_id: clientUnit?.id || null,
+      }),
+    });
+  } catch (e) {
+    console.error('Не удалось отправить заявку на бронирование', e);
+  }
+  if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  showSuccess('Поздравляем! Заявка на бронирование отправлена вашему агенту, оставайтесь на связи для дальнейшего оформления.');
+}
+
+// ── Календарь для записи на показ (без прошедших дат) ──
+let calViewDate = new Date();
+let selectedViewingDate = null;
+const CAL_MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const CAL_DOW = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+function todayMidnight() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function renderCalendar(viewDate) {
+  calViewDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  const grid = document.getElementById('calGrid');
+  const label = document.getElementById('calMonthLabel');
+  if (!grid || !label) return;
+  label.textContent = `${CAL_MONTHS[calViewDate.getMonth()]} ${calViewDate.getFullYear()}`;
+
+  const today = todayMidnight();
+  const firstDay = new Date(calViewDate.getFullYear(), calViewDate.getMonth(), 1);
+  const lastDay = new Date(calViewDate.getFullYear(), calViewDate.getMonth() + 1, 0);
+  const startOffset = (firstDay.getDay() + 6) % 7; // Пн=0 ... Вс=6
+
+  let html = CAL_DOW.map(d => `<div class="cal-dow">${d}</div>`).join('');
+  for (let i = 0; i < startOffset; i++) html += `<div class="cal-cell empty"></div>`;
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const dateObj = new Date(calViewDate.getFullYear(), calViewDate.getMonth(), d);
+    const isPast = dateObj < today;
+    const iso = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isSel = selectedViewingDate === iso;
+    html += `<div class="cal-cell${isPast ? ' past' : ''}${isSel ? ' selected' : ''}" data-date="${isPast ? '' : iso}">${d}</div>`;
+  }
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.cal-cell[data-date]:not([data-date=""])').forEach(cell => {
+    cell.addEventListener('click', () => {
+      selectedViewingDate = cell.dataset.date;
+      grid.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected'));
+      cell.classList.add('selected');
+      const confirmBtn = document.getElementById('viewingConfirm');
+      if (confirmBtn) confirmBtn.disabled = false;
+    });
+  });
+
+  const isCurrentMonth = calViewDate.getFullYear() === today.getFullYear() && calViewDate.getMonth() === today.getMonth();
+  const prevBtn = document.getElementById('calPrev');
+  if (prevBtn) prevBtn.disabled = isCurrentMonth;
+}
+
+function openViewingDrawer() {
+  selectedViewingDate = null;
+  const confirmBtn = document.getElementById('viewingConfirm');
+  if (confirmBtn) confirmBtn.disabled = true;
+  renderCalendar(todayMidnight());
+  document.getElementById('viewingOverlay')?.classList.add('open');
+}
+function closeViewingDrawer() {
+  document.getElementById('viewingOverlay')?.classList.remove('open');
+}
+document.getElementById('viewingClose')?.addEventListener('click', closeViewingDrawer);
+document.getElementById('viewingOverlay')?.addEventListener('click', e => {
+  if (e.target.id === 'viewingOverlay') closeViewingDrawer();
+});
+document.getElementById('calPrev')?.addEventListener('click', () => {
+  renderCalendar(new Date(calViewDate.getFullYear(), calViewDate.getMonth() - 1, 1));
+});
+document.getElementById('calNext')?.addEventListener('click', () => {
+  renderCalendar(new Date(calViewDate.getFullYear(), calViewDate.getMonth() + 1, 1));
+});
+document.getElementById('viewingConfirm')?.addEventListener('click', async () => {
+  if (!selectedViewingDate) return;
+  const btn = document.getElementById('viewingConfirm');
+  btn.disabled = true;
+  try {
+    await fetch(`${SUPABASE_URL}/presentation_viewing_requests`, {
+      method: 'POST',
+      headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        presentation_id: presentationId || null,
+        unit_id: clientUnit?.id || null,
+        requested_date: selectedViewingDate,
+      }),
+    });
+  } catch (e) {
+    console.error('Не удалось отправить заявку на показ', e);
+  }
+  btn.disabled = false;
+  closeViewingDrawer();
+  showSuccess('Поздравляем с успешной записью на просмотр! Скоро агент свяжется с вами для уточнения времени встречи.');
+});
+
+function showSuccess(text) {
+  const textEl = document.getElementById('successText');
+  if (textEl) textEl.textContent = text;
+  document.getElementById('successOverlay')?.classList.add('open');
+}
+document.getElementById('successClose')?.addEventListener('click', () => {
+  document.getElementById('successOverlay')?.classList.remove('open');
+});
+document.getElementById('successOverlay')?.addEventListener('click', e => {
+  if (e.target.id === 'successOverlay') document.getElementById('successOverlay').classList.remove('open');
+});
 
 loadUnit();
 </script>

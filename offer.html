@@ -77,14 +77,23 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .slide-arrow.right{right:10px;}
 .slide-arrow.dis{opacity:0;pointer-events:none;}
 /* статус-бейдж */
-.unit-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:2;}
+.unit-badge{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:2;}
 .badge-avail{background:#dcfce7;color:#15803d;}
 .badge-sold{background:#fee2e2;color:#dc2626;}
+/* Точка слева от "Свободен" — мигает как маяк (тот же приём, что и в unit.html). */
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;position:relative;animation:dot-pulse 1.8s ease-in-out infinite;}
+.badge-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:inherit;animation:dot-ring 1.8s ease-out infinite;}
+@keyframes dot-pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes dot-ring{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.6);opacity:0}}
 /* инфо — название проекта, номер, крупная цена и кнопка "Подробнее" видны
    сразу (не только по наведению); а вот точная цена и полные параметры
    (корпус/этаж/тип/площадь и т.д.) скрыты и красиво раскрываются по
-   наведению на карточку — см. .unit-hover-extra ниже. */
+   наведению на планировку/сводку — см. .unit-hover-extra ниже. Раскрытие
+   управляется классом .expanded (через JS), а не чистым :hover — иначе
+   при наведении прямо на кнопку "Подробнее" она бы уезжала вниз из-под
+   курсора вместе с раскрывающейся инфой. */
 .unit-info{padding:14px 16px;}
+.unit-summary{cursor:pointer;}
 /* Название проекта — крупнее и заметнее номера юнита (номер — как подпись). */
 .unit-proj{font-size:16px;font-weight:700;color:var(--night);margin-bottom:2px;letter-spacing:-.01em;}
 .unit-num{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;}
@@ -95,18 +104,29 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
   max-height:0;opacity:0;overflow:hidden;
   transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .3s ease,margin .45s cubic-bezier(.4,0,.2,1);
 }
-.unit-card:hover .unit-hover-extra{max-height:400px;opacity:1;}
+.unit-card.expanded .unit-hover-extra{max-height:400px;opacity:1;}
 
-/* кнопка "Подробнее" — видна всегда, но при раскрытии доп. инфы по наведению
-   спускается вниз вместе с ней; у самой кнопки свой hover-эффект (подъём/подсветка). */
+/* кнопка "Подробнее" — видна всегда; своя постоянная лёгкая анимация
+   (дышащее свечение + покачивающаяся стрелка), чтобы карточка не казалась
+   статичной, даже если её вообще не трогали курсором. */
 .unit-cta{
   display:flex;align-items:center;justify-content:center;gap:6px;
   margin-top:14px;padding:12px;border-radius:10px;
   background:var(--accent);color:#fff;font-size:13px;font-weight:600;
+  animation:cta-glow 2.6s ease-in-out infinite;
   transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
 }
 .unit-card:hover .unit-cta{box-shadow:0 6px 16px rgba(94,23,235,.3);}
-.unit-cta:hover{background:#4c12c9;transform:translateY(-1px);}
+.unit-cta:hover{background:#4c12c9;transform:translateY(-1px);animation-play-state:paused;}
+.unit-cta i{display:inline-block;animation:cta-arrow 1.6s ease-in-out infinite;}
+@keyframes cta-glow{
+  0%,100%{box-shadow:0 0 0 0 rgba(94,23,235,.35);}
+  50%{box-shadow:0 0 0 7px rgba(94,23,235,0);}
+}
+@keyframes cta-arrow{
+  0%,100%{transform:translateX(0);}
+  50%{transform:translateX(4px);}
+}
 
 /* ── блок цены и параметров ── */
 /* Скопировано из блока "Цена" в unit.html (sc/sc-price/sc-row), кроме
@@ -212,7 +232,7 @@ function initCarousel(card, slides) {
     plan.appendChild(dotsEl);
 
     const arL = document.createElement('div');
-    arL.className = 'slide-arrow left dis';
+    arL.className = 'slide-arrow left';
     arL.innerHTML = '<i class="ti ti-chevron-left"></i>';
     const arR = document.createElement('div');
     arR.className = 'slide-arrow right';
@@ -222,13 +242,17 @@ function initCarousel(card, slides) {
     let cur = 0;
     let sx = 0, dx = 0, dragging = false;
 
+    // Карусель зациклена (доходит до конца — начинает заново), поэтому
+    // стрелки никогда не блокируются на первой/последней картинке: раньше
+    // стрелка "вправо" гасла (opacity:0 + pointer-events:none) на последнем
+    // слайде — из-за этого наведение на неё переставало долетать до самой
+    // стрелки (браузер видел под курсором картинку позади), и автопролистывание
+    // не ставилось на паузу, стоило автоплею докрутить до конца.
     function goTo(idx) {
-      cur = Math.max(0, Math.min(slides.length - 1, idx));
+      cur = ((idx % slides.length) + slides.length) % slides.length;
       track.style.transform = `translateX(-${cur * 100}%)`;
       labelEl.textContent = slides[cur].label;
       [...dotsEl.children].forEach((d, i) => d.classList.toggle('act', i === cur));
-      arL.classList.toggle('dis', cur === 0);
-      arR.classList.toggle('dis', cur === slides.length - 1);
     }
     arL.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); goTo(cur - 1); });
     arR.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); goTo(cur + 1); });
@@ -236,10 +260,40 @@ function initCarousel(card, slides) {
     plan.addEventListener('touchstart', e => { sx = e.touches[0].clientX; dragging = true; track.style.transition = 'none'; }, { passive: true });
     plan.addEventListener('touchmove', e => { if (!dragging) return; dx = e.touches[0].clientX - sx; track.style.transform = `translateX(calc(-${cur*100}% + ${dx}px))`; }, { passive: true });
     plan.addEventListener('touchend', () => { dragging = false; track.style.transition = 'transform .3s ease'; if (Math.abs(dx) > 50) goTo(cur + (dx < 0 ? 1 : -1)); else goTo(cur); dx = 0; });
+
+    // Автопролистывание вправо по наведению на планировку — доходит до конца
+    // и начинает круг заново с первой картинки. Наведение на сами стрелки
+    // ставит автопролистывание на паузу (ими листают вручную), возобновляется
+    // при уходе курсора со стрелки обратно на планировку.
+    let autoTimer = null;
+    let planHovered = false;
+    function startAutoplay() { console.log('START autoplay');
+      if (autoTimer) return;
+      autoTimer = setInterval(() => { goTo((cur + 1) % slides.length); }, 1700);
+    }
+    function stopAutoplay() { console.log('STOP autoplay');
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    }
+    plan.addEventListener('mouseenter', () => { planHovered = true; startAutoplay(); });
+    plan.addEventListener('mouseleave', () => { planHovered = false; stopAutoplay(); });
+    arL.addEventListener('mouseenter', stopAutoplay);
+    arR.addEventListener('mouseenter', stopAutoplay);
+    arL.addEventListener('mouseleave', () => { if (planHovered) startAutoplay(); });
+    arR.addEventListener('mouseleave', () => { if (planHovered) startAutoplay(); });
   }
 }
 
-async function loadSlides(u, projCode) {
+// ── Раскрытие полной инфы по наведению (кроме наведения прямо на кнопку) ──
+// Триггер — планировка или сводка (проект/номер/цена), а не сама кнопка
+// "Подробнее": иначе кнопка уезжала бы вниз вместе с раскрывающейся инфой
+// прямо из-под курсора в момент, когда человек как раз хочет по ней нажать.
+function initHoverExpand(card) {
+  const triggers = card.querySelectorAll('.unit-plan, .unit-summary');
+  triggers.forEach(t => t.addEventListener('mouseenter', () => card.classList.add('expanded')));
+  card.addEventListener('mouseleave', () => card.classList.remove('expanded'));
+}
+
+async function loadSlides(u, projCode, proj) {
   const TOWER_CYR = { A: 'а', B: 'б', C: 'с', D: 'д' };
   const slides = [];
 
@@ -253,6 +307,17 @@ async function loadSlides(u, projCode) {
   if (projCode && u.floor) {
     const p = String(Number(u.floor)+1).padStart(4,'0');
     slides.push({ path: `${BASE}img/${projCode}/masterplan/${encodeURIComponent('мастер план_page-'+p+'.jpg')}`, label: `Мастер-план · Этаж ${u.floor}` });
+  }
+
+  // 4-й слайд — первая картинка блока "Рендеры: экстерьер" проекта.
+  // В project.html этот блок строится как gallery.local.slice(0, 9) (см.
+  // renderVisual()) — то есть первые 9 файлов общего списка gallery.local
+  // это и есть "экстерьер". Нам нужна ровно первая из них.
+  const galleryLocal = proj?.gallery?.local;
+  if (projCode && Array.isArray(galleryLocal) && galleryLocal.length) {
+    const f = galleryLocal[0];
+    const path = typeof f === 'string' && f.startsWith('http') ? f : `${BASE}img/${projCode}/${f}`;
+    slides.push({ path, label: 'Экстерьер' });
   }
 
   const found = await Promise.all(slides.map(s => new Promise(resolve => {
@@ -344,7 +409,7 @@ async function init() {
     const projName = proj?.name || meta.project || '';
     const exactPrice = u.selling_price ? Math.round(u.selling_price).toLocaleString('ru') + ' ฿' : '—';
     const pricePerSqm = u.price_per_sqm ? Math.round(u.price_per_sqm).toLocaleString('ru') + ' ฿' : '—';
-    const unitUrl = `unit.html?unit=${encodeURIComponent(u.room_no)}&project=${encodeURIComponent(meta.project || '')}&client=1${agentInitials ? '&agent=' + encodeURIComponent(agentInitials) : ''}`;
+    const unitUrl = `unit.html?unit=${encodeURIComponent(u.room_no)}&project=${encodeURIComponent(meta.project || '')}&client=1${agentInitials ? '&agent=' + encodeURIComponent(agentInitials) : ''}${agentFullName ? '&agentName=' + encodeURIComponent(agentFullName) : ''}&pres=${encodeURIComponent(id)}`;
 
     return `<a class="unit-card${isAvail ? '' : ' unit-sold-card'}" id="uc-${u.room_no}" href="${unitUrl}" target="_blank" rel="noopener">
       <div class="unit-plan">
@@ -352,12 +417,14 @@ async function init() {
           <i class="ti ti-layout-2"></i>
           <span>Загружаем план…</span>
         </div>
-        <span class="unit-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">${isAvail ? 'Свободен' : 'Продан'}</span>
+        <span class="unit-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">${isAvail ? '<span class="badge-dot"></span>' : ''}${isAvail ? 'Свободен' : 'Продан'}</span>
       </div>
       <div class="unit-info">
-        <div class="unit-proj">${projName}</div>
-        <div class="unit-num">${u.room_no}</div>
-        <div class="unit-price-big">${fmtMlnWhole(u.selling_price)}</div>
+        <div class="unit-summary">
+          <div class="unit-proj">${projName}</div>
+          <div class="unit-num">${u.room_no}</div>
+          <div class="unit-price-big">${fmtMlnWhole(u.selling_price)}</div>
+        </div>
         <div class="unit-hover-extra">
           <div class="unit-price-exact">${exactPrice}</div>
           <div class="unit-full-rows">
@@ -377,13 +444,17 @@ async function init() {
 
   document.getElementById('main').innerHTML = `<div class="units">${html}</div>`;
 
+  // Раскрытие полной инфы по наведению — вешаем на каждую карточку сразу,
+  // независимо от того, найдутся ли для неё картинки планировки.
+  document.querySelectorAll('.unit-card').forEach(initHoverExpand);
+
   // Загружаем слайды для каждого юнита
   for (const meta of units_meta) {
     const u = units.find(x => x.room_no === meta.room_no);
     if (!u) continue;
     const card = document.getElementById(`uc-${u.room_no}`);
     if (!card) continue;
-    const slides = await loadSlides(u, meta.project);
+    const slides = await loadSlides(u, meta.project, projMap[meta.project]);
     if (slides.length) {
       initCarousel(card, slides);
     } else {
