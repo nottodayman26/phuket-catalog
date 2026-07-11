@@ -658,6 +658,18 @@ function renderUnit(u, proj, pd) {
     document.getElementById('btnPrint')?.remove();
     document.getElementById('projRowLink')?.remove();
 
+    // Без кнопок "Страница проекта"/"Печать" ряд .actions остаётся с одной
+    // лишь плашкой статуса, повисшей на отдельной строке — это и создаёт
+    // лишний пустой отступ сверху, из-за которого блок планировки/цены и
+    // сама плашка выглядят слишком низко. Переносим плашку статуса прямо
+    // в шапку (на одну строку с названием проекта/юнита, вправо), а сам
+    // опустевший ряд .actions убираем — вся раскладка ниже (см.
+    // alignSidebarToPlan()) поднимется вместе с этим автоматически.
+    const statusBadge = document.querySelector('.status-badge');
+    const headerEl = document.querySelector('.unit-header');
+    if (statusBadge && headerEl) { statusBadge.style.marginLeft = '0'; headerEl.appendChild(statusBadge); }
+    document.querySelector('.actions')?.remove();
+
     // Запоминаем текущий юнит для брони/записи на показ — кнопки навешены
     // на элементы, отрисованные выше в этом же innerHTML.
     clientUnit = u;
