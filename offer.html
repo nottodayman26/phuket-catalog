@@ -9,12 +9,12 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-/* padding-bottom с запасом: карточки в нижнем ряду при наведении раскрывают
-   полную информацию (до ~260px доп. высоты) — без этого запаса раскрытие
-   утыкается в конец страницы и выглядит "обрезанным"/"в никуда". Высота
-   .units считается в JS (см. layoutMasonry) и уже растёт при раскрытии, но
-   JS не может добавить место ЗАРАНЕЕ — этот отступ и есть тот самый запас. */
-html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;padding-bottom:320px;}
+/* Высота .units полностью считается в JS (см. layoutMasonry) и уже сама
+   растёт, когда карточка в нижнем ряду раскрывается при наведении —
+   отдельный статический запас снизу не нужен (раньше он был большим и
+   создавал много лишнего пустого пространства, когда ничего не наведено).
+   Небольшой отступ оставлен просто для аккуратного завершения страницы. */
+html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;padding-bottom:32px;}
 :root{
   --night:#1C1C2E;--sand:#fff;--accent:#5E17EB;--red:#FF6B6B;
   --muted:#6B5A9E;--line:rgba(94,23,235,.12);--white:#ffffff;

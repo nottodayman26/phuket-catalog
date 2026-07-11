@@ -56,16 +56,16 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .tick b{color:var(--text);font-weight:600;}
 .tick .ago{color:var(--muted);opacity:.7;}
 
-/* ── BREADCRUMB ── */
-.breadcrumb{display:flex;align-items:center;gap:6px;padding:12px 24px;font-size:12px;color:var(--muted);border-bottom:0.5px solid var(--line)}
-.breadcrumb a{color:var(--muted);text-decoration:none;transition:color .15s}
-.breadcrumb a:hover{color:var(--text)}
-.breadcrumb .cur{color:var(--text)}
-
 /* ── LAYOUT ── */
-.page-body{display:grid;grid-template-columns:1fr 300px;min-height:calc(100vh - 104px)}
-.main{padding:24px;display:flex;flex-direction:column;gap:20px}
-.sidebar{padding:20px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 104px);overflow-y:auto;position:sticky;top:104px}
+/* Раньше левый отступ (.main padding), зазор между колонками (.main
+   padding-right + .sidebar padding-left) и правый отступ (.sidebar
+   padding-right) были тремя РАЗНЫМИ значениями (24 / 44 / 20) — из-за
+   этого расстояния выглядели неровными. Теперь единый зазор задаёт grid-gap,
+   а сами .main/.sidebar отвечают только за внешний край (левый/правый) —
+   везде одно и то же число, и верхний отступ (padding-top) тоже общий. */
+.page-body{display:grid;grid-template-columns:1fr 300px;gap:24px;min-height:calc(100vh - 64px)}
+.main{padding:24px 0 24px 24px;display:flex;flex-direction:column;gap:20px}
+.sidebar{padding:24px 24px 24px 0;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 64px);overflow-y:auto;position:sticky;top:64px}
 
 /* ── UNIT HEADER ── */
 /* align-items:flex-end — когда в клиентском режиме плашка статуса
@@ -95,7 +95,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .two-col{display:block}
 
 /* ── PLAN ── */
-.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:sticky;top:124px;height:480px;max-height:calc(100vh - 144px);display:flex;align-items:center;justify-content:center}
+.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:sticky;top:84px;height:480px;max-height:calc(100vh - 104px);display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
 .plan-placeholder i{font-size:56px}
@@ -143,40 +143,44 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 /* ── ADD TO PRESENTATION ── */
 .add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
-.book-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:10px;background:none;color:var(--muted);border:0.5px solid var(--line-2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:8px}
+.book-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:10px;background:none;color:var(--muted);border:0.5px solid var(--line-2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
 .book-btn:hover{color:var(--text);border-color:var(--line)}
 .add-btn:hover{opacity:.88}
 .add-btn.added{background:var(--green);opacity:1}
 
-.proj-info{display:flex;flex-direction:column;gap:7px;padding:2px 0}
-.proj-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
-.proj-row i{font-size:14px;flex-shrink:0}
-.proj-row a{color:var(--muted);text-decoration:none}
-.proj-row a:hover{color:var(--text)}
-
 /* ── КЛИЕНТСКИЕ ДЕЙСТВИЯ (бронь / запись на показ) ── */
-/* Та же постоянная лёгкая анимация, что у кнопки "Подробнее" в offer.html
-   (дышащее свечение + покачивающаяся стрелка/иконка), чтобы кнопки не
-   выглядели статичными, даже если их вообще не трогали курсором. */
-.client-book-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;animation:cta-glow 2.6s ease-in-out infinite;transition:opacity .15s,transform .15s,box-shadow .18s ease}
-.client-book-btn:hover{opacity:.9;transform:translateY(-1px);animation-play-state:paused}
-.client-book-btn i{display:inline-block;animation:cta-arrow 1.6s ease-in-out infinite}
-.client-viewing-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:none;color:var(--text);border:1.5px solid var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;animation:cta-glow 2.6s ease-in-out infinite;transition:all .15s;margin-top:8px}
-.client-viewing-btn:hover{background:var(--accent-soft);transform:translateY(-1px);animation-play-state:paused}
-.client-viewing-btn i{display:inline-block;animation:cta-arrow 1.6s ease-in-out infinite}
+.client-book-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s,box-shadow .18s ease}
+.client-book-btn:hover{opacity:.9;transform:translateY(-1px)}
+.client-book-btn i{display:inline-block}
+.client-viewing-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:none;color:var(--text);border:1.5px solid var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.client-viewing-btn:hover{background:var(--accent-soft);transform:translateY(-1px)}
+.client-viewing-btn i{display:inline-block}
 /* После успешной брони/записи кнопка "зеленеет" — понятный сигнал
    "заявка принята", без анимации-приглашения нажать (она больше не нужна). */
-.client-book-btn.confirmed{background:var(--green);animation:none}
-.client-book-btn.confirmed i{animation:none}
-.client-viewing-btn.confirmed{border-color:var(--green);color:var(--green);animation:none}
-.client-viewing-btn.confirmed i{animation:none}
-@keyframes cta-glow{
-  0%,100%{box-shadow:0 0 0 0 rgba(94,23,235,.35);}
-  50%{box-shadow:0 0 0 7px rgba(94,23,235,0);}
+.client-book-btn.confirmed{background:var(--green)}
+.client-viewing-btn.confirmed{border-color:var(--green);color:var(--green)}
+
+/* ── "Металлический" блик ── */
+/* Раз в несколько секунд по кнопке пробегает косая светлая полоса — сама
+   по себе, независимо от того, наведён на неё курсор или нет (не hover-
+   эффект). Применяется к обеим клиентским кнопкам и к агентским
+   "Забронировать"/"Добавить в презентацию". У "Подробнее" в offer.html
+   осталась своя прежняя анимация (дышащее свечение + стрелка) — её не
+   трогаем. */
+.client-book-btn,.client-viewing-btn,.add-btn,.book-btn{position:relative;overflow:hidden}
+.client-book-btn::after,.client-viewing-btn::after,.add-btn::after,.book-btn::after{
+  content:'';position:absolute;top:0;left:0;width:30%;height:100%;
+  background:linear-gradient(115deg,transparent 0%,rgba(255,255,255,.65) 50%,transparent 100%);
+  transform:translateX(-350%) skewX(-20deg);
+  animation:shine-sweep 3.4s ease-in-out infinite;
+  pointer-events:none;
 }
-@keyframes cta-arrow{
-  0%,100%{transform:translateX(0);}
-  50%{transform:translateX(4px);}
+.client-book-btn:hover::after,.client-viewing-btn:hover::after,.add-btn:hover::after,.book-btn:hover::after{animation-play-state:paused}
+/* После успешного действия блик больше не нужен — кнопка просто зелёная. */
+.client-book-btn.confirmed::after,.client-viewing-btn.confirmed::after,.add-btn.added::after{display:none}
+@keyframes shine-sweep{
+  0%{transform:translateX(-350%) skewX(-20deg);}
+  35%,100%{transform:translateX(450%) skewX(-20deg);}
 }
 
 /* Оверлей + шторка снизу с календарём */
@@ -266,14 +270,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
   </div>
 </div>
 
-<div class="breadcrumb" id="breadcrumb">
-  <a href="flox-web.html" id="bc-search">Поиск</a>
-  <i class="ti ti-chevron-right" id="bc-search-chevron" style="font-size:11px"></i>
-  <a href="#" id="bc-project">—</a>
-  <i class="ti ti-chevron-right" style="font-size:11px"></i>
-  <span class="cur" id="bc-unit">—</span>
-</div>
-
 <div class="page-body">
   <div class="main" id="mainContent">
     <div class="loading"><div class="spinner"></div></div>
@@ -322,10 +318,6 @@ if (isClientMode) {
     }
     ct.style.display = 'flex';
   }
-  // Хлебные крошки ведут на внутренний поиск и страницу проекта — клиенту
-  // это не нужно и не должно быть доступно.
-  document.getElementById('breadcrumb')?.remove();
-
   loadSoldTicker();
 }
 
@@ -589,14 +581,6 @@ function renderUnit(u, proj, pd) {
   const projectColor = pd?.color || proj.color || '#5E17EB';
   document.documentElement.style.setProperty('--project-color', projectColor);
 
-  // Хлебные крошки (в клиентском режиме блок целиком удалён ещё до рендера)
-  const bcProject = document.getElementById('bc-project');
-  if (bcProject) {
-    bcProject.textContent = proj.name || proj.code;
-    bcProject.href = `project.html?id=${proj.code}`;
-  }
-  const bcUnit = document.getElementById('bc-unit');
-  if (bcUnit) bcUnit.textContent = u.room_no;
   document.title = `Flox — ${u.room_no}`;
 
   // Тип (категория)
@@ -666,6 +650,14 @@ function renderUnit(u, proj, pd) {
       <div class="sc-row"><span>Статус</span><b class="${isAvail ? 'green' : 'red'}">${isAvail ? 'Свободен' : 'Продан'}</b></div>
     </div>
 
+    ${pd ? `
+    <div class="sc">
+      <div class="sc-label">О проекте</div>
+      <div class="sc-row"><span>Срок сдачи</span><b>${pd.completion || '—'}</b></div>
+      <div class="sc-row"><span>Локация</span><b>${(pd.districtRu || pd.district || '—')}, Пхукет</b></div>
+    </div>
+    ` : ''}
+
     ${isClientMode ? `
     <button class="client-book-btn" id="clientBookBtn" type="button">
       <i class="ti ti-calendar-check" style="font-size:16px"></i>
@@ -697,15 +689,6 @@ function renderUnit(u, proj, pd) {
       <i class="ti ti-calendar-check" style="font-size:16px"></i>
       Забронировать
     </button>
-
-    <div class="proj-info">
-      <div class="proj-row" id="projRowLink">
-        <i class="ti ti-building-estate"></i>
-        <a href="project.html?id=${proj.code}">${proj.name || proj.code}</a>
-      </div>
-      ${pd ? `<div class="proj-row"><i class="ti ti-calendar"></i>${pd.completion}</div>` : ''}
-      ${pd ? `<div class="proj-row"><i class="ti ti-map-pin"></i>${pd.districtRu || pd.district}, Пхукет</div>` : ''}
-    </div>
   `;
 
   // Применяем режим встречи ПОСЛЕ того как DOM отрендерен
@@ -722,7 +705,6 @@ function renderUnit(u, proj, pd) {
     // попадать не нужно (там агентские данные проекта, а не для клиента).
     document.getElementById('btnProjectPage')?.remove();
     document.getElementById('btnPrint')?.remove();
-    document.getElementById('projRowLink')?.remove();
 
     // Без кнопок "Страница проекта"/"Печать" ряд .actions остаётся с одной
     // лишь плашкой статуса, повисшей на отдельной строке — это и создаёт
@@ -735,10 +717,10 @@ function renderUnit(u, proj, pd) {
     const headerEl = document.querySelector('.unit-header');
     if (statusBadge && headerEl) { statusBadge.style.marginLeft = '0'; headerEl.appendChild(statusBadge); }
     document.querySelector('.actions')?.remove();
-    // Чуть приподнимаем блок планировки/цены к шапке — но не вплотную,
-    // небольшой зазор оставляем (агентский вид этот отступ не трогает).
+    // Приподнимаем блок планировки/цены ближе к шапке — небольшой зазор
+    // всё же оставляем, чтобы не было впритык (агентский вид не трогаем).
     const mainEl = document.querySelector('.main');
-    if (mainEl) mainEl.style.gap = '12px';
+    if (mainEl) mainEl.style.gap = '6px';
 
     // Запоминаем текущий юнит для брони/записи на показ — кнопки навешены
     // на элементы, отрисованные выше в этом же innerHTML.
