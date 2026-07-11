@@ -86,9 +86,6 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .unit-slide{flex:0 0 100%;position:relative;width:100%;height:100%;}
 .unit-slide img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0;}
 .slide-label{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;z-index:2;}
-.slide-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2;}
-.slide-dot{width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.2);}
-.slide-dot.act{background:rgba(0,0,0,.6);}
 .slide-arrow{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.45);border:0.5px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;font-size:20px;color:#1C1C2E;transition:opacity .15s,background .15s;box-shadow:0 2px 10px rgba(0,0,0,.08);backdrop-filter:blur(2px);}
 .slide-arrow:hover{background:rgba(255,255,255,.9);}
 .slide-arrow.left{left:10px;}
@@ -98,14 +95,17 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .unit-badge{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:2;}
 .badge-avail{background:#dcfce7;color:#15803d;}
 .badge-sold{background:#fee2e2;color:#dc2626;}
-/* Точка слева от "Свободен" — мигает как маяк (тот же приём, что и в unit.html).
-   У каждой карточки свой animation-delay (--dot-delay, задаётся инлайн-стилем
-   из JS) — иначе все точки на странице мигали бы синхронно, единым импульсом;
-   так они загораются вразнобой, то тут, то там. */
-.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;position:relative;animation:dot-pulse 1.8s ease-in-out infinite;animation-delay:var(--dot-delay,0s);}
-.badge-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:inherit;animation:dot-ring 1.8s ease-out infinite;animation-delay:var(--dot-delay,0s);}
-@keyframes dot-pulse{0%,100%{opacity:1}50%{opacity:.55}}
-@keyframes dot-ring{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.6);opacity:0}}
+/* Точка слева от "Свободен" светится как радиоактивный камень (тот же
+   приём, что и в unit.html) — яркость свечения нарастает и затухает по
+   кругу, без расходящегося кольца. У каждой карточки свой animation-delay
+   (--dot-delay, задаётся инлайн-стилем из JS) — иначе все точки на странице
+   светились бы синхронно, единым импульсом; так они разгораются вразнобой,
+   то тут, то там. */
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;position:relative;animation:glow-pulse 2.2s ease-in-out infinite;animation-delay:var(--dot-delay,0s);}
+@keyframes glow-pulse{
+  0%,100%{box-shadow:0 0 1px 0 currentColor;opacity:.7;}
+  50%{box-shadow:0 0 7px 2px currentColor;opacity:1;}
+}
 /* инфо — название проекта, номер, крупная цена и кнопка "Подробнее" видны
    сразу (не только по наведению); а вот точная цена и полные параметры
    (корпус/этаж/тип/площадь и т.д.) скрыты и красиво раскрываются по
@@ -127,9 +127,9 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 }
 .unit-card.expanded .unit-hover-extra{max-height:400px;opacity:1;}
 
-/* кнопка "Подробнее" — видна всегда; своя постоянная лёгкая анимация
-   (металлический блик + покачивающаяся стрелка), чтобы карточка не казалась
-   статичной, даже если её вообще не трогали курсором. */
+/* кнопка "Подробнее" — видна всегда; стрелка покачивается постоянно, а
+   металлический блик запускается только при наведении (один проход на
+   каждый hover), а не крутится бесконечно сам по себе. */
 .unit-cta{
   position:relative;overflow:hidden;
   display:flex;align-items:center;justify-content:center;gap:6px;
@@ -144,13 +144,12 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
   content:'';position:absolute;top:0;left:0;width:30%;height:100%;
   background:linear-gradient(115deg,transparent 0%,rgba(255,255,255,.65) 50%,transparent 100%);
   transform:translateX(-350%) skewX(-20deg);
-  animation:shine-sweep 3.4s ease-in-out infinite;
   pointer-events:none;
 }
-.unit-cta:hover::after{animation-play-state:paused;}
+.unit-cta:hover::after{animation:shine-sweep .9s ease-in-out;}
 @keyframes shine-sweep{
   0%{transform:translateX(-350%) skewX(-20deg);}
-  35%,100%{transform:translateX(450%) skewX(-20deg);}
+  100%{transform:translateX(450%) skewX(-20deg);}
 }
 @keyframes cta-arrow{
   0%,100%{transform:translateX(0);}
@@ -270,15 +269,6 @@ function initCarousel(card, slides) {
     labelEl.textContent = slides[0].label;
     plan.appendChild(labelEl);
 
-    const dotsEl = document.createElement('div');
-    dotsEl.className = 'slide-dots';
-    slides.forEach((_, i) => {
-      const d = document.createElement('div');
-      d.className = 'slide-dot' + (i === 0 ? ' act' : '');
-      dotsEl.appendChild(d);
-    });
-    plan.appendChild(dotsEl);
-
     const arL = document.createElement('div');
     arL.className = 'slide-arrow left';
     arL.innerHTML = '<i class="ti ti-chevron-left"></i>';
@@ -300,7 +290,6 @@ function initCarousel(card, slides) {
       cur = ((idx % slides.length) + slides.length) % slides.length;
       track.style.transform = `translateX(-${cur * 100}%)`;
       labelEl.textContent = slides[cur].label;
-      [...dotsEl.children].forEach((d, i) => d.classList.toggle('act', i === cur));
     }
     arL.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); goTo(cur - 1); });
     arR.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); goTo(cur + 1); });

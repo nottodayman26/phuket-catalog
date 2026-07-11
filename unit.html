@@ -79,12 +79,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap}
 .badge-avail{background:var(--green-soft);color:var(--green)}
 .badge-sold{background:var(--red-soft);color:var(--red)}
-/* Точка слева от статуса всегда мигает, как маяк — небольшая расходящаяся
-   пульсация вокруг ровно горящей точки, а не просто "точка есть/нет". */
-.dot{width:6px;height:6px;border-radius:50%;position:relative;animation:dot-pulse 1.8s ease-in-out infinite}
-.dot::after{content:'';position:absolute;inset:-4px;border-radius:50%;background:inherit;animation:dot-ring 1.8s ease-out infinite}
-@keyframes dot-pulse{0%,100%{opacity:1}50%{opacity:.55}}
-@keyframes dot-ring{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.6);opacity:0}}
+/* Точка слева от статуса светится как радиоактивный камень — яркость
+   свечения нарастает и затухает по кругу, без расходящегося кольца
+   (это уже не "маяк"). currentColor берёт цвет из инлайнового color,
+   заданного вместе с background там, где точка рендерится. */
+.dot{width:6px;height:6px;border-radius:50%;position:relative;animation:glow-pulse 2.2s ease-in-out infinite}
+@keyframes glow-pulse{
+  0%,100%{box-shadow:0 0 1px 0 currentColor;opacity:.7;}
+  50%{box-shadow:0 0 7px 2px currentColor;opacity:1;}
+}
 
 /* ── ACTIONS ── */
 .actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -615,7 +618,7 @@ function renderUnit(u, proj, pd) {
           <i class="ti ti-printer"></i> Печать
         </button>
         <div class="status-badge ${isAvail ? 'badge-avail' : 'badge-sold'}" style="margin-left:auto">
-          <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
+          <div class="dot" style="background:${isAvail ? 'var(--green)' : 'var(--red)'};color:${isAvail ? 'var(--green)' : 'var(--red)'}"></div>
           ${isAvail ? 'Свободен' : 'Продан'}
         </div>
       </div>
