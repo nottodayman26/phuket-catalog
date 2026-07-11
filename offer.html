@@ -9,7 +9,12 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
+/* padding-bottom с запасом: карточки в нижнем ряду при наведении раскрывают
+   полную информацию (до ~260px доп. высоты) — без этого запаса раскрытие
+   утыкается в конец страницы и выглядит "обрезанным"/"в никуда". Высота
+   .units считается в JS (см. layoutMasonry) и уже растёт при раскрытии, но
+   JS не может добавить место ЗАРАНЕЕ — этот отступ и есть тот самый запас. */
+html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;padding-bottom:320px;}
 :root{
   --night:#1C1C2E;--sand:#fff;--accent:#5E17EB;--red:#FF6B6B;
   --muted:#6B5A9E;--line:rgba(94,23,235,.12);--white:#ffffff;
@@ -166,10 +171,13 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .ticker-track{display:inline-flex;gap:28px;animation:scrollTicker 32s linear infinite;padding-left:16px;will-change:transform;}
 .ticker-wrap:hover .ticker-track{animation-play-state:paused;}
 @keyframes scrollTicker{from{transform:translate3d(0,0,0);}to{transform:translate3d(-50%,0,0);}}
-.tick{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);white-space:nowrap;}
+/* Цвета текста подогнаны под ту же ленту в floxweb.html (её светлую тему) —
+   там нейтральный серый на чёрной основе, а не фиолетовый var(--muted)/
+   var(--night) этой страницы, поэтому здесь эти значения захардкожены. */
+.tick{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:rgba(0,0,0,.45);white-space:nowrap;}
 .tick .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.tick b{color:var(--night);font-weight:600;}
-.tick .ago{color:#9c8fc4;}
+.tick b{color:#111118;font-weight:600;}
+.tick .ago{color:rgba(0,0,0,.22);}
 
 /* ── лоадер ── */
 .loader-wrap{padding:60px 20px;text-align:center;color:var(--muted);font-size:14px;}
