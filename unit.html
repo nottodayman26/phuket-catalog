@@ -7,6 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
 :root{
   --bg:#0d0d18;--surface:#111118;--surface-2:#1a1a26;--surface-3:#222232;
@@ -39,6 +40,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .client-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 .client-agent-name{color:#fff;font-size:13px;font-weight:500}
 
+/* ── бегущая строка "недавно продано" (только клиентский режим) ── */
+/* Клиентский режим всегда светлая тема (см. isClientMode ниже), поэтому
+   тут просто используются обычные переменные — они уже разрешаются в
+   светлые значения сами по себе. */
+.ticker-wrap{border-bottom:0.5px solid var(--line-2);background:var(--surface-2);overflow:hidden;white-space:nowrap;padding:8px 0;}
+.ticker-track{display:inline-flex;gap:28px;animation:scrollTicker 32s linear infinite;padding-left:16px;will-change:transform;}
+.ticker-wrap:hover .ticker-track{animation-play-state:paused;}
+@keyframes scrollTicker{from{transform:translate3d(0,0,0);}to{transform:translate3d(-50%,0,0);}}
+.tick{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);white-space:nowrap;}
+.tick .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.tick b{color:var(--text);font-weight:600;}
+.tick .ago{color:var(--muted);opacity:.7;}
+
 /* ── BREADCRUMB ── */
 .breadcrumb{display:flex;align-items:center;gap:6px;padding:12px 24px;font-size:12px;color:var(--muted);border-bottom:0.5px solid var(--line)}
 .breadcrumb a{color:var(--muted);text-decoration:none;transition:color .15s}
@@ -51,7 +65,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .sidebar{padding:20px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 104px);overflow-y:auto;position:sticky;top:104px}
 
 /* ── UNIT HEADER ── */
-.unit-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+/* align-items:flex-end — когда в клиентском режиме плашка статуса
+   переезжает сюда же (см. JS), она выравнивается по нижней строке шапки
+   (по "VKC217 · 2 спальни"), а не по заголовку проекта. В агентском режиме
+   в шапке всего один ребёнок, так что align-items тут ни на что не влияет. */
+.unit-header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
 .unit-project-name{font-size:28px;font-weight:700;margin-bottom:4px;color:var(--text)}
 .unit-name{font-size:15px;font-weight:600;color:var(--muted)}
 .unit-meta{font-size:13px;color:var(--muted)}
@@ -143,6 +161,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .client-viewing-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:none;color:var(--text);border:1.5px solid var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;animation:cta-glow 2.6s ease-in-out infinite;transition:all .15s;margin-top:8px}
 .client-viewing-btn:hover{background:var(--accent-soft);transform:translateY(-1px);animation-play-state:paused}
 .client-viewing-btn i{display:inline-block;animation:cta-arrow 1.6s ease-in-out infinite}
+/* После успешной брони/записи кнопка "зеленеет" — понятный сигнал
+   "заявка принята", без анимации-приглашения нажать (она больше не нужна). */
+.client-book-btn.confirmed{background:var(--green);animation:none}
+.client-book-btn.confirmed i{animation:none}
+.client-viewing-btn.confirmed{border-color:var(--green);color:var(--green);animation:none}
+.client-viewing-btn.confirmed i{animation:none}
 @keyframes cta-glow{
   0%,100%{box-shadow:0 0 0 0 rgba(94,23,235,.35);}
   50%{box-shadow:0 0 0 7px rgba(94,23,235,0);}
@@ -206,6 +230,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 <div class="client-topbar" id="clientTopbar">
   <div class="client-avatar" id="clientAvatar"></div>
   <div class="client-agent-name" id="clientAgentName"></div>
+</div>
+
+<!-- Бегущая строка "недавно продано" — только в клиентском режиме (см. JS) -->
+<div class="ticker-wrap" id="soldTickerWrap" style="display:none">
+  <div class="ticker-track" id="soldTicker"></div>
 </div>
 
 <!-- Шторка записи на показ — календарь без прошедших дат -->
@@ -293,6 +322,40 @@ if (isClientMode) {
   // Хлебные крошки ведут на внутренний поиск и страницу проекта — клиенту
   // это не нужно и не должно быть доступно.
   document.getElementById('breadcrumb')?.remove();
+
+  loadSoldTicker();
+}
+
+// ── Бегущая строка "недавно продано" (только клиентский режим) ──────────────
+const PROJ_COLOR = { VIK: '#C9A84C', KAT: '#7BAF6E', BAN: '#6B9BC2', OLN: '#8FAB5F' };
+function soldTimeAgo(iso) {
+  const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 60) return `${mins} мин назад`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} ч назад`;
+  const days = Math.floor(hours / 24);
+  return `${days} дн назад`;
+}
+async function loadSoldTicker() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/units?status=eq.sold&select=room_no,status_updated_at,projects(code,name)&order=status_updated_at.desc&limit=25`, { headers: SB });
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return;
+    const items = rows.map(u => {
+      const code = u.projects?.code || '';
+      const color = PROJ_COLOR[code] || 'var(--accent)';
+      const projName = u.projects?.name || code;
+      return `<span class="tick"><span class="dot" style="background:${color}"></span>ПРОДАНО <b>${u.room_no}</b> · ${projName} <span class="ago">· ${soldTimeAgo(u.status_updated_at)}</span></span>`;
+    }).join('');
+    const track = document.getElementById('soldTicker');
+    track.innerHTML = items + items;
+    document.getElementById('soldTickerWrap').style.display = 'block';
+    requestAnimationFrame(() => {
+      const singleWidth = track.scrollWidth / 2;
+      const pxPerSecond = 38;
+      track.style.animationDuration = Math.max(10, singleWidth / pxPerSecond) + 's';
+    });
+  } catch (e) {}
 }
 
 function fmtMln(v) {
@@ -669,6 +732,10 @@ function renderUnit(u, proj, pd) {
     const headerEl = document.querySelector('.unit-header');
     if (statusBadge && headerEl) { statusBadge.style.marginLeft = '0'; headerEl.appendChild(statusBadge); }
     document.querySelector('.actions')?.remove();
+    // Чуть приподнимаем блок планировки/цены к шапке — но не вплотную,
+    // небольшой зазор оставляем (агентский вид этот отступ не трогает).
+    const mainEl = document.querySelector('.main');
+    if (mainEl) mainEl.style.gap = '12px';
 
     // Запоминаем текущий юнит для брони/записи на показ — кнопки навешены
     // на элементы, отрисованные выше в этом же innerHTML.
@@ -777,7 +844,7 @@ async function submitBooking() {
   } catch (e) {
     console.error('Не удалось отправить заявку на бронирование', e);
   }
-  if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.classList.add('confirmed'); }
   showSuccess('Поздравляем! Заявка на бронирование отправлена вашему агенту, оставайтесь на связи для дальнейшего оформления.');
 }
 
@@ -869,6 +936,7 @@ document.getElementById('viewingConfirm')?.addEventListener('click', async () =>
     console.error('Не удалось отправить заявку на показ', e);
   }
   btn.disabled = false;
+  document.getElementById('clientViewingBtn')?.classList.add('confirmed');
   closeViewingDrawer();
   showSuccess('Поздравляем с успешной записью на просмотр! Скоро агент свяжется с вами для уточнения времени встречи.');
 });
@@ -877,6 +945,14 @@ function showSuccess(text) {
   const textEl = document.getElementById('successText');
   if (textEl) textEl.textContent = text;
   document.getElementById('successOverlay')?.classList.add('open');
+  // Конфетти — приятный акцент в момент, когда клиент видит подтверждение
+  // брони/записи на показ. window.confetti грузится с CDN; если по какой-то
+  // причине скрипт не подгрузился (нет сети до jsdelivr и т.п.) — просто
+  // пропускаем анимацию, само сообщение всё равно покажется.
+  if (window.confetti) {
+    confetti({ particleCount: 120, spread: 75, startVelocity: 45, origin: { y: 0.65 } });
+    setTimeout(() => confetti({ particleCount: 60, spread: 100, startVelocity: 30, origin: { y: 0.6 } }), 200);
+  }
 }
 document.getElementById('successClose')?.addEventListener('click', () => {
   document.getElementById('successOverlay')?.classList.remove('open');

@@ -77,7 +77,7 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .unit-plan-placeholder i{font-size:40px;}
 .unit-plan-placeholder span{font-size:12px;}
 /* карусель */
-.unit-track{display:flex;width:100%;height:100%;position:absolute;inset:0;transition:transform .5s cubic-bezier(.4,0,.2,1);}
+.unit-track{display:flex;width:100%;height:100%;position:absolute;inset:0;transition:transform .7s cubic-bezier(.4,0,.2,1);}
 .unit-slide{flex:0 0 100%;position:relative;width:100%;height:100%;}
 .unit-slide img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0;}
 .slide-label{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;z-index:2;}
@@ -159,6 +159,18 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .unit-full-row b.green{color:#15803d;}
 .unit-full-row b.red{color:#dc2626;}
 
+/* ── бегущая строка "недавно продано" ── */
+/* Оффер всегда светлый, поэтому строка тут светлая без привязки к теме
+   (в отличие от floxweb.html, где она подстраивается под тему сайта). */
+.ticker-wrap{border-top:0.5px solid var(--line);border-bottom:0.5px solid var(--line);background:#F8F7FB;overflow:hidden;white-space:nowrap;padding:8px 0;}
+.ticker-track{display:inline-flex;gap:28px;animation:scrollTicker 32s linear infinite;padding-left:16px;will-change:transform;}
+.ticker-wrap:hover .ticker-track{animation-play-state:paused;}
+@keyframes scrollTicker{from{transform:translate3d(0,0,0);}to{transform:translate3d(-50%,0,0);}}
+.tick{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);white-space:nowrap;}
+.tick .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.tick b{color:var(--night);font-weight:600;}
+.tick .ago{color:#9c8fc4;}
+
 /* ── лоадер ── */
 .loader-wrap{padding:60px 20px;text-align:center;color:var(--muted);font-size:14px;}
 .error-wrap{padding:40px 20px;text-align:center;}
@@ -173,6 +185,10 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
     <div class="agent-avatar" id="agentAvatar"></div>
     <div class="agent-name" id="agentName"></div>
   </div>
+</div>
+
+<div class="ticker-wrap" id="soldTickerWrap" style="display:none">
+  <div class="ticker-track" id="soldTicker"></div>
 </div>
 
 <div class="intro" id="intro" style="display:none">
@@ -285,7 +301,7 @@ function initCarousel(card, slides) {
     let planHovered = false;
     function startAutoplay() {
       if (autoTimer) return;
-      autoTimer = setInterval(() => { goTo((cur + 1) % slides.length); }, 900);
+      autoTimer = setInterval(() => { goTo((cur + 1) % slides.length); }, 1400);
     }
     function stopAutoplay() {
       if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
@@ -296,6 +312,17 @@ function initCarousel(card, slides) {
     arR.addEventListener('mouseenter', stopAutoplay);
     arL.addEventListener('mouseleave', () => { if (planHovered) startAutoplay(); });
     arR.addEventListener('mouseleave', () => { if (planHovered) startAutoplay(); });
+
+    // Если мышь ушла с карточки юнита целиком (не наведена ни на планировку,
+    // ни на стрелки, ни на цену/кнопку) и за 4 секунды не вернулась — карусель
+    // сама возвращается на первый слайд (планировку), чтобы карточка не
+    // оставалась "залипшей" на случайном рендере.
+    let resetTimer = null;
+    card.addEventListener('mouseleave', () => {
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => { goTo(0); }, 4000);
+    });
+    card.addEventListener('mouseenter', () => clearTimeout(resetTimer));
   }
 }
 
@@ -407,8 +434,44 @@ function computeInitials(fullName) {
   return fullName.trim().split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
 }
 
+// ── Бегущая строка "недавно продано" ────────────────────────────
+// Не привязана к конкретной подборке — соц. доказательство того, что
+// объекты по всему каталогу реально продаются. Не блокирует основную
+// загрузку подборки: запускается параллельно, независимо от неё.
+const PROJ_COLOR = { VIK: '#C9A84C', KAT: '#7BAF6E', BAN: '#6B9BC2', OLN: '#8FAB5F' };
+function soldTimeAgo(iso) {
+  const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 60) return `${mins} мин назад`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} ч назад`;
+  const days = Math.floor(hours / 24);
+  return `${days} дн назад`;
+}
+async function loadSoldTicker() {
+  try {
+    const r = await fetch(`${SB_URL}/units?status=eq.sold&select=room_no,status_updated_at,projects(code,name)&order=status_updated_at.desc&limit=25`, { headers: HDR });
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return;
+    const items = rows.map(u => {
+      const code = u.projects?.code || '';
+      const color = PROJ_COLOR[code] || 'var(--accent)';
+      const projName = u.projects?.name || code;
+      return `<span class="tick"><span class="dot" style="background:${color}"></span>ПРОДАНО <b>${u.room_no}</b> · ${projName} <span class="ago">· ${soldTimeAgo(u.status_updated_at)}</span></span>`;
+    }).join('');
+    const track = document.getElementById('soldTicker');
+    track.innerHTML = items + items;
+    document.getElementById('soldTickerWrap').style.display = 'block';
+    requestAnimationFrame(() => {
+      const singleWidth = track.scrollWidth / 2;
+      const pxPerSecond = 38;
+      track.style.animationDuration = Math.max(10, singleWidth / pxPerSecond) + 's';
+    });
+  } catch (e) {}
+}
+
 // ── Главная логика ────────────────────────────────────────────
 async function init() {
+  loadSoldTicker();
   const id = new URLSearchParams(location.search).get('id');
   if (!id) { showError('Неверная ссылка'); return; }
 
