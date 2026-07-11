@@ -134,10 +134,23 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .proj-row a:hover{color:var(--text)}
 
 /* ── КЛИЕНТСКИЕ ДЕЙСТВИЯ (бронь / запись на показ) ── */
-.client-book-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s}
-.client-book-btn:hover{opacity:.9}
-.client-viewing-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:none;color:var(--text);border:1.5px solid var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:8px}
-.client-viewing-btn:hover{background:var(--accent-soft)}
+/* Та же постоянная лёгкая анимация, что у кнопки "Подробнее" в offer.html
+   (дышащее свечение + покачивающаяся стрелка/иконка), чтобы кнопки не
+   выглядели статичными, даже если их вообще не трогали курсором. */
+.client-book-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;animation:cta-glow 2.6s ease-in-out infinite;transition:opacity .15s,transform .15s,box-shadow .18s ease}
+.client-book-btn:hover{opacity:.9;transform:translateY(-1px);animation-play-state:paused}
+.client-book-btn i{display:inline-block;animation:cta-arrow 1.6s ease-in-out infinite}
+.client-viewing-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:none;color:var(--text);border:1.5px solid var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;animation:cta-glow 2.6s ease-in-out infinite;transition:all .15s;margin-top:8px}
+.client-viewing-btn:hover{background:var(--accent-soft);transform:translateY(-1px);animation-play-state:paused}
+.client-viewing-btn i{display:inline-block;animation:cta-arrow 1.6s ease-in-out infinite}
+@keyframes cta-glow{
+  0%,100%{box-shadow:0 0 0 0 rgba(94,23,235,.35);}
+  50%{box-shadow:0 0 0 7px rgba(94,23,235,0);}
+}
+@keyframes cta-arrow{
+  0%,100%{transform:translateX(0);}
+  50%{transform:translateX(4px);}
+}
 
 /* Оверлей + шторка снизу с календарём */
 .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .25s ease}

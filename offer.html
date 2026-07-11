@@ -27,7 +27,7 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
    показываем только инициалы агента, который прислал подборку (если они
    известны). Если инициалов нет — шапку не показываем вовсе. */
 .top-bar{background:var(--night);padding:14px 20px;}
-.top-bar-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:11px;}
+.top-bar-inner{display:flex;align-items:center;gap:11px;}
 .agent-avatar{
   width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;
   display:flex;align-items:center;justify-content:center;
@@ -45,16 +45,29 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
    колонка на всю ширину, а на широких экранах карточки естественно
    выстраиваются в несколько столбцов (тот же приём, что и в units-grid
    на project.html), вместо одной растянутой во всю ширину карточки. */
+/* CSS Grid тут не подходит: в гриде высота ВСЕЙ строки завязана на самый
+   высокий элемент этой строки, даже с align-items:start — поэтому при
+   раскрытии одной карточки съезжали вниз все карточки в этой строке, а не
+   только те, что реально под ней. Готовые CSS-колонки (column-count/columns)
+   тоже не подходят: браузер балансирует их по суммарной высоте и при
+   изменении высоты одной карточки перекидывает карточки МЕЖДУ колонками
+   (карточки буквально телепортируются в другую колонку) — это ещё заметнее,
+   чем исходная проблема с гридом. Поэтому раскладка строится в JS
+   (см. layoutMasonry() ниже): у каждой карточки фиксированная колонка,
+   назначенная один раз, а позиция внутри колонки (top) пересчитывается
+   покадрово во время раскрытия — двигаются только карточки НИЖЕ раскрытой
+   и строго в её же колонке, независимо от масштаба окна браузера. */
 .units{
   max-width:1200px;margin:0 auto;padding:16px;
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
-  gap:16px;align-items:start;
+  position:relative;
 }
 /* Карточка теперь целиком ссылка на страницу юнита — увеличивается при
-   наведении, как аналогичные карточки в project.html/floxweb.html. */
+   наведении, как аналогичные карточки в project.html/floxweb.html.
+   position:absolute — раскладку (left/top/width) выставляет JS. */
 .unit-card{
   display:block;background:#fff;border-radius:16px;border:0.5px solid var(--line);
   overflow:hidden;text-decoration:none;color:inherit;cursor:pointer;
+  position:absolute;top:0;left:0;
   transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease;
 }
 .unit-card:hover{transform:scale(1.02);box-shadow:0 8px 28px rgba(0,0,0,.1);}
@@ -71,8 +84,8 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .slide-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2;}
 .slide-dot{width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.2);}
 .slide-dot.act{background:rgba(0,0,0,.6);}
-.slide-arrow{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.9);border:0.5px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;font-size:20px;color:#1C1C2E;transition:opacity .15s,background .15s;box-shadow:0 2px 10px rgba(0,0,0,.1);}
-.slide-arrow:hover{background:#fff;}
+.slide-arrow{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.45);border:0.5px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;font-size:20px;color:#1C1C2E;transition:opacity .15s,background .15s;box-shadow:0 2px 10px rgba(0,0,0,.08);backdrop-filter:blur(2px);}
+.slide-arrow:hover{background:rgba(255,255,255,.9);}
 .slide-arrow.left{left:10px;}
 .slide-arrow.right{right:10px;}
 .slide-arrow.dis{opacity:0;pointer-events:none;}
@@ -80,9 +93,12 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .unit-badge{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:2;}
 .badge-avail{background:#dcfce7;color:#15803d;}
 .badge-sold{background:#fee2e2;color:#dc2626;}
-/* Точка слева от "Свободен" — мигает как маяк (тот же приём, что и в unit.html). */
-.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;position:relative;animation:dot-pulse 1.8s ease-in-out infinite;}
-.badge-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:inherit;animation:dot-ring 1.8s ease-out infinite;}
+/* Точка слева от "Свободен" — мигает как маяк (тот же приём, что и в unit.html).
+   У каждой карточки свой animation-delay (--dot-delay, задаётся инлайн-стилем
+   из JS) — иначе все точки на странице мигали бы синхронно, единым импульсом;
+   так они загораются вразнобой, то тут, то там. */
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;position:relative;animation:dot-pulse 1.8s ease-in-out infinite;animation-delay:var(--dot-delay,0s);}
+.badge-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:inherit;animation:dot-ring 1.8s ease-out infinite;animation-delay:var(--dot-delay,0s);}
 @keyframes dot-pulse{0%,100%{opacity:1}50%{opacity:.55}}
 @keyframes dot-ring{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.6);opacity:0}}
 /* инфо — название проекта, номер, крупная цена и кнопка "Подробнее" видны
@@ -267,11 +283,11 @@ function initCarousel(card, slides) {
     // при уходе курсора со стрелки обратно на планировку.
     let autoTimer = null;
     let planHovered = false;
-    function startAutoplay() { console.log('START autoplay');
+    function startAutoplay() {
       if (autoTimer) return;
-      autoTimer = setInterval(() => { goTo((cur + 1) % slides.length); }, 1700);
+      autoTimer = setInterval(() => { goTo((cur + 1) % slides.length); }, 900);
     }
-    function stopAutoplay() { console.log('STOP autoplay');
+    function stopAutoplay() {
       if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
     }
     plan.addEventListener('mouseenter', () => { planHovered = true; startAutoplay(); });
@@ -283,14 +299,69 @@ function initCarousel(card, slides) {
   }
 }
 
+// ── Masonry-раскладка карточек (JS) ─────────────────────────────
+// Каждой карточке один раз назначается колонка (по порядку следования —
+// как в исходном гриде слева направо), а её позиция (top) внутри этой
+// колонки пересчитывается заново при каждом изменении высоты любой
+// карточки. Так как колонка не меняется, при раскрытии одной карточки
+// смещаются только карточки НИЖЕ неё в её же колонке — остальные колонки
+// вообще не трогаются. Пересчёт полных колонок (число колонок, их ширина)
+// происходит при первой отрисовке и при изменении размера окна.
+const MGAP = 16, MIN_COL = 320;
+let mCols = 1, mColW = 0;
+const cardCol = new Map();
+
+function computeMasonryColumns() {
+  const container = document.querySelector('.units');
+  if (!container) return;
+  const cw = container.clientWidth;
+  mCols = Math.max(1, Math.floor((cw + MGAP) / (MIN_COL + MGAP)));
+  mColW = (cw - MGAP * (mCols - 1)) / mCols;
+}
+
+function layoutMasonry(reassignColumns) {
+  const container = document.querySelector('.units');
+  if (!container) return;
+  if (reassignColumns) computeMasonryColumns();
+  const cards = [...container.querySelectorAll('.unit-card')];
+  const colTops = new Array(mCols).fill(0);
+  cards.forEach((card, i) => {
+    let col = cardCol.get(card);
+    if (reassignColumns || col === undefined) { col = i % mCols; cardCol.set(card, col); }
+    card.style.width = mColW + 'px';
+    card.style.left = (col * (mColW + MGAP)) + 'px';
+    card.style.top = colTops[col] + 'px';
+    colTops[col] += card.offsetHeight + MGAP;
+  });
+  container.style.height = Math.max(0, Math.max(...colTops) - MGAP) + 'px';
+}
+
+// Покадровый пересчёт раскладки на время CSS-transition раскрытия/сворачивания
+// (450мс у .unit-hover-extra) — колонка не меняется, дальнейшая раскладка
+// внутри неё просто следует за фактической высотой карточки каждый кадр.
+function animateMasonry(durationMs) {
+  const start = performance.now();
+  function tick(now) {
+    layoutMasonry(false);
+    if (now - start < durationMs) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+let masonryResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(masonryResizeTimer);
+  masonryResizeTimer = setTimeout(() => layoutMasonry(true), 150);
+});
+
 // ── Раскрытие полной инфы по наведению (кроме наведения прямо на кнопку) ──
 // Триггер — планировка или сводка (проект/номер/цена), а не сама кнопка
 // "Подробнее": иначе кнопка уезжала бы вниз вместе с раскрывающейся инфой
 // прямо из-под курсора в момент, когда человек как раз хочет по ней нажать.
 function initHoverExpand(card) {
   const triggers = card.querySelectorAll('.unit-plan, .unit-summary');
-  triggers.forEach(t => t.addEventListener('mouseenter', () => card.classList.add('expanded')));
-  card.addEventListener('mouseleave', () => card.classList.remove('expanded'));
+  triggers.forEach(t => t.addEventListener('mouseenter', () => { card.classList.add('expanded'); animateMasonry(500); }));
+  card.addEventListener('mouseleave', () => { card.classList.remove('expanded'); animateMasonry(500); });
 }
 
 async function loadSlides(u, projCode, proj) {
@@ -309,15 +380,16 @@ async function loadSlides(u, projCode, proj) {
     slides.push({ path: `${BASE}img/${projCode}/masterplan/${encodeURIComponent('мастер план_page-'+p+'.jpg')}`, label: `Мастер-план · Этаж ${u.floor}` });
   }
 
-  // 4-й слайд — первая картинка блока "Рендеры: экстерьер" проекта.
+  // Все картинки блока "Рендеры: экстерьер" проекта (не только первая).
   // В project.html этот блок строится как gallery.local.slice(0, 9) (см.
   // renderVisual()) — то есть первые 9 файлов общего списка gallery.local
-  // это и есть "экстерьер". Нам нужна ровно первая из них.
+  // это и есть "экстерьер". Добавляем их все отдельными слайдами.
   const galleryLocal = proj?.gallery?.local;
   if (projCode && Array.isArray(galleryLocal) && galleryLocal.length) {
-    const f = galleryLocal[0];
-    const path = typeof f === 'string' && f.startsWith('http') ? f : `${BASE}img/${projCode}/${f}`;
-    slides.push({ path, label: 'Экстерьер' });
+    galleryLocal.slice(0, 9).forEach((f, i) => {
+      const path = typeof f === 'string' && f.startsWith('http') ? f : `${BASE}img/${projCode}/${f}`;
+      slides.push({ path, label: `Экстерьер${galleryLocal.slice(0,9).length > 1 ? ' ' + (i+1) : ''}` });
+    });
   }
 
   const found = await Promise.all(slides.map(s => new Promise(resolve => {
@@ -417,7 +489,7 @@ async function init() {
           <i class="ti ti-layout-2"></i>
           <span>Загружаем план…</span>
         </div>
-        <span class="unit-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">${isAvail ? '<span class="badge-dot"></span>' : ''}${isAvail ? 'Свободен' : 'Продан'}</span>
+        <span class="unit-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">${isAvail ? `<span class="badge-dot" style="--dot-delay:${(Math.random()*1.8).toFixed(2)}s"></span>` : ''}${isAvail ? 'Свободен' : 'Продан'}</span>
       </div>
       <div class="unit-info">
         <div class="unit-summary">
@@ -448,6 +520,11 @@ async function init() {
   // независимо от того, найдутся ли для неё картинки планировки.
   document.querySelectorAll('.unit-card').forEach(initHoverExpand);
 
+  // Первичная masonry-раскладка (назначает колонки и расставляет карточки) —
+  // до подгрузки картинок, чтобы страница не показывала карточки друг на
+  // друге (позиции пересчитаются, но структура/размер карточек уже готовы).
+  layoutMasonry(true);
+
   // Загружаем слайды для каждого юнита
   for (const meta of units_meta) {
     const u = units.find(x => x.room_no === meta.room_no);
@@ -462,6 +539,10 @@ async function init() {
       if (ph) ph.querySelector('span').textContent = 'Планировка появится позже';
     }
   }
+
+  // Финальный пересчёт раскладки — на случай, если высота карточек чуть
+  // изменилась после подгрузки слайдов (шрифты/иконки и т.п.).
+  layoutMasonry(true);
 }
 
 function showError(msg) {

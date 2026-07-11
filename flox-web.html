@@ -1338,11 +1338,17 @@ async function loadActivity() {
       });
       if (!events.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
 
-      return `<div class="activity-card">
+      // Сортируем список сверху вниз по тому, кто заходил в подборку позднее
+      // всего (а не по дате создания подборки) — views уже отсортированы по
+      // viewed_at.desc общим запросом выше, так что первый элемент после
+      // фильтра по конкретной презентации — самый свежий просмотр именно её.
+      const lastActivity = views.length ? views[0].viewed_at : p.created_at;
+
+      return { lastActivity, html: `<div class="activity-card">
         <div class="act-client">${label}</div>
         <div class="act-count">${units} объект${units===1?'':units<5?'а':'ов'} · ${timeAgo(p.created_at)}</div>
         <div class="act-events">${events.join('')}</div>
-      </div>`;
+      </div>` };
     });
   }
 
@@ -1397,15 +1403,22 @@ async function loadActivity() {
       });
       if (!events.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
 
-      return `<div class="activity-card">
+      const lastActivity = offerViews.length ? offerViews[0].viewed_at : o.created_at;
+
+      return { lastActivity, html: `<div class="activity-card">
         <div class="act-client">${o.client_name||'Клиент'}</div>
         <div class="act-count">${units} объект${units===1?'':'ов'} · ${timeAgo(o.created_at)}</div>
         <div class="act-events">${events.join('')}</div>
-      </div>`;
+      </div>` };
     });
   }
 
-  const all = [...presCards, ...offerCards];
+  // Наверху — та подборка/оффер, в которую заходили позднее всего (по
+  // самому свежему просмотру, а не по дате создания). Если просмотров ещё
+  // не было — используем дату создания как запасной вариант.
+  const all = [...presCards, ...offerCards]
+    .sort((a, b) => new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0))
+    .map(c => c.html);
   el.innerHTML = all.length ? all.join('') : '<div class="empty-page">Нет активности</div>';
 }
 
