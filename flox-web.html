@@ -1359,7 +1359,7 @@ async function loadActivity() {
         const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';
         events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--green)"></div>Запись на просмотр${r.room && r.room!=='—' ? ' — '+r.room : ''} — ${dateStr}</div>`);
       });
-      if (lk.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>Понравилась планировка: ${lk.join(', ')}</div>`);
+      if (lk.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:#dc2626"></div>Понравилась планировка: ${lk.join(', ')}</div>`);
       if (!events.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
 
       // Сортируем список сверху вниз по тому, кто заходил в подборку позднее
