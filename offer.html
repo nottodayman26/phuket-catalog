@@ -17,7 +17,13 @@
 html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;padding-bottom:32px;}
 :root{
   --night:#1C1C2E;--sand:#fff;--accent:#5E17EB;--red:#FF6B6B;
-  --muted:#6B5A9E;--line:rgba(94,23,235,.12);--white:#ffffff;
+  /* Раньше --muted был приглушённым ФИОЛЕТОВЫМ (#6B5A9E) — из-за этого
+     весь второстепенный текст на странице (подзаголовок под "Подборка для
+     Вас", номер юнита на карточке, точная цена, подписи в раскрытом
+     инфоблоке) читался лиловым, хотя выглядеть должен был просто серым.
+     --line (цвет тонких разделительных линий, например у бегущей строки)
+     сознательно оставлен фиолетовым — это акцентная линия, не текст. */
+  --muted:rgba(0,0,0,.45);--line:rgba(94,23,235,.12);--white:#ffffff;
 }
 
 /* ── общий контейнер страницы ── */
@@ -191,6 +197,14 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .error-wrap{padding:40px 20px;text-align:center;}
 .error-title{font-size:18px;font-weight:700;margin-bottom:8px;}
 .error-sub{font-size:13px;color:var(--muted);}
+
+/* ── предупреждение внизу страницы ── */
+/* Линия того же цвета (var(--line)), что и у бегущей строки вверху
+   страницы, — визуально "закрывает" страницу тем же акцентом, каким она
+   открывается. */
+.footer-notice{border-top:0.5px solid var(--line);margin-top:32px;padding:24px 20px 4px;}
+.footer-notice-text{max-width:640px;margin:0 auto;text-align:center;font-size:12.5px;line-height:1.6;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;}
+.footer-notice-text i{font-size:15px;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -213,6 +227,13 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 
 <div id="main">
   <div class="loader-wrap">Загружаем подборку…</div>
+</div>
+
+<div class="footer-notice">
+  <div class="footer-notice-text">
+    <i class="ti ti-alert-triangle"></i>
+    Наличие юнитов может измениться в любой момент — актуальный статус лучше уточнять у вашего агента
+  </div>
 </div>
 
 <script>
@@ -317,6 +338,15 @@ function initCarousel(card, slides) {
     arR.addEventListener('mouseenter', stopAutoplay);
     arL.addEventListener('mouseleave', () => { if (planHovered) startAutoplay(); });
     arR.addEventListener('mouseleave', () => { if (planHovered) startAutoplay(); });
+
+    // Автопролистывание запускается не только по наведению на саму
+    // картинку, но и по наведению на инфоблок (проект/номер/цена) — это
+    // тот же элемент, что раскрывает подробности (см. initHoverExpand).
+    const summary = card.querySelector('.unit-summary');
+    if (summary) {
+      summary.addEventListener('mouseenter', () => { planHovered = true; startAutoplay(); });
+      summary.addEventListener('mouseleave', () => { planHovered = false; stopAutoplay(); });
+    }
 
     // Если мышь ушла с карточки юнита целиком (не наведена ни на планировку,
     // ни на стрелки, ни на цену/кнопку) и за 4 секунды не вернулась — карусель

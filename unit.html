@@ -68,12 +68,27 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    "скроллится только правая колонка": страница целиком помещалась в экран,
    а сайдбар просто был единственным, что вообще прокручивалось, если его
    содержимое не влезало. Теперь скроллится вся страница целиком (как тело
-   документа), а сайдбар только "прилипает" (position:sticky) к верху при
-   прокрутке — align-self:start нужен, чтобы его высота считалась по
-   собственному контенту, а не растягивалась на высоту всей колонки .main. */
+   документа).
+
+   .sidebar сам НЕ является sticky-элементом — он просто высокий контейнер
+   (растягивается на всю высоту .main, как и раньше без align-self:start),
+   дающий место для "прилипания". Sticky стоит на #sidebarSticky ВНУТРИ
+   него — специально отдельным слоем от #sidebarSpacer: спейсер нужен только
+   для начального выравнивания по высоте шапки (пока всё в обычном потоке),
+   а после того как страницу прокрутили и блок "прилип" к top:64px, спейсер
+   уже прокручен и не должен ничего сдвигать — если бы sticky стоял на самом
+   .sidebar (как раньше), спейсер оказывался бы ВНУТРИ прилипшего блока и
+   сдвигал бы блок цены вниз от планировки даже в закреплённом состоянии
+   (та самая рассинхронизация при скролле). */
 .page-body{display:grid;grid-template-columns:1fr 300px;gap:24px;min-height:calc(100vh - 64px)}
 .main{padding:24px 0 24px 24px;display:flex;flex-direction:column;gap:20px}
-.sidebar{padding:24px 24px 24px 0;display:flex;flex-direction:column;gap:12px;position:sticky;top:64px;align-self:start}
+.sidebar{padding:24px 24px 24px 0}
+#sidebarSticky{display:flex;flex-direction:column;gap:12px;position:sticky;top:64px}
+/* #sidebarSpacer больше не flex-сосед .sc (см. #sidebarSticky выше) — раньше
+   зазор между ними обеспечивал общий flex-gap:12px сайдбара, теперь он
+   вне sticky-обёртки, поэтому зазор перед первой карточкой задаём явно
+   тем же числом, что и gap внутри #sidebarSticky. */
+#sidebarSpacer{margin-bottom:12px}
 
 /* ── UNIT HEADER ── */
 /* align-items:flex-end — когда в клиентском режиме плашка статуса
@@ -103,10 +118,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .act-btn:hover{border-color:var(--text);color:var(--text)}
 
 /* ── TWO-COL ── */
+/* Оборачивает и планировку, и блоки из проекта (#projectBlocksWrap) одним
+   контейнером — это важно для position:sticky у .plan-card ниже: область,
+   в пределах которой элемент может "прилипать", ограничена высотой его
+   родителя. Раньше .two-col оборачивал только планировку (~480px) — из-за
+   этого планировка почти сразу же откреплялась и уезжала при скролле,
+   хотя сайдбар справа (чей родитель — вся .page-body) продолжал стоять на
+   месте. Теперь родитель такой же высокий, как и весь остальной контент —
+   планировка остаётся закреплённой на весь скролл блоков ниже неё, как и
+   сайдбар. */
 .two-col{display:block}
 
 /* ── PLAN ── */
-.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:sticky;top:84px;height:480px;max-height:calc(100vh - 104px);display:flex;align-items:center;justify-content:center}
+/* top совпадает с .sidebar{top:64px} специально: планировка и блок цены —
+   соседние grid-колонки одной высоты, и если бы у них были разные sticky-
+   отступы, они бы "прилипали" на разной высоте и расходились по вертикали
+   при скролле (так уже было — 84 у планировки против 64 у сайдбара). При
+   одинаковом top они всегда либо оба на своём обычном месте, либо оба
+   закреплены на одной и той же высоте — то есть всегда на одном уровне. */
+.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:sticky;top:64px;height:480px;max-height:calc(100vh - 84px);display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
 .plan-placeholder i{font-size:56px}
@@ -249,8 +279,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    что агент отметил для этого проекта; в агентском — всегда все. Стили и
    разметка максимально повторяют project.html, чтобы блоки выглядели
    привычно и узнаваемо. */
-.proj-block{padding-top:24px;border-top:0.5px solid var(--line)}
-.proj-block:first-child{padding-top:0;border-top:none}
+#projectBlocksWrap{margin-top:20px}
+.proj-block{padding-top:24px}
+.proj-block:first-child{padding-top:0}
 .sec-title{font-size:13px;font-weight:600;margin-bottom:18px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 
 .desc-text{font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px}
@@ -722,8 +753,10 @@ function renderProjectBlocks(pd, allowed) {
   if (!pd) return '';
   const show = key => !allowed || allowed.includes(key);
   const parts = [];
-  if (show('developer') && (pd.developer || (pd.buildings && pd.buildings.length) || pd.completion)) parts.push(renderDeveloperBlock(pd));
+  // Порядок: описание + инфраструктура, потом детали проекта, дальше как
+  // было (карта, галерея, платежи, обслуживание, файлы).
   if (show('description') && pd.description) parts.push(renderDescriptionBlock(pd));
+  if (show('developer') && (pd.developer || (pd.buildings && pd.buildings.length) || pd.completion)) parts.push(renderDeveloperBlock(pd));
   if (show('nearby') && pd.coords && pd.coords.lat) parts.push(renderMapBlock(pd));
   if (show('gallery') && pd.gallery && pd.gallery.local && pd.gallery.local.length) parts.push(renderGalleryBlock(pd));
   if (show('payment_schedule') && pd.payment_schedule && pd.payment_schedule.length) parts.push(`<div id="projPaymentSection">${renderPaymentBlock(pd)}</div>`);
@@ -1106,9 +1139,9 @@ function renderUnit(u, proj, pd, allowedBlocks) {
           <span>Планировка появится позже</span>
         </div>
       </div>
-    </div>
 
-    <div id="projectBlocksWrap">${pd ? renderProjectBlocks(pd, allowedBlocks) : ''}</div>
+      <div id="projectBlocksWrap">${pd ? renderProjectBlocks(pd, allowedBlocks) : ''}</div>
+    </div>
   `;
 
   loadPlanImage(u, proj);
@@ -1117,6 +1150,7 @@ function renderUnit(u, proj, pd, allowedBlocks) {
   // SIDEBAR
   document.getElementById('sidebarContent').innerHTML = `
     <div id="sidebarSpacer" style="height:0"></div>
+    <div id="sidebarSticky">
     <div class="sc">
       <div class="sc-label">Цена</div>
       <div class="sc-price">${fmtMln(u.selling_price)}</div>
@@ -1170,6 +1204,7 @@ function renderUnit(u, proj, pd, allowedBlocks) {
       <i class="ti ti-calendar-check" style="font-size:16px"></i>
       Забронировать
     </button>
+    </div>
   `;
 
   // Применяем режим встречи ПОСЛЕ того как DOM отрендерен
@@ -1237,7 +1272,8 @@ function alignSidebarToPlan() {
   const spacer = document.getElementById('sidebarSpacer');
   if (!topBlock || !spacer) return;
   const mainGap = parseFloat(getComputedStyle(document.querySelector('.main')).rowGap || 20);
-  const sidebarGap = parseFloat(getComputedStyle(document.getElementById('sidebarContent')).rowGap || 12);
+  const sidebarStickyEl = document.getElementById('sidebarSticky');
+  const sidebarGap = parseFloat((sidebarStickyEl && getComputedStyle(sidebarStickyEl).rowGap) || 12);
   const targetHeight = topBlock.offsetHeight + mainGap - sidebarGap;
   spacer.style.height = Math.max(0, targetHeight) + 'px';
 }
