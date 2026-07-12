@@ -127,12 +127,11 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .unit-summary{cursor:pointer;padding-right:28px;}
 
 /* Сердечко "нравится" — справа сверху в блоке информации (не над
-   картинкой, там уже плашка статуса). Загорается акцентным фиолетовым
-   var(--accent) — тем же, что и точка на логотипе Flox — и начинает
-   пульсировать (тот же приём "радиоактивного камня", что у остальных
-   индикаторов на странице), пока лайк активен. Лайк ставится один раз —
-   повторный клик ничего не отправляет повторно (см. обработчик клика),
-   чтобы агенту не приходило по уведомлению на каждое нажатие. */
+   картинкой, там уже плашка статуса). Цвет — var(--red) (#FF6B6B), тот
+   же коралловый, что у точки рядом с логотипом Flox в топбаре. Постоянного
+   свечения нет — только короткий "прыжок" в момент клика. Лайк ставится
+   один раз — повторный клик снимает лайк (см. обработчик клика), а не
+   отправляет уведомление повторно. */
 .unit-like{
   position:absolute;top:12px;right:12px;z-index:4;
   width:26px;height:26px;border-radius:50%;
@@ -140,17 +139,12 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
   font-size:15px;color:var(--muted);cursor:pointer;
   transition:color .2s ease,transform .15s ease;
 }
-.unit-like:hover{color:var(--accent);transform:scale(1.12);}
-.unit-like.liked{color:var(--accent);animation:heart-pop .5s ease;}
-.unit-like.liked i{animation:heart-glow-pulse 2.2s ease-in-out infinite;}
+.unit-like:hover{color:var(--red);transform:scale(1.12);}
+.unit-like.liked{color:var(--red);animation:heart-pop .5s ease;}
 @keyframes heart-pop{
   0%{transform:scale(1);}
   45%{transform:scale(1.45);}
   100%{transform:scale(1);}
-}
-@keyframes heart-glow-pulse{
-  0%,100%{filter:drop-shadow(0 0 1px currentColor);opacity:.8;}
-  50%{filter:drop-shadow(0 0 6px currentColor);opacity:1;}
 }
 /* Название проекта — крупнее и заметнее номера юнита (номер — как подпись). */
 .unit-proj{font-size:16px;font-weight:700;color:var(--night);margin-bottom:2px;letter-spacing:-.01em;}
@@ -467,15 +461,27 @@ function initHoverExpand(card) {
 }
 
 // ── Сердечко "нравится" ──────────────────────────────────────
-// Один делегированный обработчик клика на весь список карточек (проще, чем
-// вешать слушатель на каждое сердечко отдельно). Лайк ставится максимум
-// один раз на юнит — состояние живёт в localStorage (переживает
-// перезагрузку страницы по той же ссылке), повторный клик по уже
-// лайкнутому сердечку ничего не делает. Пишем в таблицу
-// presentation_likes — её бот (telegram_listener.py) вычитывает тем же
-// проверенным способом, что presentation_bookings/viewing_requests, и
-// шлёт агенту уведомление в Telegram + запись попадает в "Последнюю
-// активность" в floxweb.html.
+// Один делегированный обработчик клика на весь список карточек. Клик по
+// пустому сердечку — лайк (пишем строку в presentation_likes, бот шлёт
+// агенту уведомление в Telegram и запись появляется в "Последней
+// активности" в floxweb.html). Клик по уже закрашенному сердечку — снятие
+// лайка: помечаем строку unliked=true (саму строку не трогаем — её
+// удаляет уже бот, ПОСЛЕ того как удалит отправленные им сообщения в
+// Telegram, см. telegram_listener.py). Состояние (лайкнуто/нет + id
+// строки в Supabase, он нужен, чтобы знать что помечать при снятии лайка)
+// живёт в localStorage — переживает перезагрузку страницы по той же
+// ссылке.
+//
+// Важно: используем Prefer: return=representation (не return=minimal, как
+// у брони/показа) — иначе Supabase не вернёт id созданной строки, а без
+// него нечего будет помечать unliked=true при снятии лайка.
+//
+// Ошибки запроса теперь логируются в консоль браузера (не просто
+// проглатываются) — если лайки не доходят до бота/"Последней активности",
+// открой консоль (F12 → Console) на странице оффера после клика по
+// сердечку: там будет видно, что именно ответил Supabase (чаще всего это
+// либо "таблицы не существует", либо ошибка доступа — RLS-политика не
+// разрешает анонимную запись).
 function initLikeButtons(presentationId) {
   document.querySelectorAll('.unit-like').forEach(el => {
     const room = el.dataset.room;
@@ -485,23 +491,56 @@ function initLikeButtons(presentationId) {
       if (icon) icon.className = 'ti ti-heart-filled';
     }
   });
-  document.querySelector('.units')?.addEventListener('click', e => {
+  document.querySelector('.units')?.addEventListener('click', async e => {
     const btn = e.target.closest('.unit-like');
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
-    if (btn.classList.contains('liked')) return; // уже лайкнули — не отправляем повторно
     const room = btn.dataset.room;
     const unitId = btn.dataset.unitId;
-    btn.classList.add('liked');
     const icon = btn.querySelector('i');
+    const rowIdKey = 'flox-liked-id-' + room;
+
+    if (btn.classList.contains('liked')) {
+      // Снимаем лайк
+      const rowId = localStorage.getItem(rowIdKey);
+      btn.classList.remove('liked');
+      if (icon) icon.className = 'ti ti-heart';
+      localStorage.removeItem('flox-liked-' + room);
+      localStorage.removeItem(rowIdKey);
+      if (!rowId) return; // лайк был поставлен ещё до этого обновления офера — id неизвестен, снимать в базе нечего
+      try {
+        const resp = await fetch(`${SB_URL}/presentation_likes?id=eq.${rowId}`, {
+          method: 'PATCH',
+          headers: { ...HDR, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify({ unliked: true }),
+        });
+        if (!resp.ok) console.error('presentation_likes PATCH (снятие лайка) failed:', resp.status, await resp.text());
+      } catch (e) {
+        console.error('presentation_likes PATCH (снятие лайка) network error:', e);
+      }
+      return;
+    }
+
+    // Ставим лайк
+    btn.classList.add('liked');
     if (icon) icon.className = 'ti ti-heart-filled';
     localStorage.setItem('flox-liked-' + room, 'true');
-    fetch(`${SB_URL}/presentation_likes`, {
-      method: 'POST',
-      headers: { ...HDR, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ presentation_id: presentationId, unit_id: unitId || null }),
-    }).catch(() => {});
+    try {
+      const resp = await fetch(`${SB_URL}/presentation_likes`, {
+        method: 'POST',
+        headers: { ...HDR, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify({ presentation_id: presentationId, unit_id: unitId || null }),
+      });
+      if (!resp.ok) {
+        console.error('presentation_likes POST failed:', resp.status, await resp.text());
+        return;
+      }
+      const rows = await resp.json();
+      if (rows && rows[0] && rows[0].id != null) localStorage.setItem(rowIdKey, rows[0].id);
+    } catch (e) {
+      console.error('presentation_likes POST network error:', e);
+    }
   });
 }
 
