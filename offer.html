@@ -13,8 +13,12 @@
    растёт, когда карточка в нижнем ряду раскрывается при наведении —
    отдельный статический запас снизу не нужен (раньше он был большим и
    создавал много лишнего пустого пространства, когда ничего не наведено).
-   Небольшой отступ оставлен просто для аккуратного завершения страницы. */
-html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;padding-bottom:32px;}
+   padding-bottom раньше добавлял белый отступ снизу "для аккуратного
+   завершения страницы" — но теперь страницу завершает .footer-notice
+   (тёмная плашка-предупреждение), и этот белый отступ просто торчал под
+   ней отдельной полосой. Убран — .footer-notice сама себе довольно
+   отступа (padding) и является настоящим концом страницы. */
+html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
 :root{
   --night:#1C1C2E;--sand:#fff;--accent:#5E17EB;--red:#FF6B6B;
   /* Раньше --muted был приглушённым ФИОЛЕТОВЫМ (#6B5A9E) — из-за этого
@@ -135,16 +139,20 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 
 /* кнопка "Подробнее" — видна всегда; стрелка покачивается постоянно, а
    металлический блик запускается только при наведении (один проход на
-   каждый hover), а не крутится бесконечно сам по себе. */
+   каждый hover), а не крутится бесконечно сам по себе.
+   Цвет — var(--night), тот же тёмно-синий, что и у верхней полосы с
+   приветствием агента (и теперь у предупреждения внизу страницы), а не
+   акцентный фиолетовый — так кнопка визуально перекликается с "верхней
+   линией" страницы. */
 .unit-cta{
   position:relative;overflow:hidden;
   display:flex;align-items:center;justify-content:center;gap:6px;
   margin-top:14px;padding:12px;border-radius:10px;
-  background:var(--accent);color:#fff;font-size:13px;font-weight:600;
+  background:var(--night);color:#fff;font-size:13px;font-weight:600;
   transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
 }
-.unit-card:hover .unit-cta{box-shadow:0 6px 16px rgba(94,23,235,.3);}
-.unit-cta:hover{background:#4c12c9;transform:translateY(-1px);}
+.unit-card:hover .unit-cta{box-shadow:0 6px 16px rgba(28,28,46,.35);}
+.unit-cta:hover{background:#111120;transform:translateY(-1px);}
 .unit-cta i{display:inline-block;animation:cta-arrow 1.6s ease-in-out infinite;}
 .unit-cta::after{
   content:'';position:absolute;top:0;left:0;width:30%;height:100%;
@@ -630,12 +638,21 @@ async function init() {
   // друге (позиции пересчитаются, но структура/размер карточек уже готовы).
   layoutMasonry(true);
 
-  // Загружаем слайды для каждого юнита
-  for (const meta of units_meta) {
+  // Загружаем слайды для каждого юнита — параллельно (Promise.all), а не
+  // по очереди (было: for...of с await внутри цикла, т.е. проверка картинок
+  // следующей карточки не начиналась, пока не закончится предыдущая).
+  // Именно из-за этой последовательной очереди карусель (а с ней и
+  // автопролистывание/обработчики наведения — см. initCarousel) у карточек
+  // в конце списка появлялась с заметной задержкой: если навести на такую
+  // карточку рано, у неё ещё даже не было слушателя наведения, отсюда и
+  // ощущение "первое наведение долгое". Теперь все проверки картинок для
+  // всех карточек идут одновременно, и вся подборка становится интерактивной
+  // намного быстрее.
+  await Promise.all(units_meta.map(async meta => {
     const u = units.find(x => x.room_no === meta.room_no);
-    if (!u) continue;
+    if (!u) return;
     const card = document.getElementById(`uc-${u.room_no}`);
-    if (!card) continue;
+    if (!card) return;
     const slides = await loadSlides(u, meta.project, projMap[meta.project]);
     if (slides.length) {
       initCarousel(card, slides);
@@ -643,7 +660,7 @@ async function init() {
       const ph = card.querySelector('.unit-plan-placeholder');
       if (ph) ph.querySelector('span').textContent = 'Планировка появится позже';
     }
-  }
+  }));
 
   // Финальный пересчёт раскладки — на случай, если высота карточек чуть
   // изменилась после подгрузки слайдов (шрифты/иконки и т.п.).
