@@ -1315,22 +1315,29 @@ async function loadActivity() {
   let presCards = [];
   if (Array.isArray(presentations) && presentations.length) {
     const presIds = presentations.map(p => p.id).join(',');
-    const [pvRes, pbRes, pvrRes] = await Promise.all([
+    const [pvRes, pbRes, pvrRes, plRes] = await Promise.all([
       h(`${SUPABASE_URL}/presentation_views?presentation_id=in.(${presIds})&select=presentation_id,viewed_at&order=viewed_at.desc`),
       h(`${SUPABASE_URL}/presentation_bookings?presentation_id=in.(${presIds})&select=presentation_id,units(room_no)`),
-      h(`${SUPABASE_URL}/presentation_viewing_requests?presentation_id=in.(${presIds})&select=presentation_id,requested_date,units(room_no)`)
+      h(`${SUPABASE_URL}/presentation_viewing_requests?presentation_id=in.(${presIds})&select=presentation_id,requested_date,units(room_no)`),
+      h(`${SUPABASE_URL}/presentation_likes?presentation_id=in.(${presIds})&select=presentation_id,units(room_no)`)
     ]);
     const presViews = await pvRes.json();
     const presBookings = await pbRes.json();
     const presViewingReqs = await pvrRes.json();
+    const presLikes = await plRes.json();
 
     const presBookMap = (Array.isArray(presBookings) ? presBookings : []).reduce((m,b)=>{(m[b.presentation_id]=m[b.presentation_id]||[]).push(b.units?.room_no);return m;},{});
     const presViewingMap = (Array.isArray(presViewingReqs) ? presViewingReqs : []).reduce((m,v)=>{(m[v.presentation_id]=m[v.presentation_id]||[]).push({room: v.units?.room_no||'—', date: v.requested_date});return m;},{});
+    // presentation_likes может ещё не существовать как таблица у части
+    // агентов (создаётся отдельно в Supabase) — если запрос вернул ошибку
+    // вместо массива, просто не показываем лайки, не ломая всю активность.
+    const presLikesMap = (Array.isArray(presLikes) ? presLikes : []).reduce((m,l)=>{(m[l.presentation_id]=m[l.presentation_id]||[]).push(l.units?.room_no);return m;},{});
 
     presCards = presentations.map(p => {
       const views = Array.isArray(presViews) ? presViews.filter(v => v.presentation_id === p.id) : [];
       const bc = presBookMap[p.id] || [];
       const vreqs = presViewingMap[p.id] || [];
+      const lk = presLikesMap[p.id] || [];
       const units = Array.isArray(p.units) ? p.units.length : 0;
       const label = p.client_name || (p.units?.length ? `Презентация · ${p.units.map(u=>u.room_no).slice(0,3).join(', ')}${p.units.length>3?'…':''}` : 'Презентация');
 
@@ -1352,6 +1359,7 @@ async function loadActivity() {
         const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';
         events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--green)"></div>Запись на просмотр${r.room && r.room!=='—' ? ' — '+r.room : ''} — ${dateStr}</div>`);
       });
+      if (lk.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>Понравилась планировка: ${lk.join(', ')}</div>`);
       if (!events.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
 
       // Сортируем список сверху вниз по тому, кто заходил в подборку позднее

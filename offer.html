@@ -123,8 +123,35 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
    управляется классом .expanded (через JS), а не чистым :hover — иначе
    при наведении прямо на кнопку "Подробнее" она бы уезжала вниз из-под
    курсора вместе с раскрывающейся инфой. */
-.unit-info{padding:14px 16px;}
-.unit-summary{cursor:pointer;}
+.unit-info{padding:14px 16px;position:relative;}
+.unit-summary{cursor:pointer;padding-right:28px;}
+
+/* Сердечко "нравится" — справа сверху в блоке информации (не над
+   картинкой, там уже плашка статуса). Загорается акцентным фиолетовым
+   var(--accent) — тем же, что и точка на логотипе Flox — и начинает
+   пульсировать (тот же приём "радиоактивного камня", что у остальных
+   индикаторов на странице), пока лайк активен. Лайк ставится один раз —
+   повторный клик ничего не отправляет повторно (см. обработчик клика),
+   чтобы агенту не приходило по уведомлению на каждое нажатие. */
+.unit-like{
+  position:absolute;top:12px;right:12px;z-index:4;
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:var(--muted);cursor:pointer;
+  transition:color .2s ease,transform .15s ease;
+}
+.unit-like:hover{color:var(--accent);transform:scale(1.12);}
+.unit-like.liked{color:var(--accent);animation:heart-pop .5s ease;}
+.unit-like.liked i{animation:heart-glow-pulse 2.2s ease-in-out infinite;}
+@keyframes heart-pop{
+  0%{transform:scale(1);}
+  45%{transform:scale(1.45);}
+  100%{transform:scale(1);}
+}
+@keyframes heart-glow-pulse{
+  0%,100%{filter:drop-shadow(0 0 1px currentColor);opacity:.8;}
+  50%{filter:drop-shadow(0 0 6px currentColor);opacity:1;}
+}
 /* Название проекта — крупнее и заметнее номера юнита (номер — как подпись). */
 .unit-proj{font-size:16px;font-weight:700;color:var(--night);margin-bottom:2px;letter-spacing:-.01em;}
 .unit-num{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;}
@@ -140,19 +167,17 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 /* кнопка "Подробнее" — видна всегда; стрелка покачивается постоянно, а
    металлический блик запускается только при наведении (один проход на
    каждый hover), а не крутится бесконечно сам по себе.
-   Цвет — var(--night), тот же тёмно-синий, что и у верхней полосы с
-   приветствием агента (и теперь у предупреждения внизу страницы), а не
-   акцентный фиолетовый — так кнопка визуально перекликается с "верхней
-   линией" страницы. */
+   Цвет — снова акцентный фиолетовый var(--accent) (тёмно-синий вариант не
+   прижился). */
 .unit-cta{
   position:relative;overflow:hidden;
   display:flex;align-items:center;justify-content:center;gap:6px;
   margin-top:14px;padding:12px;border-radius:10px;
-  background:var(--night);color:#fff;font-size:13px;font-weight:600;
+  background:var(--accent);color:#fff;font-size:13px;font-weight:600;
   transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
 }
-.unit-card:hover .unit-cta{box-shadow:0 6px 16px rgba(28,28,46,.35);}
-.unit-cta:hover{background:#111120;transform:translateY(-1px);}
+.unit-card:hover .unit-cta{box-shadow:0 6px 16px rgba(94,23,235,.3);}
+.unit-cta:hover{background:#4c12c9;transform:translateY(-1px);}
 .unit-cta i{display:inline-block;animation:cta-arrow 1.6s ease-in-out infinite;}
 .unit-cta::after{
   content:'';position:absolute;top:0;left:0;width:30%;height:100%;
@@ -441,6 +466,45 @@ function initHoverExpand(card) {
   card.addEventListener('mouseleave', () => { card.classList.remove('expanded'); animateMasonry(500); });
 }
 
+// ── Сердечко "нравится" ──────────────────────────────────────
+// Один делегированный обработчик клика на весь список карточек (проще, чем
+// вешать слушатель на каждое сердечко отдельно). Лайк ставится максимум
+// один раз на юнит — состояние живёт в localStorage (переживает
+// перезагрузку страницы по той же ссылке), повторный клик по уже
+// лайкнутому сердечку ничего не делает. Пишем в таблицу
+// presentation_likes — её бот (telegram_listener.py) вычитывает тем же
+// проверенным способом, что presentation_bookings/viewing_requests, и
+// шлёт агенту уведомление в Telegram + запись попадает в "Последнюю
+// активность" в floxweb.html.
+function initLikeButtons(presentationId) {
+  document.querySelectorAll('.unit-like').forEach(el => {
+    const room = el.dataset.room;
+    if (localStorage.getItem('flox-liked-' + room) === 'true') {
+      el.classList.add('liked');
+      const icon = el.querySelector('i');
+      if (icon) icon.className = 'ti ti-heart-filled';
+    }
+  });
+  document.querySelector('.units')?.addEventListener('click', e => {
+    const btn = e.target.closest('.unit-like');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (btn.classList.contains('liked')) return; // уже лайкнули — не отправляем повторно
+    const room = btn.dataset.room;
+    const unitId = btn.dataset.unitId;
+    btn.classList.add('liked');
+    const icon = btn.querySelector('i');
+    if (icon) icon.className = 'ti ti-heart-filled';
+    localStorage.setItem('flox-liked-' + room, 'true');
+    fetch(`${SB_URL}/presentation_likes`, {
+      method: 'POST',
+      headers: { ...HDR, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ presentation_id: presentationId, unit_id: unitId || null }),
+    }).catch(() => {});
+  });
+}
+
 async function loadSlides(u, projCode, proj) {
   const TOWER_CYR = { A: 'а', B: 'б', C: 'с', D: 'д' };
   const slides = [];
@@ -542,7 +606,7 @@ async function init() {
   if (!units_meta.length) { showError('В подборке нет юнитов'); return; }
 
   const roomNos = units_meta.map(u => u.room_no);
-  const ur = await fetch(`${SB_URL}/units?room_no=in.(${roomNos.map(r=>`"${r}"`).join(',')})&select=room_no,tower,floor,room_type,area_sqm,selling_price,price_per_sqm,status,plan_code`, { headers: HDR });
+  const ur = await fetch(`${SB_URL}/units?room_no=in.(${roomNos.map(r=>`"${r}"`).join(',')})&select=id,room_no,tower,floor,room_type,area_sqm,selling_price,price_per_sqm,status,plan_code`, { headers: HDR });
   const units = await ur.json();
 
   const projectIds = [...new Set(units_meta.map(u => u.project).filter(Boolean))];
@@ -605,6 +669,9 @@ async function init() {
         <span class="unit-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">${isAvail ? `<span class="badge-dot" style="--dot-delay:${(Math.random()*1.8).toFixed(2)}s"></span>` : ''}${isAvail ? 'Свободен' : 'Продан'}</span>
       </div>
       <div class="unit-info">
+        <span class="unit-like" data-unit-id="${u.id || ''}" data-room="${u.room_no}" aria-label="Нравится">
+          <i class="ti ti-heart"></i>
+        </span>
         <div class="unit-summary">
           <div class="unit-proj">${projName}</div>
           <div class="unit-num">${u.room_no}</div>
@@ -628,6 +695,8 @@ async function init() {
   }).join('');
 
   document.getElementById('main').innerHTML = `<div class="units">${html}</div>`;
+
+  initLikeButtons(id);
 
   // Раскрытие полной инфы по наведению — вешаем на каждую карточку сразу,
   // независимо от того, найдутся ли для неё картинки планировки.
