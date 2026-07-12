@@ -67,27 +67,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    max-height) — из-за этого при коротком контенте в .main казалось, что
    "скроллится только правая колонка": страница целиком помещалась в экран,
    а сайдбар просто был единственным, что вообще прокручивалось, если его
-   содержимое не влезало. Теперь скроллится вся страница целиком (как тело
-   документа).
-
-   .sidebar сам НЕ является sticky-элементом — он просто высокий контейнер
-   (растягивается на всю высоту .main, как и раньше без align-self:start),
-   дающий место для "прилипания". Sticky стоит на #sidebarSticky ВНУТРИ
-   него — специально отдельным слоем от #sidebarSpacer: спейсер нужен только
-   для начального выравнивания по высоте шапки (пока всё в обычном потоке),
-   а после того как страницу прокрутили и блок "прилип" к top:64px, спейсер
-   уже прокручен и не должен ничего сдвигать — если бы sticky стоял на самом
-   .sidebar (как раньше), спейсер оказывался бы ВНУТРИ прилипшего блока и
-   сдвигал бы блок цены вниз от планировки даже в закреплённом состоянии
-   (та самая рассинхронизация при скролле). */
+   содержимое не влезало. Теперь скроллится вся страница целиком, обычным
+   образом — ни планировка, ни блок цены НЕ закреплены (без position:sticky):
+   при скролле обе колонки уезжают вверх вместе, как единое целое, потому
+   что обе начинаются на одной высоте и обе — часть одного обычного потока
+   документа. #sidebarSticky больше не sticky по имени, оставлен просто как
+   контейнер (id не переименовывали, чтобы не трогать лишний код). */
 .page-body{display:grid;grid-template-columns:1fr 300px;gap:24px;min-height:calc(100vh - 64px)}
 .main{padding:24px 0 24px 24px;display:flex;flex-direction:column;gap:20px}
 .sidebar{padding:24px 24px 24px 0}
-#sidebarSticky{display:flex;flex-direction:column;gap:12px;position:sticky;top:64px}
-/* #sidebarSpacer больше не flex-сосед .sc (см. #sidebarSticky выше) — раньше
-   зазор между ними обеспечивал общий flex-gap:12px сайдбара, теперь он
-   вне sticky-обёртки, поэтому зазор перед первой карточкой задаём явно
-   тем же числом, что и gap внутри #sidebarSticky. */
+#sidebarSticky{display:flex;flex-direction:column;gap:12px}
+/* #sidebarSpacer — просто отступ перед первой карточкой сайдбара, чтобы она
+   стартовала на той же высоте, что и планировка слева (см.
+   alignSidebarToPlan()); margin-bottom добивает зазор до величины gap
+   внутри #sidebarSticky, раз сам спейсер вне этого flex-контейнера. */
 #sidebarSpacer{margin-bottom:12px}
 
 /* ── UNIT HEADER ── */
@@ -118,25 +111,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .act-btn:hover{border-color:var(--text);color:var(--text)}
 
 /* ── TWO-COL ── */
-/* Оборачивает и планировку, и блоки из проекта (#projectBlocksWrap) одним
-   контейнером — это важно для position:sticky у .plan-card ниже: область,
-   в пределах которой элемент может "прилипать", ограничена высотой его
-   родителя. Раньше .two-col оборачивал только планировку (~480px) — из-за
-   этого планировка почти сразу же откреплялась и уезжала при скролле,
-   хотя сайдбар справа (чей родитель — вся .page-body) продолжал стоять на
-   месте. Теперь родитель такой же высокий, как и весь остальной контент —
-   планировка остаётся закреплённой на весь скролл блоков ниже неё, как и
-   сайдбар. */
+/* Просто оборачивает планировку и блоки из проекта (#projectBlocksWrap)
+   одним контейнером друг под другом — без какой-либо фиксации. */
 .two-col{display:block}
 
 /* ── PLAN ── */
-/* top совпадает с .sidebar{top:64px} специально: планировка и блок цены —
-   соседние grid-колонки одной высоты, и если бы у них были разные sticky-
-   отступы, они бы "прилипали" на разной высоте и расходились по вертикали
-   при скролле (так уже было — 84 у планировки против 64 у сайдбара). При
-   одинаковом top они всегда либо оба на своём обычном месте, либо оба
-   закреплены на одной и той же высоте — то есть всегда на одном уровне. */
-.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:sticky;top:64px;height:480px;max-height:calc(100vh - 84px);display:flex;align-items:center;justify-content:center}
+/* Без position:sticky — планировка просто часть обычного потока страницы
+   и уезжает вверх при скролле вместе со всем остальным (как и блок цены
+   справа), а не остаётся висеть на месте. */
+.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;height:480px;display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
 .plan-placeholder i{font-size:56px}
