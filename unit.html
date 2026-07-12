@@ -119,7 +119,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 /* Без position:sticky — планировка просто часть обычного потока страницы
    и уезжает вверх при скролле вместе со всем остальным (как и блок цены
    справа), а не остаётся висеть на месте. */
-.plan-card{background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;height:480px;display:flex;align-items:center;justify-content:center}
+.plan-card{position:relative;background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;height:480px;display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
 .plan-placeholder i{font-size:56px}
