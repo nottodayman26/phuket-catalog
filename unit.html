@@ -30,6 +30,15 @@ body.light{
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
 
+/* ── предупреждение внизу страницы (только клиентский режим) ── */
+/* То же самое предупреждение, что и в offer.html: тёмно-синий фон (тот же
+   #1C1C2E, что и у .client-topbar вверху страницы), белый текст и иконка.
+   Скрыто по умолчанию — показывается из JS только когда isClientMode,
+   агенту оно не нужно. */
+.footer-notice{display:none;border-top:0.5px solid var(--line);margin-top:32px;padding:24px 20px;background:#1C1C2E;}
+.footer-notice-text{max-width:640px;margin:0 auto;text-align:center;font-size:12.5px;line-height:1.6;color:#fff;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;}
+.footer-notice-text i{font-size:15px;flex-shrink:0;color:#fff;}
+
 
 /* ── КЛИЕНТСКАЯ ШАПКА (белый лейбл, без брендинга Flox) ── */
 /* Показывается вместо обычной внутренней панели (topbar.js — поиск,
@@ -183,6 +192,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    "заявка принята", без анимации-приглашения нажать (она больше не нужна). */
 .client-book-btn.confirmed{background:var(--green)}
 .client-viewing-btn.confirmed{border-color:var(--green);color:var(--green)}
+/* У "Записаться на показ" фон при наведении завязан на var(--accent-soft)
+   (светло-фиолетовый) — это правильно ДО подтверждения (рамка ещё
+   фиолетовая), но после подтверждения рамка/текст зеленеют, а фон при
+   наведении оставался прежним фиолетовым — разнобой. Здесь фон при
+   наведении тоже зеленеет, в цвет рамки. */
+.client-viewing-btn.confirmed:hover{background:var(--green-soft)}
 
 /* ── "Металлический" блик ── */
 /* Раз в несколько секунд по кнопке пробегает косая светлая полоса — сама
@@ -409,6 +424,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
   </div>
 </div>
 
+<div class="footer-notice" id="footerNotice">
+  <div class="footer-notice-text">
+    <i class="ti ti-alert-triangle"></i>
+    Наличие юнитов может измениться в любой момент — актуальный статус лучше уточнять у вашего агента
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
@@ -449,6 +471,12 @@ if (isClientMode) {
     ct.style.display = 'flex';
   }
   loadSoldTicker();
+  // То же предупреждение, что и в оффере (offer.html) — то же в двух
+  // словах: наличие юнита не гарантировано, актуальный статус лучше
+  // уточнять у агента. В агентском режиме этот блок не нужен — агент и так
+  // знает актуальную ситуацию.
+  const fn = document.getElementById('footerNotice');
+  if (fn) fn.style.display = 'block';
 }
 
 // ── Бегущая строка "недавно продано" (только клиентский режим) ──────────────
@@ -1027,8 +1055,13 @@ document.getElementById('lightbox').addEventListener('click', function(e) {
   if (e.target === this) closeLightbox();
 });
 
-// ── Анимация графика платежей (кружки-прогресс + проценты) — запускается
-// один раз, когда блок появляется в зоне видимости при скролле. ──────────
+// ── Анимация графика платежей (кружки-прогресс + проценты) — как в
+// project.html: запускается заново КАЖДЫЙ раз, когда блок появляется в
+// зоне видимости при скролле (не один раз за всю жизнь страницы). Раньше
+// тут был obs.disconnect() после первого срабатывания — уводило в скролл
+// мимо блока и обратно, и анимация больше не повторялась. Работает
+// одинаково в агентском и клиентском режиме — вызывается безусловно из
+// renderUnit(), блок графика платежей есть в обоих режимах. ──────────
 function initProjectPaymentAnimation() {
   const section = document.getElementById('projPaymentSection');
   if (!section) return;
@@ -1052,7 +1085,6 @@ function initProjectPaymentAnimation() {
       const val = parseFloat(el.dataset.target);
       if (!isNaN(val)) setTimeout(() => animateProjCount(el, val, 1800, v => Math.round(v) + '%'), i * 150);
     });
-    obs.disconnect();
   }, { threshold: 0.3 });
   obs.observe(section);
 }
@@ -1224,8 +1256,31 @@ function renderUnit(u, proj, pd, allowedBlocks) {
     // Запоминаем текущий юнит для брони/записи на показ — кнопки навешены
     // на элементы, отрисованные выше в этом же innerHTML.
     clientUnit = u;
-    document.getElementById('clientBookBtn')?.addEventListener('click', submitBooking);
-    document.getElementById('clientViewingBtn')?.addEventListener('click', openViewingDrawer);
+    // Бронь/запись на показ — не более одного раза на юнит. Флаг живёт в
+    // localStorage (переживает перезагрузку страницы по той же ссылке),
+    // ключ включает roomNo, чтобы бронь одного юнита не блокировала
+    // бронь другого при переходе между юнитами по той же подборке.
+    // Повторный клик не отправляет заявку ещё раз, а просто показывает
+    // пояснение — кнопка при этом остаётся кликабельной (не disabled),
+    // чтобы пояснение можно было увидеть снова, если клиент забыл.
+    const bookBtn = document.getElementById('clientBookBtn');
+    const viewBtn = document.getElementById('clientViewingBtn');
+    if (localStorage.getItem('flox-booked-' + roomNo) === 'true') bookBtn?.classList.add('confirmed');
+    if (localStorage.getItem('flox-viewing-' + roomNo) === 'true') viewBtn?.classList.add('confirmed');
+    bookBtn?.addEventListener('click', () => {
+      if (localStorage.getItem('flox-booked-' + roomNo) === 'true') {
+        showAlready('Мы уже сообщили вашему агенту о желании забронировать этот объект. Если что-то изменилось — сообщите об этом агенту.');
+        return;
+      }
+      submitBooking();
+    });
+    viewBtn?.addEventListener('click', () => {
+      if (localStorage.getItem('flox-viewing-' + roomNo) === 'true') {
+        showAlready('Мы уже сообщили вашему агенту о желании посмотреть объект, если вас не устраивает дата, сообщите это агенту.');
+        return;
+      }
+      openViewingDrawer();
+    });
   } else {
     initPresentation();
   }
@@ -1330,6 +1385,7 @@ async function submitBooking() {
     console.error('Не удалось отправить заявку на бронирование', e);
   }
   if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.classList.add('confirmed'); }
+  localStorage.setItem('flox-booked-' + roomNo, 'true');
   showSuccess('Поздравляем! Заявка на бронирование отправлена вашему агенту, оставайтесь на связи для дальнейшего оформления.');
 }
 
@@ -1422,9 +1478,20 @@ document.getElementById('viewingConfirm')?.addEventListener('click', async () =>
   }
   btn.disabled = false;
   document.getElementById('clientViewingBtn')?.classList.add('confirmed');
+  localStorage.setItem('flox-viewing-' + roomNo, 'true');
   closeViewingDrawer();
   showSuccess('Поздравляем с успешной записью на просмотр! Скоро агент свяжется с вами для уточнения времени встречи.');
 });
+
+// Пояснение при повторном клике на уже подтверждённую бронь/запись на
+// показ — переиспользует тот же оверлей, что и showSuccess, но без
+// конфетти (это не новое достижение, а просто напоминание, что заявка уже
+// отправлена).
+function showAlready(text) {
+  const textEl = document.getElementById('successText');
+  if (textEl) textEl.textContent = text;
+  document.getElementById('successOverlay')?.classList.add('open');
+}
 
 function showSuccess(text) {
   const textEl = document.getElementById('successText');
