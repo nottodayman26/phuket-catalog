@@ -63,9 +63,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    этого расстояния выглядели неровными. Теперь единый зазор задаёт grid-gap,
    а сами .main/.sidebar отвечают только за внешний край (левый/правый) —
    везде одно и то же число, и верхний отступ (padding-top) тоже общий. */
+/* Раньше .sidebar сам скроллился внутри себя (overflow-y:auto + фиксированный
+   max-height) — из-за этого при коротком контенте в .main казалось, что
+   "скроллится только правая колонка": страница целиком помещалась в экран,
+   а сайдбар просто был единственным, что вообще прокручивалось, если его
+   содержимое не влезало. Теперь скроллится вся страница целиком (как тело
+   документа), а сайдбар только "прилипает" (position:sticky) к верху при
+   прокрутке — align-self:start нужен, чтобы его высота считалась по
+   собственному контенту, а не растягивалась на высоту всей колонки .main. */
 .page-body{display:grid;grid-template-columns:1fr 300px;gap:24px;min-height:calc(100vh - 64px)}
 .main{padding:24px 0 24px 24px;display:flex;flex-direction:column;gap:20px}
-.sidebar{padding:24px 24px 24px 0;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 64px);overflow-y:auto;position:sticky;top:64px}
+.sidebar{padding:24px 24px 24px 0;display:flex;flex-direction:column;gap:12px;position:sticky;top:64px;align-self:start}
 
 /* ── UNIT HEADER ── */
 /* align-items:flex-end — когда в клиентском режиме плашка статуса
@@ -232,6 +240,102 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .loading{display:flex;align-items:center;justify-content:center;min-height:300px}
 .spinner{width:28px;height:28px;border:2px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── БЛОКИ ИЗ ПРОЕКТА (перенесены из project.html) ──────────────────────────
+   Ниже планировки могут идти те же блоки, что агент выбирал на вкладке
+   "Название презентации" во flox web при создании презентации (developer,
+   description, nearby/карта, gallery, payment_schedule, maintenance, files —
+   см. renderProjectBlocks). В клиентском режиме показываются только те,
+   что агент отметил для этого проекта; в агентском — всегда все. Стили и
+   разметка максимально повторяют project.html, чтобы блоки выглядели
+   привычно и узнаваемо. */
+.proj-block{padding-top:24px;border-top:0.5px solid var(--line)}
+.proj-block:first-child{padding-top:0;border-top:none}
+.sec-title{font-size:13px;font-weight:600;margin-bottom:18px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+.desc-text{font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px}
+.facilities-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:24px}
+.fac-item{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;display:flex;align-items:center;gap:8px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default}
+.fac-item:hover{transform:scale(1.04);border-color:var(--project-color);box-shadow:0 4px 16px rgba(94,23,235,0.12)}
+.fac-icon{font-size:18px}
+.info-box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;transition:transform .2s cubic-bezier(.34,1.56,.64,1);cursor:default}
+.info-row:hover{transform:translateX(4px)}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--muted)}
+.info-val{font-weight:600}
+
+.map-wrap{border-radius:14px;overflow:hidden;border:1px solid var(--line);margin-bottom:20px}
+.nearby-list{display:flex;flex-direction:column;gap:8px}
+.nearby-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 14px;transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
+.nearby-item:hover{border-color:var(--project-color);background:var(--surface-2);transform:scale(1.02)}
+.nearby-icon{font-size:20px;width:30px;text-align:center}
+.nearby-name{font-size:13px;font-weight:500;flex:1}
+.nearby-dist{text-align:right}
+.nearby-dist-val{font-size:12px;font-weight:600}
+.nearby-time{font-size:11px;color:var(--muted)}
+
+.visual-tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.visual-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--line-2);color:var(--muted);transition:all .2s cubic-bezier(.34,1.56,.64,1);background:none;font-family:inherit}
+.visual-tab:hover{border-color:var(--project-color);color:var(--project-color);transform:scale(1.06)}
+.visual-tab.act{background:var(--project-color);border-color:var(--project-color);color:#fff}
+.visual-panel{display:none}
+.visual-panel.act{display:block}
+.visual-slider{position:relative;overflow:hidden;border-radius:12px;background:var(--surface-2);user-select:none;aspect-ratio:16/9}
+.visual-slides{display:flex;transition:transform .35s cubic-bezier(.4,0,.2,1);height:100%}
+.visual-slide{min-width:100%;height:100%;flex-shrink:0}
+.visual-slide img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.visual-slide:hover img{transform:scale(1.04)}
+.visual-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.45);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:2;line-height:1}
+.visual-arrow:hover{background:rgba(0,0,0,0.75)}
+.visual-arrow.prev{left:12px}
+.visual-arrow.next{right:12px}
+.visual-counter{position:absolute;bottom:12px;right:14px;font-size:11px;color:rgba(255,255,255,0.75);background:rgba(0,0,0,0.4);padding:3px 10px;border-radius:20px}
+
+.white-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden}
+.white-card .ps-timeline{padding:20px 16px 0}
+.white-card .ps-table{border-top:none}
+.ps-timeline{display:flex;align-items:flex-start;margin-bottom:24px;overflow-x:auto;padding-bottom:4px;gap:0;scrollbar-width:none}
+.ps-timeline::-webkit-scrollbar{display:none}
+.ps-step{flex:1;min-width:72px;text-align:center;position:relative;padding-bottom:4px;transition:transform .2s cubic-bezier(.34,1.56,.64,1);cursor:default}
+.ps-step:hover{transform:scale(1.12)}
+.ps-circle-wrap{position:relative;width:56px;height:56px;margin:0 auto 8px;z-index:1}
+.ps-circle-wrap svg{transform:rotate(-90deg)}
+.ps-circle-track{stroke:var(--line-2);fill:none;stroke-width:3}
+.ps-circle-fill{fill:none;stroke-width:3;stroke-linecap:round;stroke:var(--project-color);stroke-dasharray:145;stroke-dashoffset:145;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)}
+.ps-circle-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--project-color)}
+.ps-step-label{font-size:10px;color:var(--muted);line-height:1.4;margin-top:4px;word-break:keep-all}
+.ps-table{width:100%;border-collapse:collapse}
+.ps-table th{text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid var(--line)}
+.ps-table tbody tr:first-child td{border-top:none}
+.ps-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--line)}
+.ps-table tr:last-child td{border-bottom:none}
+.ps-pct{font-weight:700;color:var(--project-color);font-size:15px}
+
+.maint-row{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line);font-size:13px;gap:24px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .15s;cursor:default}
+.maint-row:hover{transform:translateX(4px);background:var(--surface-2)}
+.maint-row:last-child{border-bottom:none}
+.maint-label{color:var(--muted);flex:1}
+.maint-val{font-weight:600;flex-shrink:0;text-align:right}
+.maint-note{margin-top:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.6}
+
+.files-list{display:flex;flex-direction:column;gap:8px}
+.file-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 16px;text-decoration:none;color:var(--text);transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
+.file-item:hover{border-color:var(--project-color);background:var(--surface-2);transform:scale(1.02)}
+.file-icon{font-size:22px}
+.file-name{font-size:13px;font-weight:500;flex:1}
+.file-type{font-size:11px;color:var(--muted);background:var(--surface-2);padding:2px 7px;border-radius:5px}
+.file-arrow{color:var(--muted)}
+
+.lightbox{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.92);align-items:center;justify-content:center}
+.lightbox.open{display:flex}
+.lb-img{max-width:90vw;max-height:88vh;object-fit:contain;border-radius:8px}
+.lb-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;cursor:pointer;line-height:1;background:rgba(0,0,0,0.4);border:none;border-radius:8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+.lb-prev,.lb-next{position:absolute;top:50%;transform:translateY(-50%);color:#fff;font-size:22px;cursor:pointer;background:rgba(0,0,0,0.5);border:none;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.lb-prev:hover,.lb-next:hover{background:rgba(0,0,0,0.8)}
+.lb-prev{left:16px}
+.lb-next{right:16px}
+.lb-counter{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:12px;background:rgba(0,0,0,0.4);padding:4px 12px;border-radius:20px}
 </style>
 </head>
 <body>
@@ -271,6 +375,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
     <div class="success-text" id="successText"></div>
     <button class="success-close" id="successClose" type="button">Понятно</button>
   </div>
+</div>
+
+<!-- Лайтбокс для фото/рендеров проекта (см. renderGalleryBlock) -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-prev" onclick="lbNav(-1)">‹</button>
+  <img class="lb-img" id="lbImg" src="" alt=""/>
+  <button class="lb-next" onclick="lbNav(1)">›</button>
+  <div class="lb-counter" id="lbCounter"></div>
 </div>
 
 <div class="page-body">
@@ -404,7 +517,28 @@ async function processUnit(u) {
     } catch(e) {}
   }
 
-  renderUnit(u, proj, projData);
+  // 4. Блоки из проекта (описание/застройщик/карта/галерея/платежи/
+  // обслуживание/файлы) ниже планировки. В агентском режиме показываем
+  // все — это внутренний инструмент, фильтровать нечего. В клиентском —
+  // только то, что агент отметил для ЭТОГО проекта на шаге "Блоки" при
+  // создании презентации (id презентации приходит в ссылке из offer.html
+  // как &pres=...). allowedBlocks === null означает "показать все".
+  let allowedBlocks = null;
+  if (isClientMode && presentationId && code) {
+    try {
+      const pr = await fetch(`${SUPABASE_URL}/presentations?id=eq.${encodeURIComponent(presentationId)}&select=project_blocks`, { headers: SB });
+      const rows = await pr.json();
+      const blocksByProject = rows[0]?.project_blocks || {};
+      // Если для этого проекта в презентации явно ничего не сохранено —
+      // это тот же дефолт, что использует flox web при первом открытии
+      // шторки "Поделиться" (см. sharePresentation() в floxweb.html).
+      allowedBlocks = blocksByProject[code] || ['project_name', 'developer', 'description', 'payment_schedule'];
+    } catch(e) {
+      allowedBlocks = ['project_name', 'developer', 'description', 'payment_schedule'];
+    }
+  }
+
+  renderUnit(u, proj, projData, allowedBlocks);
 }
 
 function loadPlanImage(u, proj) {
@@ -579,7 +713,348 @@ function initPlanSwipe(card, track, slides, dotsEl, labelEl, arrowLeft, arrowRig
   });
 }
 
-function renderUnit(u, proj, pd) {
+// ── БЛОКИ ИЗ ПРОЕКТА (перенесены из project.html) ───────────────────────────
+// Каждая функция строит один блок ниже планировки юнита. Ключи соответствуют
+// PRES_BLOCKS в floxweb.html (developer/description/nearby/gallery/
+// payment_schedule/maintenance/files) — project_name отдельным блоком не
+// рисуется, потому что название проекта и так всегда есть в шапке юнита.
+function renderProjectBlocks(pd, allowed) {
+  if (!pd) return '';
+  const show = key => !allowed || allowed.includes(key);
+  const parts = [];
+  if (show('developer') && (pd.developer || (pd.buildings && pd.buildings.length) || pd.completion)) parts.push(renderDeveloperBlock(pd));
+  if (show('description') && pd.description) parts.push(renderDescriptionBlock(pd));
+  if (show('nearby') && pd.coords && pd.coords.lat) parts.push(renderMapBlock(pd));
+  if (show('gallery') && pd.gallery && pd.gallery.local && pd.gallery.local.length) parts.push(renderGalleryBlock(pd));
+  if (show('payment_schedule') && pd.payment_schedule && pd.payment_schedule.length) parts.push(`<div id="projPaymentSection">${renderPaymentBlock(pd)}</div>`);
+  if (show('maintenance') && pd.maintenance) parts.push(renderMaintBlock(pd));
+  if (show('files') && pd.files && pd.files.length) parts.push(renderFilesBlock(pd));
+  if (!parts.length) return '';
+  return parts.map(p => `<div class="proj-block">${p}</div>`).join('');
+}
+
+function renderDeveloperBlock(d) {
+  return `
+    <div class="sec-title">Детали проекта</div>
+    <div class="info-box">
+      <div class="info-row"><span class="info-label">Застройщик</span><span class="info-val">${d.developer || '—'}</span></div>
+      <div class="info-row"><span class="info-label">Корпуса</span><span class="info-val">${(d.buildings && d.buildings.length) ? d.buildings.join(', ') : '—'}</span></div>
+      <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors || '—'}</span></div>
+      <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion || '—'}</span></div>
+      <div class="info-row"><span class="info-label">Район</span><span class="info-val">${[d.district, d.amphoe].filter(Boolean).join(', ') || '—'}</span></div>
+    </div>`;
+}
+
+function renderDescriptionBlock(d) {
+  const icons = { 'лагун':'🏖️','детский бассейн':'🐬','джакузи':'♨️','фитнес':'💪','лобби':'🏨','лаундж':'🛋️','парковка':'🅿️','сад':'🌿','барбекю':'🔥','коворкинг':'💻','животных':'🐾','фонтан':'⛲','детск':'👶','прачечная':'🧺','бассейн':'🏊','вода':'💧','охрана':'🔐','зона отдыха':'🌅','спорт':'🎾' };
+  const usedIcons = new Set();
+  const getIcon = f => {
+    const fl = f.toLowerCase();
+    for (const [k, v] of Object.entries(icons)) { if (fl.includes(k) && !usedIcons.has(v)) { usedIcons.add(v); return v; } }
+    const fallbacks = ['🏡','🌴','🎯','⭐','🔑','🌊','🎪','🏅','🌺','🍃'];
+    for (const f2 of fallbacks) { if (!usedIcons.has(f2)) { usedIcons.add(f2); return f2; } }
+    return '•';
+  };
+  return `
+    <div class="sec-title">Описание</div>
+    <p class="desc-text">${d.description || ''}</p>
+    ${(d.facilities && d.facilities.length) ? `
+    <div class="sec-title">Инфраструктура</div>
+    <div class="facilities-grid">
+      ${d.facilities.map(f => `<div class="fac-item"><span class="fac-icon">${getIcon(f)}</span><span>${f}</span></div>`).join('')}
+    </div>` : ''}`;
+}
+
+function renderMapBlock(d) {
+  const { lat, lng } = d.coords || {};
+  return `
+    <div class="sec-title">Карта</div>
+    <div class="map-wrap">
+      <iframe width="100%" height="320" style="border:0;display:block" loading="lazy" allowfullscreen
+        src="https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed"></iframe>
+    </div>
+    ${(d.nearby && d.nearby.length) ? `
+    <div class="sec-title">Ближайшие локации</div>
+    <div class="nearby-list">
+      ${d.nearby.map(n => `
+        <div class="nearby-item">
+          <span class="nearby-icon">${n.icon}</span>
+          <span class="nearby-name">${n.name}</span>
+          <div class="nearby-dist">
+            <div class="nearby-dist-val">${n.dist}</div>
+            <div class="nearby-time">${n.time}</div>
+          </div>
+        </div>`).join('')}
+    </div>` : ''}`;
+}
+
+function renderGalleryBlock(d) {
+  const base = location.pathname.replace(/\/[^\/]*$/, '/');
+  const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
+  const renders1 = local.slice(0, 9).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const renders2 = local.slice(9, 15).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const renders3 = local.slice(15, 19).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const showroom = local.slice(19).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+
+  const makeSlider = (photos, sliderId) => {
+    if (!photos.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Фото появятся позже</div>`;
+    return `
+      <div class="visual-slider" id="${sliderId}"
+        data-idx="0" data-count="${photos.length}"
+        onmousedown="sliderDragStart(event,'${sliderId}')"
+        ontouchstart="sliderTouchStart(event,'${sliderId}')">
+        <div class="visual-slides" id="${sliderId}-slides">
+          ${photos.map((src, i) => `
+            <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
+              <img src="${i < 3 ? src : ''}" data-src="${src}" alt="фото ${i+1}"/>
+            </div>`).join('')}
+        </div>
+        <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>
+        <button class="visual-arrow next" onclick="sliderNav('${sliderId}',1);event.stopPropagation()">›</button>
+        <div class="visual-counter" id="${sliderId}-counter">1 / ${photos.length}</div>
+      </div>`;
+  };
+
+  return `
+    <div class="sec-title">Рендеры и фото</div>
+    <div class="visual-tabs">
+      <button class="visual-tab act" onclick="switchVisualTab(this,'vp-ext')">Экстерьер</button>
+      <button class="visual-tab" onclick="switchVisualTab(this,'vp-int')">Интерьер</button>
+      <button class="visual-tab" onclick="switchVisualTab(this,'vp-showroom-r')">Шоурум: рендеры</button>
+      <button class="visual-tab" onclick="switchVisualTab(this,'vp-showroom')">Шоурум: фото</button>
+    </div>
+    <div class="visual-panel act" id="vp-ext">${makeSlider(renders1, 'sl-ext')}</div>
+    <div class="visual-panel" id="vp-int">${makeSlider(renders2, 'sl-int')}</div>
+    <div class="visual-panel" id="vp-showroom-r">${makeSlider(renders3, 'sl-showroom-r')}</div>
+    <div class="visual-panel" id="vp-showroom">${makeSlider(showroom, 'sl-showroom')}</div>`;
+}
+
+function renderPaymentBlock(d) {
+  const total = d.payment_schedule.reduce((s, p) => s + p.percent, 0);
+  const stageRu = {
+    'Reservation':'Бронирование','Booking deposit':'Депозит',
+    'Sign Contract':'Договор','Sign Contract (SPA)':'Договор SPA',
+    'Contract payment':'Договор',
+    'Foundation Complete':'Фундамент','Foundation':'Фундамент',
+    'Structure Complete':'Конструкция','Structure':'Конструкция',
+    'Rooftop Complete':'Кровля','Rooftop':'Кровля',
+    'Interior & Finishing':'Отделка','Finishing':'Отделка',
+    'Transfer of Ownership':'Ключи','Transfer of ownership':'Ключи',
+    '1st Installment':'1-й взнос','2nd Installment':'2-й взнос',
+    '3rd Installment':'3-й взнос',
+  };
+  const circ = 2 * Math.PI * 23;
+  let cum = 0;
+  const steps = d.payment_schedule.map(p => {
+    cum += p.percent;
+    const offset = circ * (1 - cum / total);
+    const label = stageRu[p.stage] || p.stage;
+    return `
+      <div class="ps-step">
+        <div class="ps-circle-wrap">
+          <svg viewBox="0 0 56 56" width="56" height="56">
+            <circle class="ps-circle-track" cx="28" cy="28" r="23"/>
+            <circle class="ps-circle-fill" cx="28" cy="28" r="23" data-offset="${offset}"/>
+          </svg>
+          <div class="ps-circle-pct" data-target="${p.percent}">0%</div>
+        </div>
+        <div class="ps-step-label">${label}</div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="sec-title">График платежей</div>
+    <div class="white-card">
+      <div class="ps-timeline">${steps}</div>
+      <table class="ps-table">
+        <thead><tr><th>Этап</th><th>Условие</th><th style="text-align:right">%</th></tr></thead>
+        <tbody>
+          ${d.payment_schedule.map(p => `
+            <tr>
+              <td>${p.stage}</td>
+              <td>${p.note}</td>
+              <td style="text-align:right"><span class="ps-pct" data-target="${p.percent}">0%</span></td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot><tr>
+          <td colspan="2" style="padding:12px 14px;font-size:12px;color:var(--muted)">Итого</td>
+          <td style="text-align:right;padding:12px 14px;font-weight:700">${total}%</td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+}
+
+function renderMaintBlock(d) {
+  const m = d.maintenance;
+  const cfAmt = m.common_fee.amount === 0 ? 'уточняется' : `${m.common_fee.amount} ${m.common_fee.unit}`;
+  const sfAmt = m.sinking_fund.amount === 0 ? 'уточняется' : `${m.sinking_fund.amount} ${m.sinking_fund.unit}`;
+  const noteHtml = (m.notes && m.notes !== 'Данные уточняются') ? `<div class="maint-note">${m.notes}</div>` : '';
+  return `
+    <div class="sec-title">Обслуживание</div>
+    <div class="white-card">
+      <div class="maint-row"><span class="maint-label">Common fee</span><span class="maint-val">${cfAmt}</span></div>
+      <div class="maint-row"><span class="maint-label">Sinking fund</span><span class="maint-val">${sfAmt}</span></div>
+      <div class="maint-row"><span class="maint-label">Регистрация — Фрихолд</span><span class="maint-val">${m.registration.freehold}</span></div>
+      <div class="maint-row"><span class="maint-label">Регистрация — Лизхолд</span><span class="maint-val">${m.registration.leasehold}</span></div>
+      ${noteHtml}
+    </div>`;
+}
+
+function renderFilesBlock(d) {
+  const icons = { pdf:'📄', folder:'📁', link:'🔗', video:'🎬' };
+  return `
+    <div class="sec-title">Файлы проекта</div>
+    <div class="files-list">
+      ${d.files.map(f => `
+        <a class="file-item" href="${f.url}" download="${f.name}.pdf" target="_blank">
+          <span class="file-icon">${icons[f.type] || '📄'}</span>
+          <span class="file-name">${f.name}</span>
+          <span class="file-type">${(f.type || '').toUpperCase()}</span>
+          <span class="file-arrow">⬇</span>
+        </a>`).join('')}
+    </div>`;
+}
+
+// ── Слайдер (галерея) — переключение вкладок, лайтбокс, свайпы ─────────────
+function switchVisualTab(btn, panelId) {
+  const section = btn.closest('.proj-block');
+  section.querySelectorAll('.visual-tab').forEach(t => t.classList.remove('act'));
+  section.querySelectorAll('.visual-panel').forEach(p => p.classList.remove('act'));
+  btn.classList.add('act');
+  document.getElementById(panelId).classList.add('act');
+  const slider = document.querySelector('#' + panelId + ' .visual-slider');
+  if (slider) sliderLazyLoad(slider.id, parseInt(slider.dataset.idx));
+}
+function sliderNav(id, dir) {
+  const slider = document.getElementById(id);
+  if (!slider) return;
+  const count = parseInt(slider.dataset.count);
+  let idx = parseInt(slider.dataset.idx);
+  idx = (idx + dir + count) % count;
+  sliderGoTo(id, idx);
+}
+function sliderGoTo(id, idx) {
+  const slider = document.getElementById(id);
+  const slides = document.getElementById(id + '-slides');
+  const counter = document.getElementById(id + '-counter');
+  if (!slider || !slides) return;
+  slider.dataset.idx = idx;
+  slides.style.transform = `translateX(-${idx * 100}%)`;
+  if (counter) counter.textContent = `${idx + 1} / ${slider.dataset.count}`;
+  sliderLazyLoad(id, idx);
+}
+function sliderLazyLoad(id, idx) {
+  const slider = document.getElementById(id);
+  if (!slider) return;
+  const imgs = slider.querySelectorAll('img');
+  [idx - 1, idx, idx + 1].forEach(i => {
+    if (i >= 0 && i < imgs.length && imgs[i].dataset.src && !imgs[i].src.includes(imgs[i].dataset.src)) {
+      imgs[i].src = imgs[i].dataset.src;
+    }
+  });
+}
+function sliderClick(id, idx) {
+  const slider = document.getElementById(id);
+  if (!slider) return;
+  const imgs = [...slider.querySelectorAll('img')].map(i => i.dataset.src || i.src);
+  openLightbox(imgs, idx);
+}
+let _dragStart = null;
+function sliderDragStart(e, id) {
+  _dragStart = { x: e.clientX, id };
+  const onUp = (ev) => {
+    if (_dragStart && _dragStart.id === id) {
+      const dx = ev.clientX - _dragStart.x;
+      if (Math.abs(dx) > 40) sliderNav(id, dx < 0 ? 1 : -1);
+    }
+    _dragStart = null;
+    document.removeEventListener('mouseup', onUp);
+  };
+  document.addEventListener('mouseup', onUp);
+}
+let _touchStart = null;
+function sliderTouchStart(e, id) {
+  _touchStart = { x: e.touches[0].clientX, id };
+  const onEnd = (ev) => {
+    if (_touchStart && _touchStart.id === id) {
+      const dx = ev.changedTouches[0].clientX - _touchStart.x;
+      if (Math.abs(dx) > 40) sliderNav(id, dx < 0 ? 1 : -1);
+    }
+    _touchStart = null;
+    document.removeEventListener('touchend', onEnd);
+  };
+  document.addEventListener('touchend', onEnd);
+}
+
+let lbPhotos = [], lbIdx = 0;
+function openLightbox(photos, idx) {
+  lbPhotos = photos; lbIdx = idx;
+  document.getElementById('lightbox').classList.add('open');
+  updateLb();
+  document.addEventListener('keydown', lbKey);
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.removeEventListener('keydown', lbKey);
+}
+function lbNav(dir) { lbIdx = (lbIdx + dir + lbPhotos.length) % lbPhotos.length; updateLb(); }
+function updateLb() {
+  document.getElementById('lbImg').src = lbPhotos[lbIdx];
+  document.getElementById('lbCounter').textContent = `${lbIdx + 1} / ${lbPhotos.length}`;
+}
+function lbKey(e) {
+  if (e.key === 'ArrowRight') lbNav(1);
+  if (e.key === 'ArrowLeft') lbNav(-1);
+  if (e.key === 'Escape') closeLightbox();
+}
+document.getElementById('lightbox').addEventListener('click', function(e) {
+  if (e.target === this) closeLightbox();
+});
+
+// ── Анимация графика платежей (кружки-прогресс + проценты) — запускается
+// один раз, когда блок появляется в зоне видимости при скролле. ──────────
+function initProjectPaymentAnimation() {
+  const section = document.getElementById('projPaymentSection');
+  if (!section) return;
+  const obs = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    const fills = section.querySelectorAll('.ps-circle-fill');
+    fills.forEach(el => { el.style.transition = 'none'; el.style.strokeDashoffset = 145; });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      fills.forEach((el, i) => {
+        setTimeout(() => {
+          el.style.transition = 'stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)';
+          el.style.strokeDashoffset = el.dataset.offset;
+        }, i * 200);
+      });
+    }));
+    section.querySelectorAll('.ps-circle-pct').forEach((el, i) => {
+      const val = parseFloat(el.dataset.target);
+      if (!isNaN(val)) setTimeout(() => animateProjCount(el, val, 1800, v => Math.round(v) + '%'), i * 150);
+    });
+    section.querySelectorAll('.ps-pct').forEach((el, i) => {
+      const val = parseFloat(el.dataset.target);
+      if (!isNaN(val)) setTimeout(() => animateProjCount(el, val, 1800, v => Math.round(v) + '%'), i * 150);
+    });
+    obs.disconnect();
+  }, { threshold: 0.3 });
+  obs.observe(section);
+}
+function animateProjCount(el, target, duration, formatter) {
+  if (!el) return;
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+    const val = target * ease;
+    el.textContent = formatter ? formatter(val) : Math.round(val).toLocaleString('ru');
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = formatter ? formatter(target) : Math.round(target).toLocaleString('ru');
+  };
+  requestAnimationFrame(step);
+}
+
+function renderUnit(u, proj, pd, allowedBlocks) {
   const isAvail = u.status === 'available';
   const projectColor = pd?.color || proj.color || '#5E17EB';
   document.documentElement.style.setProperty('--project-color', projectColor);
@@ -632,9 +1107,12 @@ function renderUnit(u, proj, pd) {
         </div>
       </div>
     </div>
+
+    <div id="projectBlocksWrap">${pd ? renderProjectBlocks(pd, allowedBlocks) : ''}</div>
   `;
 
   loadPlanImage(u, proj);
+  initProjectPaymentAnimation();
 
   // SIDEBAR
   document.getElementById('sidebarContent').innerHTML = `
