@@ -410,6 +410,10 @@ input,button{font-family:inherit;}
 .act-events{display:flex;flex-direction:column;gap:5px;}
 .act-event{display:flex;align-items:center;gap:7px;font-size:12px;}
 .act-dot-sm{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+/* Заголовок дня в ленте активности/предложений — без разделительных линий,
+   только приглушённая подпись, как .completion-group-title */
+.day-group-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 2px 0;}
+.day-group-label:first-child{padding-top:0;}
 
 /* ── UTILS ─── */
 .loader{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
@@ -1251,6 +1255,34 @@ function clearCompletion() { tmpCompl=null; document.querySelectorAll('.completi
 function applyCompletion() { filters.completion = tmpCompl; updateChips(); closeCompletionModal(); autoSearch(); }
 
 // ── OFFERS ────────────────────────────────
+// Деление ленты (активность / предложения) на дни. Ожидает items уже
+// отсортированными по убыванию ts, вставляет подпись дня перед первой
+// карточкой каждого нового дня — без разделительных линий, просто
+// приглушённая подпись (см. .day-group-label). Карточки внутри дня не
+// трогаются — рендерятся как были.
+function dayLabelFor(ts) {
+  const d = new Date(ts || Date.now());
+  const now = new Date();
+  const startOfDay = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+  if (diffDays === 0) return 'Сегодня';
+  if (diffDays === 1) return 'Вчера';
+  return d.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+}
+function groupByDay(items) {
+  let html = '';
+  let lastLabel = null;
+  items.forEach(it => {
+    const label = dayLabelFor(it.ts);
+    if (label !== lastLabel) {
+      html += `<div class="day-group-label">${label}</div>`;
+      lastLabel = label;
+    }
+    html += it.html;
+  });
+  return html;
+}
+
 async function loadOffers() {
   const el = document.getElementById('offersList');
   if (!AGENT) {
@@ -1269,10 +1301,16 @@ async function loadOffers() {
   const allEmpty = (!Array.isArray(offers) || !offers.length) && (!Array.isArray(presentations) || !presentations.length);
   if (allEmpty) { el.innerHTML = '<div class="empty-page">Нет предложений</div>'; return; }
 
-  const presCards = Array.isArray(presentations) ? presentations.map(p => {
+  // Собираем все карточки (подборки + офферы) в один плоский список с
+  // общим временем события, чтобы отсортировать их по-настоящему
+  // хронологически и разбить на дни — раньше подборки и офферы шли двумя
+  // отдельными группами независимо от реальной даты.
+  const items = [];
+
+  if (Array.isArray(presentations)) presentations.forEach(p => {
     const units = Array.isArray(p.units) ? p.units.length : 0;
     const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${p.id}`;
-    return `<div class="offer-card">
+    items.push({ ts: p.created_at, html: `<div class="offer-card">
         <div class="offer-card-top">
           <div class="offer-client">${p.client_name || 'Клиент'}</div>
           <div class="offer-time">${timeAgo(p.created_at)}</div>
@@ -1282,13 +1320,13 @@ async function loadOffers() {
           <span class="offer-url-text">${url}</span>
           <button class="offer-copy">Копировать</button>
         </div>
-      </div>`;
-  }) : [];
+      </div>` });
+  });
 
-  const offerCards = Array.isArray(offers) ? offers.map(o => {
+  if (Array.isArray(offers)) offers.forEach(o => {
     const units = (o.unit_ids||[]).length;
     const url = `https://nottodayman26.github.io/phuket-catalog/offer.html?slug=${o.slug}`;
-    return `<div class="offer-card">
+    items.push({ ts: o.created_at, html: `<div class="offer-card">
         <div class="offer-card-top">
           <div class="offer-client">${o.client_name||'Клиент'}</div>
           <div class="offer-time">${timeAgo(o.created_at)}</div>
@@ -1298,10 +1336,11 @@ async function loadOffers() {
           <span class="offer-url-text">${url}</span>
           <button class="offer-copy">Копировать</button>
         </div>
-      </div>`;
-  }) : [];
+      </div>` });
+  });
 
-  el.innerHTML = [...presCards, ...offerCards].join('');
+  items.sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0));
+  el.innerHTML = groupByDay(items);
 }
 
 function copyUrl(url, btn) {
@@ -1309,15 +1348,17 @@ function copyUrl(url, btn) {
     if (!btn) return;
     btn.textContent = 'Скопировано ✓';
     btn.classList.add('copied');
-    // 13.07.26: вся карточка тоже подсвечивается зелёным на время — держится,
+    // 13.07.26: контур карточки тоже подсвечивается зелёным на время — держится,
     // даже если мышь остаётся на карточке (см. .offer-card.copied-flash:hover)
+    // 14.07.26: сокращено с 2с до 1с по просьбе — и подсветка контура, и
+    // цвет кнопки должны гаснуть быстрее.
     const card = btn.closest('.offer-card');
     if (card) card.classList.add('copied-flash');
     setTimeout(() => {
       btn.textContent = 'Копировать';
       btn.classList.remove('copied');
       if (card) card.classList.remove('copied-flash');
-    }, 2000);
+    }, 1000);
   });
 }
 
@@ -1525,10 +1566,9 @@ async function loadActivity() {
 
   // Сортируем всю ленту по времени самого события (не по дате создания
   // подборки/оффера) — самое свежее действие любого клиента всегда сверху.
-  const all = items
-    .sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0))
-    .map(c => c.html);
-  el.innerHTML = all.length ? all.join('') : '<div class="empty-page">Нет активности</div>';
+  // Затем делим на дни (см. groupByDay) — карточки внутри дня не меняются.
+  items.sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0));
+  el.innerHTML = items.length ? groupByDay(items) : '<div class="empty-page">Нет активности</div>';
 }
 
 // ── AGENT ─────────────────────────────────
@@ -1787,6 +1827,8 @@ const PRES_BLOCKS = [
   { key: 'maintenance',     label: 'Обслуживание' },
   { key: 'files',           label: 'Файлы' },
 ];
+// 14.07.26: по умолчанию отмечены все блоки, кроме "Обслуживание" и "Файлы"
+const PRES_BLOCKS_DEFAULT = PRES_BLOCKS.map(b => b.key).filter(k => k !== 'maintenance' && k !== 'files');
 
 // Состояние: { units: [{room_no, project}], projectBlocks: {VIK: ['description',...]} }
 let presState = { units: [], projectBlocks: {}, currentId: null, applyToAll: false, projectIdsForShare: [] };
@@ -1836,7 +1878,7 @@ async function loadPresentation() {
 
   for (const pid of projectIds) {
     if (!presState.projectBlocks[pid]) {
-      presState.projectBlocks[pid] = ['project_name', 'developer', 'description', 'payment_schedule'];
+      presState.projectBlocks[pid] = [...PRES_BLOCKS_DEFAULT]; // копия, не общая ссылка — иначе toggleBlock (push/filter) на одном проекте задел бы все остальные
     }
   }
 
@@ -1942,6 +1984,9 @@ function deleteSelectedUnits() {
   let raw = JSON.parse(localStorage.getItem('flox-presentation') || '[]');
   raw = raw.filter(u => !selected.includes(u.room_no));
   localStorage.setItem('flox-presentation', JSON.stringify(raw));
+  presState.units = raw; // 14.07.26: раньше не обновлялось — при "Сформировать
+  // ссылку" сразу после удаления юнитов проектов список в "Блоки о проектах"
+  // считался по устаревшему presState.units, и удалённый проект появлялся снова
   selected.forEach(r => document.getElementById(`pc-${r}`)?.remove());
   document.getElementById('presDeleteBtn').style.display = 'none';
   presState.currentId = null; // сброс — изменился состав
@@ -1952,6 +1997,8 @@ function removeFromPresentation(roomNo) {
   let raw = JSON.parse(localStorage.getItem('flox-presentation') || '[]');
   raw = raw.filter(u => u.room_no !== roomNo);
   localStorage.setItem('flox-presentation', JSON.stringify(raw));
+  presState.units = raw; // 14.07.26: тот же фикс, что и в deleteSelectedUnits — держим
+  // presState.units в актуальном состоянии, иначе "Блоки о проектах" считает по старому составу
   document.getElementById(`pc-${roomNo}`)?.remove();
   if (!raw.length) loadPresentation();
 }
@@ -1982,7 +2029,7 @@ function sharePresentation() {
   presState.projectIdsForShare = projectIds;
   projectIds.forEach(pid => {
     if (!presState.projectBlocks[pid]) {
-      presState.projectBlocks[pid] = ['project_name','developer','description','payment_schedule'];
+      presState.projectBlocks[pid] = [...PRES_BLOCKS_DEFAULT]; // копия — см. комментарий в loadPresentation()
     }
   });
 
@@ -2011,7 +2058,7 @@ function renderDrawerProjectBlocks() {
   const el = document.getElementById('presDrawerBlocksList');
 
   el.innerHTML = projectIds.map((pid, idx) => {
-    const selected = presState.projectBlocks[pid] || ['project_name','developer','description','payment_schedule'];
+    const selected = presState.projectBlocks[pid] || PRES_BLOCKS_DEFAULT;
     const isFirst = idx === 0;
     const realName = presState.projMap?.[pid]?.name || pid;
     const projName = (presState.applyToAll && isFirst) ? 'Для всех проектов' : realName;
@@ -2037,7 +2084,7 @@ function togglePresApplyAll(checked) {
   presState.applyToAll = checked;
   const projectIds = presState.projectIdsForShare || [];
   if (checked && projectIds.length) {
-    const firstSel = presState.projectBlocks[projectIds[0]] || ['project_name','developer','description','payment_schedule'];
+    const firstSel = presState.projectBlocks[projectIds[0]] || PRES_BLOCKS_DEFAULT;
     projectIds.forEach(pid => { presState.projectBlocks[pid] = [...firstSel]; });
   }
   renderDrawerProjectBlocks();
