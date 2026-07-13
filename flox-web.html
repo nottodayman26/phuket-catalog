@@ -399,8 +399,12 @@ input,button{font-family:inherit;}
 .pres-drawer-confirm:hover{opacity:.85;}
 .pres-drawer-confirm:disabled{opacity:.5;cursor:not-allowed;}
 /* 14.07.26: кнопка зеленеет каждый раз, когда ссылка скопирована — не
-   только при первом формировании, но и при каждом повторном копировании. */
-.pres-drawer-confirm.copied{background:var(--green);}
+   только при первом формировании, но и при каждом повторном копировании.
+   14.07.26 (уточнение по скрину): не var(--green) флокс-веба (он тут более
+   приглушённый, sage-тон #7BAF6E) — а тот же насыщенный зелёный, что и у
+   кнопки "Забронировать" в клиентском режиме юнита (unit.html, .client-book-btn.confirmed,
+   там --green переопределён под светлую клиентскую тему как #15803d). */
+.pres-drawer-confirm.copied{background:#15803d;}
 .pres-share-label{font-size:12px;color:var(--muted);margin-bottom:8px;}
 .pres-share-row{display:flex;gap:8px;}
 .pres-share-row input{flex:1;padding:8px 12px;border-radius:8px;border:none;background:none;color:var(--text);font-size:12px;font-family:inherit;}

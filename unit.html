@@ -8,6 +8,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<!-- 14.07.26: только для живого обновления сердечка между уже открытыми
+     вкладками (см. subscribeUnitLikeRealtime) — сама страница по-прежнему
+     работает и без этой библиотеки (обычные fetch-запросы никуда не делись). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
   --bg:#0d0d18;--surface:#111118;--surface-2:#1a1a26;--surface-3:#222232;
@@ -1285,6 +1289,7 @@ function renderUnit(u, proj, pd, allowedBlocks) {
     // на элементы, отрисованные выше в этом же innerHTML.
     clientUnit = u;
     initUnitLikeButton();
+    subscribeUnitLikeRealtime();
     // Бронь/запись на показ — не более одного раза на юнит. Флаг живёт в
     // localStorage (переживает перезагрузку страницы по той же ссылке),
     // ключ включает roomNo, чтобы бронь одного юнита не блокировала
@@ -1407,7 +1412,26 @@ let clientUnit = null; // юнит, к которому относится те�
 // см. telegram_listener.py). Состояние (лайкнуто/нет + id строки в Supabase)
 // живёт в localStorage — ключ включает presentationId, а не только roomNo,
 // иначе лайк из одной подборки "просачивался" бы в другую с тем же юнитом.
-function initUnitLikeButton() {
+// 14.07.26: перед тем как полагаться на localStorage, сверяемся с Supabase —
+// иначе лайк, поставленный клиентом на странице оффера (offer.html), не был
+// виден здесь, на странице юнита, и наоборот (та же логика и тот же приём,
+// что и в offer.html — см. fetchLikedUnitMap там). Запрос защищённый: если
+// не удался (сеть/RLS/таблицы ещё нет) — просто не трогаем localStorage.
+async function fetchUnitLikeRowId(presId, unitId) {
+  if (!presId || !unitId) return undefined; // undefined = не проверяли (нет данных для запроса)
+  try {
+    const r = await fetch(`${SUPABASE_URL}/presentation_likes?presentation_id=eq.${presId}&unit_id=eq.${unitId}&select=id,unliked&order=id.desc`, { headers: SB });
+    const rows = await r.json();
+    if (!Array.isArray(rows)) return undefined; // undefined = запрос не удался
+    const active = rows.find(row => !row.unliked);
+    return active ? active.id : null; // null = запрос удался, активного лайка нет
+  } catch (e) {
+    console.error('presentation_likes GET (синхронизация сердечка) network error:', e);
+    return undefined;
+  }
+}
+
+async function initUnitLikeButton() {
   const btn = document.getElementById('unitLikePlan');
   if (!btn || !clientUnit) return;
   btn.classList.add('show');
@@ -1415,6 +1439,20 @@ function initUnitLikeButton() {
   const likeKey = `flox-liked-${presentationId || 'direct'}-${roomNo}`;
   const rowIdKey = `flox-liked-id-${presentationId || 'direct'}-${roomNo}`;
   const icon = btn.querySelector('i');
+
+  const dbRowId = await fetchUnitLikeRowId(presentationId, clientUnit?.id);
+  if (dbRowId !== undefined) {
+    if (dbRowId != null) {
+      // Лайк уже стоит в базе (возможно, поставлен на странице оффера) —
+      // синхронизируем localStorage, чтобы "снять лайк" дальше работал как обычно.
+      localStorage.setItem(likeKey, 'true');
+      localStorage.setItem(rowIdKey, dbRowId);
+    } else {
+      // Запрос удался, активного лайка в базе нет — гасим локальный кэш.
+      localStorage.removeItem(likeKey);
+      localStorage.removeItem(rowIdKey);
+    }
+  }
 
   if (localStorage.getItem(likeKey) === 'true') {
     btn.classList.add('liked');
@@ -1466,6 +1504,59 @@ function initUnitLikeButton() {
       console.error('presentation_likes POST network error:', err);
     }
   });
+}
+
+// ── Живое обновление сердечка между открытыми вкладками (Supabase Realtime) ──
+// Та же презентация может быть открыта в offer.html в другой вкладке
+// одновременно — без этого лайк, поставленный там, появился бы здесь
+// только после перезагрузки страницы юнита. Фильтруем события по
+// presentation_id на сервере, а по конкретному unit_id — уже на клиенте
+// (Realtime не даёт скомбинировать два условия равенства в одном filter).
+//
+// ВАЖНО: требует включённой репликации для таблицы presentation_likes в
+// Supabase (Database → Replication → добавить таблицу в публикацию
+// supabase_realtime, см. тот же комментарий в offer.html). Если не
+// включено — подписка просто ничего не получает, страница продолжает
+// работать как раньше (REST-запросы + сверка с базой при загрузке).
+function subscribeUnitLikeRealtime() {
+  if (typeof supabase === 'undefined' || !presentationId || !clientUnit) return;
+  try {
+    const sbClient = supabase.createClient(SUPABASE_URL.replace(/\/rest\/v1\/?$/, ''), SUPABASE_ANON);
+    sbClient
+      .channel(`presentation_likes:${presentationId}:${clientUnit.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'presentation_likes',
+        filter: `presentation_id=eq.${presentationId}`,
+      }, payload => {
+        const isDelete = payload.eventType === 'DELETE';
+        const row = isDelete ? payload.old : payload.new;
+        if (!row || String(row.unit_id) !== String(clientUnit.id)) return; // не наш юнит — игнорируем
+
+        const btn = document.getElementById('unitLikePlan');
+        if (!btn) return;
+        const icon = btn.querySelector('i');
+        const likeKey = `flox-liked-${presentationId || 'direct'}-${roomNo}`;
+        const rowIdKey = `flox-liked-id-${presentationId || 'direct'}-${roomNo}`;
+        const isActiveLike = !isDelete && !row.unliked;
+
+        if (isActiveLike) {
+          btn.classList.add('liked');
+          if (icon) icon.className = 'ti ti-heart-filled';
+          localStorage.setItem(likeKey, 'true');
+          localStorage.setItem(rowIdKey, row.id);
+        } else {
+          btn.classList.remove('liked');
+          if (icon) icon.className = 'ti ti-heart';
+          localStorage.removeItem(likeKey);
+          localStorage.removeItem(rowIdKey);
+        }
+      })
+      .subscribe();
+  } catch (e) {
+    console.error('Realtime подписка на presentation_likes не удалась:', e);
+  }
 }
 
 async function submitBooking() {

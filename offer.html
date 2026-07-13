@@ -7,6 +7,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css"/>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<!-- 14.07.26: только для живого обновления сердечка между уже открытыми
+     вкладками (см. subscribeLikeRealtime) — сама страница по-прежнему
+     работает и без этой библиотеки (обычные fetch-запросы никуда не делись). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 /* Высота .units полностью считается в JS (см. layoutMasonry) и уже сама
@@ -406,6 +410,14 @@ function initCarousel(card, slides) {
 // вообще не трогаются. Пересчёт полных колонок (число колонок, их ширина)
 // происходит при первой отрисовке и при изменении размера окна.
 const MGAP = 16, MIN_COL = 320;
+// 14.07.26: последняя карточка в самой длинной колонке упиралась почти
+// вплотную в предупреждение внизу страницы — .units{padding:16px} тут не
+// спасает (карточки position:absolute, их отрисованная высота никак не
+// ограничена контейнером, а .units{box-sizing:border-box} к тому же не
+// добавляет свой bottom-padding поверх высоты, выставленной из JS). Резерв
+// добавляется прямо в расчёт высоты контейнера — так гарантированно
+// работает независимо от box-model нюансов.
+const BOTTOM_SPACE = 40;
 let mCols = 1, mColW = 0;
 const cardCol = new Map();
 
@@ -431,7 +443,7 @@ function layoutMasonry(reassignColumns) {
     card.style.top = colTops[col] + 'px';
     colTops[col] += card.offsetHeight + MGAP;
   });
-  container.style.height = Math.max(0, Math.max(...colTops) - MGAP) + 'px';
+  container.style.height = Math.max(0, Math.max(...colTops) - MGAP + BOTTOM_SPACE) + 'px';
 }
 
 // Покадровый пересчёт раскладки на время CSS-transition раскрытия/сворачивания
@@ -484,16 +496,73 @@ function initHoverExpand(card) {
 // сердечку: там будет видно, что именно ответил Supabase (чаще всего это
 // либо "таблицы не существует", либо ошибка доступа — RLS-политика не
 // разрешает анонимную запись).
-function initLikeButtons(presentationId) {
+// 14.07.26: источник истины по "лайкнуто/нет" теперь Supabase, а не только
+// localStorage — иначе лайк, поставленный на странице оффера, не был виден
+// на странице юнита (unit.html), и наоборот: у каждой страницы свой
+// localStorage-кэш, но сам факт лайка живёт в одной общей таблице
+// presentation_likes.
+//
+// Возвращает null, если запрос не удался (сеть, RLS, таблицы ещё нет у
+// агента) — это отдельное значение от "успешно получили пустой список",
+// чтобы вызывающий код НЕ путал "не смогли проверить базу" с "в базе
+// точно ничего нет" и не затирал по ошибке валидное состояние localStorage.
+async function fetchLikedUnitMap(presentationId) {
+  if (!presentationId) return null;
+  try {
+    const r = await fetch(`${SB_URL}/presentation_likes?presentation_id=eq.${presentationId}&select=id,unit_id,unliked&order=id.desc`, { headers: HDR });
+    const rows = await r.json();
+    if (!Array.isArray(rows)) return null;
+    const map = {};
+    rows.forEach(row => {
+      if (row.unliked) return; // лайк снят — не считаем активным
+      if (row.unit_id != null && !(row.unit_id in map)) map[row.unit_id] = row.id;
+    });
+    return map;
+  } catch (e) {
+    console.error('presentation_likes GET (синхронизация сердечек) network error:', e);
+    return null;
+  }
+}
+
+async function initLikeButtons(presentationId) {
   // 13.07.26: ключи localStorage теперь именуются с presentationId, а не
   // только room — иначе один и тот же юнит (та же планировка), попавший в
   // РАЗНЫЕ презентации разных клиентов, "наследовал" лайк из одной
   // презентации в другую только потому, что открывались с одного браузера
   // (например, у самого агента при проверке новой подборки). Каждая
   // презентация/ссылка теперь хранит свои лайки независимо.
+  //
+  // 14.07.26: перед тем как полагаться на localStorage, сверяемся с
+  // Supabase (см. fetchLikedUnitMap) — это единственный способ синхронизировать
+  // сердечко между офером и страницей юнита (unit.html): разные страницы,
+  // разный localStorage-кэш, но одна и та же строка в presentation_likes
+  // как источник истины. Если запрос не удался — likedMap будет null, и мы
+  // просто доверяем localStorage как раньше, ничего не перезаписывая.
+  const likedMap = await fetchLikedUnitMap(presentationId);
   document.querySelectorAll('.unit-like').forEach(el => {
     const room = el.dataset.room;
-    if (localStorage.getItem(`flox-liked-${presentationId}-${room}`) === 'true') {
+    const unitId = el.dataset.unitId;
+    const likedKey = `flox-liked-${presentationId}-${room}`;
+    const rowIdKey = `flox-liked-id-${presentationId}-${room}`;
+
+    if (likedMap != null) {
+      const dbRowId = unitId && Object.prototype.hasOwnProperty.call(likedMap, unitId) ? likedMap[unitId] : null;
+      if (dbRowId != null) {
+        // В базе есть активный лайк (возможно, поставлен на другой
+        // странице) — синхронизируем localStorage, чтобы "снять лайк"
+        // дальше работал как обычно (нужен id строки).
+        localStorage.setItem(likedKey, 'true');
+        localStorage.setItem(rowIdKey, dbRowId);
+      } else {
+        // Запрос точно удался и в базе для этого юнита активного лайка
+        // нет (не ставили или сняли на другой странице) — синхронизируем
+        // localStorage в обратную сторону, гасим сердечко.
+        localStorage.removeItem(likedKey);
+        localStorage.removeItem(rowIdKey);
+      }
+    }
+
+    if (localStorage.getItem(likedKey) === 'true') {
       el.classList.add('liked');
       const icon = el.querySelector('i');
       if (icon) icon.className = 'ti ti-heart-filled';
@@ -551,6 +620,66 @@ function initLikeButtons(presentationId) {
       console.error('presentation_likes POST network error:', e);
     }
   });
+}
+
+// ── Живое обновление сердечек между открытыми вкладками (Supabase Realtime) ──
+// Дополнительный слой ПОВЕРХ initLikeButtons(): та же подборка может быть
+// открыта в другой вкладке (например, страница юнита — unit.html) в этот же
+// момент. Без Realtime лайк там появился бы только после перезагрузки —
+// с ним появляется сразу, пока обе вкладки открыты.
+//
+// ВАЖНО: чтобы это заработало, в Supabase для таблицы presentation_likes
+// должна быть включена репликация — Database → Replication → включить
+// таблицу presentation_likes в публикацию supabase_realtime (обычно она
+// называется именно так и создаётся Supabase по умолчанию для проекта, но
+// конкретные таблицы в неё нужно добавлять вручную). Если это не сделано —
+// подписка просто не получит ни одного события и молча ничего не будет
+// происходить; вся остальная механика (REST-запросы, localStorage, сверка
+// с базой при загрузке страницы) продолжит работать как прежде, эта часть
+// не критична для остального функционала.
+function subscribeLikeRealtime(presentationId) {
+  if (typeof supabase === 'undefined' || !presentationId) return; // библиотека не загрузилась или нет id презентации — молча пропускаем
+  try {
+    const sbClient = supabase.createClient(SB_URL.replace(/\/rest\/v1\/?$/, ''), SB_KEY);
+    sbClient
+      .channel(`presentation_likes:${presentationId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'presentation_likes',
+        filter: `presentation_id=eq.${presentationId}`,
+      }, payload => applyLikeRealtimeEvent(payload, presentationId))
+      .subscribe();
+  } catch (e) {
+    console.error('Realtime подписка на presentation_likes не удалась:', e);
+  }
+}
+
+function applyLikeRealtimeEvent(payload, presentationId) {
+  const isDelete = payload.eventType === 'DELETE';
+  const row = isDelete ? payload.old : payload.new;
+  if (!row || row.unit_id == null) return;
+
+  const btn = document.querySelector(`.unit-like[data-unit-id="${row.unit_id}"]`);
+  if (!btn) return; // этого юнита нет на текущей странице — не наша забота
+
+  const room = btn.dataset.room;
+  const likedKey = `flox-liked-${presentationId}-${room}`;
+  const rowIdKey = `flox-liked-id-${presentationId}-${room}`;
+  const icon = btn.querySelector('i');
+  const isActiveLike = !isDelete && !row.unliked;
+
+  if (isActiveLike) {
+    btn.classList.add('liked');
+    if (icon) icon.className = 'ti ti-heart-filled';
+    localStorage.setItem(likedKey, 'true');
+    localStorage.setItem(rowIdKey, row.id);
+  } else {
+    btn.classList.remove('liked');
+    if (icon) icon.className = 'ti ti-heart';
+    localStorage.removeItem(likedKey);
+    localStorage.removeItem(rowIdKey);
+  }
 }
 
 async function loadSlides(u, projCode, proj) {
@@ -745,6 +874,7 @@ async function init() {
   document.getElementById('main').innerHTML = `<div class="units">${html}</div>`;
 
   initLikeButtons(id);
+  subscribeLikeRealtime(id);
 
   // Раскрытие полной инфы по наведению — вешаем на каждую карточку сразу,
   // независимо от того, найдутся ли для неё картинки планировки.
