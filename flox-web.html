@@ -1894,9 +1894,17 @@ function renderPresCards(units, raw, projMap) {
   const el = document.getElementById('presUnits');
   if (!units.length) { el.innerHTML = ''; return; }
 
-  el.innerHTML = units.map(u => {
-    const rawEntry = raw.find(r => r.room_no === u.room_no);
-    const proj = rawEntry ? projMap[rawEntry.project] : null;
+  // 14.07.26: рендерим в порядке добавления в презентацию, а не в порядке
+  // ответа Supabase (он не гарантирован и не совпадает с порядком добавления).
+  // raw хранит порядок добавления от старых к новым (push при добавлении
+  // из unit.html/project.html) — разворачиваем, чтобы последний добавленный
+  // агентом юнит оказался сверху списка.
+  const orderedRaw = [...raw].reverse();
+
+  el.innerHTML = orderedRaw.map(rawEntry => {
+    const u = units.find(x => x.room_no === rawEntry.room_no);
+    if (!u) return ''; // юнит мог быть удалён из базы — молча пропускаем
+    const proj = projMap[rawEntry.project];
     const projName = proj ? proj.name : (rawEntry?.project || '');
     const projCode = rawEntry?.project || '';
     const isAvail = u.status === 'available';
