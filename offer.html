@@ -483,9 +483,15 @@ function initHoverExpand(card) {
 // либо "таблицы не существует", либо ошибка доступа — RLS-политика не
 // разрешает анонимную запись).
 function initLikeButtons(presentationId) {
+  // 13.07.26: ключи localStorage теперь именуются с presentationId, а не
+  // только room — иначе один и тот же юнит (та же планировка), попавший в
+  // РАЗНЫЕ презентации разных клиентов, "наследовал" лайк из одной
+  // презентации в другую только потому, что открывались с одного браузера
+  // (например, у самого агента при проверке новой подборки). Каждая
+  // презентация/ссылка теперь хранит свои лайки независимо.
   document.querySelectorAll('.unit-like').forEach(el => {
     const room = el.dataset.room;
-    if (localStorage.getItem('flox-liked-' + room) === 'true') {
+    if (localStorage.getItem(`flox-liked-${presentationId}-${room}`) === 'true') {
       el.classList.add('liked');
       const icon = el.querySelector('i');
       if (icon) icon.className = 'ti ti-heart-filled';
@@ -499,14 +505,15 @@ function initLikeButtons(presentationId) {
     const room = btn.dataset.room;
     const unitId = btn.dataset.unitId;
     const icon = btn.querySelector('i');
-    const rowIdKey = 'flox-liked-id-' + room;
+    const likedKey = `flox-liked-${presentationId}-${room}`;
+    const rowIdKey = `flox-liked-id-${presentationId}-${room}`;
 
     if (btn.classList.contains('liked')) {
       // Снимаем лайк
       const rowId = localStorage.getItem(rowIdKey);
       btn.classList.remove('liked');
       if (icon) icon.className = 'ti ti-heart';
-      localStorage.removeItem('flox-liked-' + room);
+      localStorage.removeItem(likedKey);
       localStorage.removeItem(rowIdKey);
       if (!rowId) return; // лайк был поставлен ещё до этого обновления офера — id неизвестен, снимать в базе нечего
       try {
@@ -525,7 +532,7 @@ function initLikeButtons(presentationId) {
     // Ставим лайк
     btn.classList.add('liked');
     if (icon) icon.className = 'ti ti-heart-filled';
-    localStorage.setItem('flox-liked-' + room, 'true');
+    localStorage.setItem(likedKey, 'true');
     try {
       const resp = await fetch(`${SB_URL}/presentation_likes`, {
         method: 'POST',
