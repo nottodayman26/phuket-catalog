@@ -32,12 +32,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 /* ── предупреждение внизу страницы (только клиентский режим) ── */
 /* То же самое предупреждение, что и в offer.html: тёмно-синий фон (тот же
-   #1C1C2E, что и у .client-topbar вверху страницы), белый текст и иконка.
+   #1C1C2E, что и у .client-topbar вверху страницы), белый текст.
    Скрыто по умолчанию — показывается из JS только когда isClientMode,
-   агенту оно не нужно. */
-.footer-notice{display:none;border-top:0.5px solid var(--line);margin-top:32px;padding:24px 20px;background:#1C1C2E;}
-.footer-notice-text{max-width:640px;margin:0 auto;text-align:center;font-size:12.5px;line-height:1.6;color:#fff;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;}
-.footer-notice-text i{font-size:15px;flex-shrink:0;color:#fff;}
+   агенту оно не нужно. 14.07.26: отступ до плашки перенесён из margin-top
+   в padding-top (см. тот же фикс в offer.html) — иначе при коротком
+   контенте (мало похожих вариантов) над плашкой торчала полоса белого
+   фона страницы; теперь это пространство закрашено тем же тёмным цветом. */
+.footer-notice{display:none;border-top:0.5px solid var(--line);padding:56px 20px 24px;background:#1C1C2E;}
+.footer-notice-text{max-width:640px;margin:0 auto;text-align:center;font-size:12.5px;line-height:1.6;color:#fff;}
 
 
 /* ── КЛИЕНТСКАЯ ШАПКА (белый лейбл, без брендинга Flox) ── */
@@ -145,6 +147,30 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .plan-arrow.left{left:12px}
 .plan-arrow.right{right:12px}
 .plan-arrow.disabled{opacity:0;pointer-events:none}
+
+/* Сердечко "нравится" (только клиентский режим) — справа сверху в блоке
+   планировки. Элемент лежит прямо в #planCard (не в .plan-track), поэтому
+   остаётся на месте независимо от того, какой слайд карусели сейчас
+   показан (планировка юнита / поэтажный план / мастер-план). Показывается
+   из JS вместе с остальными клиентскими элементами (см. isClientMode).
+   Цвет и анимация — как у аналогичного сердечка в offer.html. */
+.unit-like-plan{
+  display:none;position:absolute;top:12px;right:12px;z-index:5;
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,0.9);
+  align-items:center;justify-content:center;
+  font-size:17px;color:var(--muted);cursor:pointer;
+  transition:color .2s ease,transform .15s ease;
+  box-shadow:0 2px 8px rgba(0,0,0,0.12);
+}
+.unit-like-plan.show{display:flex;}
+.unit-like-plan:hover{color:var(--red);transform:scale(1.12);}
+.unit-like-plan.liked{color:var(--red);animation:heart-pop-plan .5s ease;}
+@keyframes heart-pop-plan{
+  0%{transform:scale(1);}
+  45%{transform:scale(1.45);}
+  100%{transform:scale(1);}
+}
 
 /* ── PARAMS ── */
 .params-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden}
@@ -426,7 +452,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 <div class="footer-notice" id="footerNotice">
   <div class="footer-notice-text">
-    <i class="ti ti-alert-triangle"></i>
     Наличие юнитов может измениться в любой момент — актуальный статус лучше уточнять у вашего агента
   </div>
 </div>
@@ -1153,6 +1178,9 @@ function renderUnit(u, proj, pd, allowedBlocks) {
           <i class="ti ti-layout-2"></i>
           <span>Планировка появится позже</span>
         </div>
+        <span class="unit-like-plan" id="unitLikePlan" aria-label="Нравится">
+          <i class="ti ti-heart"></i>
+        </span>
       </div>
 
       <div id="projectBlocksWrap">${pd ? renderProjectBlocks(pd, allowedBlocks) : ''}</div>
@@ -1256,6 +1284,7 @@ function renderUnit(u, proj, pd, allowedBlocks) {
     // Запоминаем текущий юнит для брони/записи на показ — кнопки навешены
     // на элементы, отрисованные выше в этом же innerHTML.
     clientUnit = u;
+    initUnitLikeButton();
     // Бронь/запись на показ — не более одного раза на юнит. Флаг живёт в
     // localStorage (переживает перезагрузку страницы по той же ссылке),
     // ключ включает roomNo, чтобы бронь одного юнита не блокировала
@@ -1368,6 +1397,76 @@ window._pageMeetingCallback = function(m) {
 // и шлёт уведомление агенту (и администратору) в Telegram — тот же
 // проверенный механизм, что уже работает для presentation_views.
 let clientUnit = null; // юнит, к которому относится текущая бронь/запись
+
+// ── Сердечко "нравится" (только клиентский режим) ───────────────────────────
+// Тот же механизм, что и в offer.html: пишем строку в presentation_likes —
+// бот уже опрашивает эту таблицу и шлёт уведомление агенту, а floxweb.html
+// подхватывает её в "Последней активности" (никаких доп. правок в боте/
+// floxweb.html не требуется). Повторный клик по уже закрашенному сердечку
+// снимает лайк (помечает строку unliked=true, саму строку удаляет бот —
+// см. telegram_listener.py). Состояние (лайкнуто/нет + id строки в Supabase)
+// живёт в localStorage — ключ включает presentationId, а не только roomNo,
+// иначе лайк из одной подборки "просачивался" бы в другую с тем же юнитом.
+function initUnitLikeButton() {
+  const btn = document.getElementById('unitLikePlan');
+  if (!btn || !clientUnit) return;
+  btn.classList.add('show');
+
+  const likeKey = `flox-liked-${presentationId || 'direct'}-${roomNo}`;
+  const rowIdKey = `flox-liked-id-${presentationId || 'direct'}-${roomNo}`;
+  const icon = btn.querySelector('i');
+
+  if (localStorage.getItem(likeKey) === 'true') {
+    btn.classList.add('liked');
+    if (icon) icon.className = 'ti ti-heart-filled';
+  }
+
+  btn.addEventListener('click', async e => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.classList.contains('liked')) {
+      // Снимаем лайк
+      const rowId = localStorage.getItem(rowIdKey);
+      btn.classList.remove('liked');
+      if (icon) icon.className = 'ti ti-heart';
+      localStorage.removeItem(likeKey);
+      localStorage.removeItem(rowIdKey);
+      if (!rowId) return; // лайк был поставлен ещё до этого обновления страницы — id неизвестен, снимать в базе нечего
+      try {
+        const resp = await fetch(`${SUPABASE_URL}/presentation_likes?id=eq.${rowId}`, {
+          method: 'PATCH',
+          headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify({ unliked: true }),
+        });
+        if (!resp.ok) console.error('presentation_likes PATCH (снятие лайка) failed:', resp.status, await resp.text());
+      } catch (err) {
+        console.error('presentation_likes PATCH (снятие лайка) network error:', err);
+      }
+      return;
+    }
+
+    // Ставим лайк
+    btn.classList.add('liked');
+    if (icon) icon.className = 'ti ti-heart-filled';
+    localStorage.setItem(likeKey, 'true');
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/presentation_likes`, {
+        method: 'POST',
+        headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify({ presentation_id: presentationId || null, unit_id: clientUnit?.id || null }),
+      });
+      if (!resp.ok) {
+        console.error('presentation_likes POST failed:', resp.status, await resp.text());
+        return;
+      }
+      const rows = await resp.json();
+      if (rows && rows[0] && rows[0].id != null) localStorage.setItem(rowIdKey, rows[0].id);
+    } catch (err) {
+      console.error('presentation_likes POST network error:', err);
+    }
+  });
+}
 
 async function submitBooking() {
   const btn = document.getElementById('clientBookBtn');

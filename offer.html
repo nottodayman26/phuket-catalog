@@ -228,10 +228,13 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 /* ── предупреждение внизу страницы ── */
 /* Линия того же цвета (var(--line)), что и у бегущей строки вверху
    страницы, — визуально "закрывает" страницу тем же акцентом, каким она
-   открывается. */
-.footer-notice{border-top:0.5px solid var(--line);margin-top:32px;padding:24px 20px;background:var(--night);}
-.footer-notice-text{max-width:640px;margin:0 auto;text-align:center;font-size:12.5px;line-height:1.6;color:#fff;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;}
-.footer-notice-text i{font-size:15px;flex-shrink:0;color:#fff;}
+   открывается. 14.07.26: раньше отступ до плашки был margin-top (32px) —
+   это оставляло полосу БЕЛОГО фона страницы над тёмной плашкой, especially
+   заметную, когда вариантов мало и контент короткий. Перенесли этот отступ
+   внутрь плашки (padding-top), чтобы всё это пространство было закрашено
+   тем же тёмным цветом, что и сама плашка-предупреждение, а не белым. */
+.footer-notice{border-top:0.5px solid var(--line);padding:56px 20px 24px;background:var(--night);}
+.footer-notice-text{max-width:640px;margin:0 auto;text-align:center;font-size:12.5px;line-height:1.6;color:#fff;}
 </style>
 </head>
 <body>
@@ -258,7 +261,6 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 
 <div class="footer-notice">
   <div class="footer-notice-text">
-    <i class="ti ti-alert-triangle"></i>
     Наличие юнитов может измениться в любой момент — актуальный статус лучше уточнять у вашего агента
   </div>
 </div>

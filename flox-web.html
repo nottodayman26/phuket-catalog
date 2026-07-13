@@ -360,7 +360,7 @@ input,button{font-family:inherit;}
 .pres-card-rows span:nth-child(even){color:var(--text);text-align:right;}
 .pres-card-price{padding-top:8px;border-top:0.5px solid var(--line);font-size:14px;font-weight:600;color:var(--text);}
 .pres-card-remove{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.45);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;border:none;z-index:2;}
-.pres-card.selected{border:1px solid rgba(94,23,235,0.4);box-shadow:0 0 0 2px rgba(94,23,235,0.08);}
+.pres-card.selected{border:1.5px solid rgba(94,23,235,0.65);box-shadow:0 0 0 2px rgba(94,23,235,0.18);}
 .pres-card.sold{opacity:0.45;}
 .pres-card-img{background:#ffffff;height:160px;display:flex;align-items:center;justify-content:center;border-bottom:0.5px solid var(--line-2);overflow:hidden;position:relative;cursor:pointer;}
 .pres-card-body-wrap{cursor:default;}
@@ -395,9 +395,12 @@ input,button{font-family:inherit;}
 .pres-drawer-close{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;padding:4px;}
 .pres-drawer-body{flex:1;overflow-y:auto;padding:20px;}
 .pres-drawer-foot{padding:16px 20px;}
-.pres-drawer-confirm{width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s;}
+.pres-drawer-confirm{width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s,background .2s;}
 .pres-drawer-confirm:hover{opacity:.85;}
 .pres-drawer-confirm:disabled{opacity:.5;cursor:not-allowed;}
+/* 14.07.26: кнопка зеленеет каждый раз, когда ссылка скопирована — не
+   только при первом формировании, но и при каждом повторном копировании. */
+.pres-drawer-confirm.copied{background:var(--green);}
 .pres-share-label{font-size:12px;color:var(--muted);margin-bottom:8px;}
 .pres-share-row{display:flex;gap:8px;}
 .pres-share-row input{flex:1;padding:8px 12px;border-radius:8px;border:none;background:none;color:var(--text);font-size:12px;font-family:inherit;}
@@ -550,14 +553,6 @@ input,button{font-family:inherit;}
     <div id="presDrawerBlocksList"></div>
   </div>
   <div class="pres-drawer-foot">
-    <div id="presDrawerShareResult" style="display:none;margin-bottom:14px">
-      <div class="pres-share-result">
-        <div class="pres-share-label">Ссылка для клиента</div>
-        <div class="pres-share-row">
-          <input type="text" id="presDrawerUrl" readonly onclick="this.select()">
-        </div>
-      </div>
-    </div>
     <div style="margin-bottom:10px">
       <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Имя клиента <span style="color:var(--red)">*</span></label>
       <input type="text" id="presClientName" placeholder="Например: Иван Петров" style="width:100%;padding:9px 12px;border-radius:8px;border:none;background:none;color:var(--text);font-size:13px;font-family:inherit;outline:none;" oninput="document.getElementById('presDrawerConfirm').disabled=!this.value.trim()">
@@ -2048,9 +2043,10 @@ function sharePresentation() {
 
   renderDrawerProjectBlocks();
 
-  document.getElementById('presDrawerShareResult').style.display = 'none';
-  document.getElementById('presDrawerConfirm').disabled = true;
-  document.getElementById('presDrawerConfirm').innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
+  const drawerConfirmBtn = document.getElementById('presDrawerConfirm');
+  drawerConfirmBtn.disabled = true;
+  drawerConfirmBtn.innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
+  drawerConfirmBtn.classList.remove('copied');
   document.getElementById('presClientName').value = '';
   _presDrawerUrl = null; // новое открытие шторки — старая ссылка больше не актуальна
   document.getElementById('presDrawerOverlay').classList.add('vis');
@@ -2118,17 +2114,30 @@ async function copyDrawerUrlToClipboard(url) {
   try {
     await navigator.clipboard.writeText(url);
   } catch (e) {
+    // Резервный способ для браузеров без Clipboard API — временное скрытое
+    // поле (раньше для этого использовалось поле #presDrawerUrl из блока
+    // "Ссылка для клиента", но сам блок убрали — копирование теперь всегда
+    // "невидимое", без отображения ссылки на странице).
     try {
-      const input = document.getElementById('presDrawerUrl');
-      input.select();
+      const tmp = document.createElement('textarea');
+      tmp.value = url;
+      tmp.style.position = 'fixed';
+      tmp.style.opacity = '0';
+      document.body.appendChild(tmp);
+      tmp.select();
       document.execCommand('copy');
+      document.body.removeChild(tmp);
     } catch (e2) {}
   }
   const btn = document.getElementById('presDrawerConfirm');
+  // 14.07.26: кнопка становится зелёной каждый раз при копировании —
+  // не только при первом создании ссылки, но и при каждом повторном клике.
   btn.innerHTML = '<i class="ti ti-check"></i> Ссылка скопирована';
+  btn.classList.add('copied');
   clearTimeout(_presDrawerBtnTimer);
   _presDrawerBtnTimer = setTimeout(() => {
     btn.innerHTML = '<i class="ti ti-copy"></i> Копировать';
+    btn.classList.remove('copied');
   }, 3000);
 }
 
@@ -2158,8 +2167,6 @@ async function confirmPresentation() {
   const [data] = await r.json();
   const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${data.id}`;
   _presDrawerUrl = url;
-  document.getElementById('presDrawerUrl').value = url;
-  document.getElementById('presDrawerShareResult').style.display = 'block';
   await copyDrawerUrlToClipboard(url);
 }
 </script>
