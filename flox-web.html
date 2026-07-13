@@ -316,11 +316,12 @@ input,button{font-family:inherit;}
 .offers-list{display:flex;flex-direction:column;gap:10px;}
 .offer-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s,background-color .2s;cursor:default;}
 .offer-card:hover{transform:scale(1.02);border-color:var(--accent);box-shadow:0 4px 20px rgba(94,23,235,0.1);}
-/* 13.07.26: подсветка всей карточки при копировании ссылки — держится даже
-   если курсор остаётся над карточкой, поэтому оба варианта (обычный и
-   :hover) явно перекрыты одним и тем же зелёным состоянием. */
+/* 13.07.26: подсветка контура карточки при копировании ссылки — держится
+   даже если курсор остаётся над карточкой, поэтому оба варианта (обычный
+   и :hover) явно перекрыты одним и тем же зелёным состоянием. Подсвечивается
+   только контур (граница + внешнее свечение), фон карточки не меняется. */
 .offer-card.copied-flash,
-.offer-card.copied-flash:hover{background-color:var(--green-soft);border-color:var(--green);box-shadow:0 4px 20px rgba(123,175,110,0.25);}
+.offer-card.copied-flash:hover{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 4px 20px rgba(123,175,110,0.35);}
 .offer-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
 .offer-client{font-size:15px;font-weight:600;}
 .offer-time{font-size:12px;color:var(--muted);}
