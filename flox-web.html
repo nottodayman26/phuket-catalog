@@ -314,8 +314,13 @@ input,button{font-family:inherit;}
 .offers-page{padding:24px;max-width:900px;margin:0 auto;}
 .page-title{font-size:20px;font-weight:700;margin-bottom:20px;}
 .offers-list{display:flex;flex-direction:column;gap:10px;}
-.offer-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default;}
+.offer-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s,background-color .2s;cursor:default;}
 .offer-card:hover{transform:scale(1.02);border-color:var(--accent);box-shadow:0 4px 20px rgba(94,23,235,0.1);}
+/* 13.07.26: подсветка всей карточки при копировании ссылки — держится даже
+   если курсор остаётся над карточкой, поэтому оба варианта (обычный и
+   :hover) явно перекрыты одним и тем же зелёным состоянием. */
+.offer-card.copied-flash,
+.offer-card.copied-flash:hover{background-color:var(--green-soft);border-color:var(--green);box-shadow:0 4px 20px rgba(123,175,110,0.25);}
 .offer-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
 .offer-client{font-size:15px;font-weight:600;}
 .offer-time{font-size:12px;color:var(--muted);}
@@ -362,24 +367,33 @@ input,button{font-family:inherit;}
 .pres-delete-btn:hover{background:#fee2e2;transform:scale(1.06);}
 .pres-blocks{margin-top:8px;border-top:0.5px solid var(--line);padding-top:20px;}
 .pres-blocks-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;}
-.pres-project-block{padding:0 0 16px;margin-bottom:16px;border-bottom:0.5px solid var(--line);}
-.pres-project-block:last-child{border-bottom:none;margin-bottom:0;}
-.pres-project-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;}
+.pres-project-block{padding:0 0 16px;margin-bottom:16px;max-height:400px;opacity:1;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .3s ease,padding .35s ease,margin .35s ease;}
+.pres-project-block:last-child{margin-bottom:0;}
+.pres-project-block.pres-block-hidden{max-height:0;opacity:0;padding-bottom:0;margin-bottom:0;pointer-events:none;}
+.pres-project-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;transition:color .2s ease;}
 .pres-checkboxes{display:flex;flex-wrap:wrap;gap:8px;}
 .pres-cb-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;padding:5px 10px;border-radius:8px;border:0.5px solid var(--line-2);background:none;transition:border-color .15s,background .15s,transform .2s cubic-bezier(.34,1.56,.64,1);user-select:none;}
 .pres-cb-label:hover{border-color:var(--line);transform:scale(1.06);}
 .pres-cb-label input{accent-color:var(--accent);cursor:pointer;}
 .pres-cb-label.checked{background:rgba(94,23,235,.08);border-color:rgba(94,23,235,.3);color:var(--text);}
+.pres-apply-all-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.pres-apply-all-label{font-size:12px;color:var(--text);}
+.flox-toggle{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0;cursor:pointer;}
+.flox-toggle input{opacity:0;width:0;height:0;position:absolute;}
+.flox-toggle-slider{position:absolute;inset:0;background:var(--line-2);border-radius:22px;transition:background .25s ease;}
+.flox-toggle-slider::before{content:'';position:absolute;left:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
+.flox-toggle input:checked + .flox-toggle-slider{background:var(--accent);}
+.flox-toggle input:checked + .flox-toggle-slider::before{transform:translateX(16px);}
 .pres-share-result{margin-top:20px;padding:16px;background:var(--surface);border:0.5px solid var(--line-2);border-radius:10px;}
 .pres-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:500;opacity:0;pointer-events:none;transition:opacity .25s;}
 .pres-drawer-overlay.vis{opacity:1;pointer-events:all;}
 .pres-drawer{position:fixed;top:0;right:0;height:100vh;width:400px;max-width:95vw;background:var(--surface);box-shadow:-8px 0 32px rgba(0,0,0,0.18);z-index:501;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;}
 .pres-drawer.vis{transform:translateX(0);}
-.pres-drawer-head{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 16px;border-bottom:0.5px solid var(--line);}
+.pres-drawer-head{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 16px;}
 .pres-drawer-title{font-size:16px;font-weight:600;color:var(--text);}
 .pres-drawer-close{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;padding:4px;}
 .pres-drawer-body{flex:1;overflow-y:auto;padding:20px;}
-.pres-drawer-foot{padding:16px 20px;border-top:0.5px solid var(--line);}
+.pres-drawer-foot{padding:16px 20px;}
 .pres-drawer-confirm{width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s;}
 .pres-drawer-confirm:hover{opacity:.85;}
 .pres-drawer-confirm:disabled{opacity:.5;cursor:not-allowed;}
@@ -521,6 +535,13 @@ input,button{font-family:inherit;}
   </div>
   <div class="pres-drawer-body">
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Выберите какую информацию о проекте увидит клиент</div>
+    <div class="pres-apply-all-row">
+      <span class="pres-apply-all-label">Применить ко всем проектам</span>
+      <label class="flox-toggle">
+        <input type="checkbox" id="presApplyAllToggle" onchange="togglePresApplyAll(this.checked)">
+        <span class="flox-toggle-slider"></span>
+      </label>
+    </div>
     <div id="presDrawerBlocksList"></div>
   </div>
   <div class="pres-drawer-foot">
@@ -543,8 +564,8 @@ input,button{font-family:inherit;}
 <!-- CLEAR PRESENTATION CONFIRM -->
 <div class="modal-overlay" id="clearPresModal" onclick="if(event.target===this)closeClearPresModal()">
   <div class="modal" style="max-width:360px">
-    <div class="modal-title">Вы действительно хотите очистить всё?</div>
-    <div style="font-size:13px;color:var(--muted);margin:8px 0 20px">Все добавленные юниты будут безвозвратно удалены из корзины.</div>
+    <div class="modal-title" style="justify-content:center;text-align:center">Вы действительно хотите очистить всё?</div>
+    <div style="font-size:13px;color:var(--muted);margin:8px 0 20px;text-align:center">Все добавленные юниты будут безвозвратно удалены из корзины.</div>
     <div class="modal-actions">
       <button class="modal-clear" style="background:none;border-color:var(--line-2);color:var(--muted)" onclick="closeClearPresModal()">Отмена</button>
       <button class="modal-apply" style="background:#dc2626;border-color:#dc2626" onclick="clearPresentation()">Очистить всё</button>
@@ -1287,7 +1308,15 @@ function copyUrl(url, btn) {
     if (!btn) return;
     btn.textContent = 'Скопировано ✓';
     btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Копировать'; btn.classList.remove('copied'); }, 2000);
+    // 13.07.26: вся карточка тоже подсвечивается зелёным на время — держится,
+    // даже если мышь остаётся на карточке (см. .offer-card.copied-flash:hover)
+    const card = btn.closest('.offer-card');
+    if (card) card.classList.add('copied-flash');
+    setTimeout(() => {
+      btn.textContent = 'Копировать';
+      btn.classList.remove('copied');
+      if (card) card.classList.remove('copied-flash');
+    }, 2000);
   });
 }
 
@@ -1303,6 +1332,54 @@ async function loadActivity() {
     return;
   }
 
+  // 13.07.26, по просьбе Ильи: раньше все события одной презентации/оффера
+  // (просмотры, бронь, запись на показ, лайк) собирались в ОДНУ карточку
+  // на клиента. Теперь каждое отдельное событие — своя карточка в общей
+  // ленте, отсортированной по времени: "Олег посмотрел" — один блок,
+  // "Маша посмотрела" — другой, а если Олег позже ещё и записался на
+  // показ — это уже третий, отдельный блок, а не дописывание в первый.
+  const items = []; // { ts, html } — плоский список карточек-событий
+  function pushItem(ts, label, dotColor, text) {
+    items.push({
+      ts: ts || 0,
+      html: `<div class="activity-card">
+        <div class="act-client">${label}</div>
+        <div class="act-count">${timeAgo(ts)}</div>
+        <div class="act-events"><div class="act-event"><div class="act-dot-sm" style="background:${dotColor}"></div>${text}</div></div>
+      </div>`
+    });
+  }
+  // Безопасный fetch, возвращающий массив или null (если Supabase ответила
+  // ошибкой — например колонки created_at ещё нет в какой-то из таблиц).
+  async function hArraySafe(url) {
+    try {
+      const r = await h(url);
+      const data = await r.json();
+      return Array.isArray(data) ? data : null;
+    } catch(e) { return null; }
+  }
+  // Пробуем запрос с created_at (нужен для точной сортировки события по
+  // времени, когда оно реально произошло) — если колонки нет и Supabase
+  // вернула ошибку, тихо откатываемся на запрос без неё (старое поведение),
+  // просто без точного времени у этого типа событий.
+  async function fetchRows(urlWithTs, urlNoTs) {
+    const withTs = await hArraySafe(urlWithTs);
+    if (withTs !== null) return { rows: withTs, hasTs: true };
+    return { rows: (await hArraySafe(urlNoTs)) || [], hasTs: false };
+  }
+  function groupWithLatestTs(rows, keyField, hasTs) {
+    const m = {};
+    rows.forEach(row => {
+      const id = row[keyField];
+      if (!m[id]) m[id] = { rooms: [], ts: null };
+      m[id].rooms.push(row.units?.room_no);
+      if (hasTs && row.created_at && (!m[id].ts || new Date(row.created_at) > new Date(m[id].ts))) {
+        m[id].ts = row.created_at;
+      }
+    });
+    return m;
+  }
+
   // Загружаем старые офферы и новые презентации параллельно
   const [offersRes, presRes] = await Promise.all([
     h(`${SUPABASE_URL}/offers?agent_id=eq.${AGENT.id}&select=id,client_name,created_at,unit_ids&order=created_at.desc&limit=20`),
@@ -1312,136 +1389,143 @@ async function loadActivity() {
   const presentations = await presRes.json();
 
   // ── Активность из презентаций ──────────────────────────────
-  let presCards = [];
   if (Array.isArray(presentations) && presentations.length) {
     const presIds = presentations.map(p => p.id).join(',');
-    const [pvRes, pbRes, pvrRes, plRes] = await Promise.all([
+    const [pvRes, pbData, pvrData, plData] = await Promise.all([
       h(`${SUPABASE_URL}/presentation_views?presentation_id=in.(${presIds})&select=presentation_id,viewed_at&order=viewed_at.desc`),
-      h(`${SUPABASE_URL}/presentation_bookings?presentation_id=in.(${presIds})&select=presentation_id,units(room_no)`),
-      h(`${SUPABASE_URL}/presentation_viewing_requests?presentation_id=in.(${presIds})&select=presentation_id,requested_date,units(room_no)`),
-      h(`${SUPABASE_URL}/presentation_likes?presentation_id=in.(${presIds})&select=presentation_id,units(room_no)`)
+      fetchRows(
+        `${SUPABASE_URL}/presentation_bookings?presentation_id=in.(${presIds})&select=presentation_id,created_at,units(room_no)&order=created_at.desc`,
+        `${SUPABASE_URL}/presentation_bookings?presentation_id=in.(${presIds})&select=presentation_id,units(room_no)`
+      ),
+      fetchRows(
+        `${SUPABASE_URL}/presentation_viewing_requests?presentation_id=in.(${presIds})&select=presentation_id,requested_date,created_at,units(room_no)&order=created_at.desc`,
+        `${SUPABASE_URL}/presentation_viewing_requests?presentation_id=in.(${presIds})&select=presentation_id,requested_date,units(room_no)`
+      ),
+      // presentation_likes может ещё не существовать как таблица у части
+      // агентов (создаётся отдельно в Supabase) — если запрос вернул ошибку
+      // вместо массива, просто не показываем лайки, не ломая всю активность.
+      fetchRows(
+        `${SUPABASE_URL}/presentation_likes?presentation_id=in.(${presIds})&select=presentation_id,created_at,units(room_no)&order=created_at.desc`,
+        `${SUPABASE_URL}/presentation_likes?presentation_id=in.(${presIds})&select=presentation_id,units(room_no)`
+      )
     ]);
     const presViews = await pvRes.json();
-    const presBookings = await pbRes.json();
-    const presViewingReqs = await pvrRes.json();
-    const presLikes = await plRes.json();
 
-    const presBookMap = (Array.isArray(presBookings) ? presBookings : []).reduce((m,b)=>{(m[b.presentation_id]=m[b.presentation_id]||[]).push(b.units?.room_no);return m;},{});
-    const presViewingMap = (Array.isArray(presViewingReqs) ? presViewingReqs : []).reduce((m,v)=>{(m[v.presentation_id]=m[v.presentation_id]||[]).push({room: v.units?.room_no||'—', date: v.requested_date});return m;},{});
-    // presentation_likes может ещё не существовать как таблица у части
-    // агентов (создаётся отдельно в Supabase) — если запрос вернул ошибку
-    // вместо массива, просто не показываем лайки, не ломая всю активность.
-    const presLikesMap = (Array.isArray(presLikes) ? presLikes : []).reduce((m,l)=>{(m[l.presentation_id]=m[l.presentation_id]||[]).push(l.units?.room_no);return m;},{});
+    const presBookMap = groupWithLatestTs(pbData.rows, 'presentation_id', pbData.hasTs);
+    const presLikesMap = groupWithLatestTs(plData.rows, 'presentation_id', plData.hasTs);
+    const presViewingMap = {};
+    pvrData.rows.forEach(v => {
+      (presViewingMap[v.presentation_id] = presViewingMap[v.presentation_id] || []).push({
+        room: v.units?.room_no || '—', date: v.requested_date, ts: pvrData.hasTs ? v.created_at : null
+      });
+    });
 
-    presCards = presentations.map(p => {
+    presentations.forEach(p => {
       const views = Array.isArray(presViews) ? presViews.filter(v => v.presentation_id === p.id) : [];
-      const bc = presBookMap[p.id] || [];
-      const vreqs = presViewingMap[p.id] || [];
-      const lk = presLikesMap[p.id] || [];
-      const units = Array.isArray(p.units) ? p.units.length : 0;
       const label = p.client_name || (p.units?.length ? `Презентация · ${p.units.map(u=>u.room_no).slice(0,3).join(', ')}${p.units.length>3?'…':''}` : 'Презентация');
+      let hadAny = false;
 
-      let events = [];
-
-      // Группируем просмотры по дням
+      // Группируем просмотры по дням — один просмотр-блок в день, а не
+      // отдельная карточка на каждое открытие ссылки
       if (views.length) {
         const byDay = {};
         views.forEach(v => {
           const day = new Date(v.viewed_at).toLocaleDateString('ru-RU', {day:'numeric',month:'long'});
-          byDay[day] = (byDay[day] || 0) + 1;
+          if (!byDay[day]) byDay[day] = { count: 0, latest: v.viewed_at };
+          byDay[day].count++;
+          if (new Date(v.viewed_at) > new Date(byDay[day].latest)) byDay[day].latest = v.viewed_at;
         });
-        Object.entries(byDay).forEach(([day, cnt]) => {
-          events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>${day} — открыто ${cnt} раз${cnt===1?'':'а'}</div>`);
+        Object.values(byDay).forEach(info => {
+          pushItem(info.latest, label, 'var(--accent)', `${new Date(info.latest).toLocaleDateString('ru-RU', {day:'numeric',month:'long'})} — открыто ${info.count} раз${info.count===1?'':'а'}`);
+          hadAny = true;
         });
       }
-      if (bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--red)"></div>Хочет забронировать: ${bc.join(', ')}</div>`);
-      vreqs.forEach(r => {
+      const bk = presBookMap[p.id];
+      if (bk && bk.rooms.length) {
+        pushItem(bk.ts || p.created_at, label, 'var(--red)', `Хочет забронировать: ${bk.rooms.join(', ')}`);
+        hadAny = true;
+      }
+      (presViewingMap[p.id] || []).forEach(r => {
         const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';
-        events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--green)"></div>Запись на просмотр${r.room && r.room!=='—' ? ' — '+r.room : ''} — ${dateStr}</div>`);
+        pushItem(r.ts || p.created_at, label, 'var(--green)', `Запись на просмотр${r.room && r.room!=='—' ? ' — '+r.room : ''} — ${dateStr}`);
+        hadAny = true;
       });
-      if (lk.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:#dc2626"></div>Понравилась планировка: ${lk.join(', ')}</div>`);
-      if (!events.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
-
-      // Сортируем список сверху вниз по тому, кто заходил в подборку позднее
-      // всего (а не по дате создания подборки) — views уже отсортированы по
-      // viewed_at.desc общим запросом выше, так что первый элемент после
-      // фильтра по конкретной презентации — самый свежий просмотр именно её.
-      const lastActivity = views.length ? views[0].viewed_at : p.created_at;
-
-      return { lastActivity, html: `<div class="activity-card">
-        <div class="act-client">${label}</div>
-        <div class="act-count">${units} объект${units===1?'':units<5?'а':'ов'} · ${timeAgo(p.created_at)}</div>
-        <div class="act-events">${events.join('')}</div>
-      </div>` };
+      const lk = presLikesMap[p.id];
+      if (lk && lk.rooms.length) {
+        pushItem(lk.ts || p.created_at, label, '#dc2626', `Понравилась планировка: ${lk.rooms.join(', ')}`);
+        hadAny = true;
+      }
+      if (!hadAny) pushItem(p.created_at, label, 'var(--muted)', 'Отправлено, ещё не открыто');
     });
   }
 
   // ── Активность из старых офферов ──────────────────────────
-  let offerCards = [];
   if (Array.isArray(offers) && offers.length) {
     const ids = offers.map(o=>o.id).join(',');
-    const [vr,br,pvr] = await Promise.all([
+    const [vr, bData, vrData] = await Promise.all([
       h(`${SUPABASE_URL}/offer_views?offer_id=in.(${ids})&select=offer_id,viewed_at&order=viewed_at.desc`),
-      h(`${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`),
-      h(`${SUPABASE_URL}/offer_viewing_requests?offer_id=in.(${ids})&select=offer_id,unit_id,requested_date`)
+      fetchRows(
+        `${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,created_at,units(room_no)&order=created_at.desc`,
+        `${SUPABASE_URL}/offer_bookings?offer_id=in.(${ids})&select=offer_id,units(room_no)`
+      ),
+      fetchRows(
+        `${SUPABASE_URL}/offer_viewing_requests?offer_id=in.(${ids})&select=offer_id,unit_id,requested_date,created_at&order=created_at.desc`,
+        `${SUPABASE_URL}/offer_viewing_requests?offer_id=in.(${ids})&select=offer_id,unit_id,requested_date`
+      )
     ]);
     const views = await vr.json();
-    const bookings = await br.json();
-    const viewingRaw = await pvr.json();
-    const viewingReqs = Array.isArray(viewingRaw) ? viewingRaw : [];
 
-    const bookMap = bookings.reduce((m,b)=>{(m[b.offer_id]=m[b.offer_id]||[]).push(b.units?.room_no);return m;},{});
-    const vrUnitIds = [...new Set(viewingReqs.map(r=>r.unit_id).filter(Boolean))];
+    const bookMap = groupWithLatestTs(bData.rows, 'offer_id', bData.hasTs);
+    const vrUnitIds = [...new Set(vrData.rows.map(r=>r.unit_id).filter(Boolean))];
     let unitRoomMap = {};
     if (vrUnitIds.length) {
       const ur = await h(`${SUPABASE_URL}/units?id=in.(${vrUnitIds.join(',')})&select=id,room_no`);
       const unitRows = await ur.json();
       if (Array.isArray(unitRows)) unitRows.forEach(u => { unitRoomMap[u.id] = u.room_no; });
     }
-    const viewingMap = viewingReqs.reduce((m,r)=>{
-      (m[r.offer_id]=m[r.offer_id]||[]).push({ room: unitRoomMap[r.unit_id]||'—', date: r.requested_date });
-      return m;
-    },{});
+    const viewingMap = {};
+    vrData.rows.forEach(r => {
+      (viewingMap[r.offer_id] = viewingMap[r.offer_id] || []).push({
+        room: unitRoomMap[r.unit_id] || '—', date: r.requested_date, ts: vrData.hasTs ? r.created_at : null
+      });
+    });
 
-    offerCards = offers.map(o => {
+    offers.forEach(o => {
       const offerViews = Array.isArray(views) ? views.filter(v => v.offer_id === o.id) : [];
-      const bc = bookMap[o.id]||[], vreqs = viewingMap[o.id]||[];
-      const units = (o.unit_ids||[]).length;
-      let events = [];
+      const label = o.client_name || 'Клиент';
+      let hadAny = false;
 
-      // Группируем просмотры по дням
       if (offerViews.length) {
         const byDay = {};
         offerViews.forEach(v => {
           const day = new Date(v.viewed_at||Date.now()).toLocaleDateString('ru-RU', {day:'numeric',month:'long'});
-          byDay[day] = (byDay[day] || 0) + 1;
+          if (!byDay[day]) byDay[day] = { count: 0, latest: v.viewed_at||new Date().toISOString() };
+          byDay[day].count++;
+          if (new Date(v.viewed_at||0) > new Date(byDay[day].latest)) byDay[day].latest = v.viewed_at;
         });
-        Object.entries(byDay).forEach(([day, cnt]) => {
-          events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--accent)"></div>${day} — открыто ${cnt} раз${cnt===1?'':'а'}</div>`);
+        Object.values(byDay).forEach(info => {
+          pushItem(info.latest, label, 'var(--accent)', `${new Date(info.latest).toLocaleDateString('ru-RU', {day:'numeric',month:'long'})} — открыто ${info.count} раз${info.count===1?'':'а'}`);
+          hadAny = true;
         });
       }
-      if (bc.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--red)"></div>Хочет забронировать: ${bc.join(', ')}</div>`);
-      vreqs.forEach(r => {
+      const bk = bookMap[o.id];
+      if (bk && bk.rooms.length) {
+        pushItem(bk.ts || o.created_at, label, 'var(--red)', `Хочет забронировать: ${bk.rooms.join(', ')}`);
+        hadAny = true;
+      }
+      (viewingMap[o.id] || []).forEach(r => {
         const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';
-        events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--green)"></div>Запись на просмотр — ${dateStr}</div>`);
+        pushItem(r.ts || o.created_at, label, 'var(--green)', `Запись на просмотр — ${dateStr}`);
+        hadAny = true;
       });
-      if (!events.length) events.push(`<div class="act-event"><div class="act-dot-sm" style="background:var(--muted)"></div>Отправлено, ещё не открыто</div>`);
-
-      const lastActivity = offerViews.length ? offerViews[0].viewed_at : o.created_at;
-
-      return { lastActivity, html: `<div class="activity-card">
-        <div class="act-client">${o.client_name||'Клиент'}</div>
-        <div class="act-count">${units} объект${units===1?'':'ов'} · ${timeAgo(o.created_at)}</div>
-        <div class="act-events">${events.join('')}</div>
-      </div>` };
+      if (!hadAny) pushItem(o.created_at, label, 'var(--muted)', 'Отправлено, ещё не открыто');
     });
   }
 
-  // Наверху — та подборка/оффер, в которую заходили позднее всего (по
-  // самому свежему просмотру, а не по дате создания). Если просмотров ещё
-  // не было — используем дату создания как запасной вариант.
-  const all = [...presCards, ...offerCards]
-    .sort((a, b) => new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0))
+  // Сортируем всю ленту по времени самого события (не по дате создания
+  // подборки/оффера) — самое свежее действие любого клиента всегда сверху.
+  const all = items
+    .sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0))
     .map(c => c.html);
   el.innerHTML = all.length ? all.join('') : '<div class="empty-page">Нет активности</div>';
 }
@@ -1704,7 +1788,7 @@ const PRES_BLOCKS = [
 ];
 
 // Состояние: { units: [{room_no, project}], projectBlocks: {VIK: ['description',...]} }
-let presState = { units: [], projectBlocks: {}, currentId: null };
+let presState = { units: [], projectBlocks: {}, currentId: null, applyToAll: false, projectIdsForShare: [] };
 // Ссылка, уже сформированная и скопированная в текущем открытии шторки —
 // пока шторка не переоткрыта заново, кнопка просто копирует её повторно,
 // вместо того чтобы создавать новую презентацию на каждый клик.
@@ -1823,12 +1907,22 @@ function renderPresBlocks(projectIds, projMap) {
 
 function toggleBlock(pid, key, cb, prefix) {
   prefix = prefix || 'pbl-';
-  if (!presState.projectBlocks[pid]) presState.projectBlocks[pid] = [];
-  if (cb.checked) {
-    if (!presState.projectBlocks[pid].includes(key)) presState.projectBlocks[pid].push(key);
-  } else {
-    presState.projectBlocks[pid] = presState.projectBlocks[pid].filter(k => k !== key);
-  }
+
+  // Пока включён тумблер "применить ко всем проектам", виден и редактируется
+  // только первый проект — но менять его набор блоков нужно сразу у всех.
+  const isApplyAllDrawer = prefix === 'pdbl-' && presState.applyToAll
+    && presState.projectIdsForShare && presState.projectIdsForShare[0] === pid;
+  const targetPids = isApplyAllDrawer ? presState.projectIdsForShare : [pid];
+
+  targetPids.forEach(tpid => {
+    if (!presState.projectBlocks[tpid]) presState.projectBlocks[tpid] = [];
+    if (cb.checked) {
+      if (!presState.projectBlocks[tpid].includes(key)) presState.projectBlocks[tpid].push(key);
+    } else {
+      presState.projectBlocks[tpid] = presState.projectBlocks[tpid].filter(k => k !== key);
+    }
+  });
+
   const lbl = document.getElementById(`${prefix}${pid}-${key}`);
   if (lbl) lbl.classList.toggle('checked', cb.checked);
 }
@@ -1884,13 +1978,44 @@ function sharePresentation() {
   presState.unitsToSend = unitsToSend;
 
   const projectIds = [...new Set(unitsToSend.map(u => u.project))];
+  presState.projectIdsForShare = projectIds;
+  projectIds.forEach(pid => {
+    if (!presState.projectBlocks[pid]) {
+      presState.projectBlocks[pid] = ['project_name','developer','description','payment_schedule'];
+    }
+  });
+
+  // Сброс тумблера "применить ко всем проектам" при каждом новом открытии шторки
+  presState.applyToAll = false;
+  const applyAllToggle = document.getElementById('presApplyAllToggle');
+  if (applyAllToggle) applyAllToggle.checked = false;
+
+  renderDrawerProjectBlocks();
+
+  document.getElementById('presDrawerShareResult').style.display = 'none';
+  document.getElementById('presDrawerConfirm').disabled = true;
+  document.getElementById('presDrawerConfirm').innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
+  document.getElementById('presClientName').value = '';
+  _presDrawerUrl = null; // новое открытие шторки — старая ссылка больше не актуальна
+  document.getElementById('presDrawerOverlay').classList.add('vis');
+  document.getElementById('presDrawer').classList.add('vis');
+}
+
+// Отрисовывает список блоков по проектам в шторке "Блоки о проектах".
+// С учётом тумблера "применить ко всем проектам": если он включён — виден
+// только первый проект (название заменяется на "Для всех проектов"), а
+// остальные плавно схлопываются (класс pres-block-hidden + CSS-transition).
+function renderDrawerProjectBlocks() {
+  const projectIds = presState.projectIdsForShare || [];
   const el = document.getElementById('presDrawerBlocksList');
 
-  el.innerHTML = projectIds.map(pid => {
+  el.innerHTML = projectIds.map((pid, idx) => {
     const selected = presState.projectBlocks[pid] || ['project_name','developer','description','payment_schedule'];
-    if (!presState.projectBlocks[pid]) presState.projectBlocks[pid] = [...selected];
-    const projName = presState.projMap?.[pid]?.name || pid;
-    return `<div class="pres-project-block">
+    const isFirst = idx === 0;
+    const realName = presState.projMap?.[pid]?.name || pid;
+    const projName = (presState.applyToAll && isFirst) ? 'Для всех проектов' : realName;
+    const hiddenClass = (presState.applyToAll && !isFirst) ? ' pres-block-hidden' : '';
+    return `<div class="pres-project-block${hiddenClass}" data-pid="${pid}">
       <div class="pres-project-name">${projName}</div>
       <div class="pres-checkboxes">
         ${PRES_BLOCKS.map(b => `
@@ -1901,14 +2026,20 @@ function sharePresentation() {
       </div>
     </div>`;
   }).join('');
+}
 
-  document.getElementById('presDrawerShareResult').style.display = 'none';
-  document.getElementById('presDrawerConfirm').disabled = true;
-  document.getElementById('presDrawerConfirm').innerHTML = '<i class="ti ti-link"></i> Сформировать ссылку';
-  document.getElementById('presClientName').value = '';
-  _presDrawerUrl = null; // новое открытие шторки — старая ссылка больше не актуальна
-  document.getElementById('presDrawerOverlay').classList.add('vis');
-  document.getElementById('presDrawer').classList.add('vis');
+// Тумблер "применить ко всем проектам": при включении набор блоков первого
+// проекта копируется на все остальные (пока тумблер включён — правки чекбоксов
+// первого проекта тоже расходятся на все, см. toggleBlock), при выключении
+// каждый проект возвращается к своему собственному набору и названию.
+function togglePresApplyAll(checked) {
+  presState.applyToAll = checked;
+  const projectIds = presState.projectIdsForShare || [];
+  if (checked && projectIds.length) {
+    const firstSel = presState.projectBlocks[projectIds[0]] || ['project_name','developer','description','payment_schedule'];
+    projectIds.forEach(pid => { presState.projectBlocks[pid] = [...firstSel]; });
+  }
+  renderDrawerProjectBlocks();
 }
 
 function closePresDrawer() {
