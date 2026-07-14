@@ -110,14 +110,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap}
 .badge-avail{background:var(--green-soft);color:var(--green)}
 .badge-sold{background:var(--red-soft);color:var(--red)}
-/* Точка слева от статуса светится как радиоактивный камень — яркость
-   свечения нарастает и затухает по кругу, без расходящегося кольца
-   (это уже не "маяк"). currentColor берёт цвет из инлайнового color,
-   заданного вместе с background там, где точка рендерится. */
+/* Точка слева от статуса — "двухтоновое дыхание": яркость и насыщенность
+   плавно перетекают из приглушённого тона в яркий и обратно, с лёгким
+   изменением размера — свечение целиком внутри самой точки, без внешнего
+   кольца/ореола (это уже не "маяк"). currentColor берёт цвет из инлайнового
+   color, заданного вместе с background там, где точка рендерится. */
 .dot{width:6px;height:6px;border-radius:50%;position:relative;animation:glow-pulse 2.2s ease-in-out infinite}
 @keyframes glow-pulse{
-  0%,100%{box-shadow:0 0 1px 0 currentColor;opacity:.7;}
-  50%{box-shadow:0 0 7px 2px currentColor;opacity:1;}
+  0%,100%{filter:brightness(0.75) saturate(0.7);transform:scale(0.92);}
+  50%{filter:brightness(1.5) saturate(1.4);transform:scale(1.08);}
 }
 
 /* ── ACTIONS ── */
@@ -157,15 +158,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    остаётся на месте независимо от того, какой слайд карусели сейчас
    показан (планировка юнита / поэтажный план / мастер-план). Показывается
    из JS вместе с остальными клиентскими элементами (см. isClientMode).
-   Цвет и анимация — как у аналогичного сердечка в offer.html. */
+   Цвет и анимация — как у аналогичного сердечка в offer.html. 14.07.26:
+   убрали круглую белую подложку (background+box-shadow) — просто иконка
+   поверх картинки, без "кружка-кнопки" вокруг. */
 .unit-like-plan{
   display:none;position:absolute;top:12px;right:12px;z-index:5;
-  width:32px;height:32px;border-radius:50%;
-  background:rgba(255,255,255,0.9);
+  width:32px;height:32px;
   align-items:center;justify-content:center;
   font-size:17px;color:var(--muted);cursor:pointer;
   transition:color .2s ease,transform .15s ease;
-  box-shadow:0 2px 8px rgba(0,0,0,0.12);
 }
 .unit-like-plan.show{display:flex;}
 .unit-like-plan:hover{color:var(--red);transform:scale(1.12);}

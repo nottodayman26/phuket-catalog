@@ -489,15 +489,16 @@ a { color: inherit; text-decoration: none; }
 .units-table td { padding: 9px 16px; border-bottom: 0.5px solid var(--line); background: var(--surface); text-align: center; }
 .units-table tr:last-child td { border-bottom: none; }
 .units-table tr:hover td { background: var(--surface-2); }
-/* Точка светится как радиоактивный камень — яркость свечения нарастает и
-   затухает по кругу (тот же приём, что в unit.html/offer.html). currentColor
-   берёт цвет из color, заданного вместе с background у каждого статуса. */
+/* Точка — "двухтоновое дыхание": яркость и насыщенность плавно перетекают
+   из приглушённого тона в яркий и обратно, с лёгким изменением размера
+   (тот же приём, что в unit.html/offer.html). currentColor берёт цвет из
+   color, заданного вместе с background у каждого статуса. */
 .ut-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; position: relative; animation: glow-pulse 2.2s ease-in-out infinite; }
 .ut-available { background: var(--green); color: var(--green); }
 .ut-sold { background: var(--muted-2); color: var(--muted-2); }
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 1px 0 currentColor; opacity: .7; }
-  50% { box-shadow: 0 0 7px 2px currentColor; opacity: 1; }
+  0%, 100% { filter: brightness(0.75) saturate(0.7); transform: scale(0.92); }
+  50% { filter: brightness(1.5) saturate(1.4); transform: scale(1.08); }
 }
 .ut-price { color: var(--project-color); font-weight: 600; }
 .unit-num-link { font-weight: 600; color: var(--text); text-decoration: none; display: inline-block; transition: transform .15s ease; }

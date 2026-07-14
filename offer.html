@@ -109,16 +109,17 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 .unit-badge{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:2;}
 .badge-avail{background:#dcfce7;color:#15803d;}
 .badge-sold{background:#fee2e2;color:#dc2626;}
-/* Точка слева от "Свободен" светится как радиоактивный камень (тот же
-   приём, что и в unit.html) — яркость свечения нарастает и затухает по
-   кругу, без расходящегося кольца. У каждой карточки свой animation-delay
-   (--dot-delay, задаётся инлайн-стилем из JS) — иначе все точки на странице
-   светились бы синхронно, единым импульсом; так они разгораются вразнобой,
-   то тут, то там. */
+/* Точка слева от "Свободен" — "двухтоновое дыхание" (тот же приём, что и в
+   unit.html/project.html): яркость и насыщенность плавно перетекают из
+   приглушённого тона в яркий и обратно, с лёгким изменением размера —
+   свечение целиком внутри самой точки, без внешнего кольца/ореола.
+   У каждой карточки свой animation-delay (--dot-delay, задаётся инлайн-стилем
+   из JS) — иначе все точки на странице дышали бы синхронно, единым импульсом;
+   так они разгораются вразнобой, то тут, то там. */
 .badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;position:relative;animation:glow-pulse 2.2s ease-in-out infinite;animation-delay:var(--dot-delay,0s);}
 @keyframes glow-pulse{
-  0%,100%{box-shadow:0 0 1px 0 currentColor;opacity:.7;}
-  50%{box-shadow:0 0 7px 2px currentColor;opacity:1;}
+  0%,100%{filter:brightness(0.75) saturate(0.7);transform:scale(0.92);}
+  50%{filter:brightness(1.5) saturate(1.4);transform:scale(1.08);}
 }
 /* инфо — название проекта, номер, крупная цена и кнопка "Подробнее" видны
    сразу (не только по наведению); а вот точная цена и полные параметры
