@@ -403,6 +403,21 @@ function initCarousel(card, slides) {
       resetTimer = setTimeout(() => { goTo(0); }, 4000);
     });
     card.addEventListener('mouseenter', () => clearTimeout(resetTimer));
+
+    // 14.07.26: как и __collapseHoverExpand выше — planHovered/autoTimer
+    // живут только в этом замыкании и обновляются только через реальные
+    // mouseenter/mouseleave. Если уйти со страницы по клику на "Подробнее"
+    // во время автопролистывания (мышь была над планировкой) и вернуться
+    // назад стрелкой браузера — bfcache восстанавливает страницу как есть,
+    // включая "замороженный" activeTimer, который тут же продолжает тикать
+    // сам по себе, а planHovered остаётся true — карточка выглядит так, будто
+    // застряла в состоянии наведения. Даём доступ к принудительному сбросу.
+    card.__resetCarouselHover = () => {
+      planHovered = false;
+      stopAutoplay();
+      clearTimeout(resetTimer);
+      goTo(0);
+    };
   }
 }
 
@@ -475,8 +490,16 @@ window.addEventListener('resize', () => {
 // прямо из-под курсора в момент, когда человек как раз хочет по ней нажать.
 function initHoverExpand(card) {
   const triggers = card.querySelectorAll('.unit-plan, .unit-summary');
+  const collapse = () => { card.classList.remove('expanded'); animateMasonry(500); };
   triggers.forEach(t => t.addEventListener('mouseenter', () => { card.classList.add('expanded'); animateMasonry(500); }));
-  card.addEventListener('mouseleave', () => { card.classList.remove('expanded'); animateMasonry(500); });
+  card.addEventListener('mouseleave', collapse);
+  // 14.07.26: даём доступ к сворачиванию извне (см. resetAllCardHoverStates) —
+  // это класс .expanded, включаемый только через mouseenter/mouseleave, а не
+  // чистым CSS :hover (см. комментарий у .unit-hover-extra) — поэтому если
+  // уйти со страницы по клику на "Подробнее" и вернуться назад стрелкой
+  // браузера, реального mouseleave не было, и .expanded остаётся включённым
+  // (карточка "зависает" раскрытой), пока мышь физически не пошевелится.
+  card.__collapseHoverExpand = collapse;
 }
 
 // ── Сердечко "нравится" ──────────────────────────────────────
@@ -954,25 +977,34 @@ function showError(msg) {
   </div>`;
 }
 
-// ── Фикс "залипшего" hover после возврата на страницу ──────────
-// 14.07.26: если уйти со страницы (например, по кнопке "Подробнее" на
-// unit.html) и вернуться назад стрелкой браузера, или просто переключиться
-// на другую вкладку и обратно — Chrome иногда восстанавливает страницу, не
-// пересчитав :hover-состояния. Из-за этого стрелки слайдера/кнопки, над
-// которыми был курсор ДО ухода со страницы, продолжают выглядеть наведёнными
-// (сплошной белый фон вместо полупрозрачного и т.п.), пока курсор реально не
-// пошевелится — сама раскладка при этом не сломана, просто "застывшая"
-// картинка. Лечится принудительным пересчётом: на мгновение перекрываем
-// страницу прозрачным слоем и сразу убираем его — этого достаточно, чтобы
-// браузер заново определил, что сейчас под курсором, и снял фантомный hover.
-function fixStuckHover() {
+// ── Фикс "залипшей" карточки после возврата на страницу ─────────
+// 14.07.26 (v2): первая версия этого фикса перекрывала страницу прозрачным
+// слоем, рассчитывая на то, что дело в нативном CSS :hover — не помогло.
+// Реальная причина иначе: раскрытие подробностей (.expanded) и
+// автопролистывание планировки управляются не чистым CSS :hover, а JS
+// (mouseenter/mouseleave, см. initHoverExpand и initCarousel). Если уйти со
+// страницы кликом на "Подробнее", пока мышь была над карточкой, настоящего
+// mouseleave не происходит — карточка так и остаётся "раскрытой", с
+// работающим автопролистыванием. При возврате назад стрелкой браузера
+// (bfcache) или переключении вкладки страница восстанавливается ровно в
+// этом состоянии и выглядит "зависшей", пока курсор не шевельнётся и не
+// вызовет настоящий mouseleave. Чиним явно — сворачиваем и сбрасываем
+// каждую карточку сразу при возврате, не дожидаясь мыши.
+function resetAllCardHoverStates() {
+  document.querySelectorAll('.unit-card').forEach(card => {
+    card.__collapseHoverExpand?.();
+    card.__resetCarouselHover?.();
+  });
+  // На всякий случай — если "залип" именно нативный :hover (например, на
+  // стрелках слайдера), мгновенное перекрытие страницы прозрачным слоем
+  // заставляет браузер заново определить, что сейчас под курсором.
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;';
   document.body.appendChild(overlay);
   requestAnimationFrame(() => overlay.remove());
 }
-window.addEventListener('pageshow', e => { if (e.persisted) fixStuckHover(); });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fixStuckHover(); });
+window.addEventListener('pageshow', e => { if (e.persisted) resetAllCardHoverStates(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') resetAllCardHoverStates(); });
 
 init();
 </script>
