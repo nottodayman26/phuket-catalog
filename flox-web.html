@@ -432,11 +432,18 @@ input,button{font-family:inherit;}
 <!-- TOPBAR -->
 <div id="flox-topbar" data-page="search"></div>
 
+<!-- Бегущая строка "недавно продано" — вынесена из #page-search и лежит
+     здесь, ВНЕ всех .page-контейнеров (см. .page{display:none}/.page.act в
+     CSS выше), поэтому видна на всех вкладках (поиск/предложения/активность/
+     презентации), а не только на странице поиска, и не перезагружается/не
+     мигает при переключении между вкладками — переключение вкладок просто
+     показывает/скрывает контент под ней, сама лента остаётся как есть. -->
+<div class="ticker-wrap" id="soldTickerWrap" style="display:none">
+  <div class="ticker-track" id="soldTicker"></div>
+</div>
+
 <!-- SEARCH PAGE -->
 <div class="page act" id="page-search">
-  <div class="ticker-wrap" id="soldTickerWrap" style="display:none">
-    <div class="ticker-track" id="soldTicker"></div>
-  </div>
   <div class="search-page">
     <div class="search-headline">Более <span id="unitCount">...</span> предложений<br>на Пхукете</div>
 

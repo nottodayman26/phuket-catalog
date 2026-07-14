@@ -884,6 +884,20 @@ body.light .page-footer {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading { display: flex; align-items: center; justify-content: center; height: 200px; flex-direction: column; gap: 12px; color: var(--muted); font-size: 14px; }
+
+/* ── Бегущая строка "недавно продано" (та же, что в floxweb.html/unit.html) ──
+   Только CSS-переменные (surface-2/line/muted/text) — сама лента ничего не
+   знает про тему, просто наследует то же оформление, что и вся остальная
+   страница, и автоматически меняется вместе с ней при переключении
+   тёмная/светлая (body.light). */
+.ticker-wrap { border-bottom: 0.5px solid var(--line); background: var(--surface-2); overflow: hidden; white-space: nowrap; padding: 8px 0; }
+.ticker-track { display: inline-flex; gap: 28px; animation: scrollTicker 32s linear infinite; padding-left: 16px; will-change: transform; }
+.ticker-wrap:hover .ticker-track { animation-play-state: paused; }
+@keyframes scrollTicker { from { transform: translate3d(0,0,0); } to { transform: translate3d(-50%,0,0); } }
+.tick { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.tick .tick-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.tick b { color: var(--text); font-weight: 600; }
+.tick .ago { color: var(--muted); opacity: .7; }
 </style>
 <script>
 // Instant meeting mode — prevents flash before JS loads
@@ -899,6 +913,11 @@ body.light .page-footer {
 
 <!-- TOP BAR -->
 <div id="flox-topbar" data-page="project"></div>
+
+<!-- Бегущая строка "недавно продано" (та же, что в floxweb.html/unit.html) -->
+<div class="ticker-wrap" id="soldTickerWrap" style="display:none">
+  <div class="ticker-track" id="soldTicker"></div>
+</div>
 
 <!-- HERO -->
 <div class="hero" id="heroSection">
@@ -1189,6 +1208,40 @@ function renderHero(d) {
 const SB_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
 const SB_HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
+
+// ── Бегущая строка "недавно продано" (та же лента, что в floxweb.html и
+// unit.html — тот же запрос, тот же формат строки) — показывает последние
+// продажи по всему каталогу, а не только по текущему проекту. */
+const PROJ_COLOR = { VIK: '#C9A84C', KAT: '#7BAF6E', BAN: '#6B9BC2', OLN: '#8FAB5F' };
+function soldTimeAgo(iso) {
+  const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 60) return `${mins} мин назад`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} ч назад`;
+  const days = Math.floor(hours / 24);
+  return `${days} дн назад`;
+}
+async function loadSoldTicker() {
+  try {
+    const r = await fetch(`${SB_URL}/units?status=eq.sold&select=room_no,status_updated_at,projects(code,name)&order=status_updated_at.desc&limit=25`, { headers: SB_HEADERS });
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return;
+    const items = rows.map(u => {
+      const code = u.projects?.code || '';
+      const color = PROJ_COLOR[code] || 'var(--project-color)';
+      const projName = u.projects?.name || code;
+      return `<span class="tick"><span class="tick-dot" style="background:${color}"></span>ПРОДАНО <b>${u.room_no}</b> · ${projName} <span class="ago">· ${soldTimeAgo(u.status_updated_at)}</span></span>`;
+    }).join('');
+    const track = document.getElementById('soldTicker');
+    track.innerHTML = items + items;
+    document.getElementById('soldTickerWrap').style.display = 'block';
+    requestAnimationFrame(() => {
+      const singleWidth = track.scrollWidth / 2;
+      const pxPerSecond = 38;
+      track.style.animationDuration = Math.max(10, singleWidth / pxPerSecond) + 's';
+    });
+  } catch (e) {}
+}
 
 // Маппинг room_type из базы → наши категории
 function mapRoomType(rt) {
@@ -2323,6 +2376,7 @@ function applyURLFilters() {
 }
 
 loadProject();
+loadSoldTicker();
 
 // ── Payment animation ───────────────────────────────────────────────────
 function initPaymentAnimation() {

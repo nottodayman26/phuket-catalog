@@ -509,7 +509,6 @@ if (isClientMode) {
     }
     ct.style.display = 'flex';
   }
-  loadSoldTicker();
   // То же предупреждение, что и в оффере (offer.html) — то же в двух
   // словах: наличие юнита не гарантировано, актуальный статус лучше
   // уточнять у агента. В агентском режиме этот блок не нужен — агент и так
@@ -518,7 +517,14 @@ if (isClientMode) {
   if (fn) fn.style.display = 'block';
 }
 
-// ── Бегущая строка "недавно продано" (только клиентский режим) ──────────────
+// ── Бегущая строка "недавно продано" ─────────────────────────────────────────
+// 14.07.26: раньше показывалась только в клиентском режиме — теперь и в
+// агентском тоже (см. вызов loadSoldTicker() ниже, он больше не внутри
+// if (isClientMode)). Цвет фона/текста берётся из тех же CSS-переменных
+// (--surface-2/--line/--muted/--text), что и весь остальной интерфейс —
+// поэтому в агентском режиме лента сама подстраивается под тёмную/светлую
+// тему агента (body.light), а в клиентском всегда светлая, т.к. клиенту
+// принудительно ставится body.light чуть выше.
 const PROJ_COLOR = { VIK: '#C9A84C', KAT: '#7BAF6E', BAN: '#6B9BC2', OLN: '#8FAB5F' };
 function soldTimeAgo(iso) {
   const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
@@ -1757,6 +1763,7 @@ window.addEventListener('pageshow', e => { if (e.persisted) fixStuckHover(); });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fixStuckHover(); });
 
 loadUnit();
+loadSoldTicker();
 </script>
 <script src="topbar.js"></script>
 <script>if (!isClientMode) floxTopbar.init({activePage:'unit'});</script>
