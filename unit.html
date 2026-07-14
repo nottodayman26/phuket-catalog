@@ -485,6 +485,15 @@ const clientAgentName = params.get('agentName') || '';
 // было привязать к правильному агенту и клиенту при уведомлении в Telegram.
 const presentationId = params.get('pres') || '';
 
+// 14.07.26: ключи для флагов "уже забронировано"/"уже записан на показ" —
+// вынесены в функции, а не просто строки, т.к. используются в нескольких
+// местах (инициализация кнопок, обработчики клика, submitBooking/viewingConfirm).
+// Обязательно включают presentationId — иначе один и тот же юнит в НОВОЙ
+// подборке "наследовал" бы отметку о брони из старой (тот же баг, что был
+// с сердечком, см. flox-liked-* в initUnitLikeButton).
+function bookedKey() { return `flox-booked-${presentationId || 'direct'}-${roomNo}`; }
+function viewingKey() { return `flox-viewing-${presentationId || 'direct'}-${roomNo}`; }
+
 if (isClientMode) {
   // Клиент всегда видит только светлую тему, независимо от того, в какой
   // теме агент открывал эту страницу у себя.
@@ -1293,24 +1302,30 @@ function renderUnit(u, proj, pd, allowedBlocks) {
     subscribeUnitLikeRealtime();
     // Бронь/запись на показ — не более одного раза на юнит. Флаг живёт в
     // localStorage (переживает перезагрузку страницы по той же ссылке),
-    // ключ включает roomNo, чтобы бронь одного юнита не блокировала
-    // бронь другого при переходе между юнитами по той же подборке.
-    // Повторный клик не отправляет заявку ещё раз, а просто показывает
-    // пояснение — кнопка при этом остаётся кликабельной (не disabled),
-    // чтобы пояснение можно было увидеть снова, если клиент забыл.
+    // ключ включает И presentationId, И roomNo (см. bookedKey()/viewingKey()) —
+    // roomNo сам по себе не хватало: тот же юнит, попавший в ДРУГУЮ, новую
+    // подборку (например, повторно отправленную тому же или другому клиенту),
+    // "наследовал" отметку "забронировано"/"записан на показ" из старой
+    // ссылки только потому, что открывались с одного браузера — новая ссылка
+    // показывала кнопки уже подтверждёнными, хотя по ней самой ничего не
+    // отправляли. presentationId в ключе решает это, a roomNo по-прежнему
+    // не даёт брони одного юнита блокировать бронь другого внутри одной
+    // и той же подборки. Повторный клик не отправляет заявку ещё раз, а
+    // просто показывает пояснение — кнопка при этом остаётся кликабельной
+    // (не disabled), чтобы пояснение можно было увидеть снова, если клиент забыл.
     const bookBtn = document.getElementById('clientBookBtn');
     const viewBtn = document.getElementById('clientViewingBtn');
-    if (localStorage.getItem('flox-booked-' + roomNo) === 'true') bookBtn?.classList.add('confirmed');
-    if (localStorage.getItem('flox-viewing-' + roomNo) === 'true') viewBtn?.classList.add('confirmed');
+    if (localStorage.getItem(bookedKey()) === 'true') bookBtn?.classList.add('confirmed');
+    if (localStorage.getItem(viewingKey()) === 'true') viewBtn?.classList.add('confirmed');
     bookBtn?.addEventListener('click', () => {
-      if (localStorage.getItem('flox-booked-' + roomNo) === 'true') {
+      if (localStorage.getItem(bookedKey()) === 'true') {
         showAlready('Мы уже сообщили вашему агенту о желании забронировать этот объект. Если что-то изменилось — сообщите об этом агенту.');
         return;
       }
       submitBooking();
     });
     viewBtn?.addEventListener('click', () => {
-      if (localStorage.getItem('flox-viewing-' + roomNo) === 'true') {
+      if (localStorage.getItem(viewingKey()) === 'true') {
         showAlready('Мы уже сообщили вашему агенту о желании посмотреть объект, если вас не устраивает дата, сообщите это агенту.');
         return;
       }
@@ -1576,7 +1591,7 @@ async function submitBooking() {
     console.error('Не удалось отправить заявку на бронирование', e);
   }
   if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.classList.add('confirmed'); }
-  localStorage.setItem('flox-booked-' + roomNo, 'true');
+  localStorage.setItem(bookedKey(), 'true');
   showSuccess('Поздравляем! Заявка на бронирование отправлена вашему агенту, оставайтесь на связи для дальнейшего оформления.');
 }
 
@@ -1669,7 +1684,7 @@ document.getElementById('viewingConfirm')?.addEventListener('click', async () =>
   }
   btn.disabled = false;
   document.getElementById('clientViewingBtn')?.classList.add('confirmed');
-  localStorage.setItem('flox-viewing-' + roomNo, 'true');
+  localStorage.setItem(viewingKey(), 'true');
   closeViewingDrawer();
   showSuccess('Поздравляем с успешной записью на просмотр! Скоро агент свяжется с вами для уточнения времени встречи.');
 });
