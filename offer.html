@@ -11,6 +11,10 @@
      вкладками (см. subscribeLikeRealtime) — сама страница по-прежнему
      работает и без этой библиотеки (обычные fetch-запросы никуда не делись). -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- 14.07.26: маленькое конфетти у сердечка в момент лайка (та же
+     библиотека, что уже используется для конфетти при подтверждении
+     брони/записи на показ в unit.html) -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 /* Высота .units полностью считается в JS (см. layoutMasonry) и уже сама
@@ -507,6 +511,33 @@ function initHoverExpand(card) {
 // агента) — это отдельное значение от "успешно получили пустой список",
 // чтобы вызывающий код НЕ путал "не смогли проверить базу" с "в базе
 // точно ничего нет" и не затирал по ошибке валидное состояние localStorage.
+// ── Маленькое конфетти у сердечка при лайке ─────────────────────
+// Срабатывает только когда сердечко становится красным (сам момент лайка,
+// не при снятии). Используем ту же библиотеку canvas-confetti, что и
+// unit.html для подтверждения брони/записи на показ — просто с маленьким
+// количеством частиц и без разлёта на весь экран, чтобы это выглядело как
+// акцент у самого сердечка, а не как салют. origin считается в долях
+// viewport (0..1) из реальных координат кнопки (getBoundingClientRect),
+// поэтому попадает точно в сердечко независимо от прокрутки страницы.
+// Если библиотека почему-то не подгрузилась с CDN — просто ничего не
+// происходит, сам лайк при этом всё равно ставится как обычно.
+function spawnHeartConfetti(el) {
+  if (!window.confetti) return;
+  const rect = el.getBoundingClientRect();
+  confetti({
+    particleCount: 18,
+    spread: 55,
+    startVelocity: 18,
+    scalar: 0.6,
+    ticks: 120,
+    origin: {
+      x: (rect.left + rect.width / 2) / window.innerWidth,
+      y: (rect.top + rect.height / 2) / window.innerHeight,
+    },
+    colors: ['#FF6B6B', '#7C3AED', '#FFC145', '#4ADE80', '#60A5FA'],
+  });
+}
+
 async function fetchLikedUnitMap(presentationId) {
   if (!presentationId) return null;
   try {
@@ -604,6 +635,7 @@ async function initLikeButtons(presentationId) {
     // Ставим лайк
     btn.classList.add('liked');
     if (icon) icon.className = 'ti ti-heart-filled';
+    spawnHeartConfetti(btn);
     localStorage.setItem(likedKey, 'true');
     try {
       const resp = await fetch(`${SB_URL}/presentation_likes`, {
@@ -921,6 +953,26 @@ function showError(msg) {
     <div class="error-sub">${msg}</div>
   </div>`;
 }
+
+// ── Фикс "залипшего" hover после возврата на страницу ──────────
+// 14.07.26: если уйти со страницы (например, по кнопке "Подробнее" на
+// unit.html) и вернуться назад стрелкой браузера, или просто переключиться
+// на другую вкладку и обратно — Chrome иногда восстанавливает страницу, не
+// пересчитав :hover-состояния. Из-за этого стрелки слайдера/кнопки, над
+// которыми был курсор ДО ухода со страницы, продолжают выглядеть наведёнными
+// (сплошной белый фон вместо полупрозрачного и т.п.), пока курсор реально не
+// пошевелится — сама раскладка при этом не сломана, просто "застывшая"
+// картинка. Лечится принудительным пересчётом: на мгновение перекрываем
+// страницу прозрачным слоем и сразу убираем его — этого достаточно, чтобы
+// браузер заново определил, что сейчас под курсором, и снял фантомный hover.
+function fixStuckHover() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;';
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.remove());
+}
+window.addEventListener('pageshow', e => { if (e.persisted) fixStuckHover(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fixStuckHover(); });
 
 init();
 </script>

@@ -1433,6 +1433,28 @@ let clientUnit = null; // юнит, к которому относится те�
 // виден здесь, на странице юнита, и наоборот (та же логика и тот же приём,
 // что и в offer.html — см. fetchLikedUnitMap там). Запрос защищённый: если
 // не удался (сеть/RLS/таблицы ещё нет) — просто не трогаем localStorage.
+// ── Маленькое конфетти у сердечка при лайке ─────────────────────
+// Срабатывает только в момент, когда сердечко становится красным (не при
+// снятии лайка). Та же библиотека canvas-confetti, что уже подключена для
+// подтверждения брони/записи на показ (см. showSuccess) — здесь просто
+// маленький "чирк" у самого сердечка, а не разлёт на весь экран.
+function spawnHeartConfetti(el) {
+  if (!window.confetti) return;
+  const rect = el.getBoundingClientRect();
+  confetti({
+    particleCount: 18,
+    spread: 55,
+    startVelocity: 18,
+    scalar: 0.6,
+    ticks: 120,
+    origin: {
+      x: (rect.left + rect.width / 2) / window.innerWidth,
+      y: (rect.top + rect.height / 2) / window.innerHeight,
+    },
+    colors: ['#FF6B6B', '#7C3AED', '#FFC145', '#4ADE80', '#60A5FA'],
+  });
+}
+
 async function fetchUnitLikeRowId(presId, unitId) {
   if (!presId || !unitId) return undefined; // undefined = не проверяли (нет данных для запроса)
   try {
@@ -1503,6 +1525,7 @@ async function initUnitLikeButton() {
     // Ставим лайк
     btn.classList.add('liked');
     if (icon) icon.className = 'ti ti-heart-filled';
+    spawnHeartConfetti(btn);
     localStorage.setItem(likeKey, 'true');
     try {
       const resp = await fetch(`${SUPABASE_URL}/presentation_likes`, {
@@ -1718,6 +1741,20 @@ document.getElementById('successClose')?.addEventListener('click', () => {
 document.getElementById('successOverlay')?.addEventListener('click', e => {
   if (e.target.id === 'successOverlay') document.getElementById('successOverlay').classList.remove('open');
 });
+
+// ── Фикс "залипшего" hover после возврата на страницу (см. тот же приём в
+// offer.html) — если вернуться сюда стрелкой браузера назад или переключить
+// вкладку и обратно, элементы под старой позицией курсора (стрелки
+// слайдера, кнопки) могут выглядеть наведёнными, пока курсор реально не
+// пошевелится. Лечится мгновенным перекрытием страницы прозрачным слоем.
+function fixStuckHover() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;';
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.remove());
+}
+window.addEventListener('pageshow', e => { if (e.persisted) fixStuckHover(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fixStuckHover(); });
 
 loadUnit();
 </script>
