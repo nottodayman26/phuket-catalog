@@ -889,8 +889,17 @@ body.light .page-footer {
    Только CSS-переменные (surface-2/line/muted/text) — сама лента ничего не
    знает про тему, просто наследует то же оформление, что и вся остальная
    страница, и автоматически меняется вместе с ней при переключении
-   тёмная/светлая (body.light). */
-.ticker-wrap { border-bottom: 0.5px solid var(--line); background: var(--surface-2); overflow: hidden; white-space: nowrap; padding: 8px 0; }
+   тёмная/светлая (body.light).
+   14.07.26: в отличие от floxweb.html/unit.html, здесь лента занимает своё
+   место в разметке СРАЗУ (min-height), а не только после того, как придёт
+   ответ от Supabase. Причина — герой-картинка проекта рисуется практически
+   мгновенно (данные проекта уже под рукой), а запрос ленты идёт отдельно и
+   чуть медленнее; если резервировать место только после загрузки ленты, она
+   "вставляется" уже поверх/перед уже отрисованной картинкой и сдвигает её —
+   выглядит как будто лента наезжает на картинку. С min-height картинка сразу
+   знает, где заканчивается лента, и рисуется ниже, даже если сама лента
+   ещё пустая (грузится). */
+.ticker-wrap { border-bottom: 0.5px solid var(--line); background: var(--surface-2); overflow: hidden; white-space: nowrap; padding: 8px 0; min-height: 36px; box-sizing: border-box; }
 .ticker-track { display: inline-flex; gap: 28px; animation: scrollTicker 32s linear infinite; padding-left: 16px; will-change: transform; }
 .ticker-wrap:hover .ticker-track { animation-play-state: paused; }
 @keyframes scrollTicker { from { transform: translate3d(0,0,0); } to { transform: translate3d(-50%,0,0); } }
@@ -914,8 +923,12 @@ body.light .page-footer {
 <!-- TOP BAR -->
 <div id="flox-topbar" data-page="project"></div>
 
-<!-- Бегущая строка "недавно продано" (та же, что в floxweb.html/unit.html) -->
-<div class="ticker-wrap" id="soldTickerWrap" style="display:none">
+<!-- Бегущая строка "недавно продано" (та же, что в floxweb.html/unit.html).
+     Без display:none — место под неё зарезервировано сразу через
+     min-height в CSS (см. .ticker-wrap), чтобы геро-картинка ниже не
+     "подпрыгивала"/не перекрывалась лентой, если та подгружается чуть
+     дольше, чем данные проекта. -->
+<div class="ticker-wrap" id="soldTickerWrap">
   <div class="ticker-track" id="soldTicker"></div>
 </div>
 
@@ -1234,7 +1247,9 @@ async function loadSoldTicker() {
     }).join('');
     const track = document.getElementById('soldTicker');
     track.innerHTML = items + items;
-    document.getElementById('soldTickerWrap').style.display = 'block';
+    // Место под ленту уже зарезервировано через min-height в CSS (см.
+    // .ticker-wrap) — display переключать не нужно, лента просто
+    // заполняется контентом в уже готовом месте.
     requestAnimationFrame(() => {
       const singleWidth = track.scrollWidth / 2;
       const pxPerSecond = 38;
