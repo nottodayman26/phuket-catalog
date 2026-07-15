@@ -75,45 +75,50 @@ input,button{font-family:inherit;}
 .type-btn.act{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
 .type-btn svg{width:22px;height:22px;}
 
-/* Search box */
-/* 15.07.26: ширина 900px — как у .search-results/.map-view-wrap ниже (было
-   720px и поисковая строка была уже, чем список карточек под ней). */
+/* Search box — "компактная лента" (вариант 2 из макетов, 15.07.26): раньше
+   были две строки (поле поиска сверху, фильтры под ним с разделяющей
+   линией), теперь всё — поле, Тип/Цена/Срок/Все фильтры, На карте/Найти —
+   в одну сплошную "таблетку" с тонкими вертикальными разделителями между
+   смысловыми группами, как у Airbnb. Тип/Вилла/Таунхаус (.type-selector/
+   .type-btn) сюда не входят и не менялись — это отдельный, уже одобренный
+   блок над поисковой строкой. width:900px — как у .search-results/
+   .map-view-wrap ниже (было 720px и поисковая строка была уже списка). */
 .search-box-wrap{
-  width:100%;max-width:900px;
+  width:100%;max-width:900px;display:flex;align-items:center;flex-wrap:wrap;
+  gap:2px;padding:6px;row-gap:6px;
   background:var(--surface);border:1.5px solid var(--line-2);
-  border-radius:16px;transition:border-color .2s,box-shadow .2s;position:relative;
+  border-radius:28px;transition:border-color .2s,box-shadow .2s;position:relative;
 }
 .search-box-wrap:focus-within{border-color:var(--line);box-shadow:0 4px 20px rgba(0,0,0,0.12);}
-.search-row{
-  display:flex;align-items:center;padding:0 16px;height:54px;
-  border-bottom:0.5px solid var(--line);
+.search-input-seg{
+  display:flex;align-items:center;gap:8px;flex:1;min-width:160px;padding:9px 8px 9px 14px;
 }
-.search-icon{color:var(--muted);flex-shrink:0;margin-right:10px;}
-.search-input{flex:1;border:none;background:none;color:var(--text);font-size:15px;outline:none;}
+.search-icon{color:var(--muted);flex-shrink:0;}
+.search-input{flex:1;border:none;background:none;color:var(--text);font-size:14.5px;outline:none;min-width:0;}
 .search-input::placeholder{color:var(--muted-2);}
 .search-clear{
-  width:24px;height:24px;border-radius:50%;border:none;
+  width:22px;height:22px;border-radius:50%;border:none;
   background:var(--surface-3);color:var(--muted);cursor:pointer;
   display:none;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;
 }
 .search-clear.vis{display:flex;}
 
-/* Filters row */
-.filters-row{display:flex;align-items:center;gap:6px;padding:10px 14px;flex-wrap:wrap;}
+/* Фильтры — теперь сегменты внутри той же "ленты", без обводки, только
+   заливка на ховере/активном состоянии (было — отдельные кнопки с рамкой). */
 .filter-btn{
-  display:flex;align-items:center;gap:5px;
-  padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;
-  border:1px solid var(--line-2);color:var(--muted);background:none;
-  cursor:pointer;white-space:nowrap;transition:all .15s;
+  display:flex;align-items:center;gap:6px;
+  padding:9px 13px;border-radius:20px;font-size:12.5px;font-weight:500;
+  border:none;color:var(--muted);background:none;
+  cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;
 }
-.filter-btn:hover{border-color:var(--accent);color:var(--accent);}
-.filter-btn.act{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+.filter-btn:hover{background:var(--surface-2);color:var(--text);}
+.filter-btn.act{background:var(--accent-soft);color:var(--accent);}
 .filter-btn svg{width:12px;height:12px;}
-.filter-sep{width:1px;height:20px;background:var(--line-2);flex-shrink:0;}
+.filter-sep{width:1px;height:22px;background:var(--line-2);flex-shrink:0;margin:0 2px;}
 .search-btn{
-  padding:6px 18px;border-radius:20px;
+  padding:9px 20px;border-radius:20px;margin:2px 2px 2px 0;
   background:var(--accent);color:#fff;border:none;
-  font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s;
+  font-size:12.5px;font-weight:600;cursor:pointer;transition:opacity .15s;
 }
 .search-btn:hover{opacity:.88;}
 
@@ -178,11 +183,11 @@ input,button{font-family:inherit;}
    смысла нет, только тратит дневной лимит запросов к API. */
 .map-toggle-btn{
   display:flex;align-items:center;gap:6px;
-  padding:6px 14px;margin-left:auto;border-radius:20px;font-size:12px;font-weight:500;
-  border:1px solid var(--line-2);color:var(--muted);background:none;
-  cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s;
+  padding:9px 13px;margin-left:auto;border-radius:20px;font-size:12.5px;font-weight:500;
+  border:none;color:var(--muted);background:none;
+  cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;
 }
-.map-toggle-btn:hover{border-color:var(--accent);color:var(--accent);}
+.map-toggle-btn:hover{background:var(--surface-2);color:var(--text);}
 .map-toggle-btn svg{width:13px;height:13px;flex-shrink:0;}
 
 /* "Найти" ↔ "Списком" — тот же самый элемент, текст меняется в JS
@@ -212,9 +217,10 @@ input,button{font-family:inherit;}
    Supabase Auth.
    15.07.26: без фона-плашки — раньше была белая карточка на весь ряд, теперь
    кнопки просто лежат на фоне страницы. Плюс кнопка "Смотреть как агент"
-   (previewToggle) — админ может на лету скрыть свой же инструмент
-   расстановки точек, посмотреть карту "глазами" обычного агента, и
-   вернуться обратно тем же переключателем, не разлогиниваясь. */
+   (previewToggle) — жмёт её админ и весь этот блок (вместе с самой кнопкой)
+   пропадает целиком, чтобы страница выглядела 1:1 как у обычного агента.
+   15.07.26 (3): обратной кнопки специально нет — вернуться в режим админа
+   можно только перезагрузкой страницы (см. togglePreviewAsAgent в JS). */
 .map-placement-bar{
   display:none;align-items:center;gap:10px;flex-wrap:wrap;
   padding:0 0 10px;
@@ -226,7 +232,6 @@ input,button{font-family:inherit;}
   font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;transition:background .15s,color .15s,border-color .15s;
 }
 .map-preview-toggle:hover{border-color:var(--accent);}
-.map-preview-toggle.act{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
 .map-preview-toggle svg{width:14px;height:14px;flex-shrink:0;}
 .map-admin-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .map-placement-toggle{
@@ -550,7 +555,7 @@ input,button{font-family:inherit;}
     </div>
 
     <div class="search-box-wrap" id="searchWrap">
-      <div class="search-row">
+      <div class="search-input-seg">
         <span class="search-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         </span>
@@ -559,32 +564,29 @@ input,button{font-family:inherit;}
           oninput="onSearchInput(this.value)" autocomplete="off">
         <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
       </div>
-      <div class="filters-row">
-        <button class="filter-btn" id="filterTypeBtn" onclick="openTypeModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          <span id="filterTypeLabel">Тип</span>
-        </button>
-        <div class="filter-sep"></div>
-        <button class="filter-btn" id="filterPriceBtn" onclick="openPriceModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14H11v-2h2v2zm0-4H11V7h2v5z"/></svg>
-          <span id="filterPriceLabel">Цена</span>
-        </button>
-        <div class="filter-sep"></div>
-        <button class="filter-btn" id="filterCompBtn" onclick="openCompletionModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          <span id="filterCompLabel">Срок сдачи до</span>
-        </button>
-        <div class="filter-sep"></div>
-        <button class="filter-btn" onclick="alert('Скоро!')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M8 12h8M11 18h2"/></svg>
-          Все фильтры
-        </button>
-        <button class="map-toggle-btn" id="mapToggleBtn" onclick="setResultsView('map')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
-          На карте
-        </button>
-        <button class="search-btn" id="searchBtn" onclick="handleSearchBtnClick()">Найти</button>
-      </div>
+      <div class="filter-sep"></div>
+      <button class="filter-btn" id="filterTypeBtn" onclick="openTypeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span id="filterTypeLabel">Тип</span>
+      </button>
+      <button class="filter-btn" id="filterPriceBtn" onclick="openPriceModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14H11v-2h2v2zm0-4H11V7h2v5z"/></svg>
+        <span id="filterPriceLabel">Цена</span>
+      </button>
+      <button class="filter-btn" id="filterCompBtn" onclick="openCompletionModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span id="filterCompLabel">Срок сдачи до</span>
+      </button>
+      <button class="filter-btn" onclick="alert('Скоро!')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M8 12h8M11 18h2"/></svg>
+        Все фильтры
+      </button>
+      <div class="filter-sep"></div>
+      <button class="map-toggle-btn" id="mapToggleBtn" onclick="setResultsView('map')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+        На карте
+      </button>
+      <button class="search-btn" id="searchBtn" onclick="handleSearchBtnClick()">Найти</button>
       <div class="autocomplete" id="autocomplete"></div>
     </div>
 
@@ -1194,14 +1196,17 @@ const PHUKET_CENTER = [7.9, 98.32];
 
 // 15.07.26: "На карте" — кнопка слева от "Найти", остаётся на месте всегда
 // (не прячется). "Списком" — это тот же самый #searchBtn, просто его текст
-// плавно подменяется (см. morphSearchBtn). handleSearchBtnClick разруливает,
-// что должен делать клик по этой кнопке в текущий момент: в режиме карты —
-// просто вернуть список (без нового поиска), в обычном режиме — как раньше,
-// выполнить поиск.
+// плавно подменяется (см. morphSearchBtn) один раз, при первом переходе на
+// карту — и обратно в "Найти" уже НЕ возвращается, даже когда снова
+// показываем список (так попросил Илья: "Списком" насовсем заменяет "Найти"
+// после первого использования карты). handleSearchBtnClick разруливает, что
+// должен делать клик по этой кнопке в текущий момент, независимо от текста
+// на ней: в режиме карты — вернуть список (без нового поиска), в обычном
+// режиме — как раньше, выполнить поиск.
 function setResultsView(view) {
   const isMap = view === 'map';
   mapViewActive = isMap;
-  morphSearchBtn(isMap ? 'Списком' : 'Найти');
+  if (isMap) morphSearchBtn('Списком');
   document.getElementById('searchResults').style.display = isMap ? 'none' : '';
   document.getElementById('mapViewWrap').classList.toggle('act', isMap);
   if (isMap) {
@@ -1335,17 +1340,18 @@ function populatePlacementSelect() {
   ).join('');
 }
 
-// "Смотреть как агент" ↔ "Вернуться в режим админа" — если в этот момент
-// было включено "Расставить точки", сначала аккуратно его выключаем (чтобы
-// не остаться в режиме, когда клик по карте вроде что-то делает, а инструмент
-// уже спрятан).
+// "Смотреть как агент" — путь только в одну сторону, без кнопки "назад":
+// 15.07.26 (3) по просьбе Ильи весь блок с админ-инструментами (вместе с
+// самой этой кнопкой) прячется целиком, чтобы страница выглядела 1:1 как у
+// обычного агента, без единой лишней плашки. Вернуться в режим админа можно
+// только перезагрузкой страницы — previewAsAgent обычная переменная в
+// памяти, никуда не сохраняется, так что F5 сам возвращает админский режим.
+// Если в этот момент было включено "Расставить точки" — сначала аккуратно
+// выключаем его же функцией (обновит и иконку, и селект, и подсказку).
 function togglePreviewAsAgent() {
-  if (!AGENT?.is_admin) return;
-  if (!previewAsAgent && placementMode) togglePlacementMode();
-  previewAsAgent = !previewAsAgent;
-  document.getElementById('previewToggle')?.classList.toggle('act', previewAsAgent);
-  const label = document.getElementById('previewToggleLabel');
-  if (label) label.textContent = previewAsAgent ? 'Вернуться в режим админа' : 'Смотреть как агент';
+  if (!AGENT?.is_admin || previewAsAgent) return;
+  if (placementMode) togglePlacementMode();
+  previewAsAgent = true;
   updatePlacementBarVisibility();
 }
 
@@ -1995,18 +2001,13 @@ function renderAgent() {
 
 // 14.07.26: показывает панель "Расставить точки" только агенту с is_admin=true
 // (см. комментарий у .map-placement-bar в CSS — это ограничение интерфейса,
-// не серверная защита).
+// не серверная защита). 15.07.26 (3): пока включён previewAsAgent, вся
+// панель (включая кнопку "Смотреть как агент") прячется целиком — см.
+// togglePreviewAsAgent про то, почему обратной кнопки больше нет.
 function updatePlacementBarVisibility() {
   const isAdmin = !!AGENT?.is_admin;
   const bar = document.getElementById('placementBar');
-  if (bar) bar.classList.toggle('admin-vis', isAdmin);
-  // "Смотреть как агент" сам виден только админу (иначе незачем), а вот
-  // инструменты расстановки точек (adminTools) прячутся ещё и когда админ
-  // сам временно включил previewAsAgent — это и есть весь смысл переключателя.
-  const previewBtn = document.getElementById('previewToggle');
-  if (previewBtn) previewBtn.style.display = isAdmin ? 'flex' : 'none';
-  const tools = document.getElementById('adminTools');
-  if (tools) tools.style.display = (isAdmin && !previewAsAgent) ? 'flex' : 'none';
+  if (bar) bar.classList.toggle('admin-vis', isAdmin && !previewAsAgent);
 }
 
 function timeAgo(iso) {
