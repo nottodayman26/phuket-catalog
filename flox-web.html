@@ -236,14 +236,24 @@ input,button{font-family:inherit;}
    зафуллскриненного элемента и поэтому не рендерились браузером вообще
    (это жёсткое правило Fullscreen API, не лечится ни CSS, ни z-index).
    Новое решение — надёжнее и без гаданий про внутренний DOM Яндекса:
-   1) position:fixed — координаты всегда от реального окна браузера,
-      независимо от высоты #projectsMap и от прокрутки страницы;
+   1) position:fixed — координаты всегда от реального окна браузера, не от
+      #projectsMap (важно для пункта 2 ниже);
    2) в addCustomMapControls() слушаем НАСТОЯЩЕЕ браузерное событие
       fullscreenchange (document.fullscreenElement) и физически переносим
       (appendChild) обе кнопки ВНУТРЬ того элемента, который браузер реально
       считает полноэкранным, а при выходе — обратно в #projectsMap. Так они
       гарантированно видны в фуллскрине вне зависимости от того, что именно
-      Яндекс разворачивает внутри себя. */
+      Яндекс разворачивает внутри себя.
+   (18): у position:fixed оказалась своя цена — Илья проверил вживую: кнопки
+   оторвались от карты и повисли у самого верха ВСЕЙ страницы (над шапкой
+   поиска), потому что карта на странице начинается не с нуля — выше неё
+   заголовок и строка поиска. Фиксированные top:10px/top:50% в CSS ниже —
+   это дефолт до первого расчёта; реальную позицию (top, в px) выставляет JS
+   (см. positionMapControls() в скрипте) — по факту читает текущие экранные
+   координаты карты (getBoundingClientRect) и пересчитывает при скролле,
+   resize и входе/выходе из fullscreen. right не трогаем — карта на всю
+   ширину страницы от края до края (см. .map-view-wrap), поэтому правый край
+   карты и так совпадает с правым краем экрана. */
 .map-ctrl-btn{
   width:44px;height:44px;border-radius:16px;background:#fff;color:#16161f;
   display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -1278,6 +1288,10 @@ let lastFilteredProjects = PROJECTS;
 let mapViewActive = false;
 let projectsMap = null;
 let mapPlacemarks = [];
+// 15.07.26 (18): ссылки на элементы кастомных кнопок карты (см.
+// addCustomMapControls) — нужны отдельной функции positionMapControls,
+// чтобы пересчитывать их позицию по реальным экранным координатам карты.
+let mapCtrlRefs = null;
 let placementMode = false;
 // 15.07.26: чисто клиентский переключатель "посмотреть как обычный агент" —
 // ничего не пишет в базу и не трогает AGENT.is_admin, просто на время прячет
@@ -1420,8 +1434,29 @@ function resizeProjectsMapHeight() {
   const h = availableH * 2;
   mapEl.style.height = h + 'px';
   if (projectsMap?.container?.fitToViewport) projectsMap.container.fitToViewport();
+  positionMapControls(); // высота #projectsMap только что изменилась — пересчитать позицию кнопок (см. (18))
 }
 window.addEventListener('resize', resizeProjectsMapHeight);
+
+// 15.07.26 (18), по просьбе Ильи: кнопки карты (position:fixed, см. CSS у
+// .map-ctrl-btn) держат позицию не хардкодом, а по факту текущих экранных
+// координат карты — карта на странице начинается не с самого верха (выше
+// заголовок и строка поиска), поэтому фиксированный top:10px в CSS сам по
+// себе "отрывал" кнопки от карты и вешал их у верха всей страницы. right не
+// пересчитываем — карта во всю ширину страницы (см. .map-view-wrap), правый
+// край карты и так совпадает с правым краем экрана.
+function positionMapControls() {
+  if (!mapCtrlRefs) return;
+  const { mapEl, fsBtn, zoomGroup } = mapCtrlRefs;
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement || null;
+  const refEl = fsEl || mapEl;
+  const rect = refEl.getBoundingClientRect();
+  const visTop = Math.max(rect.top, 0);
+  const visBottom = Math.min(rect.bottom, window.innerHeight);
+  fsBtn.style.top = (visTop + 10) + 'px';
+  zoomGroup.style.top = ((visTop + visBottom) / 2) + 'px';
+}
+window.addEventListener('scroll', positionMapControls, { passive: true });
 
 // 15.07.26 (5): цвет меток на карте — тот же красный/коралловый, что и точка
 // в логотипе Flox (var(--red) в CSS), а не фиолетовый акцент бренда — так
@@ -1527,6 +1562,12 @@ function addCustomMapControls() {
   zoomGroup.appendChild(minusBtn);
   mapEl.appendChild(zoomGroup);
 
+  // (18): нужно для positionMapControls() — она читает эти ссылки по имени
+  // из глобального mapCtrlRefs, а не через замыкание (её ещё дёргают извне,
+  // из resizeProjectsMapHeight() и window 'scroll').
+  mapCtrlRefs = { mapEl, fsBtn, zoomGroup };
+  positionMapControls();
+
   // 15.07.26 (17): раньше иконка/видимость кнопок менялись по СОБЫТИЯМ
   // ЯНДЕКСА (container.events 'fullscreenenter'/'fullscreenexit') — Илья
   // проверил вживую: кнопки пропадали в фуллскрине целиком. Похоже, Яндекс
@@ -1548,6 +1589,7 @@ function addCustomMapControls() {
     const target = isFs ? fsEl : mapEl;
     target.appendChild(fsBtn);
     target.appendChild(zoomGroup);
+    positionMapControls(); // после переноса — координаты нового контейнера другие (в fullscreen это весь экран)
   }
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
@@ -1616,30 +1658,46 @@ function renderProjectPins(projects, opts) {
   // зуме), плашка либо просто появляется/исчезает у одного и того же
   // проекта, либо не меняется вовсе — но никогда не "перескакивает" на
   // другого соседа.
+  // 15.07.26 (18), НАЙДЕНА настоящая причина, почему у всех проектов, кроме
+  // одного (самого дешёвого во всём каталоге — OLN), плашка не появлялась
+  // НИКОГДА, ни на каком зуме — Илья прислал дамп из консоли, где это видно
+  // прямо: wantsPlaque:true только у OLN, у остальных трёх — false, при
+  // зуме 16 (объекты в разных районах острова, на экране заведомо далеко
+  // друг от друга). Причина — в самой группировке ниже:
+  // projectsMap.converter.globalToPage(...) ждёт на входе "глобальные"
+  // пиксельные координаты Яндекс.Карт (собственная внутренняя система
+  // отсчёта), а туда передавались СЫРЫЕ гео-координаты [lat, lng] (числа
+  // вида 7.9 и 98.3) — то есть метод получал не то, что ожидает, и для всех
+  // 4 проектов возвращал похожие мусорные значения, из-за чего все 4 всегда
+  // считались одной кучей независимо от реального зума — а группа выдаёт
+  // плашку только своему самому дешёвому члену. Переписано без обращения к
+  // этому (и вообще без Яндекс-специфичных методов пересчёта координат,
+  // чтобы больше не зависеть от точного знания их API) — расстояние на
+  // экране считается напрямую по стандартной формуле Web Mercator (те же
+  // тайлы 256×256px, что использует сам Яндекс/большинство карт в мире):
+  // метров-на-пиксель = 156543.03392 × cos(широта) / 2^зум.
   const PLAQUE_CLUSTER_PX = 70;
+  const METERS_PER_DEGREE = 111320; // плоское приближение — остров маленький, точности достаточно
+  function approxScreenDistancePx(a, b, zoom) {
+    const avgLatRad = (a.lat + b.lat) / 2 * Math.PI / 180;
+    const dLatM = (b.lat - a.lat) * METERS_PER_DEGREE;
+    const dLngM = (b.lng - a.lng) * METERS_PER_DEGREE * Math.cos(avgLatRad);
+    const distM = Math.sqrt(dLatM * dLatM + dLngM * dLngM);
+    const metersPerPixel = 156543.03392 * Math.cos(avgLatRad) / Math.pow(2, zoom);
+    return distM / metersPerPixel;
+  }
   withCoords.forEach(p => { p._wantsPlaque = false; });
   try {
-    if (projectsMap.converter?.globalToPage) {
-      const px = new Map(withCoords.map(p => [p, projectsMap.converter.globalToPage([p.lat, p.lng])]));
-      const groups = [];
-      withCoords.forEach(p => {
-        const pt = px.get(p);
-        const group = groups.find(g => {
-          const gp = px.get(g[0]);
-          const dx = gp[0] - pt[0], dy = gp[1] - pt[1];
-          return Math.sqrt(dx * dx + dy * dy) < PLAQUE_CLUSTER_PX;
-        });
-        if (group) group.push(p); else groups.push([p]);
-      });
-      groups.forEach(group => {
-        const cheapest = group.reduce((a, b) => ((b.priceFrom ?? Infinity) < (a.priceFrom ?? Infinity) ? b : a));
-        cheapest._wantsPlaque = true;
-      });
-    } else {
-      // converter недоступен — откатываемся на старое поведение "каждый сам
-      // за себя", лучше так, чем совсем без плашек
-      withCoords.forEach(p => { p._wantsPlaque = true; });
-    }
+    const zoom = projectsMap.getZoom ? projectsMap.getZoom() : 11;
+    const groups = [];
+    withCoords.forEach(p => {
+      const group = groups.find(g => approxScreenDistancePx(g[0], p, zoom) < PLAQUE_CLUSTER_PX);
+      if (group) group.push(p); else groups.push([p]);
+    });
+    groups.forEach(group => {
+      const cheapest = group.reduce((a, b) => ((b.priceFrom ?? Infinity) < (a.priceFrom ?? Infinity) ? b : a));
+      cheapest._wantsPlaque = true;
+    });
   } catch (e) {
     console.error('[flox] не удалось сгруппировать точки для плашек, используем поведение без группировки:', e);
     withCoords.forEach(p => { p._wantsPlaque = true; });
