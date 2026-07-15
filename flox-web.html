@@ -162,21 +162,40 @@ input,button{font-family:inherit;}
 .search-results{width:100%;max-width:900px;margin-top:24px;}
 .results-label{font-size:13px;color:var(--muted);margin-bottom:14px;}
 
-/* ── "На карте" — переключатель списком/карта + сама карта проектов ──
-   14.07.26: тулбар лежит между .active-filters и .search-results/.map-view-wrap
-   и виден всегда (даже до первого поиска — по умолчанию карта показывает все
-   проекты), ровно как у конкурента. Карта создаётся только при первом клике
+/* ── "На карте" — кнопка-переключатель в строке фильтров (слева от "Найти")
+   + сама карта проектов. 15.07.26: раньше был отдельный ряд с двумя пилюлями
+   ("Список"/"На карте") под строкой поиска — убрали, он был виден всегда
+   (даже до первого поиска) и добавлял лишнюю высоту странице, из-за которой
+   на пустом экране появлялся вертикальный скролл без реального контента.
+   Теперь один переключатель встроен в filters-row: кнопка "На карте" плавно
+   прячется, а "Найти" морфится в "Списком" (см. morphSearchBtn/handleSearchBtnClick),
+   и обратно при возврате в список. Карта создаётся только при первом клике
    на "На карте" (см. initProjectsMap) — грузить её при каждом заходе на
-   страницу поиска смысла нет, только тратит дневной лимit запросов к API. */
-.results-toolbar{width:100%;max-width:900px;margin-top:20px;display:flex;justify-content:flex-end;}
-.view-toggle{display:inline-flex;background:var(--surface-2);border:0.5px solid var(--line-2);border-radius:10px;padding:3px;gap:2px;}
-.view-toggle-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;background:none;color:var(--muted);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;transition:background .15s,color .15s;}
-.view-toggle-btn.act{background:var(--surface);color:var(--text);}
-.view-toggle-btn svg{width:15px;height:15px;flex-shrink:0;}
+   страницу поиска смысла нет, только тратит дневной лимит запросов к API. */
+.map-toggle-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;margin-left:auto;border-radius:20px;font-size:12px;font-weight:500;
+  border:1px solid var(--line-2);color:var(--muted);background:none;
+  cursor:pointer;white-space:nowrap;overflow:hidden;max-width:160px;
+  transition:opacity .18s ease,max-width .22s ease,margin .22s ease,padding .22s ease,border-color .15s,color .15s;
+}
+.map-toggle-btn:hover{border-color:var(--accent);color:var(--accent);}
+.map-toggle-btn svg{width:13px;height:13px;flex-shrink:0;}
+.map-toggle-btn.hidden{opacity:0;max-width:0;padding-left:0;padding-right:0;margin-left:0;border-width:0;pointer-events:none;}
 
-.map-view-wrap{width:100%;max-width:900px;margin-top:16px;display:none;}
+/* "Найти" ↔ "Списком" — тот же самый элемент, текст меняется в JS
+   (morphSearchBtn), тут только плавный кросс-фейд на момент подмены. */
+.search-btn{transition:opacity .15s ease,transform .15s ease;}
+.search-btn.morphing{opacity:0;transform:scale(.94);}
+
+/* Full-bleed: карта растягивается от левого до правого края страницы (не
+   ограничена max-width:900px, как остальной контент поиска) и по высоте —
+   до низа окна (высота выставляется в JS, см. resizeProjectsMapHeight,
+   т.к. зависит от того, сколько места сверху занял поисковый блок). */
+.map-view-wrap{width:calc(100% + 40px);margin:16px -20px 0;display:none;}
 .map-view-wrap.act{display:block;}
-#projectsMap{width:100%;height:560px;border-radius:14px;overflow:hidden;border:0.5px solid var(--line-2);}
+.map-view-wrap .map-placement-bar{margin-left:20px;margin-right:20px;}
+#projectsMap{width:100%;min-height:320px;overflow:hidden;border-top:0.5px solid var(--line-2);}
 
 /* Панель расстановки точек — видна только внутри floxweb.html (агентский
    инструмент), поверх карты сверху. Клиенты этот файл не открывают, поэтому
@@ -543,25 +562,16 @@ input,button{font-family:inherit;}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M8 12h8M11 18h2"/></svg>
           Все фильтры
         </button>
-        <button class="search-btn" onclick="doSearch()">Найти</button>
+        <button class="map-toggle-btn" id="mapToggleBtn" onclick="setResultsView('map')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          На карте
+        </button>
+        <button class="search-btn" id="searchBtn" onclick="handleSearchBtnClick()">Найти</button>
       </div>
       <div class="autocomplete" id="autocomplete"></div>
     </div>
 
     <div class="active-filters" id="activeFilters"></div>
-
-    <div class="results-toolbar">
-      <div class="view-toggle">
-        <button class="view-toggle-btn act" id="viewListBtn" onclick="setResultsView('list')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-          Списком
-        </button>
-        <button class="view-toggle-btn" id="viewMapBtn" onclick="setResultsView('map')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
-          На карте
-        </button>
-      </div>
-    </div>
 
     <div class="search-results" id="searchResults"></div>
 
@@ -1153,11 +1163,16 @@ let placementMode = false;
 // сюда, а не в случайную точку по умолчанию у Яндекса.
 const PHUKET_CENTER = [7.9, 98.32];
 
+// 15.07.26: "На карте" — кнопка слева от "Найти", "Списком" — это тот же
+// самый #searchBtn, просто его текст плавно подменяется (см. morphSearchBtn).
+// handleSearchBtnClick разруливает, что должен делать клик по этой кнопке
+// в текущий момент: в режиме карты — просто вернуть список (без нового
+// поиска), в обычном режиме — как раньше, выполнить поиск.
 function setResultsView(view) {
   const isMap = view === 'map';
   mapViewActive = isMap;
-  document.getElementById('viewListBtn').classList.toggle('act', !isMap);
-  document.getElementById('viewMapBtn').classList.toggle('act', isMap);
+  document.getElementById('mapToggleBtn').classList.toggle('hidden', isMap);
+  morphSearchBtn(isMap ? 'Списком' : 'Найти');
   document.getElementById('searchResults').style.display = isMap ? 'none' : '';
   document.getElementById('mapViewWrap').classList.toggle('act', isMap);
   if (isMap) {
@@ -1166,15 +1181,54 @@ function setResultsView(view) {
       ymaps.ready(() => {
         initProjectsMap();
         renderProjectPins(lastFilteredProjects);
+        resizeProjectsMapHeight();
       });
     } else {
       // Скрипт api-maps.yandex.ru не подгрузился (нет сети до Яндекса,
       // заблокирован и т.п.) — не даём странице сломаться молча.
       document.getElementById('projectsMap').innerHTML =
         '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;text-align:center;padding:20px;">Не удалось загрузить карту.<br>Проверьте подключение к интернету и обновите страницу.</div>';
+      resizeProjectsMapHeight();
     }
   }
 }
+
+// Плавная подмена текста на кнопке "Найти"/"Списком" (кросс-фейд через
+// .morphing, см. CSS) — если текст уже нужный, ничего не делаем, чтобы не
+// моргать зря при повторных вызовах setResultsView('map').
+function morphSearchBtn(text) {
+  const btn = document.getElementById('searchBtn');
+  if (!btn || btn.textContent.trim() === text) return;
+  btn.classList.add('morphing');
+  setTimeout(() => {
+    btn.textContent = text;
+    btn.classList.remove('morphing');
+  }, 150);
+}
+
+function handleSearchBtnClick() {
+  if (mapViewActive) {
+    setResultsView('list');
+  } else {
+    doSearch();
+  }
+}
+
+// Карта — от левого до правого края страницы и вниз до конца окна (см.
+// .map-view-wrap/#projectsMap в CSS про full-bleed по ширине). По высоте
+// full-bleed надёжнее посчитать в JS: сколько места сверху уже занял
+// поисковый блок — это меняется (активные фильтры показываются/прячутся
+// и т.п.), поэтому фиксированной высотой в CSS не обойтись.
+function resizeProjectsMapHeight() {
+  const wrap = document.getElementById('mapViewWrap');
+  const mapEl = document.getElementById('projectsMap');
+  if (!wrap || !mapEl || !wrap.classList.contains('act')) return;
+  const top = mapEl.getBoundingClientRect().top;
+  const h = Math.max(320, Math.round(window.innerHeight - top - 16));
+  mapEl.style.height = h + 'px';
+  if (projectsMap?.container?.fitToViewport) projectsMap.container.fitToViewport();
+}
+window.addEventListener('resize', resizeProjectsMapHeight);
 
 function initProjectsMap() {
   if (projectsMap) return; // уже создана — просто переиспользуем
@@ -1838,6 +1892,23 @@ async function initAgent() {
       }
       renderAgent();
       renderAgentPopover();
+      // 15.07.26: кэш агента в localStorage мог быть сохранён раньше, чем
+      // в базе появилось/включилось поле is_admin (или любое другое) —
+      // без этого агент, которому только что выдали права в Supabase, не
+      // увидит инструмент "Расставить точки", пока сам не почистит
+      // localStorage. Тихо обновляем в фоне и перерисовываем при изменениях.
+      if (AGENT.id) {
+        try {
+          const r = await h(`${SUPABASE_URL}/agents?id=eq.${AGENT.id}&select=*`);
+          const agents = await r.json();
+          if (agents.length) {
+            AGENT = agents[0];
+            localStorage.setItem('flox-agent', JSON.stringify(AGENT));
+            renderAgent();
+            renderAgentPopover();
+          }
+        } catch(e) {}
+      }
       return;
     } catch(e) {
       localStorage.removeItem('flox-agent');
