@@ -7,6 +7,12 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
+<!-- 14.07.26: карта проектов ("На карте" на странице поиска) — свой бесплатный
+     ключ (лимит 25 000 запросов/сутки, см. developer.tech.yandex.ru). Грузится
+     сразу в head, но сама карта создаётся лениво (см. initProjectsMap) — только
+     когда агент реально откроет вкладку "На карте", а не на каждой загрузке
+     страницы, чтобы не тратить лимит впустую. -->
+<script src="https://api-maps.yandex.ru/2.1/?apikey=9f137a3a-c842-4d1b-9c5d-60e9ad353585&lang=ru_RU"></script>
 <style>
 :root {
   --bg:#0d0d18; --surface:#111118; --surface-2:#1a1a26; --surface-3:#222232;
@@ -155,6 +161,51 @@ input,button{font-family:inherit;}
 /* Results */
 .search-results{width:100%;max-width:900px;margin-top:24px;}
 .results-label{font-size:13px;color:var(--muted);margin-bottom:14px;}
+
+/* ── "На карте" — переключатель списком/карта + сама карта проектов ──
+   14.07.26: тулбар лежит между .active-filters и .search-results/.map-view-wrap
+   и виден всегда (даже до первого поиска — по умолчанию карта показывает все
+   проекты), ровно как у конкурента. Карта создаётся только при первом клике
+   на "На карте" (см. initProjectsMap) — грузить её при каждом заходе на
+   страницу поиска смысла нет, только тратит дневной лимit запросов к API. */
+.results-toolbar{width:100%;max-width:900px;margin-top:20px;display:flex;justify-content:flex-end;}
+.view-toggle{display:inline-flex;background:var(--surface-2);border:0.5px solid var(--line-2);border-radius:10px;padding:3px;gap:2px;}
+.view-toggle-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;background:none;color:var(--muted);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;transition:background .15s,color .15s;}
+.view-toggle-btn.act{background:var(--surface);color:var(--text);}
+.view-toggle-btn svg{width:15px;height:15px;flex-shrink:0;}
+
+.map-view-wrap{width:100%;max-width:900px;margin-top:16px;display:none;}
+.map-view-wrap.act{display:block;}
+#projectsMap{width:100%;height:560px;border-radius:14px;overflow:hidden;border:0.5px solid var(--line-2);}
+
+/* Панель расстановки точек — видна только внутри floxweb.html (агентский
+   инструмент), поверх карты сверху. Клиенты этот файл не открывают, поэтому
+   отдельный "агентский/клиентский режим" тут не нужен, в отличие от unit.html.
+   14.07.26: скрыта по умолчанию (display:none) — показываем только агенту с
+   is_admin=true в таблице agents (см. updatePlacementBarVisibility). Это
+   ограничение на уровне интерфейса, не железная защита — обычный
+   зарегистрированный агент её просто не увидит и не будет пытаться искать;
+   полноценная серверная проверка — отдельная задача вместе с переходом на
+   Supabase Auth. */
+.map-placement-bar{
+  display:none;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;
+  padding:10px 14px;margin-bottom:10px;
+}
+.map-placement-bar.admin-vis{display:flex;}
+.map-placement-toggle{
+  display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:8px;
+  border:0.5px solid var(--line-2);background:var(--surface-2);color:var(--muted);
+  font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;transition:background .15s,color .15s,border-color .15s;
+}
+.map-placement-toggle.act{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+.map-placement-select{
+  flex:1;min-width:180px;padding:7px 10px;border-radius:8px;border:0.5px solid var(--line-2);
+  background:var(--surface-2);color:var(--text);font-size:12.5px;font-family:inherit;display:none;
+}
+.map-placement-select.vis{display:block;}
+.map-placement-hint{font-size:11.5px;color:var(--muted);display:none;}
+.map-placement-hint.vis{display:block;}
 .no-results{
   text-align:center;padding:40px 20px;
   background:var(--surface);border:1px solid var(--line);
@@ -498,7 +549,33 @@ input,button{font-family:inherit;}
     </div>
 
     <div class="active-filters" id="activeFilters"></div>
+
+    <div class="results-toolbar">
+      <div class="view-toggle">
+        <button class="view-toggle-btn act" id="viewListBtn" onclick="setResultsView('list')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          Списком
+        </button>
+        <button class="view-toggle-btn" id="viewMapBtn" onclick="setResultsView('map')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          На карте
+        </button>
+      </div>
+    </div>
+
     <div class="search-results" id="searchResults"></div>
+
+    <div class="map-view-wrap" id="mapViewWrap">
+      <div class="map-placement-bar" id="placementBar">
+        <button class="map-placement-toggle" id="placementToggle" onclick="togglePlacementMode()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          Расставить точки
+        </button>
+        <select class="map-placement-select" id="placementSelect"></select>
+        <span class="map-placement-hint" id="placementHint">Кликни на карте, куда поставить точку для выбранного проекта</span>
+      </div>
+      <div id="projectsMap"></div>
+    </div>
   </div>
 </div>
 
@@ -1016,6 +1093,8 @@ function pcStopSlide(cardId) {
 }
 
 function showCards(projects, label) {
+  lastFilteredProjects = projects; // см. renderProjectPins — карта показывает те же проекты, что и список
+  if (mapViewActive) renderProjectPins(projects);
   const el = document.getElementById('searchResults');
   if (!projects.length) {
     el.innerHTML = `
@@ -1036,6 +1115,8 @@ function showCards(projects, label) {
 }
 
 function showDevGroup(dev, projects) {
+  lastFilteredProjects = projects;
+  if (mapViewActive) renderProjectPins(projects);
   const el = document.getElementById('searchResults');
   if (!projects.length) {
     el.innerHTML = `<div class="no-results"><div class="no-results-icon">🔍</div><div>Нет проектов этого застройщика</div></div>`;
@@ -1051,6 +1132,167 @@ function showDevGroup(dev, projects) {
       </div>
       <div class="dev-group-items">${projects.map(cardHTML).join('')}</div>
     </div>`;
+}
+
+// ── КАРТА ПРОЕКТОВ ("На карте") ───────────────────────────────────────────
+// 14.07.26: показывает те же проекты, что сейчас в списке (lastFilteredProjects,
+// обновляется в showCards/showDevGroup) — по умолчанию, до первого поиска,
+// это все проекты (PROJECTS), как и на списке карточек. Карта создаётся один
+// раз при первом переключении на "На карте" (не на каждой загрузке страницы —
+// бережём дневной лимит запросов к API). Координаты у проекта — поля lat/lng
+// (из Supabase, подтягиваются в initAgent()); проект без координат просто не
+// получает метку, ничего не падает.
+let lastFilteredProjects = PROJECTS;
+let mapViewActive = false;
+let projectsMap = null;
+let mapPlacemarks = [];
+let placementMode = false;
+
+// Примерный центр Пхукета — если ни у одного проекта ещё нет координат
+// (самый первый запуск, до того как агент расставил точки), карта откроется
+// сюда, а не в случайную точку по умолчанию у Яндекса.
+const PHUKET_CENTER = [7.9, 98.32];
+
+function setResultsView(view) {
+  const isMap = view === 'map';
+  mapViewActive = isMap;
+  document.getElementById('viewListBtn').classList.toggle('act', !isMap);
+  document.getElementById('viewMapBtn').classList.toggle('act', isMap);
+  document.getElementById('searchResults').style.display = isMap ? 'none' : '';
+  document.getElementById('mapViewWrap').classList.toggle('act', isMap);
+  if (isMap) {
+    updatePlacementBarVisibility(); // AGENT мог подгрузиться уже после первого рендера
+    if (window.ymaps) {
+      ymaps.ready(() => {
+        initProjectsMap();
+        renderProjectPins(lastFilteredProjects);
+      });
+    } else {
+      // Скрипт api-maps.yandex.ru не подгрузился (нет сети до Яндекса,
+      // заблокирован и т.п.) — не даём странице сломаться молча.
+      document.getElementById('projectsMap').innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;text-align:center;padding:20px;">Не удалось загрузить карту.<br>Проверьте подключение к интернету и обновите страницу.</div>';
+    }
+  }
+}
+
+function initProjectsMap() {
+  if (projectsMap) return; // уже создана — просто переиспользуем
+  projectsMap = new ymaps.Map('projectsMap', {
+    center: PHUKET_CENTER,
+    zoom: 11,
+    controls: ['zoomControl', 'fullscreenControl'],
+  });
+  projectsMap.events.add('click', e => {
+    if (!placementMode) return;
+    const coords = e.get('coords');
+    savePlacementClick(coords);
+  });
+}
+
+function renderProjectPins(projects) {
+  if (!projectsMap) return;
+  mapPlacemarks.forEach(pm => projectsMap.geoObjects.remove(pm));
+  mapPlacemarks = [];
+  const withCoords = projects.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
+  withCoords.forEach(p => {
+    const pm = new ymaps.Placemark([p.lat, p.lng], {
+      hintContent: p.name,
+      balloonContentHeader: p.name,
+      balloonContentBody: `${p.districtRu || p.district || ''} · от ${fmtMln(p.priceFrom)}`,
+      balloonContentFooter: `<a href="${p.url}" target="_blank" rel="noopener">Открыть проект →</a>`,
+    }, {
+      preset: 'islands#violetDotIconWithCaption',
+      iconCaption: fmtMln(p.priceFrom),
+      iconColor: p.color || '#5E17EB',
+    });
+    pm.events.add('click', () => { if (!placementMode) window.open(p.url, '_blank'); });
+    projectsMap.geoObjects.add(pm);
+    mapPlacemarks.push(pm);
+  });
+  // Если есть хоть одна метка — подгоняем масштаб карты под все точки разом,
+  // чтобы не приходилось руками искать, где на карте вообще есть проекты.
+  if (withCoords.length) {
+    projectsMap.setBounds(projectsMap.geoObjects.getBounds(), { checkZoomRange: true, zoomMargin: 40 });
+  }
+}
+
+// ── Расстановка точек кликом по карте (агентский инструмент) ───────────────
+// Проверка AGENT?.is_admin тут и в savePlacementClick — вторым слоем поверх
+// скрытой в CSS кнопки (см. updatePlacementBarVisibility): даже если кто-то
+// вызовет эти функции напрямую из консоли браузера, минуя интерфейс, без
+// is_admin в своей записи agents в базе ничего не сработает. Это по-прежнему
+// не серверная защита (см. разговор про Supabase Auth) — сама база у всех
+// агентов доступна через один и тот же анонимный ключ, так что это скорее
+// "не соблазнять обычного агента", а не железная стена от того, кто
+// осознанно откроет консоль и разберётся в коде.
+function togglePlacementMode() {
+  if (!AGENT?.is_admin) return;
+  placementMode = !placementMode;
+  document.getElementById('placementToggle').classList.toggle('act', placementMode);
+  document.getElementById('placementSelect').classList.toggle('vis', placementMode);
+  document.getElementById('placementHint').classList.toggle('vis', placementMode);
+  if (placementMode) populatePlacementSelect();
+}
+
+function populatePlacementSelect() {
+  const sel = document.getElementById('placementSelect');
+  // Проекты без координат — в начало списка, чтобы не искать их среди уже расставленных.
+  const sorted = [...PROJECTS].sort((a, b) => {
+    const aHas = typeof a.lat === 'number', bHas = typeof b.lat === 'number';
+    if (aHas === bHas) return a.name.localeCompare(b.name);
+    return aHas ? 1 : -1;
+  });
+  sel.innerHTML = sorted.map(p =>
+    `<option value="${p.id}">${p.name}${typeof p.lat === 'number' ? ' ✓' : ''}</option>`
+  ).join('');
+}
+
+async function savePlacementClick(coords) {
+  if (!AGENT?.is_admin) return;
+  const sel = document.getElementById('placementSelect');
+  const code = sel.value;
+  const project = PROJECTS.find(p => p.id === code);
+  if (!project) return;
+  const [lat, lng] = coords;
+  // Обновляем локально сразу — метка на карте появляется мгновенно, не дожидаясь ответа сервера.
+  project.lat = lat;
+  project.lng = lng;
+  renderProjectPins(lastFilteredProjects);
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/projects?code=eq.${code}`, {
+      method: 'PATCH',
+      headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ lat, lng }),
+    });
+    if (!resp.ok) {
+      console.error('projects PATCH (сохранение координаты) failed:', resp.status, await resp.text());
+      alert(`Координата обновилась только на этой странице, но не сохранилась в базу (ошибка ${resp.status}). Обнови страницу и попробуй ещё раз — если не поможет, напиши Клоду, нужно проверить права записи в таблицу projects в Supabase.`);
+    }
+  } catch (err) {
+    console.error('projects PATCH (сохранение координаты) network error:', err);
+    alert('Координата обновилась только на этой странице, но не сохранилась в базу — не было сети. Обнови страницу и попробуй ещё раз.');
+  }
+  populatePlacementSelect();
+}
+
+// Подтягиваем сохранённые координаты проектов из Supabase поверх хардкод-массива
+// PROJECTS — сам массив живёт в коде (JS), а lat/lng агент расставляет сам через
+// интерфейс выше и они хранятся в базе, не в файле. Без этого шага после
+// обновления/переоткрытия страницы все точки "терялись" бы до следующего клика.
+async function loadProjectCoords() {
+  try {
+    const r = await h(`${SUPABASE_URL}/projects?select=code,lat,lng`);
+    const rows = await r.json();
+    if (!Array.isArray(rows)) return;
+    rows.forEach(row => {
+      if (row.lat == null || row.lng == null) return;
+      const p = PROJECTS.find(pp => pp.id === row.code);
+      if (p) { p.lat = row.lat; p.lng = row.lng; }
+    });
+  } catch (e) {
+    console.error('projects GET (координаты) network error:', e);
+  }
 }
 
 // ── CHIPS ─────────────────────────────────
@@ -1630,6 +1872,15 @@ function renderAgent() {
   if (ag) ag.textContent = AGENT.agency || '—';
   // Сохраняем для других страниц
   try { localStorage.setItem('flox-agent', JSON.stringify(AGENT)); } catch(e) {}
+  updatePlacementBarVisibility();
+}
+
+// 14.07.26: показывает панель "Расставить точки" только агенту с is_admin=true
+// (см. комментарий у .map-placement-bar в CSS — это ограничение интерфейса,
+// не серверная защита).
+function updatePlacementBarVisibility() {
+  const bar = document.getElementById('placementBar');
+  if (bar) bar.classList.toggle('admin-vis', !!AGENT?.is_admin);
 }
 
 function timeAgo(iso) {
@@ -1766,6 +2017,7 @@ initAgent().then(() => {
 });
 loadUnitCount();
 loadSoldTicker();
+loadProjectCoords();
 
 // ── Бегущая строка "недавно продано" (страница поиска) ──────────────────────
 const PROJ_VAR = { VIK: 'var(--vik)', KAT: 'var(--kat)', BAN: 'var(--ban)', OLN: 'var(--oln)' };
