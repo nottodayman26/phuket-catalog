@@ -82,18 +82,19 @@ input,button{font-family:inherit;}
    смысловыми группами, как у Airbnb. Тип/Вилла/Таунхаус (.type-selector/
    .type-btn) сюда не входят и не менялись — это отдельный, уже одобренный
    блок над поисковой строкой. width:900px — как у .search-results/
-   .map-view-wrap ниже (было 720px и поисковая строка была уже списка). */
+   .map-view-wrap ниже (было 720px и поисковая строка была уже списка).
+   15.07.26 (2): убрали серую обводку и подсветку на фокусе (border/
+   box-shadow) — совсем без рамки, только заливка фона. Лупу слева от
+   текста тоже убрали (см. ниже про #searchBtn — теперь лупа справа, она
+   же кнопка запуска поиска/карты). */
 .search-box-wrap{
   width:100%;max-width:900px;display:flex;align-items:center;flex-wrap:wrap;
   gap:2px;padding:6px;row-gap:6px;
-  background:var(--surface);border:1.5px solid var(--line-2);
-  border-radius:28px;transition:border-color .2s,box-shadow .2s;position:relative;
+  background:var(--surface);border-radius:28px;position:relative;
 }
-.search-box-wrap:focus-within{border-color:var(--line);box-shadow:0 4px 20px rgba(0,0,0,0.12);}
 .search-input-seg{
-  display:flex;align-items:center;gap:8px;flex:1;min-width:160px;padding:9px 8px 9px 14px;
+  display:flex;align-items:center;gap:8px;flex:1;min-width:160px;padding:9px 8px 9px 18px;
 }
-.search-icon{color:var(--muted);flex-shrink:0;}
 .search-input{flex:1;border:none;background:none;color:var(--text);font-size:14.5px;outline:none;min-width:0;}
 .search-input::placeholder{color:var(--muted-2);}
 .search-clear{
@@ -104,7 +105,9 @@ input,button{font-family:inherit;}
 .search-clear.vis{display:flex;}
 
 /* Фильтры — теперь сегменты внутри той же "ленты", без обводки, только
-   заливка на ховере/активном состоянии (было — отдельные кнопки с рамкой). */
+   заливка на ховере/активном состоянии (было — отдельные кнопки с рамкой).
+   15.07.26 (2): иконки у Тип/Цена/Срок сдачи убрали (остались только у
+   "Все фильтры" — свг там по-прежнему есть в разметке). */
 .filter-btn{
   display:flex;align-items:center;gap:6px;
   padding:9px 13px;border-radius:20px;font-size:12.5px;font-weight:500;
@@ -115,11 +118,24 @@ input,button{font-family:inherit;}
 .filter-btn.act{background:var(--accent-soft);color:var(--accent);}
 .filter-btn svg{width:12px;height:12px;}
 .filter-sep{width:1px;height:22px;background:var(--line-2);flex-shrink:0;margin:0 2px;}
+/* 15.07.26 (2): по умолчанию — просто круглая кнопка-лупа (никакого текста
+   "Найти"). Клик по ней запускает поиск и сразу показывает результат на
+   карте, сама лупа при этом плавно превращается в пилюлю с текстом
+   "Списком" (см. .search-btn.is-list, morphSearchBtn в JS) — и остаётся
+   такой насовсем, по просьбе Ильи. .accent-off — бледнеет, когда акцент
+   "переезжает" на кнопку "На карте" (см. .map-toggle-btn.accent и
+   setSearchAccent в JS). */
 .search-btn{
-  padding:9px 20px;border-radius:20px;margin:2px 2px 2px 0;
-  background:var(--accent);color:#fff;border:none;
-  font-size:12.5px;font-weight:600;cursor:pointer;transition:opacity .15s;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  width:38px;height:38px;padding:0;margin:2px 2px 2px 0;border-radius:50%;
+  background:var(--accent);color:#fff;border:none;cursor:pointer;
+  transition:opacity .15s ease,transform .15s ease,background-color .15s ease,color .15s ease,width .15s ease,padding .15s ease,border-radius .15s ease;
 }
+.search-btn:hover{opacity:.88;}
+.search-btn svg{width:16px;height:16px;flex-shrink:0;}
+.search-btn.is-list{width:auto;height:auto;padding:9px 20px;border-radius:20px;font-size:12.5px;font-weight:600;}
+.search-btn.accent-off{background:none;color:var(--muted);opacity:1;}
+.search-btn.accent-off:hover{background:var(--surface-2);color:var(--text);}
 .search-btn:hover{opacity:.88;}
 
 /* Active chips */
@@ -169,18 +185,22 @@ input,button{font-family:inherit;}
 .search-results{width:100%;max-width:900px;margin-top:24px;}
 .results-label{font-size:13px;color:var(--muted);margin-bottom:14px;}
 
-/* ── "На карте" — кнопка-переключатель в строке фильтров (слева от "Найти")
+/* ── "На карте" — кнопка-переключатель в строке фильтров (слева от лупы)
    + сама карта проектов. 15.07.26: раньше был отдельный ряд с двумя пилюлями
    ("Список"/"На карте") под строкой поиска — убрали, он был виден всегда
    (даже до первого поиска) и добавлял лишнюю высоту странице, из-за которой
    на пустом экране появлялся вертикальный скролл без реального контента.
-   Теперь один переключатель встроен в filters-row. 15.07.26 (2): кнопка
-   "На карте" больше НЕ прячется при переходе в режим карты — остаётся на
-   месте всегда; меняется только соседняя "Найти" → "Списком" (плавный
-   кросс-фейд, см. morphSearchBtn/handleSearchBtnClick) и обратно при
-   возврате в список. Карта создаётся только при первом клике на "На карте"
-   (см. initProjectsMap) — грузить её при каждом заходе на страницу поиска
-   смысла нет, только тратит дневной лимит запросов к API. */
+   Теперь один переключатель встроен в filters-row, кнопка "На карте" всегда
+   на месте. 15.07.26 (2): добавили второй способ попасть на карту — сама
+   лупа (#searchBtn) тоже теперь ведёт на карту (см. handleSearchBtnClick).
+   Кто из двух кнопок "владеет" фиолетовым акцентом — решает setSearchAccent:
+   если кликнули по лупе, она просто плавно растёт в пилюлю "Списком",
+   оставаясь фиолетовой, "На карте" не меняется; если кликнули по "На
+   карте" — акцент наоборот "переезжает" на неё (.map-toggle-btn.accent),
+   а лупа в тот же момент бледнеет и получает текст "Списком"
+   (.search-btn.accent-off). Карта создаётся только при первом реальном
+   переходе на неё (см. initProjectsMap) — грузить её на каждой загрузке
+   страницы поиска смысла нет, только тратит дневной лимит запросов к API. */
 .map-toggle-btn{
   display:flex;align-items:center;gap:6px;
   padding:9px 13px;margin-left:auto;border-radius:20px;font-size:12.5px;font-weight:500;
@@ -189,11 +209,7 @@ input,button{font-family:inherit;}
 }
 .map-toggle-btn:hover{background:var(--surface-2);color:var(--text);}
 .map-toggle-btn svg{width:13px;height:13px;flex-shrink:0;}
-
-/* "Найти" ↔ "Списком" — тот же самый элемент, текст меняется в JS
-   (morphSearchBtn), тут только плавный кросс-фейд на момент подмены. */
-.search-btn{transition:opacity .15s ease,transform .15s ease;}
-.search-btn.morphing{opacity:0;transform:scale(.94);}
+.map-toggle-btn.accent{background:var(--accent);color:#fff;}
 
 /* Full-bleed по ширине: карта растягивается от левого до правого края
    страницы (не ограничена max-width:900px, как остальной контент поиска).
@@ -556,25 +572,19 @@ input,button{font-family:inherit;}
 
     <div class="search-box-wrap" id="searchWrap">
       <div class="search-input-seg">
-        <span class="search-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        </span>
         <input class="search-input" id="searchInput" type="text"
-          placeholder="Поиск по названию проекта, застройщику, району"
+          placeholder="Проект, застройщик, район"
           oninput="onSearchInput(this.value)" autocomplete="off">
         <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
       </div>
       <div class="filter-sep"></div>
       <button class="filter-btn" id="filterTypeBtn" onclick="openTypeModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         <span id="filterTypeLabel">Тип</span>
       </button>
       <button class="filter-btn" id="filterPriceBtn" onclick="openPriceModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14H11v-2h2v2zm0-4H11V7h2v5z"/></svg>
         <span id="filterPriceLabel">Цена</span>
       </button>
       <button class="filter-btn" id="filterCompBtn" onclick="openCompletionModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
         <span id="filterCompLabel">Срок сдачи до</span>
       </button>
       <button class="filter-btn" onclick="alert('Скоро!')">
@@ -582,11 +592,13 @@ input,button{font-family:inherit;}
         Все фильтры
       </button>
       <div class="filter-sep"></div>
-      <button class="map-toggle-btn" id="mapToggleBtn" onclick="setResultsView('map')">
+      <button class="map-toggle-btn" id="mapToggleBtn" onclick="handleMapToggleClick()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
         На карте
       </button>
-      <button class="search-btn" id="searchBtn" onclick="handleSearchBtnClick()">Найти</button>
+      <button class="search-btn" id="searchBtn" onclick="handleSearchBtnClick()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </button>
       <div class="autocomplete" id="autocomplete"></div>
     </div>
 
@@ -1179,6 +1191,9 @@ function showDevGroup(dev, projects) {
 // получает метку, ничего не падает.
 let lastFilteredProjects = PROJECTS;
 let mapViewActive = false;
+// 15.07.26 (2): какая из двух кнопок (лупа/#searchBtn или "На карте"/
+// #mapToggleBtn) сейчас "держит" фиолетовый акцент — см. setSearchAccent.
+let searchAccentAt = 'search';
 let projectsMap = null;
 let mapPlacemarks = [];
 let placementMode = false;
@@ -1194,15 +1209,12 @@ let previewAsAgent = false;
 // сюда, а не в случайную точку по умолчанию у Яндекса.
 const PHUKET_CENTER = [7.9, 98.32];
 
-// 15.07.26: "На карте" — кнопка слева от "Найти", остаётся на месте всегда
-// (не прячется). "Списком" — это тот же самый #searchBtn, просто его текст
-// плавно подменяется (см. morphSearchBtn) один раз, при первом переходе на
-// карту — и обратно в "Найти" уже НЕ возвращается, даже когда снова
-// показываем список (так попросил Илья: "Списком" насовсем заменяет "Найти"
-// после первого использования карты). handleSearchBtnClick разруливает, что
-// должен делать клик по этой кнопке в текущий момент, независимо от текста
-// на ней: в режиме карты — вернуть список (без нового поиска), в обычном
-// режиме — как раньше, выполнить поиск.
+// "На карте" — кнопка слева от лупы, остаётся на месте всегда (не прячется).
+// "Списком" — это тот же самый #searchBtn (по умолчанию — просто лупа без
+// текста), его содержимое плавно подменяется (см. morphSearchBtn) один раз,
+// при первом переходе на карту — и обратно в лупу уже НЕ возвращается, даже
+// когда снова показываем список (так попросил Илья: "Списком" насовсем
+// заменяет лупу после первого использования карты).
 function setResultsView(view) {
   const isMap = view === 'map';
   mapViewActive = isMap;
@@ -1227,24 +1239,53 @@ function setResultsView(view) {
   }
 }
 
-// Плавная подмена текста на кнопке "Найти"/"Списком" (кросс-фейд через
-// .morphing, см. CSS) — если текст уже нужный, ничего не делаем, чтобы не
-// моргать зря при повторных вызовах setResultsView('map').
+// Плавная подмена содержимого лупы на текст "Списком" (кросс-фейд через
+// .morphing, см. CSS) — один раз, дальше no-op (проверяем dataset.state),
+// чтобы не моргать зря при повторных вызовах setResultsView('map'). Заодно
+// вешаем .is-list — лупа была круглой кнопкой-иконкой, "Списком" уже
+// пилюля с текстом (ширина меняется тоже, но подмена происходит пока кнопка
+// невидима из-за opacity:0, поэтому скачок ширины не заметен).
 function morphSearchBtn(text) {
   const btn = document.getElementById('searchBtn');
-  if (!btn || btn.textContent.trim() === text) return;
+  if (!btn || btn.dataset.state === text) return;
   btn.classList.add('morphing');
   setTimeout(() => {
     btn.textContent = text;
+    btn.classList.add('is-list');
+    btn.dataset.state = text;
     btn.classList.remove('morphing');
   }, 150);
 }
 
+// Кто из двух кнопок сейчас фиолетовый — см. комментарий у .map-toggle-btn
+// в CSS. Переключаем классы только когда акцент реально меняет владельца
+// (иначе лишний раз дёргаем transition при каждом клике).
+function setSearchAccent(target) {
+  if (searchAccentAt === target) return;
+  searchAccentAt = target;
+  document.getElementById('mapToggleBtn')?.classList.toggle('accent', target === 'map');
+  document.getElementById('searchBtn')?.classList.toggle('accent-off', target === 'map');
+}
+
+// Клик по кнопке "На карте": акцент переезжает на неё (если сейчас он у
+// лупы), затем показываем карту как обычно.
+function handleMapToggleClick() {
+  setSearchAccent('map');
+  setResultsView('map');
+}
+
+// Клик по лупе/"Списком": в режиме карты — вернуть список (без нового
+// поиска), в обычном режиме — выполнить поиск и сразу показать результат на
+// карте (акцент остаётся на лупе — setSearchAccent('search') тут no-op,
+// если он и так уже там, но пишем явно на случай если до этого был на
+// "На карте").
 function handleSearchBtnClick() {
   if (mapViewActive) {
     setResultsView('list');
   } else {
     doSearch();
+    setSearchAccent('search');
+    setResultsView('map');
   }
 }
 
