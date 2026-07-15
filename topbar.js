@@ -160,8 +160,28 @@ window.floxTopbar = {
   },
   _onSearch() {
     if (this._page === 'search') {
+      // 15.07.26: НАЙДЕН реальный источник бага "при переходе из Инструменты/
+      // Клиенты в Поиск снова появляются варианты" — раньше тут всегда, при
+      // любом клике по "Поиск", вызывался freshSearch() СРАЗУ следом за
+      // setPage('search'). freshSearch() не просто чистит вид — он ещё и сам
+      // запускает новый поиск (doSearch()), то есть тут же заново показывал
+      // список карточек. Из-за этого любая попытка почистить страницу поиска
+      // внутри самого setPage()/floxweb.html немедленно перечёркивалась этим
+      // синхронным вызовом сразу после — вот почему прошлая правка "не
+      // срабатывала", хотя проходила тесты (тесты дёргали setPage() напрямую,
+      // без topbar.js и без этого второго вызова).
+      // Теперь: если агент СЕЙЧАС не на вкладке "Поиск" (переходит из
+      // Инструменты/Клиенты) — просто показываем чистую страницу поиска, без
+      // принудительного нового поиска. А если он и так уже на "Поиск" и жмёт
+      // по ней ещё раз — это осознанное действие "начать заново", тут
+      // freshSearch() как раньше уместен (полный сброс фильтров + новый поиск).
+      const alreadyOnSearch = document.getElementById('page-search')?.classList.contains('act');
       if (typeof setPage === 'function') setPage('search');
-      if (typeof freshSearch === 'function') freshSearch();
+      if (alreadyOnSearch) {
+        if (typeof freshSearch === 'function') freshSearch();
+      } else if (typeof resetSearchPageToClean === 'function') {
+        resetSearchPageToClean();
+      }
     } else {
       window.location.href = 'flox-web.html';
     }
