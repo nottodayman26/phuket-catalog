@@ -1433,6 +1433,47 @@ function initProjectsMap() {
   });
 }
 
+// 15.07.26 (11): раньше точки и плашки рисовались штатными пресетами Яндекса
+// (islands#redCircleIcon/islands#redStretchyIcon) — Илья заметил два бага:
+// (а) точки слишком крупные и с белым внутри (штатные "круглые" пресеты
+// Яндекса всегда рисуют белую окантовку/ободок вокруг цвета — убрать её,
+// не отказавшись от пресета целиком, нельзя), (б) у ПЕРВОЙ метки на карте
+// пресет вообще не применился — осталась стандартная синяя капля Яндекса.
+// (б) — известный класс проблем у Яндекс.Карт: цветные пресеты "islands"
+// подгружаются отдельным модулем асинхронно по сети при первом обращении, и
+// самая первая метка в цикле может успеть отрисоваться ДО того, как модуль
+// пресета догрузился, — тогда она молча остаётся дефолтной. Чиним оба бага
+// разом, отказавшись от пресетов: рисуем точки/плашки своей простой HTML-
+// вёрсткой (iconLayout) — она не ждёт никакой отдельной загрузки, рендерится
+// сразу и даёт полный контроль над размером/цветом (никакого белого).
+const DOT_SIZE = 10; // «значительно меньше» — по просьбе Ильи (было ~30px у штатного пресета)
+let _dotLayout = null, _plaqueLayout = null;
+function getDotLayout() {
+  if (!_dotLayout) {
+    _dotLayout = ymaps.templateLayoutFactory.createClass(
+      `<div style="position:relative;transform:translate(-50%,-50%);` +
+      `width:${DOT_SIZE}px;height:${DOT_SIZE}px;border-radius:50%;` +
+      `background:${MAP_PIN_COLOR};"></div>`
+    );
+  }
+  return _dotLayout;
+}
+function getPlaqueLayout() {
+  if (!_plaqueLayout) {
+    // Белая плашка с тёмным текстом (не залитая цветом) — так у Трендагента на
+    // скрине от Ильи: маленький цветной акцент-точка слева + округлённая цена.
+    _plaqueLayout = ymaps.templateLayoutFactory.createClass(
+      `<div style="position:relative;transform:translate(-50%,-50%);display:inline-flex;` +
+      `align-items:center;padding:5px 10px;border-radius:14px;background:#fff;` +
+      `box-shadow:0 2px 8px rgba(0,0,0,.18);border:1px solid rgba(0,0,0,.06);` +
+      `font:600 12px 'Inter',system-ui,sans-serif;color:#16161f;white-space:nowrap;">` +
+      `<span style="width:6px;height:6px;border-radius:50%;background:${MAP_PIN_COLOR};` +
+      `margin-right:6px;flex-shrink:0;"></span>$[properties.iconContent]</div>`
+    );
+  }
+  return _plaqueLayout;
+}
+
 function renderProjectPins(projects, opts) {
   if (!projectsMap) return;
   const fitBounds = !opts || opts.fitBounds !== false;
@@ -1448,16 +1489,16 @@ function renderProjectPins(projects, opts) {
       balloonContentHeader: p.name,
       balloonContentBody: `${p.districtRu || p.district || ''} · от ${fmtMln(p.priceFrom)}`,
       balloonContentFooter: `<a href="${p.url}" target="_blank" rel="noopener">Открыть проект →</a>`,
+      iconContent: asPlaque ? fmtMln(p.priceFrom) : undefined,
     }, asPlaque ? {
       // Плашка с округлённой минимальной ценой — как у Трендагента: чем ближе
       // зум (или у "случайно" выбранных проектов — см. PROJECT_ALWAYS_PLAQUE_RATIO),
       // тем больше таких плашек вместо простых точек.
-      preset: 'islands#redStretchyIcon',
-      iconColor: MAP_PIN_COLOR,
-      iconContent: fmtMln(p.priceFrom),
+      iconLayout: getPlaqueLayout(),
+      iconShape: { type: 'Rectangle', coordinates: [[-45, -14], [45, 14]] },
     } : {
-      preset: 'islands#redCircleIcon',
-      iconColor: MAP_PIN_COLOR,
+      iconLayout: getDotLayout(),
+      iconShape: { type: 'Circle', coordinates: [0, 0], radius: DOT_SIZE / 2 },
     });
     pm.events.add('click', () => { if (!placementMode) window.open(p.url, '_blank'); });
     projectsMap.geoObjects.add(pm);
