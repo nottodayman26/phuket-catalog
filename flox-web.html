@@ -1422,15 +1422,31 @@ function initProjectsMap() {
     // это не оставляет двусмысленности в том, как Яндекс их парсит.
     controls: [],
   });
+  // 15.07.26 (13): предыдущая попытка (единый try/catch на обе добавки)
+  // Илья снова не увидел на боевом сайте — а проверить сам вживую я не могу,
+  // в этой песочнице нет сети до api-maps.yandex.ru. Разносим добавление
+  // каждого контрола в свой try/catch и логируем результат в консоль браузера
+  // (с меткой [flox]) — если проблема не в кэше страницы, а в самом коде,
+  // это единственный способ узнать точную причину, не гадая уже в 3-й раз:
+  // открой на сайте F12 → Console на вкладке с картой и пришли мне, что там
+  // выведется (строки с [flox] zoom/fullscreen). Если строк вообще нет —
+  // значит initProjectsMap() не вызывается заново, и дело в кэше страницы
+  // (тогда попробуй жёсткую перезагрузку Ctrl+Shift+R или приватное окно).
   try {
     projectsMap.controls.add(new ymaps.control.ZoomControl({
       options: { size: 'small', position: { right: 10, bottom: 10 } },
     }));
+    console.log('[flox] zoom-контрол карты добавлен');
+  } catch (e) {
+    console.error('[flox] не удалось добавить zoom-контрол карты:', e);
+  }
+  try {
     projectsMap.controls.add(new ymaps.control.FullscreenControl({
       options: { position: { right: 10, top: 10 } },
     }));
+    console.log('[flox] fullscreen-контрол карты добавлен');
   } catch (e) {
-    console.error('Не удалось настроить контролы карты (zoom/fullscreen), оставляем карту без них:', e);
+    console.error('[flox] не удалось добавить fullscreen-контрол карты:', e);
   }
   projectsMap.events.add('click', e => {
     if (!placementMode) return;
@@ -1496,8 +1512,44 @@ function renderProjectPins(projects, opts) {
   const withCoords = projects.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
   const zoom = projectsMap.getZoom ? projectsMap.getZoom() : 11;
   const allPlaques = zoom >= PLAQUE_ZOOM;
+  withCoords.forEach(p => { p._wantsPlaque = allPlaques || projectAlwaysShowsPlaque(p); });
+
+  // 15.07.26 (13), по просьбе Ильи: если в одном месте на экране скопилось
+  // несколько точек, которым "положена" плашка, — они наслаиваются друг на
+  // друга и превращаются в нечитаемое пятно. Правило: в такой тесной группе
+  // плашкой остаётся только проект с наименьшей ценой, у остальных — просто
+  // точка. Группируем по экранной (пиксельной) близости на ТЕКУЩЕМ зуме, а
+  // не по географическому расстоянию — иначе группировка не совпадала бы с
+  // тем, что реально видно на экране на разных приближениях.
+  const PLAQUE_CLUSTER_PX = 70;
+  const plaqueCandidates = withCoords.filter(p => p._wantsPlaque);
+  try {
+    if (plaqueCandidates.length > 1 && projectsMap.converter?.globalToPage) {
+      const px = new Map(plaqueCandidates.map(p => [p, projectsMap.converter.globalToPage([p.lat, p.lng])]));
+      const groups = [];
+      plaqueCandidates.forEach(p => {
+        const pt = px.get(p);
+        const group = groups.find(g => {
+          const gp = px.get(g[0]);
+          const dx = gp[0] - pt[0], dy = gp[1] - pt[1];
+          return Math.sqrt(dx * dx + dy * dy) < PLAQUE_CLUSTER_PX;
+        });
+        if (group) group.push(p); else groups.push([p]);
+      });
+      groups.forEach(group => {
+        if (group.length < 2) return;
+        const cheapest = group.reduce((a, b) => ((b.priceFrom ?? Infinity) < (a.priceFrom ?? Infinity) ? b : a));
+        group.forEach(p => { if (p !== cheapest) p._wantsPlaque = false; });
+      });
+    }
+  } catch (e) {
+    // на всякий случай не роняем рендер карты из-за группировки — просто
+    // оставляем плашки как были (без учёта тесноты), см. console.error
+    console.error('[flox] не удалось сгруппировать близкие плашки по цене:', e);
+  }
+
   withCoords.forEach(p => {
-    const asPlaque = allPlaques || projectAlwaysShowsPlaque(p);
+    const asPlaque = p._wantsPlaque;
     const pm = new ymaps.Placemark([p.lat, p.lng], {
       hintContent: p.name,
       balloonContentHeader: p.name,
