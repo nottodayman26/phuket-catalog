@@ -135,11 +135,15 @@ input,button{font-family:inherit;}
 .search-btn.accent-off{color:var(--muted);opacity:1;}
 .search-btn.accent-off:hover{background:var(--surface-2);color:var(--text);border-radius:50%;}
 
-/* Плашка-подложка: размер фиксируется один раз в JS (по ширине "На карте" —
-   она шире лупы) и больше не меняется, едет только позиция (left/top). */
+/* Плашка-подложка: форма и размер (width/height/border-radius) каждый раз
+   ставятся в JS (syncAccentPill) точно как у текущей активной кнопки — круглая
+   на лупе, скруглённый прямоугольник на "На карте". Едет и меняет форму
+   одновременно, одной анимацией. */
 .accent-pill{
-  position:absolute;border-radius:20px;background:var(--accent);
-  transition:left .38s cubic-bezier(.34,1.56,.64,1), top .38s cubic-bezier(.34,1.56,.64,1);
+  position:absolute;background:var(--accent);
+  transition:left .38s cubic-bezier(.34,1.56,.64,1), top .38s cubic-bezier(.34,1.56,.64,1),
+    width .38s cubic-bezier(.34,1.56,.64,1), height .38s cubic-bezier(.34,1.56,.64,1),
+    border-radius .38s ease;
   z-index:0;pointer-events:none;
 }
 
@@ -1283,23 +1287,20 @@ function setResultsView(view) {
   }
 }
 
-// 15.07.26 (9): позиционирует .accent-pill — фиолетовую плашку-подложку под
-// лупой или "На карте". История правок этой функции (для памяти, чтобы не
-// наступить на те же грабли третий раз):
-//  1) сначала центрировали плашку строго по центру цели без всякого запаса —
-//     широкая плашка (по ширине "На карте"), паркуясь на узкой круглой лупе,
-//     утыкалась ЗА пределы .search-box-wrap целиком (реальный баг на сайте).
-//  2) добавили только ЛЕВЫЙ гутter перед "На карте" — это спасало от наезда
-//     на "Все фильтры", но не от вылезания за правый край контейнера (лупа
-//     стоит у самого края, гутter слева ей не помогает).
-//  3) попробовали жёстко зажать (clamp) left в границах контейнера — перестало
-//     вылезать за край, НО ценой того, что плашку сдвигало влево, и она вместо
-//     контейнера наезжала на саму кнопку "На карте" (тот же "серый текст на
-//     фиолетовом фоне" баг, просто с другой стороны).
-// Правильное решение — не подвинуть плашку так, чтобы она куда-то влезла, а
-// физически ОСВОБОДИТЬ ей место по обе стороны от лупы (margin у самой лупы),
-// раз уж она заведомо шире лупы. Тогда центрирование по лупе больше никуда не
-// наезжает — ни на "На карте" слева, ни за край контейнера справа.
+// 15.07.26 (10): позиционирует .accent-pill. История правок (чтобы больше не
+// наступать на те же грабли): пытался держать ОДИН фиксированный размер (по
+// ширине "На карте") и на лупе, и там — сначала вылезало за край поисковика,
+// потом после правки наезжало на саму кнопку "На карте". Обе попытки были
+// неверны в самой идее: Илья прямым текстом сказал — на лупе акцент должен
+// быть КРУГЛЫЙ, как сама лупа, а не той же формы/размера, что "На карте".
+// Значит пытаться впихнуть одну фиксированную форму в обе цели было ошибкой
+// с самого начала. Теперь плашка каждый раз принимает РОВНО размер и форму
+// своей текущей цели (ширина/высота/border-radius = точно как у самой кнопки
+// в этот момент) — на лупе она круглая 38×38, на "На карте" — такой же формы
+// и размера, как сама кнопка "На карте". Раз плашка никогда не больше своей
+// цели, ей физически некуда вылезать за край или наезжать на соседей — сама
+// проблема снята, а не подогнана костылём. Едет и морфит форму одновременно
+// (transition на left/top/width/height/border-radius).
 function syncAccentPill(animate) {
   const wrap = document.getElementById('searchWrap');
   const pill = document.getElementById('accentPill');
@@ -1307,31 +1308,25 @@ function syncAccentPill(animate) {
   const searchBtn = document.getElementById('searchBtn');
   if (!wrap || !pill || !mapBtn || !searchBtn) return;
 
-  // Ширину/высоту меряем каждый раз заново (не кэшируем навсегда) — если
-  // веб-шрифт подгрузится позже и метрики текста чуть изменятся, следующий
-  // вызов (load/resize/fonts.ready или просто клик) сам поправит размер.
-  const mapRect = mapBtn.getBoundingClientRect();
-  if (!mapRect.width) return; // ещё не отрисовано (скрытая вкладка и т.п.) — попробуем в следующий раз
-  const pillW = mapRect.width, pillH = mapRect.height;
-  pill.style.width = pillW + 'px';
-  pill.style.height = pillH + 'px';
-
-  // Резервируем реальное место вокруг лупы — с обеих сторон одинаково, чтобы
-  // плашка при парковке на ней была честно по центру, а не прижата к краю.
-  const searchBtnW0 = searchBtn.getBoundingClientRect().width || pillH;
-  const clearance = Math.max(0, (pillW - searchBtnW0) / 2 + 6);
-  searchBtn.style.marginLeft = clearance + 'px';
-  searchBtn.style.marginRight = clearance + 'px';
-
   const target = mapViewActive ? mapBtn : searchBtn;
   const wrapRect = wrap.getBoundingClientRect();
-  const tRect = target.getBoundingClientRect(); // после того, как margin у лупы уже применён выше
-  const left = (tRect.left - wrapRect.left) + tRect.width / 2 - pillW / 2;
-  const top = (tRect.top - wrapRect.top) + tRect.height / 2 - pillH / 2;
+  const tRect = target.getBoundingClientRect();
+  if (!tRect.width) return; // ещё не отрисовано (скрытая вкладка и т.п.) — попробуем в следующий раз
+
+  const left = tRect.left - wrapRect.left;
+  const top = tRect.top - wrapRect.top;
+  // Круглая на лупе (радиус — половина высоты, как у самой кнопки-лупы:
+  // border-radius:50% при равных ширине/высоте), скруглённый прямоугольник на
+  // "На карте" — берём её собственный border-radius, чтобы форма плашки
+  // всегда буквально совпадала с формой той кнопки, на которой она сейчас.
+  const radius = mapViewActive ? getComputedStyle(mapBtn).borderRadius : '50%';
 
   if (!animate) pill.style.transition = 'none';
+  pill.style.width = tRect.width + 'px';
+  pill.style.height = tRect.height + 'px';
   pill.style.left = left + 'px';
   pill.style.top = top + 'px';
+  pill.style.borderRadius = radius;
   if (!animate) { pill.offsetHeight; pill.style.transition = ''; }
 }
 window.addEventListener('resize', () => syncAccentPill(false));
