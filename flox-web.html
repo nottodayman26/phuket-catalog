@@ -76,8 +76,10 @@ input,button{font-family:inherit;}
 .type-btn svg{width:22px;height:22px;}
 
 /* Search box */
+/* 15.07.26: ширина 900px — как у .search-results/.map-view-wrap ниже (было
+   720px и поисковая строка была уже, чем список карточек под ней). */
 .search-box-wrap{
-  width:100%;max-width:720px;
+  width:100%;max-width:900px;
   background:var(--surface);border:1.5px solid var(--line-2);
   border-radius:16px;transition:border-color .2s,box-shadow .2s;position:relative;
 }
@@ -109,14 +111,14 @@ input,button{font-family:inherit;}
 .filter-btn svg{width:12px;height:12px;}
 .filter-sep{width:1px;height:20px;background:var(--line-2);flex-shrink:0;}
 .search-btn{
-  margin-left:auto;padding:6px 18px;border-radius:20px;
+  padding:6px 18px;border-radius:20px;
   background:var(--accent);color:#fff;border:none;
   font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s;
 }
 .search-btn:hover{opacity:.88;}
 
 /* Active chips */
-.active-filters{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:720px;margin-top:10px;}
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:900px;margin-top:10px;}
 .filter-chip{
   display:flex;align-items:center;gap:5px;
   padding:4px 10px;border-radius:20px;font-size:12px;
@@ -167,51 +169,66 @@ input,button{font-family:inherit;}
    ("Список"/"На карте") под строкой поиска — убрали, он был виден всегда
    (даже до первого поиска) и добавлял лишнюю высоту странице, из-за которой
    на пустом экране появлялся вертикальный скролл без реального контента.
-   Теперь один переключатель встроен в filters-row: кнопка "На карте" плавно
-   прячется, а "Найти" морфится в "Списком" (см. morphSearchBtn/handleSearchBtnClick),
-   и обратно при возврате в список. Карта создаётся только при первом клике
-   на "На карте" (см. initProjectsMap) — грузить её при каждом заходе на
-   страницу поиска смысла нет, только тратит дневной лимит запросов к API. */
+   Теперь один переключатель встроен в filters-row. 15.07.26 (2): кнопка
+   "На карте" больше НЕ прячется при переходе в режим карты — остаётся на
+   месте всегда; меняется только соседняя "Найти" → "Списком" (плавный
+   кросс-фейд, см. morphSearchBtn/handleSearchBtnClick) и обратно при
+   возврате в список. Карта создаётся только при первом клике на "На карте"
+   (см. initProjectsMap) — грузить её при каждом заходе на страницу поиска
+   смысла нет, только тратит дневной лимит запросов к API. */
 .map-toggle-btn{
   display:flex;align-items:center;gap:6px;
   padding:6px 14px;margin-left:auto;border-radius:20px;font-size:12px;font-weight:500;
   border:1px solid var(--line-2);color:var(--muted);background:none;
-  cursor:pointer;white-space:nowrap;overflow:hidden;max-width:160px;
-  transition:opacity .18s ease,max-width .22s ease,margin .22s ease,padding .22s ease,border-color .15s,color .15s;
+  cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s;
 }
 .map-toggle-btn:hover{border-color:var(--accent);color:var(--accent);}
 .map-toggle-btn svg{width:13px;height:13px;flex-shrink:0;}
-.map-toggle-btn.hidden{opacity:0;max-width:0;padding-left:0;padding-right:0;margin-left:0;border-width:0;pointer-events:none;}
 
 /* "Найти" ↔ "Списком" — тот же самый элемент, текст меняется в JS
    (morphSearchBtn), тут только плавный кросс-фейд на момент подмены. */
 .search-btn{transition:opacity .15s ease,transform .15s ease;}
 .search-btn.morphing{opacity:0;transform:scale(.94);}
 
-/* Full-bleed: карта растягивается от левого до правого края страницы (не
-   ограничена max-width:900px, как остальной контент поиска) и по высоте —
-   до низа окна (высота выставляется в JS, см. resizeProjectsMapHeight,
-   т.к. зависит от того, сколько места сверху занял поисковый блок). */
+/* Full-bleed по ширине: карта растягивается от левого до правого края
+   страницы (не ограничена max-width:900px, как остальной контент поиска).
+   Высота — в 2 раза больше того, что помещается до низа экрана без скролла
+   (см. resizeProjectsMapHeight): карта на всю высоту "как есть" получалась
+   слишком приплюснутой по горизонтали на невысоких окнах, ×2 даёт нормальные
+   пропорции ценой прокрутки страницы вниз. */
 .map-view-wrap{width:calc(100% + 40px);margin:16px -20px 0;display:none;}
 .map-view-wrap.act{display:block;}
 .map-view-wrap .map-placement-bar{margin-left:20px;margin-right:20px;}
 #projectsMap{width:100%;min-height:320px;overflow:hidden;border-top:0.5px solid var(--line-2);}
 
 /* Панель расстановки точек — видна только внутри floxweb.html (агентский
-   инструмент), поверх карты сверху. Клиенты этот файл не открывают, поэтому
-   отдельный "агентский/клиентский режим" тут не нужен, в отличие от unit.html.
+   инструмент), над картой. Клиенты этот файл не открывают, поэтому отдельный
+   "агентский/клиентский режим" тут не нужен, в отличие от unit.html.
    14.07.26: скрыта по умолчанию (display:none) — показываем только агенту с
    is_admin=true в таблице agents (см. updatePlacementBarVisibility). Это
    ограничение на уровне интерфейса, не железная защита — обычный
    зарегистрированный агент её просто не увидит и не будет пытаться искать;
    полноценная серверная проверка — отдельная задача вместе с переходом на
-   Supabase Auth. */
+   Supabase Auth.
+   15.07.26: без фона-плашки — раньше была белая карточка на весь ряд, теперь
+   кнопки просто лежат на фоне страницы. Плюс кнопка "Смотреть как агент"
+   (previewToggle) — админ может на лету скрыть свой же инструмент
+   расстановки точек, посмотреть карту "глазами" обычного агента, и
+   вернуться обратно тем же переключателем, не разлогиниваясь. */
 .map-placement-bar{
   display:none;align-items:center;gap:10px;flex-wrap:wrap;
-  background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;
-  padding:10px 14px;margin-bottom:10px;
+  padding:0 0 10px;
 }
 .map-placement-bar.admin-vis{display:flex;}
+.map-preview-toggle{
+  display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:8px;
+  border:0.5px solid var(--line-2);background:var(--surface-2);color:var(--muted);
+  font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;transition:background .15s,color .15s,border-color .15s;
+}
+.map-preview-toggle:hover{border-color:var(--accent);}
+.map-preview-toggle.act{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+.map-preview-toggle svg{width:14px;height:14px;flex-shrink:0;}
+.map-admin-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .map-placement-toggle{
   display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:8px;
   border:0.5px solid var(--line-2);background:var(--surface-2);color:var(--muted);
@@ -577,12 +594,18 @@ input,button{font-family:inherit;}
 
     <div class="map-view-wrap" id="mapViewWrap">
       <div class="map-placement-bar" id="placementBar">
-        <button class="map-placement-toggle" id="placementToggle" onclick="togglePlacementMode()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-          Расставить точки
+        <button class="map-preview-toggle" id="previewToggle" onclick="togglePreviewAsAgent()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span id="previewToggleLabel">Смотреть как агент</span>
         </button>
-        <select class="map-placement-select" id="placementSelect"></select>
-        <span class="map-placement-hint" id="placementHint">Кликни на карте, куда поставить точку для выбранного проекта</span>
+        <div class="map-admin-tools" id="adminTools">
+          <button class="map-placement-toggle" id="placementToggle" onclick="togglePlacementMode()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            Расставить точки
+          </button>
+          <select class="map-placement-select" id="placementSelect"></select>
+          <span class="map-placement-hint" id="placementHint">Кликни на карте, куда поставить точку для выбранного проекта</span>
+        </div>
       </div>
       <div id="projectsMap"></div>
     </div>
@@ -1157,21 +1180,27 @@ let mapViewActive = false;
 let projectsMap = null;
 let mapPlacemarks = [];
 let placementMode = false;
+// 15.07.26: чисто клиентский переключатель "посмотреть как обычный агент" —
+// ничего не пишет в базу и не трогает AGENT.is_admin, просто на время прячет
+// инструменты расстановки точек у самого админа, чтобы он мог глазами
+// проверить, как карта выглядит без них, и в любой момент вернуться обратно
+// тем же переключателем. Сбрасывается при перезагрузке страницы.
+let previewAsAgent = false;
 
 // Примерный центр Пхукета — если ни у одного проекта ещё нет координат
 // (самый первый запуск, до того как агент расставил точки), карта откроется
 // сюда, а не в случайную точку по умолчанию у Яндекса.
 const PHUKET_CENTER = [7.9, 98.32];
 
-// 15.07.26: "На карте" — кнопка слева от "Найти", "Списком" — это тот же
-// самый #searchBtn, просто его текст плавно подменяется (см. morphSearchBtn).
-// handleSearchBtnClick разруливает, что должен делать клик по этой кнопке
-// в текущий момент: в режиме карты — просто вернуть список (без нового
-// поиска), в обычном режиме — как раньше, выполнить поиск.
+// 15.07.26: "На карте" — кнопка слева от "Найти", остаётся на месте всегда
+// (не прячется). "Списком" — это тот же самый #searchBtn, просто его текст
+// плавно подменяется (см. morphSearchBtn). handleSearchBtnClick разруливает,
+// что должен делать клик по этой кнопке в текущий момент: в режиме карты —
+// просто вернуть список (без нового поиска), в обычном режиме — как раньше,
+// выполнить поиск.
 function setResultsView(view) {
   const isMap = view === 'map';
   mapViewActive = isMap;
-  document.getElementById('mapToggleBtn').classList.toggle('hidden', isMap);
   morphSearchBtn(isMap ? 'Списком' : 'Найти');
   document.getElementById('searchResults').style.display = isMap ? 'none' : '';
   document.getElementById('mapViewWrap').classList.toggle('act', isMap);
@@ -1214,17 +1243,21 @@ function handleSearchBtnClick() {
   }
 }
 
-// Карта — от левого до правого края страницы и вниз до конца окна (см.
-// .map-view-wrap/#projectsMap в CSS про full-bleed по ширине). По высоте
-// full-bleed надёжнее посчитать в JS: сколько места сверху уже занял
-// поисковый блок — это меняется (активные фильтры показываются/прячутся
-// и т.п.), поэтому фиксированной высотой в CSS не обойтись.
+// Карта — от левого до правого края страницы (см. .map-view-wrap/#projectsMap
+// в CSS про full-bleed по ширине). По высоте full-bleed надёжнее посчитать в
+// JS: сколько места сверху уже занял поисковый блок — это меняется (активные
+// фильтры показываются/прячутся и т.п.), поэтому фиксированной высотой в CSS
+// не обойтись. 15.07.26: высота "до низа экрана" на невысоких окнах давала
+// слишком приплюснутую по горизонтали карту — теперь берём ×2 от того, что
+// умещается без прокрутки страницы (страница из-за этого может слегка
+// проскроллиться вниз, это ожидаемо).
 function resizeProjectsMapHeight() {
   const wrap = document.getElementById('mapViewWrap');
   const mapEl = document.getElementById('projectsMap');
   if (!wrap || !mapEl || !wrap.classList.contains('act')) return;
   const top = mapEl.getBoundingClientRect().top;
-  const h = Math.max(320, Math.round(window.innerHeight - top - 16));
+  const availableH = Math.max(320, Math.round(window.innerHeight - top - 16));
+  const h = availableH * 2;
   mapEl.style.height = h + 'px';
   if (projectsMap?.container?.fitToViewport) projectsMap.container.fitToViewport();
 }
@@ -1281,7 +1314,7 @@ function renderProjectPins(projects) {
 // "не соблазнять обычного агента", а не железная стена от того, кто
 // осознанно откроет консоль и разберётся в коде.
 function togglePlacementMode() {
-  if (!AGENT?.is_admin) return;
+  if (!AGENT?.is_admin || previewAsAgent) return;
   placementMode = !placementMode;
   document.getElementById('placementToggle').classList.toggle('act', placementMode);
   document.getElementById('placementSelect').classList.toggle('vis', placementMode);
@@ -1302,8 +1335,22 @@ function populatePlacementSelect() {
   ).join('');
 }
 
-async function savePlacementClick(coords) {
+// "Смотреть как агент" ↔ "Вернуться в режим админа" — если в этот момент
+// было включено "Расставить точки", сначала аккуратно его выключаем (чтобы
+// не остаться в режиме, когда клик по карте вроде что-то делает, а инструмент
+// уже спрятан).
+function togglePreviewAsAgent() {
   if (!AGENT?.is_admin) return;
+  if (!previewAsAgent && placementMode) togglePlacementMode();
+  previewAsAgent = !previewAsAgent;
+  document.getElementById('previewToggle')?.classList.toggle('act', previewAsAgent);
+  const label = document.getElementById('previewToggleLabel');
+  if (label) label.textContent = previewAsAgent ? 'Вернуться в режим админа' : 'Смотреть как агент';
+  updatePlacementBarVisibility();
+}
+
+async function savePlacementClick(coords) {
+  if (!AGENT?.is_admin || previewAsAgent) return;
   const sel = document.getElementById('placementSelect');
   const code = sel.value;
   const project = PROJECTS.find(p => p.id === code);
@@ -1950,8 +1997,16 @@ function renderAgent() {
 // (см. комментарий у .map-placement-bar в CSS — это ограничение интерфейса,
 // не серверная защита).
 function updatePlacementBarVisibility() {
+  const isAdmin = !!AGENT?.is_admin;
   const bar = document.getElementById('placementBar');
-  if (bar) bar.classList.toggle('admin-vis', !!AGENT?.is_admin);
+  if (bar) bar.classList.toggle('admin-vis', isAdmin);
+  // "Смотреть как агент" сам виден только админу (иначе незачем), а вот
+  // инструменты расстановки точек (adminTools) прячутся ещё и когда админ
+  // сам временно включил previewAsAgent — это и есть весь смысл переключателя.
+  const previewBtn = document.getElementById('previewToggle');
+  if (previewBtn) previewBtn.style.display = isAdmin ? 'flex' : 'none';
+  const tools = document.getElementById('adminTools');
+  if (tools) tools.style.display = (isAdmin && !previewAsAgent) ? 'flex' : 'none';
 }
 
 function timeAgo(iso) {
