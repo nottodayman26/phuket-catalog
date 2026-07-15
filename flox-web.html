@@ -219,7 +219,37 @@ input,button{font-family:inherit;}
 .map-view-wrap{width:calc(100% + 40px);margin:16px -20px 0;display:none;}
 .map-view-wrap.act{display:block;}
 .map-view-wrap .map-placement-bar{margin-left:20px;margin-right:20px;}
-#projectsMap{width:100%;min-height:320px;overflow:hidden;border-top:0.5px solid var(--line-2);}
+#projectsMap{width:100%;min-height:320px;overflow:hidden;border-top:0.5px solid var(--line-2);position:relative;}
+
+/* 15.07.26 (15), по просьбе Ильи (скрин конкурента, Трендагент): штатные
+   кнопки Яндекс.Карт (даже с size:'small') визуально не похожи на компактные
+   белые скруглённые кнопки с тенью у конкурента — заменяем их своими,
+   см. addCustomMapControls(). Добавляются как ДЕТИ #projectsMap (а не
+   соседний элемент) специально — это тот самый узел, на который
+   projectsMap.container.enterFullscreen() вызывает браузерный Fullscreen API;
+   если кнопки лежат вне этого узла, они пропадут с экрана в момент
+   полноэкранного режима (Fullscreen API прячет всё, что не внутри
+   зафуллскриненного элемента). position:relative у #projectsMap выше — чтобы
+   position:absolute кнопок ниже считался от него, а не от body. Координаты
+   (top:10 / top:56) — те же, что раньше были у штатных Яндекс-контролов
+   (см. историю правок (14) выше про 2×-высоту #projectsMap) — та расстановка
+   уже проверена и работает, эту же берём как есть, не гадаем заново. */
+.map-ctrl-btn{
+  width:32px;height:32px;border-radius:8px;background:#fff;color:#16161f;
+  border:1px solid rgba(0,0,0,.08);box-shadow:0 2px 8px rgba(0,0,0,.18);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background .15s ease;
+}
+.map-ctrl-btn:hover{background:#f2f2f5;}
+.map-ctrl-btn svg{width:16px;height:16px;}
+.map-fullscreen-btn{position:absolute;top:10px;right:10px;z-index:1000;}
+.map-zoom-group{
+  position:absolute;top:56px;right:10px;z-index:1000;
+  display:flex;flex-direction:column;border-radius:8px;overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+}
+.map-zoom-group .map-ctrl-btn{border-radius:0;border:none;box-shadow:none;}
+.map-zoom-group .map-ctrl-btn:first-child{border-bottom:1px solid rgba(0,0,0,.08);}
 
 /* Панель расстановки точек — видна только внутри floxweb.html (агентский
    инструмент), над картой. Клиенты этот файл не открывают, поэтому отдельный
@@ -1387,69 +1417,33 @@ window.addEventListener('resize', resizeProjectsMapHeight);
 // поэтому оттенок оценён на глаз по существующей переменной --red, а не
 // сверен пиксель-в-пиксель — если не совпадёт, легко поправить одну строку.
 const MAP_PIN_COLOR = '#FF6B6B';
-// От какого зума показывать плашку с ценой у ВСЕХ проектов в области (а не
-// только у "случайных" — см. PROJECT_ALWAYS_PLAQUE ниже). Чем ближе
-// приближаешь карту, тем меньше точек и больше плашек с ценой — как в примере
-// Ильи из Трендагента.
-const PLAQUE_ZOOM = 13;
-// Доля проектов, которые показываются плашкой с ценой ДАЖЕ на дальнем зуме
-// (Илья: "изначально — количество этих плашек рандомное по карте"). Обычный
-// Math.random() тут не годится — метки перерисовываются при каждом
-// зуме/фильтре, и с настоящим рандомом плашки бы "мигали"/менялись каждый
-// раз. Вместо этого — стабильный псевдослучайный выбор по коду проекта:
-// для одного и того же проекта результат всегда один и тот же.
-const PROJECT_ALWAYS_PLAQUE_RATIO = 0.3;
-function projectAlwaysShowsPlaque(p) {
-  let h = 0;
-  for (let i = 0; i < p.id.length; i++) h = (h * 31 + p.id.charCodeAt(i)) >>> 0;
-  return (h % 100) / 100 < PROJECT_ALWAYS_PLAQUE_RATIO;
-}
+// 15.07.26 (15), по просьбе Ильи (скрины: на дальнем зуме плашек с ценой
+// почти не было видно вообще, а у одиночного объекта без соседей рядом
+// плашка не появлялась даже на максимальном приближении): раньше плашка у
+// самого дешёвого объекта в экранной группе показывалась не всегда — при
+// дальнем зуме (< PLAQUE_ZOOM) это был рандомный шанс ~30% (стабильный по
+// коду проекта, чтобы не "мигало"). На малом числе проектов и с группировкой,
+// объединяющей разные районы в 1-2 группы при отдалении, это легко давало
+// вообще ноль плашек на экране. Теперь — как у конкурента (Трендагент,
+// скрин от Ильи): самый дешёвый объект в каждой экранной группе получает
+// плашку ВСЕГДА, на любом зуме, без случайности. Если объект на экране один
+// (группа из одного) — он в этой группе автоматически самый дешёвый, и
+// плашка у него теперь тоже гарантированная, а не зависящая от зума.
 
 function initProjectsMap() {
   if (projectsMap) return; // уже создана — просто переиспользуем
   projectsMap = new ymaps.Map('projectsMap', {
     center: PHUKET_CENTER,
     zoom: 11,
-    // 15.07.26 (5)/(12): по образцу Трендагента (скрин от Ильи) — компактные
-    // зум-кнопки внизу справа, разворот на весь экран вверху справа. Сами
-    // контролы штатные (Яндекс.Карты), просто уменьшенные и переставленные —
-    // Илья отдельно отметил, что визуально они там нейтральные и подходят.
-    // 15.07.26 (12): controls.add('zoomControl', {опции}) — короткая форма
-    // (имя строкой + опции вторым аргументом) — судя по всему не применяла
-    // опции на боевом сайте (кнопки остались дефолтного вида). Переключились
-    // на однозначно задокументированный способ — создать сам объект контрола
-    // с опциями внутри (new ymaps.control.ZoomControl({options:{...}})) —
-    // это не оставляет двусмысленности в том, как Яндекс их парсит.
+    // 15.07.26 (15): свои кнопки зума/разворота вместо штатных Яндекс —
+    // см. addCustomMapControls() и CSS у .map-ctrl-btn (там же объяснение,
+    // почему controls тут пустой массив, а не встроенные ZoomControl/
+    // FullscreenControl). Позиции (top:10 / top:56) унаследованы от
+    // предыдущей версии со штатными контролами (см. историю правок (14)
+    // про 2×-высоту #projectsMap) — та расстановка уже проверена и работает.
     controls: [],
   });
-  // 15.07.26 (14): найдена настоящая причина, почему zoom-контрол не был
-  // виден — это НЕ ошибка кода (консоль от Ильи подтвердила: обе добавки
-  // отработали без единого исключения). Причина в resizeProjectsMapHeight()
-  // ниже: высота #projectsMap намеренно ставится В 2 РАЗА больше видимой
-  // области экрана (осознанная более ранняя правка — иначе карта на невысоких
-  // окнах выглядела слишком приплюснутой). Позиция "bottom:10" у контрола
-  // отсчитывается от низа ЭТОГО (2×) блока, а не от низа экрана — то есть
-  // кнопка рисовалась примерно на целый экран ниже видимой без прокрутки
-  // области. FullscreenControl с "top:10" из-за этого же эффекта оказывался
-  // виден сразу — поэтому Илья видел его, а зум снизу — нет. Ставим зум сразу
-  // под fullscreen (тоже "top", в верхней — гарантированно видимой без
-  // прокрутки — части карты), а не гадаем с "bottom" в 4-й раз.
-  try {
-    projectsMap.controls.add(new ymaps.control.ZoomControl({
-      options: { size: 'small', position: { right: 10, top: 56 } },
-    }));
-    console.log('[flox] zoom-контрол карты добавлен');
-  } catch (e) {
-    console.error('[flox] не удалось добавить zoom-контрол карты:', e);
-  }
-  try {
-    projectsMap.controls.add(new ymaps.control.FullscreenControl({
-      options: { position: { right: 10, top: 10 } },
-    }));
-    console.log('[flox] fullscreen-контрол карты добавлен');
-  } catch (e) {
-    console.error('[flox] не удалось добавить fullscreen-контрол карты:', e);
-  }
+  addCustomMapControls();
   projectsMap.events.add('click', e => {
     if (!placementMode) return;
     const coords = e.get('coords');
@@ -1463,6 +1457,81 @@ function initProjectsMap() {
     if (e.get('newZoom') === e.get('oldZoom')) return;
     renderProjectPins(lastFilteredProjects, { fitBounds: false });
   });
+}
+
+// 15.07.26 (15): свои кнопки зума (+/-) и разворота на весь экран — по
+// просьбе Ильи, точь-в-точь под стиль конкурента (Трендагент, скрин): белые
+// скруглённые кнопки с тенью, а не штатный полупрозрачный/серый вид
+// Яндекс.Карт (у Яндекса такой внешний вид кнопок штатно не настраивается
+// через опции — только полной заменой на свою вёрстку). Кнопки просто
+// вызывают штатные методы Яндекс.Карт (setZoom / enterFullscreen /
+// exitFullscreen) — сама механика зума и полноэкранного режима осталась
+// родной, поменялась только "обёртка" вокруг неё.
+function addCustomMapControls() {
+  const mapEl = document.getElementById('projectsMap');
+  if (!mapEl || document.getElementById('mapFullscreenBtn')) return; // уже добавлены (карта переиспользуется, см. initProjectsMap)
+
+  const ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M8 21H5a2 2 0 01-2-2v-3M16 21h3a2 2 0 002-2v-3"/></svg>';
+  const ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v4a2 2 0 01-2 2H3M15 3v4a2 2 0 002 2h4M9 21v-4a2 2 0 00-2-2H3M15 21v-4a2 2 0 012-2h4"/></svg>';
+  const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  const ICON_MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>';
+
+  const fsBtn = document.createElement('div');
+  fsBtn.id = 'mapFullscreenBtn';
+  fsBtn.className = 'map-ctrl-btn map-fullscreen-btn';
+  fsBtn.innerHTML = ICON_EXPAND;
+  fsBtn.title = 'Развернуть на весь экран';
+  fsBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    try {
+      if (!projectsMap?.container?.isFullscreen) return;
+      if (projectsMap.container.isFullscreen()) projectsMap.container.exitFullscreen();
+      else projectsMap.container.enterFullscreen();
+    } catch (err) {
+      console.error('[flox] не удалось переключить fullscreen карты:', err);
+    }
+  });
+  mapEl.appendChild(fsBtn);
+
+  const zoomGroup = document.createElement('div');
+  zoomGroup.className = 'map-zoom-group';
+  const plusBtn = document.createElement('div');
+  plusBtn.className = 'map-ctrl-btn';
+  plusBtn.innerHTML = ICON_PLUS;
+  plusBtn.title = 'Приблизить';
+  plusBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!projectsMap) return;
+    projectsMap.setZoom(projectsMap.getZoom() + 1, { checkZoomRange: true, duration: 200 });
+  });
+  const minusBtn = document.createElement('div');
+  minusBtn.className = 'map-ctrl-btn';
+  minusBtn.innerHTML = ICON_MINUS;
+  minusBtn.title = 'Отдалить';
+  minusBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!projectsMap) return;
+    projectsMap.setZoom(projectsMap.getZoom() - 1, { checkZoomRange: true, duration: 200 });
+  });
+  zoomGroup.appendChild(plusBtn);
+  zoomGroup.appendChild(minusBtn);
+  mapEl.appendChild(zoomGroup);
+
+  // Иконка разворота/сворачивания меняется по фактическому состоянию
+  // fullscreen, а не только по клику на саму кнопку — из полноэкранного
+  // режима можно выйти клавишей Esc, минуя кнопку.
+  try {
+    projectsMap.container.events.add('fullscreenenter', () => {
+      fsBtn.innerHTML = ICON_COLLAPSE;
+      fsBtn.title = 'Свернуть';
+    });
+    projectsMap.container.events.add('fullscreenexit', () => {
+      fsBtn.innerHTML = ICON_EXPAND;
+      fsBtn.title = 'Развернуть на весь экран';
+    });
+  } catch (err) {
+    console.error('[flox] не удалось подписаться на события fullscreen карты:', err);
+  }
 }
 
 // 15.07.26 (11): раньше точки и плашки рисовались штатными пресетами Яндекса
@@ -1512,23 +1581,22 @@ function renderProjectPins(projects, opts) {
   mapPlacemarks.forEach(pm => projectsMap.geoObjects.remove(pm));
   mapPlacemarks = [];
   const withCoords = projects.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
-  const zoom = projectsMap.getZoom ? projectsMap.getZoom() : 11;
-  const allPlaques = zoom >= PLAQUE_ZOOM;
 
   // 15.07.26 (13)/(14), по просьбе Ильи: если в одном месте на экране
   // скопилось несколько точек, плашкой должна быть только самая дешёвая.
   // Первая версия (13) сначала независимо решала "кому вообще положена
   // плашка" (по зуму/случайному хэшу), и ТОЛЬКО ПОТОМ группировала — из-за
-  // этого при переходе через порог зума PLAQUE_ZOOM менялся состав
-  // "кандидатов", и плашка резко перепрыгивала на другой проект (Илья
-  // поймал это: издалека плашка была на 5.8 млн, при приближении внезапно
-  // на 3.9 млн — другой проект). Теперь порядок обратный: сначала группируем
-  // ВСЕ точки по экранной близости, у каждой группы заранее известен самый
-  // дешёвый член — и именно ЕГО (и только его) проверяем на "положена ли
-  // плашка" (по зуму/хэшу). Пока группа не распадается физически (близкие
-  // точки не разъехались за порог PLAQUE_CLUSTER_PX на новом зуме), плашка
-  // либо просто появляется/исчезает у одного и того же проекта, либо не
-  // меняется вовсе — но никогда не "перескакивает" на другого соседа.
+  // этого при переходе через порог зума менялся состав "кандидатов", и
+  // плашка резко перепрыгивала на другой проект (Илья поймал это: издалека
+  // плашка была на 5.8 млн, при приближении внезапно на 3.9 млн — другой
+  // проект). Порядок обратный: сначала группируем ВСЕ точки по экранной
+  // близости, у каждой группы заранее известен самый дешёвый член — и
+  // именно ОН получает плашку (см. (15) выше — теперь безусловно, без
+  // проверки зума/случайности). Пока группа не распадается физически
+  // (близкие точки не разъехались за порог PLAQUE_CLUSTER_PX на новом
+  // зуме), плашка либо просто появляется/исчезает у одного и того же
+  // проекта, либо не меняется вовсе — но никогда не "перескакивает" на
+  // другого соседа.
   const PLAQUE_CLUSTER_PX = 70;
   withCoords.forEach(p => { p._wantsPlaque = false; });
   try {
@@ -1546,16 +1614,16 @@ function renderProjectPins(projects, opts) {
       });
       groups.forEach(group => {
         const cheapest = group.reduce((a, b) => ((b.priceFrom ?? Infinity) < (a.priceFrom ?? Infinity) ? b : a));
-        cheapest._wantsPlaque = allPlaques || projectAlwaysShowsPlaque(cheapest);
+        cheapest._wantsPlaque = true;
       });
     } else {
       // converter недоступен — откатываемся на старое поведение "каждый сам
       // за себя", лучше так, чем совсем без плашек
-      withCoords.forEach(p => { p._wantsPlaque = allPlaques || projectAlwaysShowsPlaque(p); });
+      withCoords.forEach(p => { p._wantsPlaque = true; });
     }
   } catch (e) {
     console.error('[flox] не удалось сгруппировать точки для плашек, используем поведение без группировки:', e);
-    withCoords.forEach(p => { p._wantsPlaque = allPlaques || projectAlwaysShowsPlaque(p); });
+    withCoords.forEach(p => { p._wantsPlaque = true; });
   }
 
   withCoords.forEach(p => {
@@ -1567,9 +1635,8 @@ function renderProjectPins(projects, opts) {
       balloonContentFooter: `<a href="${p.url}" target="_blank" rel="noopener">Открыть проект →</a>`,
       iconContent: asPlaque ? fmtMln(p.priceFrom) : undefined,
     }, asPlaque ? {
-      // Плашка с округлённой минимальной ценой — как у Трендагента: чем ближе
-      // зум (или у "случайно" выбранных проектов — см. PROJECT_ALWAYS_PLAQUE_RATIO),
-      // тем больше таких плашек вместо простых точек.
+      // Плашка с округлённой минимальной ценой — как у Трендагента: у самого
+      // дешёвого объекта в каждой экранной группе (см. (15) выше), всегда.
       iconLayout: getPlaqueLayout(),
       iconShape: { type: 'Rectangle', coordinates: [[-45, -14], [45, 14]] },
       // 15.07.26 (12): если рядом два объекта — один с плашкой, другой ещё
