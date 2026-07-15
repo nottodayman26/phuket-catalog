@@ -106,8 +106,8 @@ input,button{font-family:inherit;}
 
 /* Фильтры — теперь сегменты внутри той же "ленты", без обводки, только
    заливка на ховере/активном состоянии (было — отдельные кнопки с рамкой).
-   15.07.26 (2): иконки у Тип/Цена/Срок сдачи убрали (остались только у
-   "Все фильтры" — свг там по-прежнему есть в разметке). */
+   15.07.26 (2)/(4): иконок теперь нет ни у одной из фильтр-кнопок, включая
+   "Все фильтры" — только текст. */
 .filter-btn{
   display:flex;align-items:center;gap:6px;
   padding:9px 13px;border-radius:20px;font-size:12.5px;font-weight:500;
@@ -118,25 +118,23 @@ input,button{font-family:inherit;}
 .filter-btn.act{background:var(--accent-soft);color:var(--accent);}
 .filter-btn svg{width:12px;height:12px;}
 .filter-sep{width:1px;height:22px;background:var(--line-2);flex-shrink:0;margin:0 2px;}
-/* 15.07.26 (2): по умолчанию — просто круглая кнопка-лупа (никакого текста
-   "Найти"). Клик по ней запускает поиск и сразу показывает результат на
-   карте, сама лупа при этом плавно превращается в пилюлю с текстом
-   "Списком" (см. .search-btn.is-list, morphSearchBtn в JS) — и остаётся
-   такой насовсем, по просьбе Ильи. .accent-off — бледнеет, когда акцент
-   "переезжает" на кнопку "На карте" (см. .map-toggle-btn.accent и
-   setSearchAccent в JS). */
+/* 15.07.26 (3): просто круглая кнопка-лупа, всегда лупа — текста "Найти"/
+   "Списком" больше нет вообще (по просьбе Ильи, старая версия с подменой
+   текста только путала). Лупа = список, "На карте" = карта; какая из двух
+   сейчас "выбрана" показывает фиолетовый акцент — он просто едет туда-обратно
+   между .search-btn и .map-toggle-btn вслед за mapViewActive (см.
+   setResultsView в JS). .accent-off — бледнеет, когда акцент сейчас у
+   "На карте" (см. .map-toggle-btn.accent). */
 .search-btn{
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
   width:38px;height:38px;padding:0;margin:2px 2px 2px 0;border-radius:50%;
   background:var(--accent);color:#fff;border:none;cursor:pointer;
-  transition:opacity .15s ease,transform .15s ease,background-color .15s ease,color .15s ease,width .15s ease,padding .15s ease,border-radius .15s ease;
+  transition:opacity .15s ease,background-color .15s ease,color .15s ease;
 }
 .search-btn:hover{opacity:.88;}
 .search-btn svg{width:16px;height:16px;flex-shrink:0;}
-.search-btn.is-list{width:auto;height:auto;padding:9px 20px;border-radius:20px;font-size:12.5px;font-weight:600;}
 .search-btn.accent-off{background:none;color:var(--muted);opacity:1;}
 .search-btn.accent-off:hover{background:var(--surface-2);color:var(--text);}
-.search-btn:hover{opacity:.88;}
 
 /* Active chips */
 .active-filters{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:900px;margin-top:10px;}
@@ -186,21 +184,15 @@ input,button{font-family:inherit;}
 .results-label{font-size:13px;color:var(--muted);margin-bottom:14px;}
 
 /* ── "На карте" — кнопка-переключатель в строке фильтров (слева от лупы)
-   + сама карта проектов. 15.07.26: раньше был отдельный ряд с двумя пилюлями
-   ("Список"/"На карте") под строкой поиска — убрали, он был виден всегда
-   (даже до первого поиска) и добавлял лишнюю высоту странице, из-за которой
-   на пустом экране появлялся вертикальный скролл без реального контента.
-   Теперь один переключатель встроен в filters-row, кнопка "На карте" всегда
-   на месте. 15.07.26 (2): добавили второй способ попасть на карту — сама
-   лупа (#searchBtn) тоже теперь ведёт на карту (см. handleSearchBtnClick).
-   Кто из двух кнопок "владеет" фиолетовым акцентом — решает setSearchAccent:
-   если кликнули по лупе, она просто плавно растёт в пилюлю "Списком",
-   оставаясь фиолетовой, "На карте" не меняется; если кликнули по "На
-   карте" — акцент наоборот "переезжает" на неё (.map-toggle-btn.accent),
-   а лупа в тот же момент бледнеет и получает текст "Списком"
-   (.search-btn.accent-off). Карта создаётся только при первом реальном
-   переходе на неё (см. initProjectsMap) — грузить её на каждой загрузке
-   страницы поиска смысла нет, только тратит дневной лимит запросов к API. */
+   + сама карта проектов. 15.07.26 (3): два равноправных переключателя вида —
+   лупа (#searchBtn) = список, "На карте" (#mapToggleBtn) = карта. Текста
+   у них не бывает (лупа — просто иконка, "На карте" — просто текст),
+   меняется только то, у кого из двух сейчас фиолетовый акцент — он всегда
+   у той кнопки, что соответствует текущему виду (см. .accent/.accent-off и
+   setResultsView в JS, реагирует прямо на mapViewActive, без своей истории).
+   Карта создаётся только при первом реальном переходе на неё (см.
+   initProjectsMap) — грузить её на каждой загрузке страницы поиска смысла
+   нет, только тратит дневной лимит запросов к API. */
 .map-toggle-btn{
   display:flex;align-items:center;gap:6px;
   padding:9px 13px;margin-left:auto;border-radius:20px;font-size:12.5px;font-weight:500;
@@ -585,10 +577,9 @@ input,button{font-family:inherit;}
         <span id="filterPriceLabel">Цена</span>
       </button>
       <button class="filter-btn" id="filterCompBtn" onclick="openCompletionModal()">
-        <span id="filterCompLabel">Срок сдачи до</span>
+        <span id="filterCompLabel">Срок сдачи</span>
       </button>
       <button class="filter-btn" onclick="alert('Скоро!')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M8 12h8M11 18h2"/></svg>
         Все фильтры
       </button>
       <div class="filter-sep"></div>
@@ -842,6 +833,10 @@ function toggleTheme() {
 
 // ── NAVIGATION ────────────────────────────
 function setPage(name) {
+  // 15.07.26 (3): если реально ПЕРЕХОДИМ на "Поиск" из другой вкладки (а не
+  // повторно жмём по уже открытой) — сбрасываем страницу поиска к чистому
+  // виду, см. resetSearchPageToClean.
+  const enteringSearch = name === 'search' && !document.getElementById('page-search').classList.contains('act');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('act'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('act'));
   document.getElementById('page-' + name).classList.add('act');
@@ -849,6 +844,23 @@ function setPage(name) {
   if (name === 'offers') loadOffers();
   if (name === 'activity') loadActivity();
   if (name === 'presentation') loadPresentation();
+  if (enteringSearch) resetSearchPageToClean();
+}
+
+// По просьбе Ильи: возврат на "Поиск" из Инструменты/Клиенты и т.п. должен
+// показывать страницу такой же чистой, как до первого поиска — без открытого
+// списка результатов и без карты (даже если до перехода на другую вкладку
+// список/карта были открыты). Сами введённый текст и выбранные фильтры не
+// трогаем — сбрасываем только то, что было ПОКАЗАНО.
+function resetSearchPageToClean() {
+  const results = document.getElementById('searchResults');
+  results.innerHTML = '';
+  results.style.display = '';
+  document.getElementById('mapViewWrap').classList.remove('act');
+  mapViewActive = false;
+  document.getElementById('searchBtn').classList.remove('accent-off');
+  document.getElementById('mapToggleBtn').classList.remove('accent');
+  _searchDone = false;
 }
 
 // ── TYPE SELECTOR (top) ───────────────────
@@ -1191,9 +1203,6 @@ function showDevGroup(dev, projects) {
 // получает метку, ничего не падает.
 let lastFilteredProjects = PROJECTS;
 let mapViewActive = false;
-// 15.07.26 (2): какая из двух кнопок (лупа/#searchBtn или "На карте"/
-// #mapToggleBtn) сейчас "держит" фиолетовый акцент — см. setSearchAccent.
-let searchAccentAt = 'search';
 let projectsMap = null;
 let mapPlacemarks = [];
 let placementMode = false;
@@ -1209,16 +1218,17 @@ let previewAsAgent = false;
 // сюда, а не в случайную точку по умолчанию у Яндекса.
 const PHUKET_CENTER = [7.9, 98.32];
 
-// "На карте" — кнопка слева от лупы, остаётся на месте всегда (не прячется).
-// "Списком" — это тот же самый #searchBtn (по умолчанию — просто лупа без
-// текста), его содержимое плавно подменяется (см. morphSearchBtn) один раз,
-// при первом переходе на карту — и обратно в лупу уже НЕ возвращается, даже
-// когда снова показываем список (так попросил Илья: "Списком" насовсем
-// заменяет лупу после первого использования карты).
+// 15.07.26 (3): лупа = список, "На карте" = карта — два равноправных
+// переключателя вида, без всякого текста "Списком"/"Найти". Фиолетовый
+// акцент просто следует за mapViewActive: у лупы, когда смотрим список, у
+// "На карте", когда смотрим карту. Никакой памяти "кто последний нажал" —
+// один реактивный источник правды, поэтому оба клика ведут себя одинаково
+// предсказуемо, откуда бы их ни нажали.
 function setResultsView(view) {
   const isMap = view === 'map';
   mapViewActive = isMap;
-  if (isMap) morphSearchBtn('Списком');
+  document.getElementById('searchBtn').classList.toggle('accent-off', isMap);
+  document.getElementById('mapToggleBtn').classList.toggle('accent', isMap);
   document.getElementById('searchResults').style.display = isMap ? 'none' : '';
   document.getElementById('mapViewWrap').classList.toggle('act', isMap);
   if (isMap) {
@@ -1239,53 +1249,20 @@ function setResultsView(view) {
   }
 }
 
-// Плавная подмена содержимого лупы на текст "Списком" (кросс-фейд через
-// .morphing, см. CSS) — один раз, дальше no-op (проверяем dataset.state),
-// чтобы не моргать зря при повторных вызовах setResultsView('map'). Заодно
-// вешаем .is-list — лупа была круглой кнопкой-иконкой, "Списком" уже
-// пилюля с текстом (ширина меняется тоже, но подмена происходит пока кнопка
-// невидима из-за opacity:0, поэтому скачок ширины не заметен).
-function morphSearchBtn(text) {
-  const btn = document.getElementById('searchBtn');
-  if (!btn || btn.dataset.state === text) return;
-  btn.classList.add('morphing');
-  setTimeout(() => {
-    btn.textContent = text;
-    btn.classList.add('is-list');
-    btn.dataset.state = text;
-    btn.classList.remove('morphing');
-  }, 150);
-}
-
-// Кто из двух кнопок сейчас фиолетовый — см. комментарий у .map-toggle-btn
-// в CSS. Переключаем классы только когда акцент реально меняет владельца
-// (иначе лишний раз дёргаем transition при каждом клике).
-function setSearchAccent(target) {
-  if (searchAccentAt === target) return;
-  searchAccentAt = target;
-  document.getElementById('mapToggleBtn')?.classList.toggle('accent', target === 'map');
-  document.getElementById('searchBtn')?.classList.toggle('accent-off', target === 'map');
-}
-
-// Клик по кнопке "На карте": акцент переезжает на неё (если сейчас он у
-// лупы), затем показываем карту как обычно.
+// Клик по "На карте": просто показать карту.
 function handleMapToggleClick() {
-  setSearchAccent('map');
   setResultsView('map');
 }
 
-// Клик по лупе/"Списком": в режиме карты — вернуть список (без нового
-// поиска), в обычном режиме — выполнить поиск и сразу показать результат на
-// карте (акцент остаётся на лупе — setSearchAccent('search') тут no-op,
-// если он и так уже там, но пишем явно на случай если до этого был на
-// "На карте").
+// Клик по лупе: в режиме карты — вернуть список (без нового поиска), в
+// режиме списка — выполнить поиск (лупа тут ведёт себя как раньше "Найти",
+// на карту сама по себе больше не переключает — см. правку от 15.07.26 (3),
+// раньше лупа тоже открывала карту и это путало).
 function handleSearchBtnClick() {
   if (mapViewActive) {
     setResultsView('list');
   } else {
     doSearch();
-    setSearchAccent('search');
-    setResultsView('map');
   }
 }
 
@@ -1475,7 +1452,7 @@ function updateChips() {
     document.getElementById('filterCompLabel').textContent = label;
     document.getElementById('filterCompBtn').classList.add('act');
   } else {
-    document.getElementById('filterCompLabel').textContent = 'Срок сдачи до';
+    document.getElementById('filterCompLabel').textContent = 'Срок сдачи';
     document.getElementById('filterCompBtn').classList.remove('act');
   }
 
