@@ -118,41 +118,42 @@ input,button{font-family:inherit;}
 .filter-btn.act{background:var(--accent-soft);color:var(--accent);}
 .filter-btn svg{width:12px;height:12px;}
 .filter-sep{width:1px;height:22px;background:var(--line-2);flex-shrink:0;margin:0 2px;}
-/* 15.07.26 (3): просто круглая кнопка-лупа, всегда лупа — текста "Найти"/
-   "Списком" больше нет вообще (по просьбе Ильи, старая версия с подменой
-   текста только путала). Лупа = список, "На карте" = карта; какая из двух
-   сейчас "выбрана" показывает фиолетовый акцент — он просто едет туда-обратно
-   между .search-btn и .map-toggle-btn вслед за mapViewActive (см.
-   setResultsView в JS). .accent-off — бледнеет, когда акцент сейчас у
-   "На карте" (см. .map-toggle-btn.accent). */
+/* 15.07.26 (7): фиолетовый акцент больше не красит фон самих кнопок — вместо
+   этого под ними едет отдельная плашка-подложка одного фиксированного
+   размера (.accent-pill, JS: syncAccentPill()), выбранный вариант анимации
+   из map_toggle_animation_variants.html ("скользящая таблетка"). Сами кнопки
+   всегда прозрачные, поверх плашки (z-index:1) — меняется только цвет
+   иконки/текста: белый у той, что сейчас под плашкой, приглушённый у другой. */
 .search-btn{
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
   width:38px;height:38px;padding:0;margin:2px 2px 2px 0;border-radius:50%;
-  background:var(--accent);color:#fff;border:none;cursor:pointer;
-  transition:opacity .15s ease,background-color .15s ease,color .15s ease;
+  background:none;color:#fff;border:none;cursor:pointer;position:relative;z-index:1;
+  transition:opacity .15s ease,color .2s ease .05s;
 }
 .search-btn:hover{opacity:.88;}
 .search-btn svg{width:16px;height:16px;flex-shrink:0;}
-.search-btn.accent-off{background:none;color:var(--muted);opacity:1;}
-.search-btn.accent-off:hover{background:var(--surface-2);color:var(--text);}
+.search-btn.accent-off{color:var(--muted);opacity:1;}
+.search-btn.accent-off:hover{background:var(--surface-2);color:var(--text);border-radius:50%;}
+
+/* Плашка-подложка: размер фиксируется один раз в JS (по ширине "На карте" —
+   она шире лупы) и больше не меняется, едет только позиция (left/top). */
+.accent-pill{
+  position:absolute;border-radius:20px;background:var(--accent);
+  transition:left .38s cubic-bezier(.34,1.56,.64,1), top .38s cubic-bezier(.34,1.56,.64,1);
+  z-index:0;pointer-events:none;
+}
 
 /* Active chips */
-.active-filters{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:900px;margin-top:10px;}
-.filter-chip{
-  display:flex;align-items:center;gap:5px;
-  padding:4px 10px;border-radius:20px;font-size:12px;
-  background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);
-}
-.chip-remove{
-  width:14px;height:14px;border-radius:50%;border:none;
-  background:var(--accent);color:#fff;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;
-}
+/* 15.07.26 (4): раньше тут был ещё ряд отдельных плашек-фильтров с крестиками
+   (.filter-chip/.chip-remove) — по просьбе Ильи убрали, это дублировало то же
+   самое, что уже видно прямо в кнопках "Тип"/"Цена"/"Срок сдачи" в поисковике.
+   Остался только "Сбросить все" — без обводки, цветом точки логотипа. */
+.active-filters{display:flex;align-items:center;width:100%;max-width:900px;margin-top:10px;min-height:0;}
 .reset-all{
-  font-size:12px;color:var(--muted);cursor:pointer;
-  padding:4px 8px;border-radius:8px;background:none;border:none;transition:color .15s;
+  font-size:12.5px;font-weight:600;color:var(--red);cursor:pointer;
+  padding:4px 2px;background:none;border:none;transition:opacity .15s ease;
 }
-.reset-all:hover{color:var(--red);}
+.reset-all:hover{opacity:.7;}
 
 /* Autocomplete */
 .autocomplete{
@@ -196,12 +197,12 @@ input,button{font-family:inherit;}
 .map-toggle-btn{
   display:flex;align-items:center;gap:6px;
   padding:9px 13px;margin-left:auto;border-radius:20px;font-size:12.5px;font-weight:500;
-  border:none;color:var(--muted);background:none;
-  cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;
+  border:none;color:var(--muted);background:none;position:relative;z-index:1;
+  cursor:pointer;white-space:nowrap;transition:background .15s,color .2s ease .05s;
 }
 .map-toggle-btn:hover{background:var(--surface-2);color:var(--text);}
 .map-toggle-btn svg{width:13px;height:13px;flex-shrink:0;}
-.map-toggle-btn.accent{background:var(--accent);color:#fff;}
+.map-toggle-btn.accent{color:#fff;}
 
 /* Full-bleed по ширине: карта растягивается от левого до правого края
    страницы (не ограничена max-width:900px, как остальной контент поиска).
@@ -583,6 +584,13 @@ input,button{font-family:inherit;}
         Все фильтры
       </button>
       <div class="filter-sep"></div>
+      <!-- 15.07.26 (7): фиолетовая "таблетка"-подложка одного фиксированного
+           размера, которая физически едет между лупой и "На карте" — см.
+           .accent-pill в CSS и syncAccentPill() в JS. Сама она под кнопками
+           (z-index:0), кнопки поверх неё (z-index:1) и просто красятся в
+           белый/приглушённый цвет в зависимости от того, под кем сейчас
+           плашка. Выбранный вариант анимации — см. map_toggle_animation_variants.html. -->
+      <div class="accent-pill" id="accentPill"></div>
       <button class="map-toggle-btn" id="mapToggleBtn" onclick="handleMapToggleClick()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
         На карте
@@ -862,6 +870,27 @@ function resetSearchPageToClean() {
   document.getElementById('mapToggleBtn').classList.remove('accent');
   _searchDone = false;
 }
+
+// 15.07.26 (6): нашли реальную причину, почему чистка страницы поиска не
+// срабатывала — Илья прислал topbar.js. Там в _onSearch() сразу после
+// setPage('search') синхронно вызывался freshSearch(), который не просто
+// чистит вид, а сам запускает новый поиск — он и перечёркивал чистку. Правка
+// внесена в сам topbar.js (условие "уже на вкладке Поиск или заходим из
+// другой" — см. файл topbar.js). MutationObserver ниже оставлен как
+// дополнительная страховка: следит за самим фактом появления класса "act" у
+// #page-search, кто бы его ни повесил, и работает надёжно при любом способе
+// переключения вкладок, даже если topbar.js снова поменяется в будущем.
+(function watchSearchPageActivation() {
+  const pageSearch = document.getElementById('page-search');
+  if (!pageSearch) return;
+  let wasActive = pageSearch.classList.contains('act');
+  const obs = new MutationObserver(() => {
+    const isActive = pageSearch.classList.contains('act');
+    if (isActive && !wasActive) resetSearchPageToClean();
+    wasActive = isActive;
+  });
+  obs.observe(pageSearch, { attributes: true, attributeFilter: ['class'] });
+})();
 
 // ── TYPE SELECTOR (top) ───────────────────
 // Unit type display buckets
@@ -1229,6 +1258,7 @@ function setResultsView(view) {
   mapViewActive = isMap;
   document.getElementById('searchBtn').classList.toggle('accent-off', isMap);
   document.getElementById('mapToggleBtn').classList.toggle('accent', isMap);
+  syncAccentPill(true);
   document.getElementById('searchResults').style.display = isMap ? 'none' : '';
   document.getElementById('mapViewWrap').classList.toggle('act', isMap);
   if (isMap) {
@@ -1248,6 +1278,43 @@ function setResultsView(view) {
     }
   }
 }
+
+// 15.07.26 (7): позиционирует .accent-pill — фиолетовую плашку-подложку под
+// лупой или "На карте". Размер (ширину/высоту) берём один раз с "На карте"
+// (она шире лупы) и больше не трогаем — сама плашка только едет (left/top),
+// никогда не меняется в размере, это отдельно просил Илья при проверке
+// мокапа с вариантами анимации. top тоже пересчитываем каждый раз (не только
+// left) — на узких экранах .search-box-wrap переносит "На карте" на новую
+// строку (flex-wrap), и без top плашка осталась бы на строке лупы.
+let _accentPillW = null, _accentPillH = null;
+function syncAccentPill(animate) {
+  const wrap = document.getElementById('searchWrap');
+  const pill = document.getElementById('accentPill');
+  const mapBtn = document.getElementById('mapToggleBtn');
+  const searchBtn = document.getElementById('searchBtn');
+  if (!wrap || !pill || !mapBtn || !searchBtn) return;
+  if (_accentPillW == null) {
+    const r = mapBtn.getBoundingClientRect();
+    if (!r.width) return; // ещё не отрисовано (например, скрытая вкладка) — попробуем в следующий раз
+    _accentPillW = r.width;
+    _accentPillH = r.height;
+    pill.style.width = _accentPillW + 'px';
+    pill.style.height = _accentPillH + 'px';
+  }
+  const target = mapViewActive ? mapBtn : searchBtn;
+  const wrapRect = wrap.getBoundingClientRect();
+  const tRect = target.getBoundingClientRect();
+  const left = (tRect.left - wrapRect.left) + tRect.width / 2 - _accentPillW / 2;
+  const top = (tRect.top - wrapRect.top) + tRect.height / 2 - _accentPillH / 2;
+  if (!animate) pill.style.transition = 'none';
+  pill.style.left = left + 'px';
+  pill.style.top = top + 'px';
+  if (!animate) { pill.offsetHeight; pill.style.transition = ''; }
+}
+window.addEventListener('resize', () => syncAccentPill(false));
+window.addEventListener('load', () => syncAccentPill(false));
+if (document.fonts?.ready) document.fonts.ready.then(() => syncAccentPill(false));
+syncAccentPill(false); // сразу при выполнении скрипта — без width/height плашка просто невидима (0×0) до этого момента, флеша нет
 
 // Клик по "На карте": просто показать карту.
 function handleMapToggleClick() {
@@ -1286,35 +1353,84 @@ function resizeProjectsMapHeight() {
 }
 window.addEventListener('resize', resizeProjectsMapHeight);
 
+// 15.07.26 (5): цвет меток на карте — тот же красный/коралловый, что и точка
+// в логотипе Flox (var(--red) в CSS), а не фиолетовый акцент бренда — так
+// просил Илья по скрину Трендагента: точки на карте нейтрально-цветные,
+// фиолетовый остаётся только в интерфейсе поиска. Илья ориентировался на скрин,
+// поэтому оттенок оценён на глаз по существующей переменной --red, а не
+// сверен пиксель-в-пиксель — если не совпадёт, легко поправить одну строку.
+const MAP_PIN_COLOR = '#FF6B6B';
+// От какого зума показывать плашку с ценой у ВСЕХ проектов в области (а не
+// только у "случайных" — см. PROJECT_ALWAYS_PLAQUE ниже). Чем ближе
+// приближаешь карту, тем меньше точек и больше плашек с ценой — как в примере
+// Ильи из Трендагента.
+const PLAQUE_ZOOM = 13;
+// Доля проектов, которые показываются плашкой с ценой ДАЖЕ на дальнем зуме
+// (Илья: "изначально — количество этих плашек рандомное по карте"). Обычный
+// Math.random() тут не годится — метки перерисовываются при каждом
+// зуме/фильтре, и с настоящим рандомом плашки бы "мигали"/менялись каждый
+// раз. Вместо этого — стабильный псевдослучайный выбор по коду проекта:
+// для одного и того же проекта результат всегда один и тот же.
+const PROJECT_ALWAYS_PLAQUE_RATIO = 0.3;
+function projectAlwaysShowsPlaque(p) {
+  let h = 0;
+  for (let i = 0; i < p.id.length; i++) h = (h * 31 + p.id.charCodeAt(i)) >>> 0;
+  return (h % 100) / 100 < PROJECT_ALWAYS_PLAQUE_RATIO;
+}
+
 function initProjectsMap() {
   if (projectsMap) return; // уже создана — просто переиспользуем
   projectsMap = new ymaps.Map('projectsMap', {
     center: PHUKET_CENTER,
     zoom: 11,
-    controls: ['zoomControl', 'fullscreenControl'],
+    // 15.07.26 (5): по образцу Трендагента (скрин от Ильи) — компактные
+    // зум-кнопки внизу справа, разворот на весь экран вверху справа. Сами
+    // контролы штатные (Яндекс.Карты), просто уменьшенные и переставленные —
+    // Илья отдельно отметил, что визуально они там нейтральные и подходят.
+    controls: [],
   });
+  projectsMap.controls.add('zoomControl', { size: 'small', position: { right: 10, bottom: 10 } });
+  projectsMap.controls.add('fullscreenControl', { position: { right: 10, top: 10 } });
   projectsMap.events.add('click', e => {
     if (!placementMode) return;
     const coords = e.get('coords');
     savePlacementClick(coords);
   });
+  // Перерисовываем метки при смене зума — ближе к точке дают не точки, а
+  // плашки с ценой (см. renderProjectPins). fitBounds:false — иначе при каждом
+  // собственном зуме пользователя карта тут же сама переподгоняла бы масштаб
+  // обратно под все точки, и приблизить руками было бы невозможно.
+  projectsMap.events.add('boundschange', e => {
+    if (e.get('newZoom') === e.get('oldZoom')) return;
+    renderProjectPins(lastFilteredProjects, { fitBounds: false });
+  });
 }
 
-function renderProjectPins(projects) {
+function renderProjectPins(projects, opts) {
   if (!projectsMap) return;
+  const fitBounds = !opts || opts.fitBounds !== false;
   mapPlacemarks.forEach(pm => projectsMap.geoObjects.remove(pm));
   mapPlacemarks = [];
   const withCoords = projects.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
+  const zoom = projectsMap.getZoom ? projectsMap.getZoom() : 11;
+  const allPlaques = zoom >= PLAQUE_ZOOM;
   withCoords.forEach(p => {
+    const asPlaque = allPlaques || projectAlwaysShowsPlaque(p);
     const pm = new ymaps.Placemark([p.lat, p.lng], {
       hintContent: p.name,
       balloonContentHeader: p.name,
       balloonContentBody: `${p.districtRu || p.district || ''} · от ${fmtMln(p.priceFrom)}`,
       balloonContentFooter: `<a href="${p.url}" target="_blank" rel="noopener">Открыть проект →</a>`,
-    }, {
-      preset: 'islands#violetDotIconWithCaption',
-      iconCaption: fmtMln(p.priceFrom),
-      iconColor: p.color || '#5E17EB',
+    }, asPlaque ? {
+      // Плашка с округлённой минимальной ценой — как у Трендагента: чем ближе
+      // зум (или у "случайно" выбранных проектов — см. PROJECT_ALWAYS_PLAQUE_RATIO),
+      // тем больше таких плашек вместо простых точек.
+      preset: 'islands#redStretchyIcon',
+      iconColor: MAP_PIN_COLOR,
+      iconContent: fmtMln(p.priceFrom),
+    } : {
+      preset: 'islands#redCircleIcon',
+      iconColor: MAP_PIN_COLOR,
     });
     pm.events.add('click', () => { if (!placementMode) window.open(p.url, '_blank'); });
     projectsMap.geoObjects.add(pm);
@@ -1322,7 +1438,9 @@ function renderProjectPins(projects) {
   });
   // Если есть хоть одна метка — подгоняем масштаб карты под все точки разом,
   // чтобы не приходилось руками искать, где на карте вообще есть проекты.
-  if (withCoords.length) {
+  // Только при первом заходе на карту/смене фильтров (fitBounds), не при
+  // каждой перерисовке от собственного зума пользователя.
+  if (fitBounds && withCoords.length) {
     projectsMap.setBounds(projectsMap.geoObjects.getBounds(), { checkZoomRange: true, zoomMargin: 40 });
   }
 }
@@ -1385,14 +1503,28 @@ async function savePlacementClick(coords) {
   project.lng = lng;
   renderProjectPins(lastFilteredProjects);
   try {
+    // 15.07.26 (5): раньше был Prefer: 'return=minimal' — Supabase/PostgREST в
+    // этом режиме отвечает 200/204 "успех", даже если под RLS-политику для
+    // анонимного ключа не подошла ни одна строка и по факту НИЧЕГО не
+    // обновилось (это отдельный, гораздо более вероятный сценарий тихой
+    // потери точек, чем сетевая ошибка — сеть как раз давала бы alert и
+    // раньше). return=representation возвращает реально изменённые строки:
+    // пустой массив в ответе = запись не нашлась/не прошла RLS, и раньше это
+    // никак не показывалось агенту.
     const resp = await fetch(`${SUPABASE_URL}/projects?code=eq.${code}`, {
       method: 'PATCH',
-      headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=representation' },
       body: JSON.stringify({ lat, lng }),
     });
     if (!resp.ok) {
       console.error('projects PATCH (сохранение координаты) failed:', resp.status, await resp.text());
       alert(`Координата обновилась только на этой странице, но не сохранилась в базу (ошибка ${resp.status}). Обнови страницу и попробуй ещё раз — если не поможет, напиши Клоду, нужно проверить права записи в таблицу projects в Supabase.`);
+    } else {
+      const rows = await resp.json().catch(() => null);
+      if (!Array.isArray(rows) || rows.length === 0) {
+        console.error('projects PATCH (сохранение координаты): 0 строк обновлено — вероятно, нет RLS-политики UPDATE для анонимного ключа, или code не совпал ни с одной строкой:', code);
+        alert('Координата обновилась только на этой странице, но НЕ сохранилась в базу: сервер ответил "успех", но не изменил ни одной строки. Скорее всего, в Supabase не настроена политика (RLS), разрешающая запись в таблицу projects анонимным ключом. Нужно зайти в Supabase → SQL Editor и разрешить UPDATE, либо написать Клоду — он подскажет точный SQL-запрос.');
+      }
     }
   } catch (err) {
     console.error('projects PATCH (сохранение координаты) network error:', err);
@@ -1422,12 +1554,11 @@ async function loadProjectCoords() {
 
 // ── CHIPS ─────────────────────────────────
 function updateChips() {
-  const el = document.getElementById('activeFilters');
-  const chips = [];
+  let hasActive = false;
 
   if (filters.unitTypes && filters.unitTypes.length) {
+    hasActive = true;
     const label = filters.unitTypes.join(', ');
-    chips.push({label, key:'type'});
     document.getElementById('filterTypeLabel').textContent = label.length > 16 ? label.slice(0,16)+'…' : label;
     document.getElementById('filterTypeBtn').classList.add('act');
   } else {
@@ -1436,9 +1567,9 @@ function updateChips() {
   }
 
   if (filters.price) {
+    hasActive = true;
     const r = PRICE_RANGES.find(r => r.min === filters.price.min && r.max === filters.price.max);
     const label = r ? r.label : `${fmtMln(filters.price.min)}–${fmtMln(filters.price.max)}`;
-    chips.push({label, key:'price'});
     document.getElementById('filterPriceLabel').textContent = label;
     document.getElementById('filterPriceBtn').classList.add('act');
   } else {
@@ -1447,8 +1578,8 @@ function updateChips() {
   }
 
   if (filters.completion) {
+    hasActive = true;
     const label = filters.completion.q === 0 ? 'Сдан' : `до ${filters.completion.label}`;
-    chips.push({label, key:'completion'});
     document.getElementById('filterCompLabel').textContent = label;
     document.getElementById('filterCompBtn').classList.add('act');
   } else {
@@ -1456,20 +1587,11 @@ function updateChips() {
     document.getElementById('filterCompBtn').classList.remove('act');
   }
 
-  if (!chips.length) { el.innerHTML = ''; return; }
-  el.innerHTML = chips.map(c => `
-    <div class="filter-chip">${c.label}
-      <button class="chip-remove" onclick="removeChip('${c.key}')">✕</button>
-    </div>`).join('') +
-    `<button class="reset-all" onclick="resetAll()">Сбросить все</button>`;
-}
-
-function removeChip(key) {
-  if (key==='type') { filters.unitTypes=null; tmpUnitTypes=[]; }
-  if (key==='price') filters.price=null;
-  if (key==='completion') filters.completion=null;
-  updateChips();
-  autoSearch();
+  // Раньше здесь ещё рисовался ряд отдельных плашек-фильтров с крестиками —
+  // убрали (см. комментарий у .active-filters в CSS), оставили только кнопку
+  // сброса, и только когда реально есть что сбрасывать.
+  document.getElementById('activeFilters').innerHTML =
+    hasActive ? `<button class="reset-all" onclick="resetAll()">Сбросить все</button>` : '';
 }
 
 function resetAll() {
