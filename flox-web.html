@@ -1410,14 +1410,28 @@ function initProjectsMap() {
   projectsMap = new ymaps.Map('projectsMap', {
     center: PHUKET_CENTER,
     zoom: 11,
-    // 15.07.26 (5): по образцу Трендагента (скрин от Ильи) — компактные
+    // 15.07.26 (5)/(12): по образцу Трендагента (скрин от Ильи) — компактные
     // зум-кнопки внизу справа, разворот на весь экран вверху справа. Сами
     // контролы штатные (Яндекс.Карты), просто уменьшенные и переставленные —
     // Илья отдельно отметил, что визуально они там нейтральные и подходят.
+    // 15.07.26 (12): controls.add('zoomControl', {опции}) — короткая форма
+    // (имя строкой + опции вторым аргументом) — судя по всему не применяла
+    // опции на боевом сайте (кнопки остались дефолтного вида). Переключились
+    // на однозначно задокументированный способ — создать сам объект контрола
+    // с опциями внутри (new ymaps.control.ZoomControl({options:{...}})) —
+    // это не оставляет двусмысленности в том, как Яндекс их парсит.
     controls: [],
   });
-  projectsMap.controls.add('zoomControl', { size: 'small', position: { right: 10, bottom: 10 } });
-  projectsMap.controls.add('fullscreenControl', { position: { right: 10, top: 10 } });
+  try {
+    projectsMap.controls.add(new ymaps.control.ZoomControl({
+      options: { size: 'small', position: { right: 10, bottom: 10 } },
+    }));
+    projectsMap.controls.add(new ymaps.control.FullscreenControl({
+      options: { position: { right: 10, top: 10 } },
+    }));
+  } catch (e) {
+    console.error('Не удалось настроить контролы карты (zoom/fullscreen), оставляем карту без них:', e);
+  }
   projectsMap.events.add('click', e => {
     if (!placementMode) return;
     const coords = e.get('coords');
@@ -1496,9 +1510,17 @@ function renderProjectPins(projects, opts) {
       // тем больше таких плашек вместо простых точек.
       iconLayout: getPlaqueLayout(),
       iconShape: { type: 'Rectangle', coordinates: [[-45, -14], [45, 14]] },
+      // 15.07.26 (12): если рядом два объекта — один с плашкой, другой ещё
+      // точкой — точка перекрывала плашку сверху (позже добавленная в
+      // geoObjects метка рисуется поверх более ранней, а порядок в массиве
+      // проектов от того, кто ближе к плашке, никак не зависит). Плашка
+      // должна быть заметнее и читаемой — держим её z-index заведомо выше,
+      // чем у любой точки, а не полагаемся на порядок добавления.
+      zIndex: 500, zIndexHover: 520,
     } : {
       iconLayout: getDotLayout(),
       iconShape: { type: 'Circle', coordinates: [0, 0], radius: DOT_SIZE / 2 },
+      zIndex: 100, zIndexHover: 120,
     });
     pm.events.add('click', () => { if (!placementMode) window.open(p.url, '_blank'); });
     projectsMap.geoObjects.add(pm);
