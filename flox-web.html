@@ -221,27 +221,29 @@ input,button{font-family:inherit;}
 .map-view-wrap .map-placement-bar{margin-left:20px;margin-right:20px;}
 #projectsMap{width:100%;min-height:320px;overflow:hidden;border-top:0.5px solid var(--line-2);position:relative;}
 
-/* 15.07.26 (15)/(16), по просьбе Ильи (скрин конкурента, Трендагент): штатные
-   кнопки Яндекс.Карт визуально не похожи на кнопки конкурента — заменяем
-   своими, см. addCustomMapControls(). Добавляются как ДЕТИ #projectsMap
-   (а не соседний элемент) специально — это тот самый узел, на который
-   projectsMap.container.enterFullscreen() вызывает браузерный Fullscreen API;
-   если кнопки лежат вне этого узла, они пропадут с экрана в момент
-   полноэкранного режима (Fullscreen API прячет всё, что не внутри
-   зафуллскриненного элемента) — поэтому и +/-, и кнопка выхода из
-   полноэкранного режима остаются на месте и в фуллскрине тоже.
-   position:relative у #projectsMap выше — чтобы position:absolute кнопок
-   ниже считался от него, а не от body.
-   (16): по просьбе Ильи — без тени и без серой обводки, крупнее и более
-   скруглённые; +/- перенесены на середину правого края экрана. Тут та же
-   ловушка, что уже один раз ловили с zoom-контролом (см. историю правок
-   (14)): #projectsMap специально в 2 РАЗА выше видимой без скролла области
-   (см. resizeProjectsMapHeight), поэтому "середина экрана" — это НЕ
-   top:50% от #projectsMap (это будет середина всего 2×-блока, то есть уже
-   ниже видимой области), а top:25% (середина именно верхней, видимой без
-   скролла, половины блока). Кнопка выхода из фуллскрина — та же кнопка
-   "развернуть" сверху справа (top:10), меняет иконку по фактическому
-   состоянию (см. addCustomMapControls). */
+/* 15.07.26 (15)/(16)/(17), по просьбе Ильи (скрин конкурента, Трендагент):
+   штатные кнопки Яндекс.Карт визуально не похожи на кнопки конкурента —
+   заменяем своими, см. addCustomMapControls().
+   (17): предыдущая версия (16) была на position:absolute внутри #projectsMap
+   и на проценте от его высоты — Илья проверил вживую: кнопки +/- оказались
+   не по центру экрана, а ВСЕ кнопки (включая fullscreen) пропадали в
+   полноэкранном режиме. Причина обеих проблем: (а) #projectsMap специально
+   в 2 раза выше видимой без скролла области (см. resizeProjectsMapHeight) —
+   процент от его высоты не совпадает с серединой того, что реально видно
+   без прокрутки; (б) enterFullscreen() у Яндекс.Карт, судя по всему,
+   разворачивает не сам #projectsMap, а какой-то его внутренний служебный
+   узел — кнопки как ДЕТИ #projectsMap оставались СНАРУЖИ настоящего
+   зафуллскриненного элемента и поэтому не рендерились браузером вообще
+   (это жёсткое правило Fullscreen API, не лечится ни CSS, ни z-index).
+   Новое решение — надёжнее и без гаданий про внутренний DOM Яндекса:
+   1) position:fixed — координаты всегда от реального окна браузера,
+      независимо от высоты #projectsMap и от прокрутки страницы;
+   2) в addCustomMapControls() слушаем НАСТОЯЩЕЕ браузерное событие
+      fullscreenchange (document.fullscreenElement) и физически переносим
+      (appendChild) обе кнопки ВНУТРЬ того элемента, который браузер реально
+      считает полноэкранным, а при выходе — обратно в #projectsMap. Так они
+      гарантированно видны в фуллскрине вне зависимости от того, что именно
+      Яндекс разворачивает внутри себя. */
 .map-ctrl-btn{
   width:44px;height:44px;border-radius:16px;background:#fff;color:#16161f;
   display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -249,17 +251,11 @@ input,button{font-family:inherit;}
 }
 .map-ctrl-btn:hover{background:#f2f2f5;}
 .map-ctrl-btn svg{width:20px;height:20px;}
-.map-fullscreen-btn{position:absolute;top:10px;right:10px;z-index:1000;}
+.map-fullscreen-btn{position:fixed;top:10px;right:10px;z-index:2147483000;}
 .map-zoom-group{
-  position:absolute;top:25%;transform:translateY(-50%);right:10px;z-index:1000;
+  position:fixed;top:50%;transform:translateY(-50%);right:10px;z-index:2147483000;
   display:flex;flex-direction:column;gap:8px;
 }
-/* В настоящем полноэкранном режиме #projectsMap растягивается ровно на
-   высоту экрана (2×-высота — это только обычное, "в потоке страницы",
-   состояние, см. комментарий выше) — середина экрана там уже top:50%, а не
-   top:25%. Класс переключается в addCustomMapControls() по событиям
-   fullscreenenter/fullscreenexit. */
-#projectsMap.map-is-fullscreen .map-zoom-group{top:50%;}
 
 /* Панель расстановки точек — видна только внутри floxweb.html (агентский
    инструмент), над картой. Клиенты этот файл не открывают, поэтому отдельный
@@ -1476,14 +1472,11 @@ function initProjectsMap() {
   });
 }
 
-// 15.07.26 (15): свои кнопки зума (+/-) и разворота на весь экран — по
-// просьбе Ильи, точь-в-точь под стиль конкурента (Трендагент, скрин): белые
-// скруглённые кнопки с тенью, а не штатный полупрозрачный/серый вид
-// Яндекс.Карт (у Яндекса такой внешний вид кнопок штатно не настраивается
-// через опции — только полной заменой на свою вёрстку). Кнопки просто
-// вызывают штатные методы Яндекс.Карт (setZoom / enterFullscreen /
-// exitFullscreen) — сама механика зума и полноэкранного режима осталась
-// родной, поменялась только "обёртка" вокруг неё.
+// 15.07.26 (15)/(16)/(17): свои кнопки зума (+/-) и разворота на весь экран
+// вместо штатных Яндекс.Карт (см. CSS у .map-ctrl-btn — стиль и позиции,
+// история правок там же). Кнопки просто вызывают штатные методы Яндекс.Карт
+// (setZoom / enterFullscreen / exitFullscreen) — сама механика зума и
+// полноэкранного режима осталась родной, поменялась только "обёртка".
 function addCustomMapControls() {
   const mapEl = document.getElementById('projectsMap');
   if (!mapEl || document.getElementById('mapFullscreenBtn')) return; // уже добавлены (карта переиспользуется, см. initProjectsMap)
@@ -1534,25 +1527,30 @@ function addCustomMapControls() {
   zoomGroup.appendChild(minusBtn);
   mapEl.appendChild(zoomGroup);
 
-  // Иконка разворота/сворачивания меняется по фактическому состоянию
-  // fullscreen, а не только по клику на саму кнопку — из полноэкранного
-  // режима можно выйти клавишей Esc, минуя кнопку. Класс map-is-fullscreen —
-  // см. CSS у .map-zoom-group: в полноэкранном режиме #projectsMap высотой
-  // ровно в экран, а не в 2 раза больше, середина экрана считается иначе.
-  try {
-    projectsMap.container.events.add('fullscreenenter', () => {
-      fsBtn.innerHTML = ICON_COLLAPSE;
-      fsBtn.title = 'Свернуть';
-      mapEl.classList.add('map-is-fullscreen');
-    });
-    projectsMap.container.events.add('fullscreenexit', () => {
-      fsBtn.innerHTML = ICON_EXPAND;
-      fsBtn.title = 'Развернуть на весь экран';
-      mapEl.classList.remove('map-is-fullscreen');
-    });
-  } catch (err) {
-    console.error('[flox] не удалось подписаться на события fullscreen карты:', err);
+  // 15.07.26 (17): раньше иконка/видимость кнопок менялись по СОБЫТИЯМ
+  // ЯНДЕКСА (container.events 'fullscreenenter'/'fullscreenexit') — Илья
+  // проверил вживую: кнопки пропадали в фуллскрине целиком. Похоже, Яндекс
+  // разворачивает не #projectsMap, а какой-то свой внутренний узел, а наши
+  // кнопки (дети #projectsMap) оставались снаружи настоящего зафуллскриненного
+  // элемента и поэтому не рендерились браузером вообще. Теперь слушаем
+  // НАСТОЯЩЕЕ браузерное событие document.fullscreenchange напрямую — оно не
+  // зависит от того, что именно Яндекс разворачивает внутри себя — и
+  // физически переносим (appendChild) обе кнопки внутрь того элемента,
+  // который document.fullscreenElement считает полноэкранным. При выходе —
+  // переносим обратно в #projectsMap. position:fixed у самих кнопок (см. CSS)
+  // не зависит от того, куда именно их перенесли — координаты всегда от
+  // окна браузера.
+  function onFullscreenChange() {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement || null;
+    const isFs = !!fsEl;
+    fsBtn.innerHTML = isFs ? ICON_COLLAPSE : ICON_EXPAND;
+    fsBtn.title = isFs ? 'Свернуть' : 'Развернуть на весь экран';
+    const target = isFs ? fsEl : mapEl;
+    target.appendChild(fsBtn);
+    target.appendChild(zoomGroup);
   }
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 }
 
 // 15.07.26 (11): раньше точки и плашки рисовались штатными пресетами Яндекса
