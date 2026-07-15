@@ -142,9 +142,6 @@ input,button{font-family:inherit;}
   transition:left .38s cubic-bezier(.34,1.56,.64,1), top .38s cubic-bezier(.34,1.56,.64,1);
   z-index:0;pointer-events:none;
 }
-/* Ширина считается и ставится в JS (syncAccentPill) — гарантирует, что широкая
-   плашка, когда паркуется по центру узкой лупы, не наедет на "Все фильтры". */
-.accent-gutter{flex-shrink:0;width:0;height:1px;}
 
 /* Active chips */
 /* 15.07.26 (4): раньше тут был ещё ряд отдельных плашек-фильтров с крестиками
@@ -203,7 +200,9 @@ input,button{font-family:inherit;}
   border:none;color:var(--muted);background:none;position:relative;z-index:1;
   cursor:pointer;white-space:nowrap;transition:background .15s,color .2s ease .05s;
 }
-.map-toggle-btn:hover{background:var(--surface-2);color:var(--text);}
+/* 15.07.26 (9): серую подсветку при наведении убрали по просьбе Ильи —
+   меньше визуального шума рядом со скользящей плашкой. */
+.map-toggle-btn:hover{color:var(--text);}
 .map-toggle-btn svg{width:13px;height:13px;flex-shrink:0;}
 .map-toggle-btn.accent{color:#fff;}
 
@@ -587,21 +586,14 @@ input,button{font-family:inherit;}
         Все фильтры
       </button>
       <div class="filter-sep"></div>
-      <!-- 15.07.26 (8): плашка фиксированного размера (= ширина "На карте")
-           паркуется по центру лупы тоже — а лупа сама намного уже. Раньше это
-           давало наезд плашки на "Все фильтры" в реальной вёрстке (тесно
-           упакованный ряд, свободного места слева от лупы почти нет). Гарантируем
-           минимальный зазор отдельным элементом-распоркой, ширина которого
-           считается в JS от реальной разницы размеров (см. syncAccentPill) —
-           не угаданным числом, чтобы не зависеть от того, как именно шрифт
-           отрендерился в проде. -->
-      <div class="accent-gutter" id="accentGutter"></div>
       <!-- Фиолетовая "таблетка"-подложка одного фиксированного размера,
            которая физически едет между лупой и "На карте" — см. .accent-pill
            в CSS и syncAccentPill() в JS. Сама она под кнопками (z-index:0),
            кнопки поверх неё (z-index:1) и просто красятся в белый/приглушённый
-           цвет в зависимости от того, под кем сейчас плашка. Выбранный вариант
-           анимации — см. map_toggle_animation_variants.html. -->
+           цвет в зависимости от того, под кем сейчас плашка. Место вокруг лупы
+           (она уже "На карте") резервируется через её собственные margin —
+           см. syncAccentPill(). Выбранный вариант анимации — см.
+           map_toggle_animation_variants.html. -->
       <div class="accent-pill" id="accentPill"></div>
       <button class="map-toggle-btn" id="mapToggleBtn" onclick="handleMapToggleClick()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
@@ -1291,49 +1283,52 @@ function setResultsView(view) {
   }
 }
 
-// 15.07.26 (8): позиционирует .accent-pill — фиолетовую плашку-подложку под
-// лупой или "На карте". ПРАВКА после бага на боевом сайте: раньше ширину/
-// высоту брали один раз и кэшировали навсегда — если самый первый замер
-// (сразу при выполнении скрипта, ДО того как подгрузился веб-шрифт Inter)
-// оказывался неточным, плашка застревала в неправильном размере насовсем,
-// исправлялась только позиция, а не размер. Теперь размер тоже пересчитываем
-// каждый раз с реального .getBoundingClientRect() кнопки "На карте" — если
-// шрифт подгрузится и метрики текста чуть изменятся, следующий вызов (по
-// load/resize/fonts.ready или просто по клику) сам поправит размер, а не
-// останется висеть на устаревшем значении.
-// Второе: плашка всегда одного (более широкого, по "На карте") размера, а
-// паркуется в том числе по центру узкой круглой лупы — в тесно упакованном
-// боевом поисковике (в отличие от мокапа с большим запасом по бокам) справа
-// от "Все фильтры" перед лупой было слишком мало места, и плашка наезжала на
-// соседнюю кнопку. #accentGutter — распорка, которая гарантирует минимальный
-// зазор именно под текущую разницу размеров, а не под угаданное число.
+// 15.07.26 (9): позиционирует .accent-pill — фиолетовую плашку-подложку под
+// лупой или "На карте". История правок этой функции (для памяти, чтобы не
+// наступить на те же грабли третий раз):
+//  1) сначала центрировали плашку строго по центру цели без всякого запаса —
+//     широкая плашка (по ширине "На карте"), паркуясь на узкой круглой лупе,
+//     утыкалась ЗА пределы .search-box-wrap целиком (реальный баг на сайте).
+//  2) добавили только ЛЕВЫЙ гутter перед "На карте" — это спасало от наезда
+//     на "Все фильтры", но не от вылезания за правый край контейнера (лупа
+//     стоит у самого края, гутter слева ей не помогает).
+//  3) попробовали жёстко зажать (clamp) left в границах контейнера — перестало
+//     вылезать за край, НО ценой того, что плашку сдвигало влево, и она вместо
+//     контейнера наезжала на саму кнопку "На карте" (тот же "серый текст на
+//     фиолетовом фоне" баг, просто с другой стороны).
+// Правильное решение — не подвинуть плашку так, чтобы она куда-то влезла, а
+// физически ОСВОБОДИТЬ ей место по обе стороны от лупы (margin у самой лупы),
+// раз уж она заведомо шире лупы. Тогда центрирование по лупе больше никуда не
+// наезжает — ни на "На карте" слева, ни за край контейнера справа.
 function syncAccentPill(animate) {
   const wrap = document.getElementById('searchWrap');
   const pill = document.getElementById('accentPill');
-  const gutter = document.getElementById('accentGutter');
   const mapBtn = document.getElementById('mapToggleBtn');
   const searchBtn = document.getElementById('searchBtn');
   if (!wrap || !pill || !mapBtn || !searchBtn) return;
 
+  // Ширину/высоту меряем каждый раз заново (не кэшируем навсегда) — если
+  // веб-шрифт подгрузится позже и метрики текста чуть изменятся, следующий
+  // вызов (load/resize/fonts.ready или просто клик) сам поправит размер.
   const mapRect = mapBtn.getBoundingClientRect();
   if (!mapRect.width) return; // ещё не отрисовано (скрытая вкладка и т.п.) — попробуем в следующий раз
-
   const pillW = mapRect.width, pillH = mapRect.height;
   pill.style.width = pillW + 'px';
   pill.style.height = pillH + 'px';
 
-  // Гарантируем зазор слева от лупы: половина разницы в ширине между плашкой
-  // и лупой (плюс небольшой запас), иначе 0, если плашка и так уже влезает.
-  if (gutter) {
-    const searchBtnW = searchBtn.getBoundingClientRect().width || pillH;
-    gutter.style.width = Math.max(0, (pillW - searchBtnW) / 2 + 6) + 'px';
-  }
+  // Резервируем реальное место вокруг лупы — с обеих сторон одинаково, чтобы
+  // плашка при парковке на ней была честно по центру, а не прижата к краю.
+  const searchBtnW0 = searchBtn.getBoundingClientRect().width || pillH;
+  const clearance = Math.max(0, (pillW - searchBtnW0) / 2 + 6);
+  searchBtn.style.marginLeft = clearance + 'px';
+  searchBtn.style.marginRight = clearance + 'px';
 
   const target = mapViewActive ? mapBtn : searchBtn;
   const wrapRect = wrap.getBoundingClientRect();
-  const tRect = target.getBoundingClientRect(); // после того, как ширина распорки уже применена выше
+  const tRect = target.getBoundingClientRect(); // после того, как margin у лупы уже применён выше
   const left = (tRect.left - wrapRect.left) + tRect.width / 2 - pillW / 2;
   const top = (tRect.top - wrapRect.top) + tRect.height / 2 - pillH / 2;
+
   if (!animate) pill.style.transition = 'none';
   pill.style.left = left + 'px';
   pill.style.top = top + 'px';
