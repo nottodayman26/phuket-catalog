@@ -977,6 +977,22 @@ function setPage(name) {
   // повторно жмём по уже открытой) — сбрасываем страницу поиска к чистому
   // виду, см. resetSearchPageToClean.
   const enteringSearch = name === 'search' && !document.getElementById('page-search').classList.contains('act');
+  // 16.07.26, по просьбе Ильи (найден баг): уходя С "Поиска" на Инструменты/
+  // Клиенты, если в этот момент была открыта карта — кнопки карты (+/-,
+  // разворот) не прятались. Они специально лежат прямо в <body> (см.
+  // addCustomMapControls), а не внутри #page-search, поэтому обычное
+  // переключение вкладок (просто скрыть #page-search через CSS) их вообще не
+  // задевало — они продолжали висеть поверх Инструменты/Клиенты. Раньше это
+  // пряталось только при ВОЗВРАТЕ на "Поиск" (resetSearchPageToClean), теперь
+  // прячем сразу при уходе.
+  const leavingSearchWithMap = name !== 'search'
+    && document.getElementById('page-search').classList.contains('act')
+    && mapViewActive;
+  if (leavingSearchWithMap) {
+    mapViewActive = false;
+    mapCtrlRefs?.exitFakeFullscreen?.();
+    mapCtrlRefs?.setControlsVisible?.(false);
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('act'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('act'));
   document.getElementById('page-' + name).classList.add('act');
@@ -1001,7 +1017,20 @@ function setPage(name) {
 // искали явно). Теперь вместо очистки в пустоту сразу показываем каталог с
 // текущими (сохранёнными, см. коммент выше) фильтрами — doSearch() ниже; он
 // сам ставит _searchDone=true и рисует карточки/плашки.
+// 16.07.26, по просьбе Ильи (найден баг): один клик "Поиск" в topbar реально
+// вызывал resetSearchPageToClean() 2-3 РАЗА подряд — topbar.js в _onSearch()
+// сам вызывает и setPage('search') (который тоже вызывает эту функцию,
+// раз мы реально входим на "Поиск"), И следом ЕЩЁ РАЗ явно; плюс
+// MutationObserver ниже (watchSearchPageActivation) видит появление класса
+// "act" у #page-search и вызывает её в третий раз. Раньше это было безобидно
+// (просто лишний раз чистили пустоту), но теперь функция ещё и перерисовывает
+// карточки (doSearch, с анимацией появления) — 2-3 таких перерисовки подряд
+// дёргали список/карту. Простой сторож: пока идёт один "проход", повторные
+// вызовы в ту же секунду игнорируем.
+let _resettingSearchPage = false;
 function resetSearchPageToClean() {
+  if (_resettingSearchPage) return;
+  _resettingSearchPage = true;
   document.getElementById('searchResults').style.display = '';
   document.getElementById('mapViewWrap').classList.remove('act');
   mapViewActive = false;
@@ -1010,6 +1039,7 @@ function resetSearchPageToClean() {
   document.getElementById('searchBtn').classList.remove('accent-off');
   document.getElementById('mapToggleBtn').classList.remove('accent');
   doSearch();
+  setTimeout(() => { _resettingSearchPage = false; }, 50);
 }
 
 // 15.07.26 (6): нашли реальную причину, почему чистка страницы поиска не
@@ -1154,7 +1184,10 @@ function syncMapWithFilters() {
   const base = val ? PROJECTS.filter(p => matchProject(val, p)) : PROJECTS;
   const filtered = applyFilters(base);
   lastFilteredProjects = filtered;
-  if (mapViewActive) renderProjectPins(filtered);
+  // 16.07.26, по просьбе Ильи: применение фильтра не должно двигать/зумить
+  // карту саму по себе — только добавлять/убирать точки. Карту двигает
+  // только сам пользователь (см. fitBounds:false).
+  if (mapViewActive) renderProjectPins(filtered, { fitBounds: false });
 }
 
 // ── AUTOCOMPLETE ──────────────────────────
@@ -1376,7 +1409,8 @@ function pcStopSlide(cardId) {
 
 function showCards(projects, label) {
   lastFilteredProjects = projects; // см. renderProjectPins — карта показывает те же проекты, что и список
-  if (mapViewActive) renderProjectPins(projects);
+  // 16.07.26, по просьбе Ильи: поиск/фильтр не должен двигать/зумить карту.
+  if (mapViewActive) renderProjectPins(projects, { fitBounds: false });
   const el = document.getElementById('searchResults');
   if (!projects.length) {
     el.innerHTML = `
@@ -1398,7 +1432,8 @@ function showCards(projects, label) {
 
 function showDevGroup(dev, projects) {
   lastFilteredProjects = projects;
-  if (mapViewActive) renderProjectPins(projects);
+  // 16.07.26, по просьбе Ильи: поиск/фильтр не должен двигать/зумить карту.
+  if (mapViewActive) renderProjectPins(projects, { fitBounds: false });
   const el = document.getElementById('searchResults');
   if (!projects.length) {
     el.innerHTML = `<div class="no-results"><div class="no-results-icon">🔍</div><div>Нет проектов этого застройщика</div></div>`;
@@ -1835,7 +1870,7 @@ function addCustomMapControls() {
 // разом, отказавшись от пресетов: рисуем точки/плашки своей простой HTML-
 // вёрсткой (iconLayout) — она не ждёт никакой отдельной загрузки, рендерится
 // сразу и даёт полный контроль над размером/цветом (никакого белого).
-const DOT_SIZE = 10; // «значительно меньше» — по просьбе Ильи (было ~30px у штатного пресета)
+const DOT_SIZE = 6; // 16.07.26, по просьбе Ильи: и точка на карте, и точка внутри плашки — 6px
 let _dotLayout = null, _plaqueLayout = null;
 function getDotLayout() {
   if (!_dotLayout) {
@@ -2003,14 +2038,14 @@ function renderProjectPins(projects, opts) {
 
   withCoords.forEach(p => {
     const asPlaque = p._wantsPlaque;
+    // 16.07.26, по просьбе Ильи: убрали всплывающее окно (balloon) целиком —
+    // раньше клик по точке/плашке одновременно и открывал проект в новой
+    // вкладке (см. click ниже), И показывал штатный балун Яндекс.Карт поверх
+    // карты, который надо было закрывать крестиком. Убрали сам контент
+    // (balloonContentHeader/Body/Footer) и явно отключили балун опцией
+    // hasBalloon:false, чтобы клик делал только одно действие — открывал
+    // проект (уже с сохранёнными фильтрами, см. projectUrlWithFilters).
     const pm = new ymaps.Placemark([p.lat, p.lng], {
-      // 16.07.26, по просьбе Ильи: убрали hintContent — это была всплывающая
-      // подсказка с названием проекта при наведении. Клик по-прежнему
-      // открывает balloon с деталями — это не всплывающая подсказка при
-      // наведении, а отдельное окно по клику, его не трогаем.
-      balloonContentHeader: p.name,
-      balloonContentBody: `${p.districtRu || p.district || ''} · от ${fmtMln(p.priceFrom)}`,
-      balloonContentFooter: `<a href="${projectUrlWithFilters(p)}" target="_blank" rel="noopener">Открыть проект →</a>`,
       iconContent: asPlaque ? fmtMln(getPlaqueDisplayPrice(p)) : undefined,
     }, asPlaque ? {
       // Плашка с округлённой минимальной ценой — как у Трендагента: у самого
@@ -2023,11 +2058,11 @@ function renderProjectPins(projects, opts) {
       // проектов от того, кто ближе к плашке, никак не зависит). Плашка
       // должна быть заметнее и читаемой — держим её z-index заведомо выше,
       // чем у любой точки, а не полагаемся на порядок добавления.
-      zIndex: 500, zIndexHover: 520,
+      zIndex: 500, zIndexHover: 520, hasBalloon: false,
     } : {
       iconLayout: getDotLayout(),
       iconShape: { type: 'Circle', coordinates: [0, 0], radius: DOT_SIZE / 2 },
-      zIndex: 100, zIndexHover: 120,
+      zIndex: 100, zIndexHover: 120, hasBalloon: false,
     });
     pm.events.add('click', () => { if (!placementMode) window.open(projectUrlWithFilters(p), '_blank'); });
     projectsMap.geoObjects.add(pm);
@@ -2890,14 +2925,19 @@ initAgent().then(() => {
   showAuthIfNeeded();
   const p = localStorage.getItem('flox-page');
   if (p) { localStorage.removeItem('flox-page'); setPage(p); }
-  // 16.07.26, по просьбе Ильи: тот же баг, что чинили в resetSearchPageToClean
-  // (см. коммент там), но для случая полной перезагрузки страницы — переход
-  // на "Поиск" с юнита/проекта (topbar.js делает обычный location.href на
-  // flox-web.html, это не SPA-переключение вкладки, а чистый повторный запуск
-  // всего скрипта). Если в итоге показана именно страница поиска (а не
-  // "Инструменты"/"Клиенты" из localStorage выше) — сразу показываем каталог,
-  // а не пустую заглушку до первого явного поиска.
-  if (document.getElementById('page-search')?.classList.contains('act')) doSearch();
+  // 16.07.26, по просьбе Ильи: это должно срабатывать ТОЛЬКО при переходе на
+  // "Поиск" с юнита/проекта (topbar.js там делает обычный location.href на
+  // flox-web.html — не SPA-переключение вкладки, а чистый повторный запуск
+  // всего скрипта) — а НЕ при самом первом холодном заходе на flox-web.html
+  // вообще (по нему каталог по-прежнему НЕ должен появляться сам, только
+  // после явного "Найти" — так было и раньше, это не трогаем). Раньше тут не
+  // было этой проверки, и каталог ошибочно появлялся при любом заходе на
+  // страницу, включая самый первый. Отличаем эти два случая по
+  // document.referrer — обычный первый заход (набрали URL, перешли по
+  // ссылке из бота и т.п.) никогда не будет ссылаться на project.html/
+  // unit.html этого же сайта, а переход с topbar — будет.
+  const cameFromProjectOrUnit = /\/(project|unit)\.html(\?|$)/.test(document.referrer);
+  if (cameFromProjectOrUnit && document.getElementById('page-search')?.classList.contains('act')) doSearch();
 });
 loadUnitCount();
 loadSoldTicker();
