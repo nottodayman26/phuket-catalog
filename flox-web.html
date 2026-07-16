@@ -265,6 +265,20 @@ input,button{font-family:inherit;}
   position:fixed;top:calc(var(--map-ctrl-top, 72px) + 60px);right:16px;z-index:2147483000;
   display:flex;flex-direction:column;gap:8px;
 }
+/* 16.07.26, по просьбе Ильи: кнопки всё ещё "катались" вместе со скроллом,
+   хотя стоит position:fixed — значит что-то в разметке страницы (скорее
+   всего в topbar.js, который сюда не присылали) ломает position:fixed у
+   вложенных элементов: это происходит, если у какого-то родителя выше по
+   дереву задан transform/filter/perspective/will-change — тогда fixed
+   считает координаты не от окна браузера, а от этого родителя, и если сам
+   родитель обычный (скроллится) — "прибитый" по идее элемент едет вместе с
+   ним. Раньше кнопки лежали внутри карты/поисковой страницы — теперь их
+   создаём и кладём ПРЯМО В <body> (см. addCustomMapControls) в обход всей
+   остальной разметки, чтобы точно не попасть под такого "сломанного"
+   родителя. Раз кнопки больше не внутри #mapViewWrap, скрывать/показывать
+   их (когда вкладка "На карте" открыта/закрыта) приходится отдельным
+   классом, а не автоматически через display:none у обёртки. */
+.map-ctrl-hidden{display:none !important;}
 /* 16.07.26, по просьбе Ильи: кнопка разворота на весь экран у него на
    практике либо не разворачивала карту по-настоящему, либо разворачивала
    как-то не так (иконка не менялась, кнопка не в углу) — самое вероятное
@@ -702,11 +716,9 @@ body.map-fake-fullscreen-active{overflow:hidden;}
         </div>
       </div>
       <div id="projectsMap"></div>
-      <!-- 16.07.26: просто "домик" для кнопок карты, чтобы они прятались
-           вместе с картой (когда вкладка "На карте" закрыта). Сама позиция
-           кнопок фиксированная и от этого дива не зависит — см.
-           addCustomMapControls() в скрипте и .map-fullscreen-btn/.map-zoom-group в CSS. -->
-      <div id="mapCtrlLayer"></div>
+      <!-- 16.07.26: кнопки карты (+/-, разворот) больше не здесь — создаются
+           и кладутся прямо в <body> (см. addCustomMapControls() в скрипте и
+           большой комментарий у .map-ctrl-hidden в CSS, почему). -->
     </div>
   </div>
 </div>
@@ -953,6 +965,7 @@ function resetSearchPageToClean() {
   document.getElementById('mapViewWrap').classList.remove('act');
   mapViewActive = false;
   mapCtrlRefs?.exitFakeFullscreen?.(); // 16.07.26: не уходить со страницы в развёрнутом виде карты (см. addCustomMapControls)
+  mapCtrlRefs?.setControlsVisible?.(false); // 16.07.26: кнопки теперь в body, не прячутся сами вместе с #mapViewWrap
   document.getElementById('searchBtn').classList.remove('accent-off');
   document.getElementById('mapToggleBtn').classList.remove('accent');
   _searchDone = false;
@@ -1357,6 +1370,7 @@ function setResultsView(view) {
   const isMap = view === 'map';
   mapViewActive = isMap;
   if (!isMap) mapCtrlRefs?.exitFakeFullscreen?.(); // 16.07.26: ушли со списком — выходим из развёрнутой карты, если была открыта
+  mapCtrlRefs?.setControlsVisible?.(isMap); // 16.07.26: кнопки в body — показываем/прячем вручную вместе со вкладкой "На карте"
   document.getElementById('searchBtn').classList.toggle('accent-off', isMap);
   document.getElementById('mapToggleBtn').classList.toggle('accent', isMap);
   syncAccentPill(true);
@@ -1586,8 +1600,7 @@ function initProjectsMap() {
 function addCustomMapControls() {
   const mapEl = document.getElementById('projectsMap');
   const wrapEl = document.getElementById('mapViewWrap');
-  const ctrlLayer = document.getElementById('mapCtrlLayer');
-  if (!mapEl || !wrapEl || !ctrlLayer || document.getElementById('mapFullscreenBtn')) return; // уже добавлены (карта переиспользуется, см. initProjectsMap)
+  if (!mapEl || !wrapEl || document.getElementById('mapFullscreenBtn')) return; // уже добавлены (карта переиспользуется, см. initProjectsMap)
 
   // 16.07.26, по просьбе Ильи: раньше тут были просто угловые скобки (без
   // стрелок) — попросил заменить на настоящие стрелки: до входа в fullscreen
@@ -1630,7 +1643,7 @@ function addCustomMapControls() {
     e.stopPropagation();
     setFakeFullscreen(!isFakeFullscreen);
   });
-  ctrlLayer.appendChild(fsBtn); // кнопки лежат в #mapCtrlLayer просто чтобы прятаться вместе с картой (когда вкладка "На карте" закрыта) — сама позиция кнопок от этого не зависит, она фиксированная (см. CSS)
+  document.body.appendChild(fsBtn); // 16.07.26: прямо в body, в обход всей остальной разметки — см. большой комментарий у .map-ctrl-hidden в CSS
   // Esc — привычный способ выйти из fullscreen на десктопе; на телефоне
   // клавиатуры нет, но и не мешает — просто не сработает.
   document.addEventListener('keydown', e => {
@@ -1657,14 +1670,24 @@ function addCustomMapControls() {
   });
   zoomGroup.appendChild(plusBtn);
   zoomGroup.appendChild(minusBtn);
-  ctrlLayer.appendChild(zoomGroup);
+  document.body.appendChild(zoomGroup); // 16.07.26: тоже прямо в body, см. комментарий у fsBtn выше
+
+  // 16.07.26: кнопки больше не внутри #mapViewWrap, значит и не прячутся
+  // сами вместе с ним через display:none — прячем/показываем их вручную
+  // отдельным классом (.map-ctrl-hidden в CSS) синхронно с тем, открыта ли
+  // сейчас вкладка "На карте" (см. вызовы setControlsVisible в setResultsView).
+  function setControlsVisible(on) {
+    fsBtn.classList.toggle('map-ctrl-hidden', !on);
+    zoomGroup.classList.toggle('map-ctrl-hidden', !on);
+  }
 
   // exitFakeFullscreen — чтобы можно было принудительно выйти из нашего
   // CSS-fullscreen извне (см. setResultsView/resetSearchPageToClean) —
   // иначе если уйти со страницы карты прямо в развёрнутом виде, состояние
   // "зависнет": страница так и останется с заблокированной прокруткой
-  // (body.map-fake-fullscreen-active).
-  mapCtrlRefs = { exitFakeFullscreen: () => setFakeFullscreen(false) };
+  // (body.map-fake-fullscreen-active). setControlsVisible — см. комментарий выше.
+  mapCtrlRefs = { exitFakeFullscreen: () => setFakeFullscreen(false), setControlsVisible };
+  setControlsVisible(true); // создаются уже в момент открытия карты — сразу показываем
 }
 
 // 15.07.26 (11): раньше точки и плашки рисовались штатными пресетами Яндекса
