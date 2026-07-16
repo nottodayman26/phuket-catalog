@@ -962,6 +962,44 @@ let filters = { propType: 'condo', unitTypes: null, price: null, completion: nul
 let tmpType = 'all';
 let tmpCompletion = null;
 
+// 16.07.26, по просьбе Ильи (переделываем логику, а не патчи — сам так
+// попросил): текущие фильтры + текст поиска сохраняем в sessionStorage при
+// каждом реальном изменении (см. вызовы persistSearchState() ниже) — это
+// переживает ПОЛНУЮ перезагрузку страницы в одной и той же вкладке, а именно
+// так topbar.js уходит на unit.html/project.html и возвращается обратно
+// через "Поиск" (обычный location.href, а не переключение SPA-вкладки).
+// Работает надёжнее, чем document.referrer или history.back(): у НОВОЙ
+// вкладки, открытой через target="_blank"/window.open с этого же сайта
+// (а именно так у нас открывается unit.html/project.html — см. cardHTML,
+// renderProjectPins), браузер копирует sessionStorage вкладки-родителя в
+// момент открытия — то есть унаследует ровно те фильтры, что были применены
+// на flox-web.html прямо перед переходом. У СОВСЕМ новой вкладки (человек
+// напечатал адрес сам, перешёл по ссылке из бота и т.п.) sessionStorage
+// пустой — восстанавливать нечего, поэтому на настоящем первом заходе каталог
+// по-прежнему не появляется сам (см. использование ниже, у initAgent().then).
+const SEARCH_STATE_KEY = 'flox-search-state';
+function persistSearchState() {
+  try {
+    sessionStorage.setItem(SEARCH_STATE_KEY, JSON.stringify({
+      filters,
+      searchInput: document.getElementById('searchInput')?.value || '',
+    }));
+  } catch (e) {}
+}
+function restoreSearchState() {
+  try {
+    const raw = sessionStorage.getItem(SEARCH_STATE_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    if (saved && saved.filters) filters = saved.filters;
+    if (saved && typeof saved.searchInput === 'string') {
+      const el = document.getElementById('searchInput');
+      if (el) el.value = saved.searchInput;
+    }
+    return true;
+  } catch (e) { return false; }
+}
+
 const fmtMln = n => n >= 1000000 ? (n/1e6).toFixed(1).replace('.0','') + ' млн ฿' : n.toLocaleString('ru') + ' ฿';
 
 // ── THEME ─────────────────────────────────
@@ -1188,6 +1226,7 @@ function syncMapWithFilters() {
   // карту саму по себе — только добавлять/убирать точки. Карту двигает
   // только сам пользователь (см. fitBounds:false).
   if (mapViewActive) renderProjectPins(filtered, { fitBounds: false });
+  persistSearchState(); // 16.07.26: см. коммент у объявления filters выше
 }
 
 // ── AUTOCOMPLETE ──────────────────────────
@@ -1291,6 +1330,7 @@ function doSearch() {
   const base = val ? PROJECTS.filter(p => matchProject(val, p)) : PROJECTS;
   const filtered = applyFilters(base);
   showCards(filtered, `Найдено: ${filtered.length}`);
+  persistSearchState(); // 16.07.26: см. коммент у объявления filters выше
 }
 
 function autoSearch() {
@@ -2068,21 +2108,15 @@ function renderProjectPins(projects, opts) {
     projectsMap.geoObjects.add(pm);
     mapPlacemarks.push(pm);
   });
-  // Если есть хоть одна метка — подгоняем масштаб карты под все точки разом,
-  // чтобы не приходилось руками искать, где на карте вообще есть проекты.
-  // Только при первом заходе на карту/смене фильтров (fitBounds), не при
-  // каждой перерисовке от собственного зума пользователя.
-  if (fitBounds && withCoords.length) {
-    // 15.07.26 (16): setBounds сам решает зум по разбросу точек — если он
-    // выберет зум ШИРЕ MIN_INITIAL_ZOOM, подтягиваем обратно; если точки и
-    // так кучные и он хочет приблизить сильнее — не мешаем (см. комментарий
-    // у MIN_INITIAL_ZOOM выше).
-    projectsMap.setBounds(projectsMap.geoObjects.getBounds(), { checkZoomRange: true, zoomMargin: 40 })
-      .then(() => {
-        if (projectsMap.getZoom() < MIN_INITIAL_ZOOM) projectsMap.setZoom(MIN_INITIAL_ZOOM);
-      })
-      .catch(() => {}); // setBounds иногда отклоняет промис при мгновенной повторной перерисовке (смена фильтра во время анимации) — не критично, просто не подтягиваем зум в этот раз
-  }
+  // 16.07.26, по просьбе Ильи: раньше при первом входе на карту (и с уже
+  // выбранным фильтром тоже) карта подгоняла масштаб под все найденные точки
+  // разом (setBounds) — Илья явно попросил этого больше не делать вообще, ни
+  // в каком случае: Пхукет маленький, картой должен управлять только сам
+  // пользователь (скролл/зум), а по умолчанию — всегда один и тот же вид
+  // острова (center:PHUKET_CENTER, zoom:MIN_INITIAL_ZOOM, см.
+  // initProjectsMap() выше). fitBounds/opts выше по функции сохранены ради
+  // обратной совместимости вызовов, но больше ни на что не влияют — авто-зум
+  // просто убран.
 }
 
 // ── Расстановка точек кликом по карте (агентский инструмент) ───────────────
@@ -2923,21 +2957,25 @@ function showAuthIfNeeded() {
 
 initAgent().then(() => {
   showAuthIfNeeded();
+  // 16.07.26, по просьбе Ильи (переделали логику, не просто патч — сам так
+  // просил): раньше пытались отличить "первый холодный заход" от "вернулись
+  // через topbar" по document.referrer — ненадёжно, например переход
+  // "Инструменты"/"Клиенты" с юнита/проекта делает ЕЩЁ ОДНУ перезагрузку
+  // страницы (см. _go() в topbar.js), где referrer уже не указывает прямо на
+  // unit/project.html, хотя по сути мы всё ещё "вернулись" оттуда. Теперь
+  // ориентируемся на сам факт наличия сохранённого состояния поиска (см.
+  // persistSearchState/restoreSearchState у объявления filters выше) — это
+  // переживает любое число промежуточных перезагрузок в одной вкладке.
+  const hadSavedState = restoreSearchState();
+  if (hadSavedState) updateChips(); // 16.07.26: без этого кнопки Тип/Цена/Срок сдачи остались бы с дефолтным текстом, хотя filters уже восстановлены
   const p = localStorage.getItem('flox-page');
   if (p) { localStorage.removeItem('flox-page'); setPage(p); }
-  // 16.07.26, по просьбе Ильи: это должно срабатывать ТОЛЬКО при переходе на
-  // "Поиск" с юнита/проекта (topbar.js там делает обычный location.href на
-  // flox-web.html — не SPA-переключение вкладки, а чистый повторный запуск
-  // всего скрипта) — а НЕ при самом первом холодном заходе на flox-web.html
-  // вообще (по нему каталог по-прежнему НЕ должен появляться сам, только
-  // после явного "Найти" — так было и раньше, это не трогаем). Раньше тут не
-  // было этой проверки, и каталог ошибочно появлялся при любом заходе на
-  // страницу, включая самый первый. Отличаем эти два случая по
-  // document.referrer — обычный первый заход (набрали URL, перешли по
-  // ссылке из бота и т.п.) никогда не будет ссылаться на project.html/
-  // unit.html этого же сайта, а переход с topbar — будет.
-  const cameFromProjectOrUnit = /\/(project|unit)\.html(\?|$)/.test(document.referrer);
-  if (cameFromProjectOrUnit && document.getElementById('page-search')?.classList.contains('act')) doSearch();
+  // Если в итоге показана именно страница поиска (а не "Инструменты"/
+  // "Клиенты" из localStorage выше) и есть восстановленное состояние —
+  // сразу показываем каталог с этими фильтрами. На настоящем первом заходе
+  // sessionStorage пуст (hadSavedState=false) — каталог по-прежнему не
+  // появляется сам, только после явного "Найти".
+  if (hadSavedState && document.getElementById('page-search')?.classList.contains('act')) doSearch();
 });
 loadUnitCount();
 loadSoldTicker();
