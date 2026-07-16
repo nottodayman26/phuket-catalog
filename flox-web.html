@@ -1492,27 +1492,32 @@ window.addEventListener('resize', resizeProjectsMapHeight);
 // подряд "катались"/уезжали за пределы карты при попытках привязать их к
 // тому, какая часть (2×-высокой) карты сейчас видна — вся история этих
 // попыток см. в CSS у .map-ctrl-btn. Вместо этого у кнопок теперь простое
-// НЕЗАВИСИМОЕ фиксированное место в углу экрана (см. CSS), которое вообще не
-// зависит ни от скролла, ни от того, админ смотрит или обычный агент, ни от
-// обычного/развёрнутого режима карты. Единственное, что всё же стоит
-// посчитать реальным замером, а не "на глаз", — отступ сверху, чтобы кнопка
-// разворота не пряталась под верхним topbar сайта (см. flox-topbar в HTML,
-// подключается через topbar.js) — а на самом первом экране (пока страница
-// ещё не проскроллилась) над картой на секунду ещё видна бегущая строка
-// "недавно продано" (#soldTickerWrap, она не прилипает к верху и обычно
-// сразу уезжает при скролле, но в начальный момент занимает место) —
-// учитываем и её высоту, если она сейчас показана, с запасом. Меряем ОДИН
-// РАЗ при открытии страницы, при входе на карту и при ресайзе окна (не на
-// каждый скролл!) и кладём в CSS-переменную --map-ctrl-top, которую и
-// используют .map-fullscreen-btn/.map-zoom-group.
+// фиксированное место в углу экрана (см. CSS), которое НЕ пересчитывается на
+// каждый скролл — это и убирает "катание". Но совсем не глядя на карту тоже
+// нельзя: на большом мониторе, где над картой много места (заголовок,
+// фильтры и т.п.), после первого открытия карты она может начинаться далеко
+// не у самого верха экрана — если посадить кнопку близко к topbar, она
+// повиснет непонятно где, оторванная от самой карты (это и увидел Илья на
+// скрине). Поэтому считаем ОДИН РАЗ (не на каждый скролл, а только при входе
+// на карту и при ресайзе окна): либо чуть ниже реального верха карты (если
+// карта в этот момент начинается ниже шапки сайта), либо чуть ниже шапки
+// (topbar + бегущая строка "недавно продано", если она ещё показана) — какое
+// из двух чисел больше, то и используем, чтобы кнопка никогда не пряталась
+// ни под шапкой, ни оторванно "в воздухе" над картой.
 function updateMapCtrlTopOffset() {
   const topbar = document.getElementById('flox-topbar');
   const ticker = document.getElementById('soldTickerWrap');
-  let h = topbar ? Math.ceil(topbar.getBoundingClientRect().height) : 56;
+  let headerH = topbar ? Math.ceil(topbar.getBoundingClientRect().height) : 56;
   if (ticker && getComputedStyle(ticker).display !== 'none') {
-    h += Math.ceil(ticker.getBoundingClientRect().height);
+    headerH += Math.ceil(ticker.getBoundingClientRect().height);
   }
-  document.documentElement.style.setProperty('--map-ctrl-top', (h + 16) + 'px');
+  let top = headerH + 16;
+  const mapEl = document.getElementById('projectsMap');
+  if (mapEl && mapViewActive) {
+    const mapTop = Math.round(mapEl.getBoundingClientRect().top);
+    top = Math.max(top, mapTop + 16);
+  }
+  document.documentElement.style.setProperty('--map-ctrl-top', top + 'px');
 }
 window.addEventListener('resize', updateMapCtrlTopOffset);
 // не считаем сразу синхронно здесь: topbar.js подключается и заполняет
