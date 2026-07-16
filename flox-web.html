@@ -1429,7 +1429,20 @@ function resizeProjectsMapHeight() {
   const wrap = document.getElementById('mapViewWrap');
   const mapEl = document.getElementById('projectsMap');
   if (!wrap || !mapEl || !wrap.classList.contains('act')) return;
-  const top = mapEl.getBoundingClientRect().top;
+  // 16.07.26, по просьбе Ильи: карта "росла" при каждом возврате со списка —
+  // нашли причину. getBoundingClientRect().top даёт позицию ОТНОСИТЕЛЬНО
+  // ОКНА (зависит от текущей прокрутки страницы), а не от начала документа.
+  // Пока карта открыта, страница из-за её ×2-высоты (см. ниже) сама слегка
+  // проскроллена вниз; когда переключаешься на список — список короче, и
+  // прокрутка не всегда полностью сбрасывается к нулю. При возврате на карту
+  // formula читала this "недосброшенный" scrollY как будто карта уже
+  // начинается выше на экране, чем на самом деле — availableH получался
+  // больше прошлого раза, и с каждым переключением карта раздувалась ещё
+  // сильнее. Фикс: прибавляем window.scrollY, чтобы получить позицию карты
+  // ОТНОСИТЕЛЬНО ДОКУМЕНТА — она не зависит от того, где именно сейчас
+  // прокручена страница, и потому даёт одинаковый результат при каждом входе
+  // на карту, как при самом первом открытии.
+  const top = mapEl.getBoundingClientRect().top + window.scrollY;
   const availableH = Math.max(320, Math.round(window.innerHeight - top - 16));
   const h = availableH * 2;
   mapEl.style.height = h + 'px';
@@ -1516,8 +1529,12 @@ function addCustomMapControls() {
   const mapEl = document.getElementById('projectsMap');
   if (!mapEl || document.getElementById('mapFullscreenBtn')) return; // уже добавлены (карта переиспользуется, см. initProjectsMap)
 
-  const ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M8 21H5a2 2 0 01-2-2v-3M16 21h3a2 2 0 002-2v-3"/></svg>';
-  const ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v4a2 2 0 01-2 2H3M15 3v4a2 2 0 002 2h4M9 21v-4a2 2 0 00-2-2H3M15 21v-4a2 2 0 012-2h4"/></svg>';
+  // 16.07.26, по просьбе Ильи: раньше тут были просто угловые скобки (без
+  // стрелок) — попросил заменить на настоящие стрелки: до входа в fullscreen
+  // стрелки смотрят В РАЗНЫЕ СТОРОНЫ (наружу, к углам — раскрыть), после
+  // входа — ДРУГ НА ДРУГА (внутрь, к центру — свернуть).
+  const ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+  const ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
   const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   const ICON_MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>';
 
@@ -1525,7 +1542,6 @@ function addCustomMapControls() {
   fsBtn.id = 'mapFullscreenBtn';
   fsBtn.className = 'map-ctrl-btn map-fullscreen-btn';
   fsBtn.innerHTML = ICON_EXPAND;
-  fsBtn.title = 'Развернуть на весь экран';
   fsBtn.addEventListener('click', e => {
     e.stopPropagation();
     try {
@@ -1543,7 +1559,6 @@ function addCustomMapControls() {
   const plusBtn = document.createElement('div');
   plusBtn.className = 'map-ctrl-btn';
   plusBtn.innerHTML = ICON_PLUS;
-  plusBtn.title = 'Приблизить';
   plusBtn.addEventListener('click', e => {
     e.stopPropagation();
     if (!projectsMap) return;
@@ -1552,7 +1567,6 @@ function addCustomMapControls() {
   const minusBtn = document.createElement('div');
   minusBtn.className = 'map-ctrl-btn';
   minusBtn.innerHTML = ICON_MINUS;
-  minusBtn.title = 'Отдалить';
   minusBtn.addEventListener('click', e => {
     e.stopPropagation();
     if (!projectsMap) return;
@@ -1585,11 +1599,18 @@ function addCustomMapControls() {
     const fsEl = document.fullscreenElement || document.webkitFullscreenElement || null;
     const isFs = !!fsEl;
     fsBtn.innerHTML = isFs ? ICON_COLLAPSE : ICON_EXPAND;
-    fsBtn.title = isFs ? 'Свернуть' : 'Развернуть на весь экран';
     const target = isFs ? fsEl : mapEl;
     target.appendChild(fsBtn);
     target.appendChild(zoomGroup);
     positionMapControls(); // после переноса — координаты нового контейнера другие (в fullscreen это весь экран)
+    // 16.07.26, по просьбе Ильи: если до входа в fullscreen страница была
+    // прокручена (например, наверх — к заголовку/поисковику), кнопка
+    // разворачивания иногда оставалась там, где на неё нажали, а не в углу
+    // уже открывшегося fullscreen-элемента. Похоже, в момент самого события
+    // fullscreenchange геометрия ещё не всегда окончательная (доворачивается
+    // через кадр) — пересчитываем позицию ещё раз на следующем кадре, когда
+    // layout точно устоялся.
+    requestAnimationFrame(positionMapControls);
   }
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
@@ -1625,9 +1646,9 @@ function getPlaqueLayout() {
     // Белая плашка с тёмным текстом (не залитая цветом) — так у Трендагента на
     // скрине от Ильи: маленький цветной акцент-точка слева + округлённая цена.
     _plaqueLayout = ymaps.templateLayoutFactory.createClass(
+      // 16.07.26, по просьбе Ильи: убрали тень и серую обводку — чище смотрится.
       `<div style="position:relative;transform:translate(-50%,-50%);display:inline-flex;` +
       `align-items:center;padding:5px 10px;border-radius:14px;background:#fff;` +
-      `box-shadow:0 2px 8px rgba(0,0,0,.18);border:1px solid rgba(0,0,0,.06);` +
       `font:600 12px 'Inter',system-ui,sans-serif;color:#16161f;white-space:nowrap;">` +
       `<span style="width:6px;height:6px;border-radius:50%;background:${MAP_PIN_COLOR};` +
       `margin-right:6px;flex-shrink:0;"></span>$[properties.iconContent]</div>`
@@ -1706,7 +1727,10 @@ function renderProjectPins(projects, opts) {
   withCoords.forEach(p => {
     const asPlaque = p._wantsPlaque;
     const pm = new ymaps.Placemark([p.lat, p.lng], {
-      hintContent: p.name,
+      // 16.07.26, по просьбе Ильи: убрали hintContent — это была всплывающая
+      // подсказка с названием проекта при наведении. Клик по-прежнему
+      // открывает balloon с деталями — это не всплывающая подсказка при
+      // наведении, а отдельное окно по клику, его не трогаем.
       balloonContentHeader: p.name,
       balloonContentBody: `${p.districtRu || p.district || ''} · от ${fmtMln(p.priceFrom)}`,
       balloonContentFooter: `<a href="${p.url}" target="_blank" rel="noopener">Открыть проект →</a>`,
