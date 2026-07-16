@@ -277,24 +277,25 @@ input,button{font-family:inherit;}
 .map-ctrl-btn svg{width:20px;height:20px;}
 /* 16.07.26, по просьбе Ильи (только внешний вид, логика/обработчики кликов не
    трогались): кнопка разворота — теперь полный круг (иконка ровно в круге,
-   не в скруглённом квадрате). */
+   не в скруглённом квадрате). Без тени — по просьбе Ильи, тень убрали
+   отовсюду у этих кнопок (и здесь, и в обычном, и в фуллскрин-режиме). */
 .map-fullscreen-btn{
   position:fixed;top:var(--map-ctrl-top, 72px);right:16px;z-index:2147483000;
-  border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,.18);
+  border-radius:50%;
 }
 /* 16.07.26, по просьбе Ильи, 1:1 со скрином — +/- теперь одна цельная
    "таблетка" (как штатный zoom-контрол у большинства карт), а не две отдельные
-   плашки с зазором: общий белый фон/тень/скруглённые в полукруг верх и низ на
-   .map-zoom-group, кнопки внутри — прозрачные, без своей тени и радиуса
+   плашки с зазором: общий белый фон/скруглённые в полукруг верх и низ на
+   .map-zoom-group, кнопки внутри — прозрачные, без своего радиуса
    (обрезаются по форме контейнера через overflow:hidden), с тонкой
-   разделительной линией между "+" и "-". Сама механика (клики, setZoom) не
+   разделительной линией между "+" и "-". Без тени — по просьбе Ильи (см.
+   комментарий у .map-fullscreen-btn выше). Сама механика (клики, setZoom) не
    менялась. */
 .map-zoom-group{
   position:fixed;top:var(--map-ctrl-mid, 50vh);right:16px;z-index:2147483000;
   transform:translateY(-50%);
   display:flex;flex-direction:column;
   background:#fff;border-radius:22px;overflow:hidden;
-  box-shadow:0 2px 10px rgba(0,0,0,.18);
 }
 .map-zoom-group .map-ctrl-btn{background:none;border-radius:0;}
 .map-zoom-group .map-ctrl-btn:first-child{border-bottom:1px solid var(--line-2);}
@@ -991,17 +992,24 @@ function setPage(name) {
 // списка результатов и без карты (даже если до перехода на другую вкладку
 // список/карта были открыты). Сами введённый текст и выбранные фильтры не
 // трогаем — сбрасываем только то, что было ПОКАЗАНО.
+// 16.07.26, по просьбе Ильи (найден баг): "чистая" страница получалась
+// СЛИШКОМ чистой — каталог проектов пропадал целиком (results.innerHTML='',
+// _searchDone=false), и агенту приходилось заново вручную нажимать "Найти",
+// чтобы снова увидеть список. То же самое было при переходе с юнита/проекта
+// (topbar.js там просто делает location.href на flox-web.html — обычная
+// перезагрузка страницы, каталог по умолчанию тоже не показывался, пока не
+// искали явно). Теперь вместо очистки в пустоту сразу показываем каталог с
+// текущими (сохранёнными, см. коммент выше) фильтрами — doSearch() ниже; он
+// сам ставит _searchDone=true и рисует карточки/плашки.
 function resetSearchPageToClean() {
-  const results = document.getElementById('searchResults');
-  results.innerHTML = '';
-  results.style.display = '';
+  document.getElementById('searchResults').style.display = '';
   document.getElementById('mapViewWrap').classList.remove('act');
   mapViewActive = false;
   mapCtrlRefs?.exitFakeFullscreen?.(); // 16.07.26: не уходить со страницы в развёрнутом виде карты (см. addCustomMapControls)
   mapCtrlRefs?.setControlsVisible?.(false); // 16.07.26: кнопки теперь в body, не прячутся сами вместе с #mapViewWrap
   document.getElementById('searchBtn').classList.remove('accent-off');
   document.getElementById('mapToggleBtn').classList.remove('accent');
-  _searchDone = false;
+  doSearch();
 }
 
 // 15.07.26 (6): нашли реальную причину, почему чистка страницы поиска не
@@ -1080,13 +1088,43 @@ function matchProject(q, p) {
     fuzzyMatch(q, p.districtRu) || fuzzyMatch(q, p.developer) || fuzzyMatch(q, p.id);
 }
 
+// 16.07.26, по просьбе Ильи: тип и цена — "многослойная" фильтрация, работают
+// СОВМЕСТНО, а не порознь. Если выбраны и тип (например, "2 спальни"), и цена
+// (например, 5-8 млн) — цена должна проверяться именно у юнитов НУЖНОГО типа,
+// а не у проекта вообще. Пример: у проекта двушки только от 8.1 млн — при
+// фильтре "2 спальни, 5-8 млн" он не должен показываться, даже если у него
+// есть, скажем, студия за 4 млн (просто нет двушки в нужном диапазоне). Если
+// цена не выбрана — это все цены подходящих по типу юнитов (или всех юнитов
+// проекта, если тип тоже не выбран); используется и для отбора проектов
+// (applyFilters), и для того, какую цену показать на плашке карты
+// (getPlaqueDisplayPrice) — одна и та же логика в обоих местах.
+function getMatchingUnitPrices(p) {
+  const types = (p.unitTypes && p.unitTypes.length) ? p.unitTypes : null;
+  if (!types) return [p.priceFrom]; // нет детальных данных по типам юнитов — fallback на общую цену проекта
+  if (filters.unitTypes && filters.unitTypes.length) {
+    const matching = types.filter(t =>
+      filters.unitTypes.some(ft => t.name.toLowerCase().includes(ft.toLowerCase()))
+    );
+    return matching.map(t => t.price); // может быть пусто — тогда проект и так отсеян ниже по типу
+  }
+  return types.map(t => t.price);
+}
+
 // ── FILTER PROJECTS ───────────────────────
 function applyFilters(list) {
   if (filters.propType && filters.propType !== 'condo') return [];
   return list.filter(p => {
+    // unitTypes — показываем проект только если у него есть нужный тип
+    if (filters.unitTypes && filters.unitTypes.length) {
+      const projectTypes = (p.unitTypes || []).map(t => t.name.toLowerCase());
+      const match = filters.unitTypes.some(ft => projectTypes.some(pt => pt.includes(ft.toLowerCase())));
+      if (!match) return false;
+    }
     if (filters.price) {
-      if (filters.price.min && p.priceTo < filters.price.min) return false;
-      if (filters.price.max && p.priceFrom > filters.price.max) return false;
+      const candidates = getMatchingUnitPrices(p);
+      const min = filters.price.min || 0, max = filters.price.max || Infinity;
+      const hasMatch = candidates.some(price => price >= min && price <= max);
+      if (!hasMatch) return false;
     }
     if (filters.completion) {
       const { year, q } = filters.completion;
@@ -1096,12 +1134,6 @@ function applyFilters(list) {
       } else {
         if (p.completionYear > year || (p.completionYear === year && p.completionQ > q)) return false;
       }
-    }
-    // unitTypes — показываем проект только если у него есть нужный тип
-    if (filters.unitTypes && filters.unitTypes.length) {
-      const projectTypes = (p.unitTypes || []).map(t => t.name.toLowerCase());
-      const match = filters.unitTypes.some(ft => projectTypes.some(pt => pt.includes(ft.toLowerCase())));
-      if (!match) return false;
     }
     return true;
   });
@@ -1236,14 +1268,24 @@ function autoSearch() {
 const STATUS_LABELS = {'Under Construction':'Строится','Ready to Move':'Сдан','Completed':'Сдан','Pre-Launch':'Предпродажа'};
 const BASE_IMG = 'https://nottodayman26.github.io/phuket-catalog/img/';
 
-function cardHTML(p) {
+// 16.07.26, по просьбе Ильи: переход в проект должен сохранять выбранные
+// фильтры (тип юнита/цена/срок сдачи) — раньше это умела только карточка в
+// списке (cardHTML), а переход из карты (клик по точке/плашке, ссылка
+// "Открыть проект →" в balloon) отправлял на p.url как есть, без фильтров.
+// Вынесено в одну функцию, чтобы список и карта всегда собирали query ровно
+// одинаково.
+function projectUrlWithFilters(p) {
   const params = new URLSearchParams();
   if (filters.unitTypes && filters.unitTypes.length) params.set('types', filters.unitTypes.join(','));
   if (filters.price && filters.price.min) params.set('priceFrom', filters.price.min);
   if (filters.price && filters.price.max) params.set('priceTo', filters.price.max);
   if (filters.completion) params.set('completion', `${filters.completion.year}Q${filters.completion.q}`);
   const query = params.toString();
-  const url = query ? `${p.url}&${query}` : p.url;
+  return query ? `${p.url}&${query}` : p.url;
+}
+
+function cardHTML(p) {
+  const url = projectUrlWithFilters(p);
 
   const statusLabel = STATUS_LABELS[p.status] || p.status || 'Строится';
   const isCompleted = p.status === 'Completed' || p.status === 'Ready to Move';
@@ -1811,35 +1853,72 @@ function getPlaqueLayout() {
     // скрине от Ильи: маленький цветной акцент-точка слева + округлённая цена.
     _plaqueLayout = ymaps.templateLayoutFactory.createClass(
       // 16.07.26, по просьбе Ильи: убрали тень и серую обводку — чище смотрится.
+      // 16.07.26: точка внутри плашки была 6px, а обычная точка на карте
+      // (DOT_SIZE) — 10px — по просьбе Ильи делаем их одного размера.
       `<div style="position:relative;transform:translate(-50%,-50%);display:inline-flex;` +
       `align-items:center;padding:5px 10px;border-radius:14px;background:#fff;` +
       `font:600 12px 'Inter',system-ui,sans-serif;color:#16161f;white-space:nowrap;">` +
-      `<span style="width:6px;height:6px;border-radius:50%;background:${MAP_PIN_COLOR};` +
+      `<span style="width:${DOT_SIZE}px;height:${DOT_SIZE}px;border-radius:50%;background:${MAP_PIN_COLOR};` +
       `margin-right:6px;flex-shrink:0;"></span>$[properties.iconContent]</div>`
     );
   }
   return _plaqueLayout;
 }
 
-// 16.07.26, по просьбе Ильи: если выбран ценовой фильтр (например, 8-10 млн),
-// плашка на карте не должна показывать общую "от" минимальную цену проекта —
-// у проекта могут быть юниты разных типов по совсем разным ценам (unitTypes),
-// и его priceFrom вполне может лежать далеко ниже выбранного диапазона, хотя
-// сам проект в диапазон попадает (у него есть юниты и дороже). Показываем ту
-// цену типа юнита, которая реально попадает в выбранный диапазон — а если
-// среди типов юнита нет точного попадания (диапазон между двумя типами),
-// берём ближайшую цену сверху, чтобы не показывать число вне выбранного
-// диапазона. Без ценового фильтра поведение как раньше — priceFrom.
+// 16.07.26, по просьбе Ильи: некоторые строящиеся проекты сдаются ОЧЕРЕДЯМИ —
+// то есть у разных типов/лотов внутри ОДНОГО проекта может быть РАЗНЫЙ срок
+// сдачи (не как сейчас, где completionYear/completionQ один на весь проект).
+// Явная просьба Ильи — это касается ТОЛЬКО КАРТЫ, список (applyFilters,
+// cardHTML/showCards) не трогаем, он по-прежнему работает как раньше, со
+// сроком сдачи на уровне всего проекта. Поэтому вся эта логика — отдельная
+// от getMatchingUnitPrices/applyFilters выше, никак их не меняет.
+//
+// Где хранить срок сдачи по очередям — там же, где и всё остальное про
+// юниты сейчас (по просьбе Ильи: "а где сейчас хранятся? давай там же") —
+// прямо в unitTypes у проекта в PROJECTS. У каждого типа юнита МОЖНО (не
+// обязательно) указать свои completionYear/completionQ/status — если не
+// указаны, юнит просто наследует срок сдачи всего проекта. Так что для всех
+// нынешних 4 проектов (у них очередей нет) ничего не меняется автоматически;
+// чтобы завести очередь у проекта, нужно проставить эти поля вручную в
+// нужных элементах его unitTypes.
+function getMapMatchingUnits(p) {
+  const types = (p.unitTypes && p.unitTypes.length) ? p.unitTypes : [{ name: '', price: p.priceFrom }];
+  return types
+    .map(t => ({
+      name: t.name || '',
+      price: t.price,
+      completionYear: t.completionYear ?? p.completionYear,
+      completionQ: t.completionQ ?? p.completionQ,
+      status: t.status ?? p.status,
+    }))
+    .filter(u => {
+      if (filters.unitTypes && filters.unitTypes.length) {
+        const match = filters.unitTypes.some(ft => u.name.toLowerCase().includes(ft.toLowerCase()));
+        if (!match) return false;
+      }
+      if (filters.completion) {
+        const { year, q } = filters.completion;
+        if (q === 0) {
+          if (u.status !== 'Completed' && u.status !== 'Ready to Move') return false;
+        } else {
+          if (u.completionYear > year || (u.completionYear === year && u.completionQ > q)) return false;
+        }
+      }
+      if (filters.price) {
+        const min = filters.price.min || 0, max = filters.price.max || Infinity;
+        if (u.price < min || u.price > max) return false;
+      }
+      return true;
+    });
+}
+
+// 16.07.26, по просьбе Ильи: плашка на карте должна показывать цену
+// МИНИМАЛЬНОГО ЛОТА, подходящего под ТЕКУЩИЕ фильтры карты — тип, цену И
+// срок сдачи совместно (см. getMapMatchingUnits выше, с учётом очередей).
 function getPlaqueDisplayPrice(p) {
-  const f = filters.price;
-  if (!f || (!f.min && !f.max)) return p.priceFrom;
-  const min = f.min || 0, max = f.max || Infinity;
-  const prices = (p.unitTypes && p.unitTypes.length) ? p.unitTypes.map(t => t.price) : [p.priceFrom];
-  const inRange = prices.filter(price => price >= min && price <= max);
-  if (inRange.length) return Math.min(...inRange);
-  const above = prices.filter(price => price >= min);
-  if (above.length) return Math.min(...above);
-  return Math.max(...prices);
+  const units = getMapMatchingUnits(p);
+  if (!units.length) return p.priceFrom; // не должно случаться — withCoords в renderProjectPins уже исключил бы такой проект
+  return Math.min(...units.map(u => u.price));
 }
 
 function renderProjectPins(projects, opts) {
@@ -1847,7 +1926,15 @@ function renderProjectPins(projects, opts) {
   const fitBounds = !opts || opts.fitBounds !== false;
   mapPlacemarks.forEach(pm => projectsMap.geoObjects.remove(pm));
   mapPlacemarks = [];
-  const withCoords = projects.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
+  // 16.07.26, по просьбе Ильи: доп. проверка ТОЛЬКО для карты — если у
+  // проекта нет ни одного юнита, подходящего под тип+цену+срок сдачи
+  // совместно (см. getMapMatchingUnits — учитывает очереди), точка/плашка
+  // на карте не показывается вообще, даже если сам проект остался в списке
+  // (applyFilters для списка сроком сдачи по очередям не занимается, см.
+  // коммент там — список сознательно не трогаем).
+  const withCoords = projects
+    .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number')
+    .filter(p => getMapMatchingUnits(p).length > 0);
 
   // 15.07.26 (13)/(14), по просьбе Ильи: если в одном месте на экране
   // скопилось несколько точек, плашкой должна быть только самая дешёвая.
@@ -1923,7 +2010,7 @@ function renderProjectPins(projects, opts) {
       // наведении, а отдельное окно по клику, его не трогаем.
       balloonContentHeader: p.name,
       balloonContentBody: `${p.districtRu || p.district || ''} · от ${fmtMln(p.priceFrom)}`,
-      balloonContentFooter: `<a href="${p.url}" target="_blank" rel="noopener">Открыть проект →</a>`,
+      balloonContentFooter: `<a href="${projectUrlWithFilters(p)}" target="_blank" rel="noopener">Открыть проект →</a>`,
       iconContent: asPlaque ? fmtMln(getPlaqueDisplayPrice(p)) : undefined,
     }, asPlaque ? {
       // Плашка с округлённой минимальной ценой — как у Трендагента: у самого
@@ -1942,7 +2029,7 @@ function renderProjectPins(projects, opts) {
       iconShape: { type: 'Circle', coordinates: [0, 0], radius: DOT_SIZE / 2 },
       zIndex: 100, zIndexHover: 120,
     });
-    pm.events.add('click', () => { if (!placementMode) window.open(p.url, '_blank'); });
+    pm.events.add('click', () => { if (!placementMode) window.open(projectUrlWithFilters(p), '_blank'); });
     projectsMap.geoObjects.add(pm);
     mapPlacemarks.push(pm);
   });
@@ -2803,6 +2890,14 @@ initAgent().then(() => {
   showAuthIfNeeded();
   const p = localStorage.getItem('flox-page');
   if (p) { localStorage.removeItem('flox-page'); setPage(p); }
+  // 16.07.26, по просьбе Ильи: тот же баг, что чинили в resetSearchPageToClean
+  // (см. коммент там), но для случая полной перезагрузки страницы — переход
+  // на "Поиск" с юнита/проекта (topbar.js делает обычный location.href на
+  // flox-web.html, это не SPA-переключение вкладки, а чистый повторный запуск
+  // всего скрипта). Если в итоге показана именно страница поиска (а не
+  // "Инструменты"/"Клиенты" из localStorage выше) — сразу показываем каталог,
+  // а не пустую заглушку до первого явного поиска.
+  if (document.getElementById('page-search')?.classList.contains('act')) doSearch();
 });
 loadUnitCount();
 loadSoldTicker();
