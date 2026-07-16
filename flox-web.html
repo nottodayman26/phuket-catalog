@@ -243,16 +243,24 @@ input,button{font-family:inherit;}
    того, где сейчас скролл и какая часть (2×-высокой) карты видна — у них
    простое НЕЗАВИСИМОЕ фиксированное место в углу экрана, одно и то же и в
    обычном виде, и в развёрнутом на весь экран (см. .map-fake-fullscreen
-   ниже — оба состояния занимают весь экран одинаково, поэтому одни и те же
-   координаты подходят в обоих случаях без всяких условий). Единственное,
-   что реально нужно учитывать — верхний topbar сайта (flox-topbar.js),
-   который сам position:fixed/sticky у самого верха: чтобы кнопка разворота
-   не пряталась под ним, отступ сверху берём не "на глаз", а по факту
-   реальной высоты topbar (см. updateMapCtrlTopOffset() в скрипте) — но
-   считается это ОДИН РАЗ (и при ресайзе окна), а не на каждый скролл, как
-   было раньше. Кнопки специально поставлены в угол (не по центру экрана):
-   центрирование через vh на телефонах капризничает при выезжающей/уезжающей
-   адресной строке, а привязка к углу от этого не зависит вообще. */
+   ниже). Оказалось неверно (см. видео Ильи): без пересчёта на скролл кнопки
+   просто застревали там, где были при входе на карту, и отрывались от неё —
+   вернули непрерывный пересчёт через requestAnimationFrame, см.
+   updateMapCtrlTopOffset() в скрипте.
+   16.07.26 (заход №4, по фидбеку Ильи после первого рабочего видео): кнопка
+   разворота — по-прежнему в верхнем правом углу ЭКРАНА (--map-ctrl-top,
+   считается от высоты topbar/бегущей строки либо от текущего верха карты —
+   какое из двух чисел больше), но в фуллскрине это не нужно: там карта и
+   есть весь экран, поэтому просто 16px от верха, без всякой формулы (иначе
+   реальная высота topbar "снизу экрана" по ошибке отодвигала кнопку от
+   истинного угла). Кнопки +/- Илья попросил перенести на середину карты по
+   вертикали (--map-ctrl-mid = верх карты + половина её высоты, тоже в
+   координатах экрана, тоже пересчитывается каждый кадр) — так как карта в
+   2 раза выше окна, при первом открытии эта середина может оказаться ниже
+   видимой области экрана, и кнопки будут не видны, пока не проскроллить —
+   по словам Ильи, это нормально. В фуллскрине карта = весь экран, поэтому
+   середина карты автоматически совпадает с серединой экрана — те же формулы
+   без дополнительных условий. */
 .map-ctrl-btn{
   width:44px;height:44px;border-radius:16px;background:#fff;color:#16161f;
   display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -262,7 +270,8 @@ input,button{font-family:inherit;}
 .map-ctrl-btn svg{width:20px;height:20px;}
 .map-fullscreen-btn{position:fixed;top:var(--map-ctrl-top, 72px);right:16px;z-index:2147483000;}
 .map-zoom-group{
-  position:fixed;top:calc(var(--map-ctrl-top, 72px) + 60px);right:16px;z-index:2147483000;
+  position:fixed;top:var(--map-ctrl-mid, 50vh);right:16px;z-index:2147483000;
+  transform:translateY(-50%);
   display:flex;flex-direction:column;gap:8px;
 }
 /* 16.07.26, по просьбе Ильи: кнопки всё ещё "катались" вместе со скроллом,
@@ -1335,10 +1344,11 @@ let mapViewActive = false;
 let projectsMap = null;
 let mapPlacemarks = [];
 // 16.07.26: раньше здесь хранились ссылки на кнопки для ручного пересчёта их
-// позиции — у кнопок теперь простое фиксированное место в углу экрана (см.
-// CSS у .map-fullscreen-btn/.map-zoom-group), никакого пересчёта не нужно;
-// осталась только возможность принудительно выйти из CSS-fullscreen извне
-// (см. addCustomMapControls).
+// позиции — теперь их позиция (--map-ctrl-top/--map-ctrl-mid, см. CSS у
+// .map-fullscreen-btn/.map-zoom-group) непрерывно пересчитывается в
+// updateMapCtrlTopOffset() через requestAnimationFrame, пока открыта вкладка
+// "На карте"; mapCtrlRefs тут остался только ради возможности принудительно
+// выйти из CSS-fullscreen извне (см. addCustomMapControls).
 let mapCtrlRefs = null;
 let placementMode = false;
 // 15.07.26: чисто клиентский переключатель "посмотреть как обычный агент" —
@@ -1520,19 +1530,45 @@ window.addEventListener('resize', resizeProjectsMapHeight);
 // вместе со скролом"). Значит пересчёт нужен НЕПРЕРЫВНО, пока открыта вкладка
 // "На карте" — это и делает цикл на requestAnimationFrame ниже.
 function updateMapCtrlTopOffset() {
-  const topbar = document.getElementById('flox-topbar');
-  const ticker = document.getElementById('soldTickerWrap');
-  let headerH = topbar ? Math.ceil(topbar.getBoundingClientRect().height) : 56;
-  if (ticker && getComputedStyle(ticker).display !== 'none') {
-    headerH += Math.ceil(ticker.getBoundingClientRect().height);
-  }
-  let top = headerH + 16;
+  const wrap = document.getElementById('mapViewWrap');
   const mapEl = document.getElementById('projectsMap');
-  if (mapEl && mapViewActive) {
-    const mapTop = Math.round(mapEl.getBoundingClientRect().top);
-    top = Math.max(top, mapTop + 16);
+  const isFakeFS = !!(wrap && wrap.classList.contains('map-fake-fullscreen'));
+
+  // Кнопка разворота — верхний правый угол ЭКРАНА. В обычном виде экран
+  // "делят" topbar сайта и текущий верх карты (берём то, что ниже). В
+  // фуллскрине карта и так растянута на весь экран (см. .map-fake-fullscreen
+  // в CSS) — formula с высотой topbar тут не нужна и только мешает (topbar
+  // остаётся в DOM со своей обычной высотой, хоть визуально и перекрыт), так
+  // что просто фиксируем 16px от истинного верха экрана.
+  if (isFakeFS) {
+    document.documentElement.style.setProperty('--map-ctrl-top', '16px');
+  } else {
+    const topbar = document.getElementById('flox-topbar');
+    const ticker = document.getElementById('soldTickerWrap');
+    let headerH = topbar ? Math.ceil(topbar.getBoundingClientRect().height) : 56;
+    if (ticker && getComputedStyle(ticker).display !== 'none') {
+      headerH += Math.ceil(ticker.getBoundingClientRect().height);
+    }
+    let top = headerH + 16;
+    if (mapEl && mapViewActive) {
+      const mapTop = Math.round(mapEl.getBoundingClientRect().top);
+      top = Math.max(top, mapTop + 16);
+    }
+    document.documentElement.style.setProperty('--map-ctrl-top', top + 'px');
   }
-  document.documentElement.style.setProperty('--map-ctrl-top', top + 'px');
+
+  // Кнопки +/- — середина карты по вертикали, в координатах ЭКРАНА (не
+  // документа): верх карты на экране + половина её реальной высоты. Карта
+  // специально в 2 раза выше окна (см. resizeProjectsMapHeight), поэтому при
+  // первом входе эта точка может быть ниже видимой области — кнопки станут
+  // видны только после прокрутки вниз, и так и задумано (по просьбе Ильи).
+  // В фуллскрине карта = весь экран (flex:1, height:auto — см. CSS), поэтому
+  // middle автоматически совпадает с серединой экрана, без отдельного case.
+  if (mapEl && mapViewActive) {
+    const r = mapEl.getBoundingClientRect();
+    const mid = Math.round(r.top + r.height / 2);
+    document.documentElement.style.setProperty('--map-ctrl-mid', mid + 'px');
+  }
 }
 window.addEventListener('resize', updateMapCtrlTopOffset);
 // не считаем сразу синхронно здесь: topbar.js подключается и заполняет
