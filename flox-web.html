@@ -266,6 +266,28 @@ input,button{font-family:inherit;}
   position:fixed;top:50%;transform:translateY(-50%);right:10px;z-index:2147483000;
   display:flex;flex-direction:column;gap:8px;
 }
+/* 16.07.26, по просьбе Ильи: кнопка разворота на весь экран у него на
+   практике либо не разворачивала карту по-настоящему, либо разворачивала
+   как-то не так (иконка не менялась, кнопка "убегала" не в угол) — самое
+   вероятное объяснение: штатный браузерный Fullscreen API (тот, что
+   стоит за enterFullscreen() у Яндекс.Карт) на многих мобильных браузерах
+   и во встроенных webview (например, внутри Telegram) для произвольных
+   элементов страницы либо не поддерживается вовсе, либо запрещён —
+   именно поэтому ничего толком не происходило. Вместо того чтобы зависеть
+   от Fullscreen API браузера, теперь "разворот на весь экран" — это наш
+   собственный CSS-приём: просто растягиваем #projectsMap на весь экран
+   через position:fixed на 100vw/100vh (см. .map-fake-fullscreen ниже) —
+   работает одинаково в любом браузере/webview, без прав доступа и без
+   капризов конкретной платформы. Карту саму при этом не разворачиваем
+   средствами Яндекса — только просим её самой "переподогнать" отрисовку
+   под новый размер контейнера (map.container.fitToViewport() — тот же
+   метод уже используется при обычном изменении высоты карты).
+*/
+.map-fake-fullscreen{
+  position:fixed !important;top:0 !important;left:0 !important;right:0 !important;bottom:0 !important;
+  width:100vw !important;height:100vh !important;margin:0 !important;z-index:999999999;
+}
+body.map-fake-fullscreen-active{overflow:hidden;}
 
 /* Панель расстановки точек — видна только внутри floxweb.html (агентский
    инструмент), над картой. Клиенты этот файл не открывают, поэтому отдельный
@@ -920,6 +942,7 @@ function resetSearchPageToClean() {
   results.style.display = '';
   document.getElementById('mapViewWrap').classList.remove('act');
   mapViewActive = false;
+  mapCtrlRefs?.exitFakeFullscreen?.(); // 16.07.26: не уходить со страницы в развёрнутом виде карты (см. addCustomMapControls)
   document.getElementById('searchBtn').classList.remove('accent-off');
   document.getElementById('mapToggleBtn').classList.remove('accent');
   _searchDone = false;
@@ -1321,6 +1344,7 @@ const MIN_INITIAL_ZOOM = 11;
 function setResultsView(view) {
   const isMap = view === 'map';
   mapViewActive = isMap;
+  if (!isMap) mapCtrlRefs?.exitFakeFullscreen?.(); // 16.07.26: ушли со списком — выходим из развёрнутой карты, если была открыта
   document.getElementById('searchBtn').classList.toggle('accent-off', isMap);
   document.getElementById('mapToggleBtn').classList.toggle('accent', isMap);
   syncAccentPill(true);
@@ -1461,15 +1485,32 @@ window.addEventListener('resize', resizeProjectsMapHeight);
 function positionMapControls() {
   if (!mapCtrlRefs) return;
   const { mapEl, fsBtn, zoomGroup } = mapCtrlRefs;
-  const fsEl = document.fullscreenElement || document.webkitFullscreenElement || null;
-  const refEl = fsEl || mapEl;
-  const rect = refEl.getBoundingClientRect();
+  // 16.07.26: раньше тут отдельно проверялся document.fullscreenElement —
+  // теперь не нужно (см. .map-fake-fullscreen выше): наш собственный
+  // "разворот на весь экран" — это просто #projectsMap, растянутый на весь
+  // экран через CSS, поэтому его же координаты (getBoundingClientRect)
+  // всегда верны что в обычном виде, что в развёрнутом — отдельный "фактически
+  // зафуллскриненный элемент" искать не требуется.
+  const rect = mapEl.getBoundingClientRect();
   const visTop = Math.max(rect.top, 0);
   const visBottom = Math.min(rect.bottom, window.innerHeight);
   fsBtn.style.top = (visTop + 10) + 'px';
   zoomGroup.style.top = ((visTop + visBottom) / 2) + 'px';
 }
 window.addEventListener('scroll', positionMapControls, { passive: true });
+// 16.07.26, по просьбе Ильи (кнопки "катались"/выходили за пределы карты):
+// одних только событий 'scroll'/'resize' оказалось недостаточно — судя по
+// всему, на мобильных браузерах (особенно с уезжающей адресной строкой при
+// прокрутке) сам скролл-эвент может подгонять позицию заметно позже
+// реального движения экрана, отсюда и ощущение "катается". Вместо того чтобы
+// гадать и добавлять всё новые отдельные события, держим позицию кнопок в
+// синхроне НЕПРЕРЫВНО, кадр за кадром, пока открыта вкладка "На карте" —
+// requestAnimationFrame сам ставится на паузу, когда вкладка/окно свёрнуты,
+// так что лишней нагрузки в фоне это не создаёт.
+(function mapControlsSyncLoop() {
+  if (mapViewActive) positionMapControls();
+  requestAnimationFrame(mapControlsSyncLoop);
+})();
 
 // 15.07.26 (5): цвет меток на карте — тот же красный/коралловый, что и точка
 // в логотипе Flox (var(--red) в CSS), а не фиолетовый акцент бренда — так
@@ -1520,11 +1561,12 @@ function initProjectsMap() {
   });
 }
 
-// 15.07.26 (15)/(16)/(17): свои кнопки зума (+/-) и разворота на весь экран
-// вместо штатных Яндекс.Карт (см. CSS у .map-ctrl-btn — стиль и позиции,
-// история правок там же). Кнопки просто вызывают штатные методы Яндекс.Карт
-// (setZoom / enterFullscreen / exitFullscreen) — сама механика зума и
-// полноэкранного режима осталась родной, поменялась только "обёртка".
+// 15.07.26 (15)/(16)/(17), 16.07.26: свои кнопки зума (+/-) и разворота на
+// весь экран вместо штатных Яндекс.Карт (см. CSS у .map-ctrl-btn — стиль и
+// позиции, история правок там же). Зум по-прежнему вызывает штатный метод
+// Яндекс.Карт (setZoom). Разворот на весь экран — с 16.07.26 уже НЕ штатный
+// enterFullscreen()/exitFullscreen() (см. .map-fake-fullscreen в CSS,
+// почему отказались), а собственный CSS-переключатель.
 function addCustomMapControls() {
   const mapEl = document.getElementById('projectsMap');
   if (!mapEl || document.getElementById('mapFullscreenBtn')) return; // уже добавлены (карта переиспользуется, см. initProjectsMap)
@@ -1538,21 +1580,41 @@ function addCustomMapControls() {
   const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   const ICON_MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>';
 
+  // 16.07.26, по просьбе Ильи: не найдена причина, почему сама кнопка не
+  // разворачивала карту (иконка не менялась, кнопка "не в углу") — самое
+  // вероятное объяснение: см. большой комментарий у .map-fake-fullscreen в
+  // CSS — на его устройстве/браузере штатный Fullscreen API, судя по всему,
+  // просто не срабатывал (типично для мобильных webview, включая Telegram),
+  // а мы полагались именно на него. Теперь fullscreen — наш собственный
+  // переключатель на чистом CSS, никакого браузерного API не требует.
+  let isFakeFullscreen = false;
+  function setFakeFullscreen(on) {
+    isFakeFullscreen = on;
+    mapEl.classList.toggle('map-fake-fullscreen', on);
+    document.body.classList.toggle('map-fake-fullscreen-active', on);
+    fsBtn.innerHTML = on ? ICON_COLLAPSE : ICON_EXPAND;
+    // карту саму не "разворачиваем" — просто у #projectsMap поменялся размер
+    // (растянулся на весь экран через CSS), и Яндексу нужно об этом сказать,
+    // чтобы он переподогнал свою внутреннюю отрисовку под новый размер —
+    // тот же приём уже используется при обычном изменении высоты карты.
+    if (projectsMap?.container?.fitToViewport) projectsMap.container.fitToViewport();
+    positionMapControls();
+    requestAnimationFrame(positionMapControls);
+  }
   const fsBtn = document.createElement('div');
   fsBtn.id = 'mapFullscreenBtn';
   fsBtn.className = 'map-ctrl-btn map-fullscreen-btn';
   fsBtn.innerHTML = ICON_EXPAND;
   fsBtn.addEventListener('click', e => {
     e.stopPropagation();
-    try {
-      if (!projectsMap?.container?.isFullscreen) return;
-      if (projectsMap.container.isFullscreen()) projectsMap.container.exitFullscreen();
-      else projectsMap.container.enterFullscreen();
-    } catch (err) {
-      console.error('[flox] не удалось переключить fullscreen карты:', err);
-    }
+    setFakeFullscreen(!isFakeFullscreen);
   });
   mapEl.appendChild(fsBtn);
+  // Esc — привычный способ выйти из fullscreen на десктопе; на телефоне
+  // клавиатуры нет, но и не мешает — просто не сработает.
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && isFakeFullscreen) setFakeFullscreen(false);
+  });
 
   const zoomGroup = document.createElement('div');
   zoomGroup.className = 'map-zoom-group';
@@ -1578,42 +1640,13 @@ function addCustomMapControls() {
 
   // (18): нужно для positionMapControls() — она читает эти ссылки по имени
   // из глобального mapCtrlRefs, а не через замыкание (её ещё дёргают извне,
-  // из resizeProjectsMapHeight() и window 'scroll').
-  mapCtrlRefs = { mapEl, fsBtn, zoomGroup };
+  // из resizeProjectsMapHeight() и window 'scroll'). exitFakeFullscreen —
+  // чтобы можно было принудительно выйти из нашего CSS-fullscreen извне
+  // (см. setResultsView/resetSearchPageToClean) — иначе если уйти со
+  // страницы карты прямо в развёрнутом виде, состояние "зависнет": страница
+  // так и останется с заблокированной прокруткой (body.map-fake-fullscreen-active).
+  mapCtrlRefs = { mapEl, fsBtn, zoomGroup, exitFakeFullscreen: () => setFakeFullscreen(false) };
   positionMapControls();
-
-  // 15.07.26 (17): раньше иконка/видимость кнопок менялись по СОБЫТИЯМ
-  // ЯНДЕКСА (container.events 'fullscreenenter'/'fullscreenexit') — Илья
-  // проверил вживую: кнопки пропадали в фуллскрине целиком. Похоже, Яндекс
-  // разворачивает не #projectsMap, а какой-то свой внутренний узел, а наши
-  // кнопки (дети #projectsMap) оставались снаружи настоящего зафуллскриненного
-  // элемента и поэтому не рендерились браузером вообще. Теперь слушаем
-  // НАСТОЯЩЕЕ браузерное событие document.fullscreenchange напрямую — оно не
-  // зависит от того, что именно Яндекс разворачивает внутри себя — и
-  // физически переносим (appendChild) обе кнопки внутрь того элемента,
-  // который document.fullscreenElement считает полноэкранным. При выходе —
-  // переносим обратно в #projectsMap. position:fixed у самих кнопок (см. CSS)
-  // не зависит от того, куда именно их перенесли — координаты всегда от
-  // окна браузера.
-  function onFullscreenChange() {
-    const fsEl = document.fullscreenElement || document.webkitFullscreenElement || null;
-    const isFs = !!fsEl;
-    fsBtn.innerHTML = isFs ? ICON_COLLAPSE : ICON_EXPAND;
-    const target = isFs ? fsEl : mapEl;
-    target.appendChild(fsBtn);
-    target.appendChild(zoomGroup);
-    positionMapControls(); // после переноса — координаты нового контейнера другие (в fullscreen это весь экран)
-    // 16.07.26, по просьбе Ильи: если до входа в fullscreen страница была
-    // прокручена (например, наверх — к заголовку/поисковику), кнопка
-    // разворачивания иногда оставалась там, где на неё нажали, а не в углу
-    // уже открывшегося fullscreen-элемента. Похоже, в момент самого события
-    // fullscreenchange геометрия ещё не всегда окончательная (доворачивается
-    // через кадр) — пересчитываем позицию ещё раз на следующем кадре, когда
-    // layout точно устоялся.
-    requestAnimationFrame(positionMapControls);
-  }
-  document.addEventListener('fullscreenchange', onFullscreenChange);
-  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 }
 
 // 15.07.26 (11): раньше точки и плашки рисовались штатными пресетами Яндекса
