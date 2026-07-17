@@ -387,11 +387,16 @@ input,button{font-family:inherit;}
    середина карты автоматически совпадает с серединой экрана — те же формулы
    без дополнительных условий. */
 .map-ctrl-btn{
-  width:44px;height:44px;border-radius:16px;background:#fff;color:#16161f;
+  width:44px;height:44px;border-radius:16px;background:var(--surface);color:var(--text);
   display:flex;align-items:center;justify-content:center;cursor:pointer;
-  transition:background .15s ease;flex-shrink:0;
+  transition:background .15s ease,transform .2s cubic-bezier(.34,1.56,.64,1);flex-shrink:0;
 }
-.map-ctrl-btn:hover{background:#f2f2f5;}
+/* 17.07.26, по просьбе Ильи: 1) кнопки теперь тоже реагируют на тему (были
+   всегда белыми, даже в тёмном режиме) — background/color теперь через
+   var(--surface)/var(--text), как и весь остальной интерфейс; 2) та же
+   лёгкая "пружинка" при наведении, что у остальных кнопок сайта (см.
+   .pres-clear-btn и другие — transform:scale(1.06) с тем же cubic-bezier). */
+.map-ctrl-btn:hover{background:var(--surface-2);transform:scale(1.06);}
 .map-ctrl-btn svg{width:20px;height:20px;}
 /* 16.07.26, по просьбе Ильи (только внешний вид, логика/обработчики кликов не
    трогались): кнопка разворота — теперь полный круг (иконка ровно в круге,
@@ -413,7 +418,8 @@ input,button{font-family:inherit;}
   position:fixed;top:var(--map-ctrl-mid, 50vh);right:16px;z-index:2147483000;
   transform:translateY(-50%);
   display:flex;flex-direction:column;
-  background:#fff;border-radius:22px;overflow:hidden;
+  /* 17.07.26, по просьбе Ильи: тоже теперь по теме, не всегда белый фон */
+  background:var(--surface);border-radius:22px;overflow:hidden;
 }
 .map-zoom-group .map-ctrl-btn{background:none;border-radius:0;}
 .map-zoom-group .map-ctrl-btn:first-child{border-bottom:1px solid var(--line-2);}
@@ -431,6 +437,57 @@ input,button{font-family:inherit;}
    их (когда вкладка "На карте" открыта/закрыта) приходится отдельным
    классом, а не автоматически через display:none у обёртки. */
 .map-ctrl-hidden{display:none !important;}
+
+/* 17.07.26, по просьбе Ильи: та же лёгкая "пружинка" при наведении, что и у
+   кнопок +/- и разворота (см. .map-ctrl-btn:hover выше), — теперь и у
+   плашек/точек на карте. Классы map-plaque/map-dot проставляются прямо в
+   HTML-вёрстке плашки/точки (см. getPlaqueLayout/getDotLayout ниже в
+   скрипте) — это обычный DOM (не iframe), поэтому :hover работает как
+   везде. transform уже используется для центрирования (translate(-50%,-50%)
+   — метка встаёт ровно на свои координаты), поэтому scale добавляется
+   вторым значением в той же transform-строке, а не отдельным свойством. */
+.map-plaque{transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.map-plaque:hover{transform:translate(-50%,-50%) scale(1.08);}
+.map-dot{transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.map-dot:hover{transform:translate(-50%,-50%) scale(1.6);}
+
+/* 17.07.26, по просьбе Ильи: инфо-блок проекта в левом верхнем углу карты —
+   открывается по клику на плашку/точку (см. selectProject/showMapInfoCard
+   в скрипте), вместо прежнего перехода сразу на страницу проекта. Вариант
+   дизайна — «как карточка в списке» (Илья выбрал вариант 1 из присланных
+   макетов), но шириной как более крупный вариант 2, без тени, без обводки
+   и без разделительной линии над ценой (тоже прямая просьба). Позиция —
+   тот же --map-ctrl-top, что и у кнопки разворота (см. .map-fullscreen-btn
+   выше), только у левого края экрана вместо правого — карта и так растянута
+   от края до края экрана (см. .map-view-wrap), поэтому left:16px без
+   дополнительных расчётов симметричен right:16px у кнопок. */
+.map-info-card{
+  display:none;position:fixed;top:var(--map-ctrl-top, 72px);left:16px;z-index:2147483000;
+  width:320px;max-width:calc(100vw - 32px);
+  background:var(--surface);border-radius:14px;overflow:hidden;
+  color:var(--text);cursor:pointer;
+}
+.map-info-card.act{display:block;}
+.mic-img-wrap{position:relative;height:150px;background:var(--surface-2);}
+.mic-img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s ease;}
+.mic-img-wrap img.act{opacity:1;}
+.mic-status{
+  position:absolute;top:8px;left:8px;font-size:10px;font-weight:500;padding:3px 9px;
+  border-radius:20px;background:rgba(0,0,0,0.45);color:#fff;white-space:nowrap;
+}
+.mic-close{
+  position:absolute;top:8px;right:8px;z-index:2;width:24px;height:24px;border-radius:50%;
+  background:rgba(0,0,0,0.4);color:#fff;border:none;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;font-size:12px;transition:background .15s;
+}
+.mic-close:hover{background:rgba(0,0,0,0.6);}
+.mic-body{padding:13px 15px 14px;}
+.mic-name{font-size:14.5px;font-weight:600;margin-bottom:2px;}
+.mic-sub{font-size:12px;color:var(--muted);margin-bottom:11px;}
+.mic-types{display:flex;flex-direction:column;gap:6px;margin-bottom:11px;}
+.mic-footer{display:flex;justify-content:space-between;align-items:center;}
+.mic-from{font-size:12px;color:var(--muted);}
+.mic-from b{font-size:14px;font-weight:700;color:#5E17EB;}
 /* 16.07.26, по просьбе Ильи: кнопка разворота на весь экран у него на
    практике либо не разворачивала карту по-настоящему, либо разворачивала
    как-то не так (иконка не менялась, кнопка не в углу) — самое вероятное
@@ -1837,6 +1894,15 @@ let lastFilteredProjects = PROJECTS;
 let mapViewActive = false;
 let projectsMap = null;
 let mapPlacemarks = [];
+// 17.07.26, по просьбе Ильи: клик по плашке/точке на карте больше не уводит
+// на страницу проекта — вместо этого открывает инфо-блок в левом верхнем
+// углу карты (см. mapCardHTML/selectProject/closeMapInfoCard ниже). Плашка/
+// точка выбранного проекта подсвечивается (см. getPlaqueLayoutActive/
+// getDotLayoutActive). selectedProjectId — id проекта, чья плашка сейчас
+// подсвечена; mapInfoProject — сам объект проекта, показанный в инфо-блоке
+// (нужен отдельно, чтобы строить ссылку/фото без повторного поиска по id).
+let selectedProjectId = null;
+let mapInfoProject = null;
 // 16.07.26: раньше здесь хранились ссылки на кнопки для ручного пересчёта их
 // позиции — теперь их позиция (--map-ctrl-top/--map-ctrl-mid, см. CSS у
 // .map-fullscreen-btn/.map-zoom-group) непрерывно пересчитывается в
@@ -1874,6 +1940,7 @@ function setResultsView(view) {
   const isMap = view === 'map';
   mapViewActive = isMap;
   if (!isMap) mapCtrlRefs?.exitFakeFullscreen?.(); // 16.07.26: ушли со списком — выходим из развёрнутой карты, если была открыта
+  if (!isMap) clearMapSelection(); // 17.07.26: ушли со вкладки "На карте" — открытый инфо-блок теряет смысл, сбрасываем его состояние
   mapCtrlRefs?.setControlsVisible?.(isMap); // 16.07.26: кнопки в body — показываем/прячем вручную вместе со вкладкой "На карте"
   document.getElementById('searchBtn').classList.toggle('accent-off', isMap);
   document.getElementById('mapToggleBtn').classList.toggle('accent', isMap);
@@ -2118,9 +2185,15 @@ function initProjectsMap() {
   });
   addCustomMapControls();
   projectsMap.events.add('click', e => {
-    if (!placementMode) return;
-    const coords = e.get('coords');
-    savePlacementClick(coords);
+    if (placementMode) {
+      const coords = e.get('coords');
+      savePlacementClick(coords);
+      return;
+    }
+    // 17.07.26, по просьбе Ильи: клик по пустому месту на карте (не по
+    // плашке/точке — тот клик до сюда не доходит, см. e.stopPropagation() в
+    // renderProjectPins) закрывает открытый инфо-блок, если он есть.
+    if (selectedProjectId) closeMapInfoCard();
   });
   // Перерисовываем метки при смене зума — ближе к точке дают не точки, а
   // плашки с ценой (см. renderProjectPins). fitBounds:false — иначе при каждом
@@ -2217,9 +2290,28 @@ function addCustomMapControls() {
   // сами вместе с ним через display:none — прячем/показываем их вручную
   // отдельным классом (.map-ctrl-hidden в CSS) синхронно с тем, открыта ли
   // сейчас вкладка "На карте" (см. вызовы setControlsVisible в setResultsView).
+  // 17.07.26, по просьбе Ильи: инфо-блок проекта (открывается по клику на
+  // плашку/точку — см. selectProject/showMapInfoCard ниже) — тоже кладём
+  // прямо в <body>, как и остальные элементы управления картой, по той же
+  // причине (см. большой комментарий у .map-ctrl-hidden в CSS про сломанный
+  // position:fixed внутри разметки страницы). Наведение мышью на весь блок
+  // листает фото — так же, как в карточках списка (см. pcStartSlide/pcNav);
+  // клик по самому блоку (кроме крестика и стрелок навигации) — переходит
+  // в проект с текущими фильтрами, как и раньше у плашки.
+  const infoCard = document.createElement('div');
+  infoCard.id = 'mapInfoCard';
+  infoCard.className = 'map-info-card';
+  infoCard.addEventListener('click', () => openMapInfoProject());
+  infoCard.addEventListener('mouseenter', () => {
+    if (mapInfoProject) pcStartSlide('mapInfoCard', (mapInfoProject.photos || ['1.avif']).length);
+  });
+  infoCard.addEventListener('mouseleave', () => pcStopSlide('mapInfoCard'));
+  document.body.appendChild(infoCard);
+
   function setControlsVisible(on) {
     fsBtn.classList.toggle('map-ctrl-hidden', !on);
     zoomGroup.classList.toggle('map-ctrl-hidden', !on);
+    infoCard.classList.toggle('map-ctrl-hidden', !on);
   }
 
   // exitFakeFullscreen — чтобы можно было принудительно выйти из нашего
@@ -2246,15 +2338,33 @@ function addCustomMapControls() {
 // сразу и даёт полный контроль над размером/цветом (никакого белого).
 const DOT_SIZE = 6; // 16.07.26, по просьбе Ильи: и точка на карте, и точка внутри плашки — 6px
 let _dotLayout = null, _plaqueLayout = null;
+// 17.07.26, по просьбе Ильи: выбранный (кликнутый) проект подсвечивается —
+// плашка целиком заливается тем же цветом, что и точка (MAP_PIN_COLOR),
+// текст становится белым; точка выбранного проекта получает белую обводку,
+// чтобы было видно, что именно она выбрана (сама точка и так уже этого
+// цвета). class="map-plaque"/"map-dot" — только ради CSS-анимации при
+// наведении (см. .map-plaque:hover/.map-dot:hover в CSS), на логику выбора
+// не влияет.
+let _dotLayoutActive = null, _plaqueLayoutActive = null;
 function getDotLayout() {
   if (!_dotLayout) {
     _dotLayout = ymaps.templateLayoutFactory.createClass(
-      `<div style="position:relative;transform:translate(-50%,-50%);` +
+      `<div class="map-dot" style="position:relative;transform:translate(-50%,-50%);` +
       `width:${DOT_SIZE}px;height:${DOT_SIZE}px;border-radius:50%;` +
       `background:${MAP_PIN_COLOR};"></div>`
     );
   }
   return _dotLayout;
+}
+function getDotLayoutActive() {
+  if (!_dotLayoutActive) {
+    _dotLayoutActive = ymaps.templateLayoutFactory.createClass(
+      `<div class="map-dot" style="position:relative;transform:translate(-50%,-50%);` +
+      `width:${DOT_SIZE}px;height:${DOT_SIZE}px;border-radius:50%;` +
+      `background:${MAP_PIN_COLOR};box-shadow:0 0 0 3px #fff, 0 0 0 4px ${MAP_PIN_COLOR};"></div>`
+    );
+  }
+  return _dotLayoutActive;
 }
 function getPlaqueLayout() {
   if (!_plaqueLayout) {
@@ -2264,7 +2374,7 @@ function getPlaqueLayout() {
       // 16.07.26, по просьбе Ильи: убрали тень и серую обводку — чище смотрится.
       // 16.07.26: точка внутри плашки была 6px, а обычная точка на карте
       // (DOT_SIZE) — 10px — по просьбе Ильи делаем их одного размера.
-      `<div style="position:relative;transform:translate(-50%,-50%);display:inline-flex;` +
+      `<div class="map-plaque" style="position:relative;transform:translate(-50%,-50%);display:inline-flex;` +
       `align-items:center;padding:5px 10px;border-radius:14px;background:#fff;` +
       `font:600 12px 'Inter',system-ui,sans-serif;color:#16161f;white-space:nowrap;">` +
       `<span style="width:${DOT_SIZE}px;height:${DOT_SIZE}px;border-radius:50%;background:${MAP_PIN_COLOR};` +
@@ -2272,6 +2382,21 @@ function getPlaqueLayout() {
     );
   }
   return _plaqueLayout;
+}
+// 17.07.26, по просьбе Ильи: плашка ВЫБРАННОГО (кликнутого) проекта —
+// целиком залита цветом точки, текст белый, точка внутри тоже белая (см.
+// комментарий у getDotLayoutActive выше).
+function getPlaqueLayoutActive() {
+  if (!_plaqueLayoutActive) {
+    _plaqueLayoutActive = ymaps.templateLayoutFactory.createClass(
+      `<div class="map-plaque" style="position:relative;transform:translate(-50%,-50%);display:inline-flex;` +
+      `align-items:center;padding:5px 10px;border-radius:14px;background:${MAP_PIN_COLOR};` +
+      `font:600 12px 'Inter',system-ui,sans-serif;color:#fff;white-space:nowrap;">` +
+      `<span style="width:${DOT_SIZE}px;height:${DOT_SIZE}px;border-radius:50%;background:#fff;` +
+      `margin-right:6px;flex-shrink:0;"></span>$[properties.iconContent]</div>`
+    );
+  }
+  return _plaqueLayoutActive;
 }
 
 // 16.07.26, по просьбе Ильи: некоторые строящиеся проекты сдаются ОЧЕРЕДЯМИ —
@@ -2320,6 +2445,15 @@ function renderProjectPins(projects, opts) {
   const withCoords = projects
     .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number')
     .filter(p => getMapMatchingUnits(p).length > 0);
+
+  // 17.07.26, по просьбе Ильи: если выбранный (открытый в инфо-блоке) проект
+  // из-за смены фильтров пропал с карты — сам инфо-блок должен закрыться, а
+  // не остаться висеть с устаревшим проектом, который больше не показан.
+  // clearMapSelection (не closeMapInfoCard) — чтобы не звать renderProjectPins
+  // повторно прямо из renderProjectPins.
+  if (selectedProjectId && !withCoords.some(p => p.id === selectedProjectId)) {
+    clearMapSelection();
+  }
 
   // 15.07.26 (13)/(14), по просьбе Ильи: если в одном месте на экране
   // скопилось несколько точек, плашкой должна быть только самая дешёвая.
@@ -2388,19 +2522,24 @@ function renderProjectPins(projects, opts) {
 
   withCoords.forEach(p => {
     const asPlaque = p._wantsPlaque;
+    const isActive = p.id === selectedProjectId;
     // 16.07.26, по просьбе Ильи: убрали всплывающее окно (balloon) целиком —
     // раньше клик по точке/плашке одновременно и открывал проект в новой
-    // вкладке (см. click ниже), И показывал штатный балун Яндекс.Карт поверх
-    // карты, который надо было закрывать крестиком. Убрали сам контент
-    // (balloonContentHeader/Body/Footer) и явно отключили балун опцией
-    // hasBalloon:false, чтобы клик делал только одно действие — открывал
-    // проект (уже с сохранёнными фильтрами, см. projectUrlWithFilters).
+    // вкладке, И показывал штатный балун Яндекс.Карт поверх карты, который
+    // надо было закрывать крестиком. Убрали сам контент (balloonContentHeader/
+    // Body/Footer) и явно отключили балун опцией hasBalloon:false.
+    // 17.07.26, по просьбе Ильи: клик по плашке/точке больше НЕ открывает
+    // проект напрямую — вместо этого открывает свой инфо-блок (см.
+    // selectProject ниже); переход в проект теперь происходит по клику
+    // на сам инфо-блок (см. openMapInfoProject/addCustomMapControls).
     const pm = new ymaps.Placemark([p.lat, p.lng], {
       iconContent: asPlaque ? fmtMln(getPlaqueDisplayPrice(p)) : undefined,
     }, asPlaque ? {
       // Плашка с округлённой минимальной ценой — как у Трендагента: у самого
       // дешёвого объекта в каждой экранной группе (см. (15) выше), всегда.
-      iconLayout: getPlaqueLayout(),
+      // 17.07.26: выбранный проект — залитый цветом вариант (см.
+      // getPlaqueLayoutActive выше).
+      iconLayout: isActive ? getPlaqueLayoutActive() : getPlaqueLayout(),
       iconShape: { type: 'Rectangle', coordinates: [[-45, -14], [45, 14]] },
       // 15.07.26 (12): если рядом два объекта — один с плашкой, другой ещё
       // точкой — точка перекрывала плашку сверху (позже добавленная в
@@ -2410,11 +2549,18 @@ function renderProjectPins(projects, opts) {
       // чем у любой точки, а не полагаемся на порядок добавления.
       zIndex: 500, zIndexHover: 520, hasBalloon: false,
     } : {
-      iconLayout: getDotLayout(),
+      iconLayout: isActive ? getDotLayoutActive() : getDotLayout(),
       iconShape: { type: 'Circle', coordinates: [0, 0], radius: DOT_SIZE / 2 },
       zIndex: 100, zIndexHover: 120, hasBalloon: false,
     });
-    pm.events.add('click', () => { if (!placementMode) window.open(projectUrlWithFilters(p), '_blank'); });
+    pm.events.add('click', e => {
+      if (placementMode) return;
+      // Не даём клику "провалиться" сквозь метку в клик по самой карте
+      // (см. projectsMap.events.add('click', ...) в initProjectsMap) — иначе
+      // тот же клик тут же закрыл бы только что открытый инфо-блок.
+      e.stopPropagation();
+      selectProject(p);
+    });
     projectsMap.geoObjects.add(pm);
     mapPlacemarks.push(pm);
   });
@@ -2427,6 +2573,94 @@ function renderProjectPins(projects, opts) {
   // initProjectsMap() выше). fitBounds/opts выше по функции сохранены ради
   // обратной совместимости вызовов, но больше ни на что не влияют — авто-зум
   // просто убран.
+}
+
+// ── Инфо-блок проекта на карте (клик по плашке/точке) ──────────────────────
+// 17.07.26, по прямой просьбе Ильи: клик по плашке/точке больше не уводит
+// сразу на страницу проекта, а открывает карточку в левом верхнем углу
+// карты — макет "Вариант 1" из присланных на выбор (по виду почти как
+// карточка в списке результатов), но шириной как "Вариант 2", без тени,
+// без обводки и без разделительной линии над ценой. Специально переиспользует
+// mapCardHTML содержимое и уже готовые на сайте вещи: photos-карусель по
+// hover (pcStartSlide/pcSetSlide/pcNav — те же функции, что и у карточек
+// списка, просто с другим cardId), реальные типы/цены (projectTypeSummary —
+// та же функция, что и у карточек списка, поэтому инфо-блок ПО ОПРЕДЕЛЕНИЮ
+// не может разойтись с тем, что показано в списке), и саму комиссию (класс
+// pc-comm — уже skрыт/показан в applyMeetingMode(), ничего доп. не нужно).
+function mapCardHTML(p) {
+  const statusLabel = STATUS_LABELS[p.status] || p.status || 'Строится';
+  const isCompleted = p.status === 'Completed' || p.status === 'Ready to Move';
+  const photos = p.photos || ['1.avif'];
+  const imgs = photos.map((f, i) =>
+    `<img src="${BASE_IMG + p.id + '/' + f}" class="${i === 0 ? 'act' : ''}" alt="${p.name}"/>`
+  ).join('');
+  const dots = photos.map((_, i) => `<div class="pc-dot ${i === 0 ? 'act' : ''}"></div>`).join('');
+
+  const typeSummary = projectTypeSummary(p);
+  const types = typeSummary.map(t =>
+    `<div class="pc-type-row"><div class="pc-type-name">${t.name}</div><div class="pc-type-price">от ${fmtMln(t.price)}</div></div>`
+  ).join('');
+  const minPrice = typeSummary.length ? Math.min(...typeSummary.map(t => t.price)) : p.priceFrom;
+
+  const commClass = meetingMode ? 'pc-comm hidden' : 'pc-comm';
+  const commHtml = `<div class="${commClass}">💰 ${p.commission || 10}%</div>`;
+  const statusText = isCompleted ? statusLabel : `${statusLabel} · ${p.completion}`;
+
+  return `
+    <div class="mic-img-wrap" id="mapInfoCard-img">
+      ${imgs}
+      <div class="mic-status">${statusText}</div>
+      <button class="mic-close" onclick="event.stopPropagation();closeMapInfoCard();">✕</button>
+      <div class="pc-dots">${dots}</div>
+      <div class="pc-nav">
+        <div class="pc-nav-prev" onclick="event.stopPropagation();pcNav('mapInfoCard',-1,${photos.length});"></div>
+        <div class="pc-nav-next" onclick="event.stopPropagation();pcNav('mapInfoCard',1,${photos.length});"></div>
+      </div>
+    </div>
+    <div class="mic-body">
+      <div class="mic-name">${p.name}</div>
+      <div class="mic-sub">${p.districtRu}, Пхукет · ${p.developer}</div>
+      <div class="mic-types">${types}</div>
+      <div class="mic-footer">
+        <div class="mic-from">от <b>${fmtMln(minPrice)}</b></div>
+        ${commHtml}
+      </div>
+    </div>`;
+}
+
+function showMapInfoCard(p) {
+  const el = document.getElementById('mapInfoCard');
+  if (!el) return;
+  mapInfoProject = p;
+  el.innerHTML = mapCardHTML(p);
+  el.classList.add('act');
+  pcSetSlide('mapInfoCard', 0, (p.photos || ['1.avif']).length); // сброс листалки на первое фото при каждом новом открытии
+}
+
+// selectProject — клик по плашке/точке: подсвечивает её (см. isActive в
+// renderProjectPins) и показывает инфо-блок. clearMapSelection — общий сброс
+// состояния БЕЗ повторного рендера меток (нужно вызывать изнутри самого
+// renderProjectPins, см. выше, — иначе рекурсия). closeMapInfoCard — сброс
+// СНАРУЖИ (клик по крестику/по пустой карте/уход со вкладки "На карте") —
+// тут повторный рендер уже нужен, чтобы подсветка с плашки/точки исчезла.
+function selectProject(p) {
+  selectedProjectId = p.id;
+  showMapInfoCard(p);
+  renderProjectPins(lastFilteredProjects, { fitBounds: false });
+}
+function clearMapSelection() {
+  selectedProjectId = null;
+  mapInfoProject = null;
+  const el = document.getElementById('mapInfoCard');
+  if (el) el.classList.remove('act');
+}
+function closeMapInfoCard() {
+  clearMapSelection();
+  if (projectsMap) renderProjectPins(lastFilteredProjects, { fitBounds: false });
+}
+function openMapInfoProject() {
+  if (!mapInfoProject) return;
+  window.open(projectUrlWithFilters(mapInfoProject), '_blank');
 }
 
 // ── Расстановка точек кликом по карте (агентский инструмент) ───────────────
