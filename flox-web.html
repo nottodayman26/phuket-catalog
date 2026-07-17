@@ -22,12 +22,19 @@
   --red:#FF6B6B; --red-soft:rgba(255,107,107,0.14);
   --green:#7BAF6E; --green-soft:rgba(123,175,110,0.15);
   --vik:#C9A84C; --kat:#7BAF6E; --ban:#6B9BC2; --oln:#8FAB5F;
+  /* 17.07.26, по согласованному макету фильтров (flox-filters-mockup.html):
+     таблетки "Цена от"/"Цена до" и квадратики чекбоксов в "Тип" — в тёмной
+     теме как обычные поля (surface-2), а в светлой — именно белые. */
+  --price-pill-bg: var(--surface-2);
+  --checkbox-bg: var(--surface-2);
 }
 body.light {
   --bg:#F5F5F7; --surface:#ffffff; --surface-2:#f0f0f4; --surface-3:#e8e8ee;
   --line:rgba(0,0,0,0.07); --line-2:rgba(0,0,0,0.12);
   --text:#111118; --muted:rgba(0,0,0,0.45); --muted-2:rgba(0,0,0,0.22);
   --accent-soft:rgba(94,23,235,0.1); --red-soft:rgba(224,85,85,0.1);
+  --price-pill-bg: #ffffff;
+  --checkbox-bg: #ffffff;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{font-family:'Inter',system-ui,sans-serif;}
@@ -159,12 +166,106 @@ input,button{font-family:inherit;}
    (.filter-chip/.chip-remove) — по просьбе Ильи убрали, это дублировало то же
    самое, что уже видно прямо в кнопках "Тип"/"Цена"/"Срок сдачи" в поисковике.
    Остался только "Сбросить все" — без обводки, цветом точки логотипа. */
-.active-filters{display:flex;align-items:center;width:100%;max-width:900px;margin-top:10px;min-height:0;}
+/* 17.07.26, по согласованному макету: "Сбросить все" сдвинута правее —
+   начинается примерно под "П" в "Проект, застройщик, район" (см.
+   .search-input-seg padding-left:18px + padding самой ленты 6px = 24px). */
+.active-filters{display:flex;align-items:center;width:100%;max-width:900px;margin-top:10px;min-height:0;gap:14px;padding-left:24px;}
+/* 17.07.26, по согласованному макету: "Сбросить все" теперь таблетка с
+   мягким красным фоном (accent-soft-приём, тот же, что у активных фильтров),
+   а не голый текст без фона, как было раньше. */
 .reset-all{
-  font-size:12.5px;font-weight:600;color:var(--red);cursor:pointer;
-  padding:4px 2px;background:none;border:none;transition:opacity .15s ease;
+  font-size:11.5px;font-weight:600;color:var(--red);cursor:pointer;
+  padding:6px 12px;background:var(--red-soft);border:none;border-radius:20px;
+  transition:opacity .15s ease;
 }
-.reset-all:hover{opacity:.7;}
+.reset-all:hover{opacity:.8;}
+
+/* ══ ФИЛЬТРЫ — ЗАЯКОРЕННЫЕ ДРОПДАУНЫ (Тип/Цена/Срок сдачи) ══
+   17.07.26: заменили модалку по центру экрана с затемнением на компактные
+   панели прямо под кнопками фильтров — согласованный макет см.
+   flox-filters-mockup.html. Модалка (.modal-overlay/.modal) осталась в CSS
+   ниже и по-прежнему используется — но только для подтверждения очистки
+   презентации (#clearPresModal), с фильтрами она больше не связана. */
+.fd-clear-x{
+  display:none;align-items:center;justify-content:center;
+  font-size:9px;color:var(--accent);opacity:.8;
+}
+.filter-btn.act .fd-clear-x{display:inline-flex;}
+.fd-clear-x:hover{opacity:1;}
+
+.filter-dropdown{
+  position:absolute;top:calc(100% + 10px);left:0;
+  min-width:230px;background:var(--surface);
+  border-radius:16px;
+  padding:10px;z-index:350;
+  opacity:0;transform:translateY(-6px);pointer-events:none;
+  transition:opacity .15s ease,transform .15s ease;
+}
+.filter-dropdown.vis{opacity:1;transform:translateY(0);pointer-events:all;}
+
+/* Кастомный скролл внутри панелей — тонкий, без стрелок сверху/снизу */
+.fd-price-col, .fd-list, .fd-type-rows{
+  scrollbar-width:thin; scrollbar-color:var(--line-2) transparent;
+}
+.fd-price-col::-webkit-scrollbar, .fd-list::-webkit-scrollbar, .fd-type-rows::-webkit-scrollbar{ width:4px; }
+.fd-price-col::-webkit-scrollbar-track, .fd-list::-webkit-scrollbar-track, .fd-type-rows::-webkit-scrollbar-track{ background:transparent; }
+.fd-price-col::-webkit-scrollbar-thumb, .fd-list::-webkit-scrollbar-thumb, .fd-type-rows::-webkit-scrollbar-thumb{ background:var(--line-2); border-radius:10px; }
+.fd-price-col::-webkit-scrollbar-button, .fd-list::-webkit-scrollbar-button, .fd-type-rows::-webkit-scrollbar-button{ display:none; width:0; height:0; }
+
+/* Тип — список чекбоксов */
+.fd-type-rows{max-height:280px;overflow-y:auto;}
+.fd-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;}
+.fd-checkbox{
+  width:17px;height:17px;border-radius:6px;border:1px solid var(--line-2);
+  background:var(--checkbox-bg);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s;
+}
+.fd-row.act .fd-checkbox{background:var(--accent);border-color:var(--accent);}
+.fd-row.act .fd-checkbox::after{content:'✓';font-size:9.5px;color:#fff;}
+.fd-row-label{font-size:13px;font-weight:500;color:var(--muted);transition:color .12s;}
+.fd-row:hover .fd-row-label{color:var(--text);}
+.fd-row.act .fd-row-label{color:var(--text);}
+.fd-apply-btn{
+  display:block;width:100%;margin-top:8px;padding:10px;border-radius:12px;
+  border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;
+  cursor:pointer;transition:opacity .15s;
+}
+.fd-apply-btn:hover{opacity:.9;}
+
+/* Цена — вкладки "За всё"/"За м²" + два поля + два столбца пресетов */
+.fd-price{width:300px;}
+.fd-price-tabs{display:flex;gap:4px;padding:2px 4px 10px;}
+.fd-price-tab{
+  padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;
+  color:var(--muted);background:none;border:none;cursor:pointer;
+  transition:background .12s,color .12s;
+}
+.fd-price-tab:hover{color:var(--text);}
+.fd-price-tab.act{background:var(--accent-soft);color:var(--accent);}
+.fd-price-inputs{display:flex;align-items:center;gap:8px;padding:4px 4px 10px;}
+.fd-price-input{
+  flex:1;display:flex;align-items:center;background:var(--price-pill-bg);
+  border:1.5px solid transparent;border-radius:10px;padding:8px 10px;
+  transition:border-color .15s;
+}
+.fd-price-input:hover, .fd-price-input:focus-within{ border-color:rgba(94,23,235,0.45); }
+.fd-price-input input{border:none;background:none;color:var(--text);font-size:13px;outline:none;width:100%;}
+.fd-price-input input::placeholder{color:var(--muted-2);}
+.fd-price-dash{color:var(--muted);font-size:13px;}
+.fd-price-cols{display:flex;gap:10px;padding:0 4px;}
+.fd-price-col{flex:1;max-height:230px;overflow-y:auto;display:flex;flex-direction:column;}
+.fd-price-opt{padding:7px 8px;border-radius:8px;font-size:12.5px;color:var(--muted);cursor:pointer;text-align:left;background:none;border:none;transition:color .1s;}
+.fd-price-opt:hover{color:var(--text);}
+.fd-price-opt.act{color:var(--accent);font-weight:600;background:var(--accent-soft);}
+/* невозможные диапазоны (напр. "от 5 млн, до 4 млн") — гасим, без красного
+   значка "нельзя" у курсора, просто обычный курсор */
+.fd-price-opt:disabled{opacity:.3;cursor:default;}
+
+/* Срок сдачи — простой список без карточек */
+.fd-list{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;}
+.fd-list-item{padding:9px 10px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:color .12s;}
+.fd-list-item:hover{color:var(--text);}
+.fd-list-item.act{background:var(--accent-soft);color:var(--accent);}
 
 /* Autocomplete */
 .autocomplete{
@@ -484,59 +585,11 @@ body.map-fake-fullscreen-active{overflow:hidden;}
   padding:10px 24px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;
 }
 
-/* Price modal */
-.price-histogram{display:flex;align-items:flex-end;gap:2px;height:56px;margin-bottom:14px;cursor:pointer;}
-.price-bar{
-  flex:1;background:var(--accent);border-radius:2px 2px 0 0;
-  opacity:0.5;transition:opacity .15s;
-}
-.price-bar:hover,.price-bar.sel{opacity:1;}
-.price-inputs{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-.price-input-wrap{
-  flex:1;display:flex;align-items:center;gap:8px;
-  background:var(--surface-2);border:1px solid var(--line-2);
-  border-radius:10px;padding:9px 12px;
-}
-.price-input-wrap input{flex:1;border:none;background:none;color:var(--text);font-size:13px;outline:none;width:80px;}
-.price-input-label{color:var(--muted);font-size:11px;}
-.price-presets{display:flex;gap:6px;flex-wrap:wrap;}
-.price-preset{
-  padding:5px 12px;border-radius:20px;font-size:11px;font-weight:500;
-  border:1px solid var(--line-2);color:var(--muted);cursor:pointer;background:none;
-  transition:all .15s;
-}
-.price-preset:hover,.price-preset.act{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
-
-/* Type modal */
-.type-options{display:flex;flex-direction:column;gap:8px;}
-.type-option{
-  display:flex;align-items:center;gap:12px;
-  padding:13px 16px;border-radius:12px;cursor:pointer;
-  border:1.5px solid var(--line);transition:all .15s;
-}
-.type-option:hover{border-color:var(--accent);}
-.type-option.act{border-color:var(--accent);background:var(--accent-soft);}
-.type-option svg{width:20px;height:20px;color:var(--accent);}
-.type-option-name{font-size:13px;font-weight:600;}
-.type-option-sub{font-size:11px;color:var(--muted);}
-.type-option-check{margin-left:auto;width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.type-option.act .type-option-check{background:var(--accent);border-color:var(--accent);}
-.type-option.act .type-option-check::after{content:'✓';font-size:10px;color:#fff;}
-
-/* Completion modal */
-.completion-list{display:flex;flex-direction:column;gap:4px;}
-.completion-group-title{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:10px 0 4px;}
-.completion-item{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 14px;border-radius:10px;cursor:pointer;
-  border:1px solid var(--line);transition:all .15s;
-}
-.completion-item:hover{border-color:var(--accent);}
-.completion-item.act{border-color:var(--accent);background:var(--accent-soft);}
-.completion-item-left{display:flex;align-items:center;gap:10px;}
-.completion-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.completion-item.act .completion-check{background:var(--accent);border-color:var(--accent);}
-.completion-item.act .completion-check::after{content:'✓';font-size:9px;color:#fff;}
+/* 17.07.26: старые стили модалок Тип/Цена/Срок сдачи (price-histogram,
+   type-options, completion-list и т.д.) убраны — эти три фильтра теперь
+   заякоренные дропдауны (.fd-*, см. секцию "ФИЛЬТРЫ — ЗАЯКОРЕННЫЕ
+   ДРОПДАУНЫ" выше). .modal-overlay/.modal ниже остались — их по-прежнему
+   использует #clearPresModal (подтверждение очистки презентации).
 
 /* ══ OFFERS PAGE ══ */
 .offers-page{padding:24px;max-width:900px;margin:0 auto;}
@@ -698,14 +751,17 @@ body.map-fake-fullscreen-active{overflow:hidden;}
         <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
       </div>
       <div class="filter-sep"></div>
-      <button class="filter-btn" id="filterTypeBtn" onclick="openTypeModal()">
+      <button class="filter-btn" id="filterTypeBtn" onclick="toggleDropdown('type', this)">
         <span id="filterTypeLabel">Тип</span>
+        <span class="fd-clear-x" onclick="clearTypeFilter(event)">✕</span>
       </button>
-      <button class="filter-btn" id="filterPriceBtn" onclick="openPriceModal()">
+      <button class="filter-btn" id="filterPriceBtn" onclick="toggleDropdown('price', this)">
         <span id="filterPriceLabel">Цена</span>
+        <span class="fd-clear-x" onclick="clearPriceFilter(event)">✕</span>
       </button>
-      <button class="filter-btn" id="filterCompBtn" onclick="openCompletionModal()">
+      <button class="filter-btn" id="filterCompBtn" onclick="toggleDropdown('comp', this)">
         <span id="filterCompLabel">Срок сдачи</span>
+        <span class="fd-clear-x" onclick="clearCompFilter(event)">✕</span>
       </button>
       <button class="filter-btn" onclick="alert('Скоро!')">
         Все фильтры
@@ -728,6 +784,33 @@ body.map-fake-fullscreen-active{overflow:hidden;}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       </button>
       <div class="autocomplete" id="autocomplete"></div>
+
+      <!-- 17.07.26: заякоренные дропдауны фильтров (согласованный макет,
+           см. flox-filters-mockup.html) — заменили модалки по центру экрана. -->
+      <div class="filter-dropdown" id="ddType">
+        <div class="fd-type-rows" id="typeRows"></div>
+        <button class="fd-apply-btn" type="button" onclick="applyTypeFilter()">Применить</button>
+      </div>
+
+      <div class="filter-dropdown fd-price" id="ddPrice">
+        <div class="fd-price-tabs">
+          <button class="fd-price-tab act" id="tabAll" onclick="setPriceMode('all')" type="button">За всё</button>
+          <button class="fd-price-tab" id="tabM2" onclick="setPriceMode('m2')" type="button">За м²</button>
+        </div>
+        <div class="fd-price-inputs">
+          <div class="fd-price-input"><input type="text" id="priceFromInput" placeholder="Цена от" oninput="onPriceInput('from')"></div>
+          <span class="fd-price-dash">—</span>
+          <div class="fd-price-input"><input type="text" id="priceToInput" placeholder="Цена до" oninput="onPriceInput('to')"></div>
+        </div>
+        <div class="fd-price-cols">
+          <div class="fd-price-col" id="priceColFrom"></div>
+          <div class="fd-price-col" id="priceColTo"></div>
+        </div>
+      </div>
+
+      <div class="filter-dropdown" id="ddComp">
+        <div class="fd-list" id="compList"></div>
+      </div>
     </div>
 
     <div class="active-filters" id="activeFilters"></div>
@@ -839,53 +922,10 @@ body.map-fake-fullscreen-active{overflow:hidden;}
   </div>
 </div>
 
-<!-- TYPE MODAL -->
-<div class="modal-overlay" id="typeModal" onclick="if(event.target===this)closeTypeModal()">
-  <div class="modal">
-    <div class="modal-title">Тип кондо <button class="modal-close" onclick="closeTypeModal()">✕</button></div>
-    <div class="type-options" id="unitTypeOptions"></div>
-    <div class="modal-actions">
-      <button class="modal-clear" onclick="clearTypeModal()">Сбросить</button>
-      <button class="modal-apply" onclick="applyTypeModal()">Применить</button>
-    </div>
-  </div>
-</div>
-
-<!-- PRICE MODAL -->
-<div class="modal-overlay" id="priceModal" onclick="if(event.target===this)closePriceModal()">
-  <div class="modal">
-    <div class="modal-title">Выберите цену <button class="modal-close" onclick="closePriceModal()">✕</button></div>
-    <div class="price-histogram" id="priceHistogram"></div>
-    <div class="price-inputs">
-      <div class="price-input-wrap">
-        <input type="number" id="priceMin" placeholder="Мин. цена" oninput="syncHistogram()">
-        <span class="price-input-label">THB</span>
-      </div>
-      <span style="color:var(--muted)">—</span>
-      <div class="price-input-wrap">
-        <input type="number" id="priceMax" placeholder="Макс. цена" oninput="syncHistogram()">
-        <span class="price-input-label">THB</span>
-      </div>
-    </div>
-    <div class="price-presets" id="pricePresets"></div>
-    <div class="modal-actions">
-      <button class="modal-clear" onclick="clearPrice()">Очистить</button>
-      <button class="modal-apply" onclick="applyPrice()">Применить</button>
-    </div>
-  </div>
-</div>
-
-<!-- COMPLETION MODAL -->
-<div class="modal-overlay" id="compModal" onclick="if(event.target===this)closeCompletionModal()">
-  <div class="modal">
-    <div class="modal-title">Срок сдачи до <button class="modal-close" onclick="closeCompletionModal()">✕</button></div>
-    <div class="completion-list" id="completionList"></div>
-    <div class="modal-actions">
-      <button class="modal-clear" onclick="clearCompletion()">Сбросить</button>
-      <button class="modal-apply" onclick="applyCompletion()">Применить</button>
-    </div>
-  </div>
-</div>
+<!-- 17.07.26: модалки Тип/Цена/Срок сдачи убраны отсюда — теперь это
+     заякоренные дропдауны внутри #searchWrap (см. выше, рядом с кнопками
+     фильтров), см. .fd-* в CSS и toggleDropdown()/renderTypeRows()/
+     renderPriceCols()/renderCompList() в скрипте ниже. -->
 
 <script>
 // 17.07.26, по вопросу Ильи: при обычной перезагрузке страницы (F5/
@@ -945,17 +985,32 @@ const DISTRICTS = {
 const AMPHOE = ['Amphoe Mueang','Amphoe Kathu','Amphoe Thalang'];
 const AMPHOE_RU = {'Amphoe Mueang':'Мыонг','Amphoe Kathu':'Катху','Amphoe Thalang':'Таланг'};
 
-// ── PRICE RANGES ──────────────────────────
-const PRICE_RANGES = [
-  {label:'< 5 млн',  min:0,        max:5000000},
-  {label:'5–8 млн',  min:5000000,  max:8000000},
-  {label:'8–10 млн', min:8000000,  max:10000000},
-  {label:'10–12 млн',min:10000000, max:12000000},
-  {label:'12–15 млн',min:12000000, max:15000000},
-  {label:'15–20 млн',min:15000000, max:20000000},
-  {label:'20–30 млн',min:20000000, max:30000000},
-  {label:'30–50 млн',min:30000000, max:50000000},
-];
+// ── ЦЕНА — состояние фильтра (согласованный макет, flox-filters-mockup.html) ──
+// 17.07.26: раньше цена выбиралась одним из 8 готовых диапазонов
+// (PRICE_RANGES). По согласованному макету теперь два независимых пресета
+// "от"/"до" (любая комбинация) + вкладки "За всё" (обычная цена) / "За м²"
+// (цена за квадратный метр — см. loadUnitAreaData ниже, это НАСТОЯЩИЕ данные
+// по площади из Supabase, не выдуманные числа).
+let priceMode = 'all'; // 'all' | 'm2'
+const priceState = {
+  all: {
+    steps: [3000000,4000000,5000000,6000000,8000000,10000000,12000000,15000000,20000000,25000000,30000000,40000000,50000000],
+    committed: { from:null, to:null }, pending: { from:null, to:null },
+    fmt: v => (v/1e6).toFixed(v%1e6===0?0:1) + ' млн',
+    unitSuffix: '',
+  },
+  m2: {
+    // 17.07.26: шаги пресетов НЕ захардкожены — считаются из реальных
+    // area_sqm/selling_price всех доступных юнитов в Supabase при первом
+    // открытии вкладки "За м²" (см. loadUnitAreaData()/computeM2Steps()).
+    // Пока данные не загружены — пусто, вкладка покажет "Загрузка…".
+    steps: [],
+    committed: { from:null, to:null }, pending: { from:null, to:null },
+    fmt: v => v.toLocaleString('ru'),
+    unitSuffix: ' ฿ за м²',
+  },
+};
+function currentPriceState(){ return priceState[priceMode]; }
 
 // ── COMPLETION QUARTERS ───────────────────
 const COMPLETION_OPTIONS = [
@@ -1077,6 +1132,8 @@ function resetSearchPageToClean() {
   // 17.07.26: полный сброс к дефолту — фильтры, тип, текст поиска, результаты.
   filters = { propType: 'condo', unitTypes: null, price: null, completion: null };
   tmpUnitTypes = [];
+  resetPriceState(); // 17.07.26: заякоренные дропдауны цены — сбрасываем committed/pending обеих вкладок и поля ввода
+  closeAllFilterDropdowns();
   document.querySelectorAll('.type-btn').forEach((b, i) => b.classList.toggle('act', i === 0));
   updateChips();
   clearSearch(); // чистит текст поиска, крестик и #searchResults (см. функцию ниже)
@@ -1183,6 +1240,79 @@ function getMatchingUnitPrices(p) {
   return types.map(t => t.price);
 }
 
+// ── ЦЕНА ЗА М² — реальные данные из Supabase ──────────
+// 17.07.26, по просьбе Ильи: фильтр "за м²" должен работать по-настоящему —
+// тянем площадь (area_sqm) и цену (selling_price) РЕАЛЬНЫХ доступных юнитов
+// из вашей базы (то же самое, что уже используется в презентациях, см.
+// строку с "select=room_no,tower,floor,room_type,area_sqm,..." ниже по
+// файлу), а не выдумываем числа. Каталог проектов (PROJECTS) сам по себе
+// площади не хранит — она есть только в базе, по каждому юниту, поэтому
+// грузим отдельно и группируем по коду проекта (совпадает с PROJECTS[].id,
+// см. project.html?id=VIK и т.п.) и по тому же типу юнита, что и в
+// UNIT_TYPES (studio/1 bedroom/... — те же псевдонимы, что уже используются
+// для кнопок "Тип" выше).
+// ВАЖНО: я не могу проверить это из песочницы (нет доступа к вашей базе
+// Supabase) — сам запрос и названия полей взяты из уже РАБОТАЮЩЕГО в этом же
+// файле кода (loadPresentation, строка с room_type/area_sqm/projects(code)).
+// Если после заливки фильтр "за м²" не находит совпадений или падает с
+// ошибкой в консоли — почти наверняка дело в названии поля/таблицы, дайте
+// знать, поправим.
+let unitAreaData = {}; // { [код_проекта]: [{ type, pricePerSqm }] }
+let unitAreaDataPromise = null;
+async function loadUnitAreaData() {
+  if (unitAreaDataPromise) return unitAreaDataPromise;
+  unitAreaDataPromise = (async () => {
+    try {
+      const r = await h(`${SUPABASE_URL}/units?select=room_type,area_sqm,selling_price,projects(code)&status=eq.available&area_sqm=gt.0&selling_price=gt.0&limit=5000`);
+      const rows = await r.json();
+      const byProject = {};
+      (Array.isArray(rows) ? rows : []).forEach(u => {
+        const code = u.projects?.code;
+        if (!code || !u.area_sqm || !u.selling_price) return;
+        const pricePerSqm = u.selling_price / u.area_sqm;
+        const type = matchUnitTypeLabel(u.room_type);
+        (byProject[code] ||= []).push({ type, pricePerSqm });
+      });
+      unitAreaData = byProject;
+    } catch (e) {
+      console.error('Не удалось загрузить данные по площади (для фильтра "за м²") из Supabase:', e);
+      unitAreaData = {}; // без реальных данных фильтр "за м²" просто не найдёт совпадений — страницу не ломаем
+    }
+    return unitAreaData;
+  })();
+  return unitAreaDataPromise;
+}
+function matchUnitTypeLabel(rawType) {
+  if (!rawType) return null;
+  const rt = String(rawType).toLowerCase();
+  const found = UNIT_TYPES.find(t => t.match.some(m => rt.includes(m)));
+  return found ? found.label : null;
+}
+// Шаги пресетов "за м²" — считаем из реального разброса цена/м² по всем
+// загруженным юнитам (не подбираем на глаз, как для "за всё"), округляя до
+// красивых чисел, штук 10.
+function computeM2Steps() {
+  const all = [];
+  Object.values(unitAreaData).forEach(rows => rows.forEach(r => { if (r.pricePerSqm) all.push(r.pricePerSqm); }));
+  if (!all.length) return [];
+  const min = Math.min(...all), max = Math.max(...all);
+  const roundedMin = Math.floor(min / 5000) * 5000;
+  const roundedMax = Math.max(roundedMin + 5000, Math.ceil(max / 5000) * 5000);
+  const step = Math.max(5000, Math.ceil(((roundedMax - roundedMin) / 9) / 5000) * 5000);
+  const steps = [];
+  for (let v = roundedMin + step; v < roundedMax; v += step) steps.push(v);
+  steps.push(roundedMax);
+  return steps;
+}
+function getMatchingUnitPricesPerSqm(p) {
+  const rows = (unitAreaData && unitAreaData[p.id]) || [];
+  if (!rows.length) return [];
+  if (filters.unitTypes && filters.unitTypes.length) {
+    return rows.filter(r => r.type && filters.unitTypes.some(ft => r.type.toLowerCase() === ft.toLowerCase())).map(r => r.pricePerSqm);
+  }
+  return rows.map(r => r.pricePerSqm);
+}
+
 // ── FILTER PROJECTS ───────────────────────
 function applyFilters(list) {
   if (filters.propType && filters.propType !== 'condo') return [];
@@ -1194,7 +1324,9 @@ function applyFilters(list) {
       if (!match) return false;
     }
     if (filters.price) {
-      const candidates = getMatchingUnitPrices(p);
+      // 17.07.26: в режиме "за м²" сверяемся с реальной ценой/м² из Supabase
+      // (getMatchingUnitPricesPerSqm), иначе как раньше — с обычной ценой.
+      const candidates = filters.price.mode === 'm2' ? getMatchingUnitPricesPerSqm(p) : getMatchingUnitPrices(p);
       const min = filters.price.min || 0, max = filters.price.max || Infinity;
       const hasMatch = candidates.some(price => price >= min && price <= max);
       if (!hasMatch) return false;
@@ -1216,9 +1348,9 @@ function applyFilters(list) {
 // (район/застройщик/цена/срок сдачи/тип) — включая случай, когда пользователь
 // открыл карту, ни разу явно не нажав "Найти" в строке поиска. autoSearch()/
 // doSearch() ниже нарочно ничего не делают, пока _searchDone не true (чтобы
-// не показывать список карточек раньше времени) — из-за этого applyPrice()/
-// applyTypeModal()/applyCompletion() и т.п. могли применить фильтр, но карта
-// (если она в этот момент открыта) молча оставалась со старыми плашками.
+// не показывать список карточек раньше времени) — из-за этого commitPrice()/
+// applyTypeFilter()/selectCompletion() и т.п. могли применить фильтр, но
+// карта (если она в этот момент открыта) молча оставалась со старыми плашками.
 // Эта функция не трогает список карточек и флаг _searchDone — только карту:
 // пересчитывает filteredProjects по актуальным filters + текущему тексту
 // поиска и, если вкладка "На карте" сейчас открыта, перерисовывает плашки.
@@ -1353,8 +1485,15 @@ const BASE_IMG = 'https://nottodayman26.github.io/phuket-catalog/img/';
 function projectUrlWithFilters(p) {
   const params = new URLSearchParams();
   if (filters.unitTypes && filters.unitTypes.length) params.set('types', filters.unitTypes.join(','));
-  if (filters.price && filters.price.min) params.set('priceFrom', filters.price.min);
-  if (filters.price && filters.price.max) params.set('priceTo', filters.price.max);
+  // 17.07.26: цену передаём в URL только для обычного режима ("за всё") — у
+  // project.html нет параметра для цены за м², а прокинуть туда голые числа
+  // ฿/м² под видом priceFrom/priceTo (они в разы меньше настоящей цены)
+  // ввело бы страницу проекта в заблуждение. Передать фильтр по м² дальше —
+  // отдельная задача, если понадобится.
+  if (filters.price && filters.price.mode !== 'm2') {
+    if (filters.price.min) params.set('priceFrom', filters.price.min);
+    if (filters.price.max) params.set('priceTo', filters.price.max);
+  }
   if (filters.completion) params.set('completion', `${filters.completion.year}Q${filters.completion.q}`);
   const query = params.toString();
   return query ? `${p.url}&${query}` : p.url;
@@ -1984,7 +2123,17 @@ function getMapMatchingUnits(p) {
       }
       if (filters.price) {
         const min = filters.price.min || 0, max = filters.price.max || Infinity;
-        if (u.price < min || u.price > max) return false;
+        // 17.07.26: в режиме "за м²" сверяем с реальной ценой/м² этого
+        // конкретного типа юнита у этого проекта (данные из Supabase, см.
+        // loadUnitAreaData/getMatchingUnitPricesPerSqm выше) — обычный
+        // u.price здесь не подходит, это разные единицы измерения.
+        if (filters.price.mode === 'm2') {
+          const rows = (unitAreaData[p.id] || []).filter(r => r.type && u.name && r.type.toLowerCase() === u.name.toLowerCase());
+          const matches = rows.some(r => r.pricePerSqm >= min && r.pricePerSqm <= max);
+          if (!matches) return false;
+        } else {
+          if (u.price < min || u.price > max) return false;
+        }
       }
       return true;
     });
@@ -2230,6 +2379,18 @@ async function loadProjectCoords() {
 }
 
 // ── CHIPS ─────────────────────────────────
+function isPriceActive(){
+  const all = priceState.all.committed, m2 = priceState.m2.committed;
+  return !!(all.from || all.to || m2.from || m2.to);
+}
+function priceChipLabel(){
+  const all = priceState.all.committed, m2 = priceState.m2.committed;
+  const st = (m2.from || m2.to) ? priceState.m2 : priceState.all;
+  const { from, to } = st.committed;
+  if (from && to) return `${st.fmt(from)}–${st.fmt(to)}${st.unitSuffix}`;
+  if (from) return `от ${st.fmt(from)}${st.unitSuffix}`;
+  return `до ${st.fmt(to)}${st.unitSuffix}`;
+}
 function updateChips() {
   let hasActive = false;
 
@@ -2243,11 +2404,9 @@ function updateChips() {
     document.getElementById('filterTypeBtn').classList.remove('act');
   }
 
-  if (filters.price) {
+  if (isPriceActive()) {
     hasActive = true;
-    const r = PRICE_RANGES.find(r => r.min === filters.price.min && r.max === filters.price.max);
-    const label = r ? r.label : `${fmtMln(filters.price.min)}–${fmtMln(filters.price.max)}`;
-    document.getElementById('filterPriceLabel').textContent = label;
+    document.getElementById('filterPriceLabel').textContent = priceChipLabel();
     document.getElementById('filterPriceBtn').classList.add('act');
   } else {
     document.getElementById('filterPriceLabel').textContent = 'Цена';
@@ -2271,9 +2430,19 @@ function updateChips() {
     hasActive ? `<button class="reset-all" onclick="resetAll()">Сбросить все</button>` : '';
 }
 
+// 17.07.26: сброс цены вынесен в отдельную функцию — вызывается и из
+// resetAll(), и из resetSearchPageToClean() (та не зовёт resetAll()
+// напрямую, сбрасывает filters сама).
+function resetPriceState(){
+  ['all','m2'].forEach(m => { priceState[m].committed = {from:null,to:null}; priceState[m].pending = {from:null,to:null}; });
+  const fi = document.getElementById('priceFromInput'), ti = document.getElementById('priceToInput');
+  if (fi) fi.value = ''; if (ti) ti.value = '';
+}
+
 function resetAll() {
   filters = {propType:'condo', unitTypes:null, price:null, completion:null};
   tmpUnitTypes = [];
+  resetPriceState();
   document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('act',i===0));
   updateChips();
   autoSearch();
@@ -2295,143 +2464,189 @@ function freshSearch() {
   resetSearchPageToClean();
 }
 
-// ── TYPE MODAL ────────────────────────────
-function openTypeModal() {
+// ── ФИЛЬТРЫ — ЗАЯКОРЕННЫЕ ДРОПДАУНЫ ────────
+// 17.07.26: согласованный макет (flox-filters-mockup.html) — три дропдауна
+// прямо под кнопками "Тип"/"Цена"/"Срок сдачи" вместо модалок по центру
+// экрана. closeAllFilterDropdowns()/toggleDropdown() общие для всех трёх.
+//
+// Найденный при согласовании макета баг (важно не повторить здесь): клик по
+// чекбоксу/пресету перерисовывает список через innerHTML — кликнутый DOM-
+// узел в этот момент удаляется. e.target.closest(...) после этого идёт по
+// ОТСОЕДИНЁННОЙ ветке и не находит родительскую .filter-dropdown, из-за чего
+// клик ошибочно считался "кликом мимо", и панель закрывалась сама сразу
+// после отметки. Используем composedPath() — путь клика фиксируется ДО
+// перерисовки и не ломается при последующей замене DOM.
+function closeAllFilterDropdowns(){
+  const priceDD = document.getElementById('ddPrice');
+  if (priceDD && priceDD.classList.contains('vis')){
+    const st = currentPriceState();
+    if (st.pending.from || st.pending.to) commitPrice();
+  }
+  document.querySelectorAll('.filter-dropdown').forEach(d => d.classList.remove('vis'));
+}
+function toggleDropdown(name, btn){
+  const map = { type:'ddType', price:'ddPrice', comp:'ddComp' };
+  const el = document.getElementById(map[name]);
+  const wasOpen = el.classList.contains('vis');
+  closeAllFilterDropdowns();
+  if (!wasOpen){
+    el.style.left = btn.offsetLeft + 'px';
+    el.classList.add('vis');
+    if (name === 'price') openPriceDropdown();
+    if (name === 'type') openTypeDropdown();
+    if (name === 'comp') renderCompList();
+  }
+}
+document.addEventListener('click', e => {
+  const path = e.composedPath();
+  const insideBtn = path.some(el => el.classList && el.classList.contains('filter-btn'));
+  const insideDropdown = path.some(el => el.classList && el.classList.contains('filter-dropdown'));
+  if (!insideBtn && !insideDropdown) closeAllFilterDropdowns();
+});
+
+// ── ТИП ────────────────────────────────────
+// 17.07.26, по просьбе Ильи: кнопка "Применить" внизу — можно отметить
+// несколько типов и подтвердить одним кликом, не заходя в фильтр повторно.
+// tmpUnitTypes — черновой (ещё не применённый) выбор, как и раньше.
+function renderTypeRows(){
+  document.getElementById('typeRows').innerHTML = UNIT_TYPES.map(t => `
+    <div class="fd-row ${tmpUnitTypes.includes(t.label)?'act':''}" onclick="toggleType('${t.label}')">
+      <div class="fd-checkbox"></div>
+      <div class="fd-row-label">${t.label}</div>
+    </div>`).join('');
+}
+function toggleType(label){
+  const i = tmpUnitTypes.indexOf(label);
+  if (i>=0) tmpUnitTypes.splice(i,1); else tmpUnitTypes.push(label);
+  renderTypeRows();
+}
+function openTypeDropdown(){
   tmpUnitTypes = [...(filters.unitTypes||[])];
-  document.getElementById('typeModal').classList.add('vis');
-  renderUnitTypeOptions();
+  renderTypeRows();
 }
-function closeTypeModal() { document.getElementById('typeModal').classList.remove('vis'); }
-
-function renderUnitTypeOptions() {
-  document.getElementById('unitTypeOptions').innerHTML = UNIT_TYPES.map(t => {
-    const act = tmpUnitTypes.includes(t.label) ? 'act' : '';
-    return `<div class="type-option ${act}" onclick="toggleUnitType(this,'${t.label}')">
-      <div><div class="type-option-name">${t.label}</div></div>
-      <div class="type-option-check"></div>
-    </div>`;
-  }).join('');
-}
-
-function toggleUnitType(el, label) {
-  const idx = tmpUnitTypes.indexOf(label);
-  if (idx >= 0) tmpUnitTypes.splice(idx, 1);
-  else tmpUnitTypes.push(label);
-  el.classList.toggle('act', tmpUnitTypes.includes(label));
-}
-
-function clearTypeModal() { tmpUnitTypes = []; renderUnitTypeOptions(); }
-
-function applyTypeModal() {
+function applyTypeFilter(){
   filters.unitTypes = tmpUnitTypes.length ? [...tmpUnitTypes] : null;
-  updateChips(); closeTypeModal(); autoSearch();
+  updateChips();
+  closeAllFilterDropdowns();
+  autoSearch();
   syncMapWithFilters();
 }
-
-// ── PRICE MODAL ───────────────────────────
-function openPriceModal() {
-  document.getElementById('priceModal').classList.add('vis');
-  renderPricePresets();
-  renderHistogram();
-}
-function closePriceModal() { document.getElementById('priceModal').classList.remove('vis'); }
-
-function renderPricePresets() {
-  document.getElementById('pricePresets').innerHTML = PRICE_RANGES.map(r => `
-    <button class="price-preset ${filters.price?.min===r.min&&filters.price?.max===r.max?'act':''}"
-      onclick="setPricePreset(${r.min},${r.max},this)">${r.label}</button>`).join('');
+function clearTypeFilter(e){
+  e.stopPropagation();
+  filters.unitTypes = null; tmpUnitTypes = [];
+  updateChips(); autoSearch(); syncMapWithFilters();
 }
 
-let HIST_UNITS_CACHE = null;
-
-async function loadHistogramData() {
-  if (HIST_UNITS_CACHE) return HIST_UNITS_CACHE;
-  try {
-    const r = await fetch(SUPABASE_URL + '/units?status=eq.available&select=selling_price&limit=2000', {
-      headers: SB
-    });
-    HIST_UNITS_CACHE = await r.json();
-  } catch(e) { HIST_UNITS_CACHE = []; }
-  return HIST_UNITS_CACHE;
+// ── ЦЕНА ───────────────────────────────────
+// 17.07.26, по просьбе Ильи: цена применяется, только если выбраны ОБА
+// значения, либо если выбрано одно и панель закрыли (клик мимо/другой
+// фильтр) — commitPrice() ниже. "За всё" и "За м²" взаимоисключающие —
+// реальный выбор в одном режиме сразу гасит committed/pending другого.
+function syncFiltersPriceFromState(){
+  const all = priceState.all.committed, m2 = priceState.m2.committed;
+  if (m2.from || m2.to) filters.price = { min: m2.from||0, max: m2.to||0, mode:'m2' };
+  else if (all.from || all.to) filters.price = { min: all.from||0, max: all.to||0, mode:'total' };
+  else filters.price = null;
 }
-
-async function renderHistogram() {
-  const units = await loadHistogramData();
-  const bars = PRICE_RANGES.map(r => {
-    const count = units.filter(u => u.selling_price >= r.min && u.selling_price < (r.max||Infinity)).length;
-    return { r, count };
-  });
-  const maxC = Math.max(...bars.map(b => b.count), 1);
-  const curMin = parseInt(document.getElementById('priceMin').value)||0;
-  const curMax = parseInt(document.getElementById('priceMax').value)||Infinity;
-  document.getElementById('priceHistogram').innerHTML = bars.map(({r,count}) => {
-    const h = Math.max(4, Math.round((count/maxC)*100));
-    const sel = r.min >= curMin && (curMax===Infinity||r.max<=curMax) ? 'sel' : '';
-    return `<div class="price-bar ${sel}" style="height:${h}%"
-      onclick="setPricePreset(${r.min},${r.max},null)" title="${r.label}: ${count} юнитов"></div>`;
+function renderPriceCols(){
+  const st = currentPriceState();
+  if (priceMode === 'm2' && !st.steps.length) {
+    document.getElementById('priceColFrom').innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted)">Нет данных по площади</div>';
+    document.getElementById('priceColTo').innerHTML = '';
+    return;
+  }
+  // 17.07.26, по просьбе Ильи: логический баг — можно было выбрать "от 5 млн"
+  // и "до 4 млн" одновременно. Гасим (disabled) те пресеты, что дали бы
+  // невозможный диапазон — работает в обеих вкладках, т.к. функция общая.
+  document.getElementById('priceColFrom').innerHTML = st.steps.map(v => {
+    const disabled = st.pending.to !== null && v > st.pending.to;
+    return `<button class="fd-price-opt ${st.pending.from===v?'act':''}" ${disabled?'disabled':''} onclick="setPriceVal('from',${v})">${st.fmt(v)}</button>`;
+  }).join('');
+  document.getElementById('priceColTo').innerHTML = st.steps.map(v => {
+    const disabled = st.pending.from !== null && v < st.pending.from;
+    return `<button class="fd-price-opt ${st.pending.to===v?'act':''}" ${disabled?'disabled':''} onclick="setPriceVal('to',${v})">${st.fmt(v)}</button>`;
   }).join('');
 }
-
-function setPricePreset(min, max, btn) {
-  document.querySelectorAll('.price-preset').forEach(p => p.classList.remove('act'));
-  if (btn) btn.classList.add('act');
-  document.getElementById('priceMin').value = min || '';
-  document.getElementById('priceMax').value = max || '';
-  renderHistogram();
+function setPriceVal(side, v){
+  const st = currentPriceState();
+  const other = priceState[priceMode === 'all' ? 'm2' : 'all'];
+  if (other.committed.from || other.committed.to || other.pending.from || other.pending.to) {
+    other.committed = { from:null, to:null }; other.pending = { from:null, to:null };
+    syncFiltersPriceFromState(); updateChips(); autoSearch(); syncMapWithFilters();
+  }
+  st.pending[side] = v;
+  document.getElementById(side==='from' ? 'priceFromInput' : 'priceToInput').value = st.fmt(v);
+  renderPriceCols();
+  if (st.pending.from && st.pending.to) commitPrice();
 }
-
-function syncHistogram() { renderHistogram(); }
-
-function clearPrice() {
-  document.getElementById('priceMin').value = '';
-  document.getElementById('priceMax').value = '';
-  document.querySelectorAll('.price-preset').forEach(p => p.classList.remove('act'));
-  renderHistogram();
+function onPriceInput(side){
+  const el = document.getElementById(side==='from' ? 'priceFromInput' : 'priceToInput');
+  if (el.value.trim() !== '') return;
+  const st = currentPriceState();
+  st.pending[side] = null;
+  renderPriceCols();
+  if (st.committed[side] !== null) {
+    st.committed[side] = null;
+    syncFiltersPriceFromState(); updateChips(); autoSearch(); syncMapWithFilters();
+  }
 }
-
-function applyPrice() {
-  const min = parseInt(document.getElementById('priceMin').value)||0;
-  const max = parseInt(document.getElementById('priceMax').value)||0;
-  filters.price = (min||max) ? {min, max} : null;
-  updateChips(); closePriceModal(); autoSearch();
-  syncMapWithFilters();
+function commitPrice(){
+  const st = currentPriceState();
+  st.committed.from = st.pending.from; st.committed.to = st.pending.to;
+  syncFiltersPriceFromState();
+  updateChips(); autoSearch(); syncMapWithFilters();
 }
-
-// ── COMPLETION MODAL ──────────────────────
-function openCompletionModal() {
-  document.getElementById('compModal').classList.add('vis');
-  renderCompletionList();
+async function setPriceMode(mode){
+  priceMode = mode;
+  document.getElementById('tabAll').classList.toggle('act', mode==='all');
+  document.getElementById('tabM2').classList.toggle('act', mode==='m2');
+  const st = currentPriceState();
+  document.getElementById('priceFromInput').value = st.pending.from ? st.fmt(st.pending.from) : '';
+  document.getElementById('priceToInput').value = st.pending.to ? st.fmt(st.pending.to) : '';
+  if (mode === 'm2' && !priceState.m2.steps.length) {
+    document.getElementById('priceColFrom').innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted)">Загрузка…</div>';
+    document.getElementById('priceColTo').innerHTML = '';
+    await loadUnitAreaData();
+    priceState.m2.steps = computeM2Steps();
+  }
+  renderPriceCols();
 }
-function closeCompletionModal() { document.getElementById('compModal').classList.remove('vis'); }
-
-function renderCompletionList() {
-  // Group by year
-  const years = [...new Set(COMPLETION_OPTIONS.map(o=>o.year))];
-  let html = '';
-  years.forEach(year => {
-    html += `<div class="completion-group-title">${year}</div>`;
-    COMPLETION_OPTIONS.filter(o=>o.year===year).forEach(o => {
-      const act = filters.completion?.label === o.label ? 'act' : '';
-      html += `
-        <div class="completion-item ${act}" onclick="selectCompletion(this,'${o.label}',${o.year},${o.q})">
-          <div class="completion-item-left">
-            <div class="completion-check"></div>
-            <span style="font-size:13px;font-weight:500">${o.label}</span>
-          </div>
-        </div>`;
-    });
+function openPriceDropdown(){
+  ['all','m2'].forEach(m => {
+    priceState[m].pending.from = priceState[m].committed.from;
+    priceState[m].pending.to = priceState[m].committed.to;
   });
-  document.getElementById('completionList').innerHTML = html;
+  const all = priceState.all.committed, m2 = priceState.m2.committed;
+  priceMode = (!all.from && !all.to && (m2.from || m2.to)) ? 'm2' : 'all';
+  setPriceMode(priceMode);
+}
+function clearPriceFilter(e){
+  e.stopPropagation();
+  resetPriceState();
+  renderPriceCols();
+  syncFiltersPriceFromState(); updateChips(); autoSearch(); syncMapWithFilters();
 }
 
-let tmpCompl = null;
-function selectCompletion(el, label, year, q) {
-  document.querySelectorAll('.completion-item').forEach(i => i.classList.remove('act'));
-  el.classList.add('act');
-  tmpCompl = {label, year, q};
+// ── СРОК СДАЧИ ─────────────────────────────
+function renderCompList(){
+  document.getElementById('compList').innerHTML = COMPLETION_OPTIONS.map(o => `
+    <div class="fd-list-item ${filters.completion?.label===o.label?'act':''}" onclick="selectCompletion('${o.label}',${o.year},${o.q})">
+      ${o.q===0 ? o.label : 'до '+o.label}
+    </div>`).join('');
 }
-function clearCompletion() { tmpCompl=null; document.querySelectorAll('.completion-item').forEach(i=>i.classList.remove('act')); }
-function applyCompletion() { filters.completion = tmpCompl; updateChips(); closeCompletionModal(); autoSearch(); syncMapWithFilters(); }
+function selectCompletion(label, year, q){
+  filters.completion = (filters.completion?.label === label) ? null : {label, year, q};
+  renderCompList();
+  updateChips();
+  autoSearch();
+  syncMapWithFilters();
+  closeAllFilterDropdowns();
+}
+function clearCompFilter(e){
+  e.stopPropagation();
+  filters.completion = null;
+  renderCompList(); updateChips(); autoSearch(); syncMapWithFilters();
+}
 
 // ── OFFERS ────────────────────────────────
 // Деление ленты (активность / предложения) на дни. Ожидает items уже
