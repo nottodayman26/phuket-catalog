@@ -1271,13 +1271,21 @@ async function loadUnitAreaData() {
   if (unitAreaDataPromise) return unitAreaDataPromise;
   unitAreaDataPromise = (async () => {
     try {
-      const r = await h(`${SUPABASE_URL}/units?select=room_type,area_sqm,selling_price,projects(code)&status=eq.available&selling_price=gt.0&limit=5000`);
+      // 17.07.26, по подсказке Ильи: в таблице units в Supabase есть готовая
+      // колонка price_per_sqm (нашли её в unit.html — там цена за м² берётся
+      // прямо оттуда, а не считается на лету) — используем ЕЁ как основной
+      // источник вместо деления selling_price/area_sqm вручную, это надёжнее
+      // (не зависит от округлений площади и т.п.). Деление оставили как
+      // резервный вариант — на случай старых строк, где эта колонка почему-то
+      // не заполнена, а area_sqm есть.
+      const r = await h(`${SUPABASE_URL}/units?select=room_type,area_sqm,selling_price,price_per_sqm,projects(code)&status=eq.available&selling_price=gt.0&limit=5000`);
       const rows = await r.json();
       const byProject = {};
       (Array.isArray(rows) ? rows : []).forEach(u => {
         const code = u.projects?.code;
         if (!code || !u.selling_price) return;
-        const pricePerSqm = (u.area_sqm && u.area_sqm > 0) ? (u.selling_price / u.area_sqm) : null;
+        const pricePerSqm = (u.price_per_sqm != null) ? u.price_per_sqm
+          : ((u.area_sqm && u.area_sqm > 0) ? (u.selling_price / u.area_sqm) : null);
         const type = matchUnitTypeLabel(u.room_type);
         (byProject[code] ||= []).push({ type, price: u.selling_price, pricePerSqm });
       });
@@ -1650,14 +1658,22 @@ const BASE_IMG = 'https://nottodayman26.github.io/phuket-catalog/img/';
 function projectUrlWithFilters(p) {
   const params = new URLSearchParams();
   if (filters.unitTypes && filters.unitTypes.length) params.set('types', filters.unitTypes.join(','));
-  // 17.07.26: цену передаём в URL только для обычного режима ("за всё") — у
-  // project.html нет параметра для цены за м², а прокинуть туда голые числа
-  // ฿/м² под видом priceFrom/priceTo (они в разы меньше настоящей цены)
-  // ввело бы страницу проекта в заблуждение. Передать фильтр по м² дальше —
-  // отдельная задача, если понадобится.
-  if (filters.price && filters.price.mode !== 'm2') {
-    if (filters.price.min) params.set('priceFrom', filters.price.min);
-    if (filters.price.max) params.set('priceTo', filters.price.max);
+  // 17.07.26, по найденному Ильёй багу: плашка на карте (посчитанная по
+  // фильтру "за м²") показывала одну цену, а на самой странице проекта был
+  // виден более дешёвый вариант того же типа — потому что страница проекта
+  // вообще не получала фильтр "за м²" (раньше здесь этот случай сознательно
+  // пропускали — у project.html не было для него ни параметра, ни вкладки).
+  // Теперь у project.html есть своя вкладка "За м²" (см. отдельную правку в
+  // project.html) с параметрами priceFromM2/priceToM2 — передаём фильтр по
+  // м² туда так же, как раньше передавали обычную цену.
+  if (filters.price) {
+    if (filters.price.mode === 'm2') {
+      if (filters.price.min) params.set('priceFromM2', filters.price.min);
+      if (filters.price.max) params.set('priceToM2', filters.price.max);
+    } else {
+      if (filters.price.min) params.set('priceFrom', filters.price.min);
+      if (filters.price.max) params.set('priceTo', filters.price.max);
+    }
   }
   if (filters.completion) params.set('completion', `${filters.completion.year}Q${filters.completion.q}`);
   const query = params.toString();

@@ -374,6 +374,16 @@ a { color: inherit; text-decoration: none; }
 .uf-option.selected::after { content: '✓'; margin-left: auto; font-size: 12px; }
 
 /* Цена */
+/* 17.07.26, по просьбе Ильи: вкладки "За всё"/"За м²" — тот же приём, что
+   уже согласован в поисковике (flox-web.html), только цвета/отступы под
+   локальную палитру этой страницы (var(--project-color) вместо --accent). */
+.uf-price-tabs { display: flex; gap: 4px; padding: 12px 14px 0; }
+.uf-price-tab {
+  flex: 1; padding: 7px 0; border-radius: 8px; font-size: 12.5px; font-weight: 500;
+  border: none; background: none; color: var(--muted); cursor: pointer; font-family: inherit;
+  transition: background .15s, color .15s;
+}
+.uf-price-tab.act { background: var(--accent-soft); color: var(--project-color); }
 .uf-price-panel { padding: 14px; }
 .uf-price-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .uf-price-input {
@@ -1330,6 +1340,15 @@ function renderUnits(d) {
               <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
             </button>
             <div class="uf-dropdown" id="uf-price-dd" style="min-width:280px" onmouseenter="cancelUfClose('uf-price-dd')" onmouseleave="scheduleUfClose('uf-price-dd','uf-price-btn')">
+              <!-- 17.07.26, по просьбе Ильи: добавили режим "За м²" — раньше
+                   тут была только обычная цена, и фильтр "за м²", применённый
+                   в поисковике/на карте, вообще не мог сюда попасть (у этой
+                   страницы не было параметра для него), из-за чего цифры на
+                   карте и на странице проекта расходились. -->
+              <div class="uf-price-tabs">
+                <button class="uf-price-tab act" id="uf-price-tab-total" type="button" onclick="setUfPriceMode('total')">За всё</button>
+                <button class="uf-price-tab" id="uf-price-tab-m2" type="button" onclick="setUfPriceMode('m2')">За м²</button>
+              </div>
               <div class="uf-price-panel">
                 <div class="uf-price-row">
                   <input class="uf-price-input" id="uf-price-from" type="number" min="0" step="1000000" placeholder="Значение от" oninput="onPriceInput()">
@@ -1378,11 +1397,20 @@ async function loadUnits(d) {
     const projectId = projData[0].id;
 
     const res = await fetch(
-      `${SB_URL}/units?project_id=eq.${projectId}&select=room_no,tower,floor,room_type,area_sqm,selling_price,status,plan_code&order=selling_price.asc&limit=1000`,
+      `${SB_URL}/units?project_id=eq.${projectId}&select=room_no,tower,floor,room_type,area_sqm,selling_price,price_per_sqm,status,plan_code&order=selling_price.asc&limit=1000`,
       { headers: SB_HEADERS }
     );
     _allUnits = await res.json();
-    _allUnits.forEach(u => u._category = mapRoomType(u.room_type));
+    _allUnits.forEach(u => {
+      u._category = mapRoomType(u.room_type);
+      // 17.07.26, по просьбе Ильи: добавили фильтр "за м²" (см. цену ниже) —
+      // price_per_sqm берём из готовой колонки в Supabase (та же, что уже
+      // использует unit.html), а не считаем сами делением, чтобы не разойтись
+      // с тем, что показывает страница юнита. Деление — только запасной
+      // вариант, если у старой записи эта колонка почему-то пустая.
+      u._pricePerSqm = (u.price_per_sqm != null) ? u.price_per_sqm
+        : ((u.area_sqm && parseFloat(u.area_sqm) > 0) ? u.selling_price / parseFloat(u.area_sqm) : null);
+    });
 
     document.getElementById('units-filters-wrap').style.display = 'block';
     buildPriceHints(_allUnits);
@@ -1616,6 +1644,12 @@ let _filterTypes = new Set();
 let _groupByBuilding = true; // true = по корпусам, false = единый список
 let _filterPriceFrom = 0;
 let _filterPriceTo = Infinity;
+// 17.07.26, по просьбе Ильи: добавили режим "За м²" — отдельная пара
+// значений от/до, чтобы переключение вкладки не затирало то, что уже
+// набрано в другом режиме (тот же приём, что в поисковике/на карте).
+let _priceMode = 'total'; // 'total' | 'm2'
+let _filterPriceFromM2 = 0;
+let _filterPriceToM2 = Infinity;
 let _filterStatus = 'available';
 
 // ── Дропдауны ─────────────────────────────────────────────────────────────
@@ -1682,11 +1716,36 @@ function selectStatus(el) {
   applyUnitFilters();
 }
 
+// 17.07.26, по просьбе Ильи: переключение вкладок "За всё"/"За м²" — меняет
+// _priceMode, перерисовывает подсказки под РЕАЛЬНЫЙ разброс цены/м² (см.
+// buildPriceHints) и подставляет в поля от/до то, что уже набрано в этом
+// режиме (если что-то было набрано раньше, до переключения туда-обратно).
+function setUfPriceMode(mode) {
+  _priceMode = mode;
+  document.getElementById('uf-price-tab-total')?.classList.toggle('act', mode === 'total');
+  document.getElementById('uf-price-tab-m2')?.classList.toggle('act', mode === 'm2');
+  const fromEl = document.getElementById('uf-price-from'), toEl = document.getElementById('uf-price-to');
+  if (mode === 'm2') {
+    if (fromEl) { fromEl.value = _filterPriceFromM2 || ''; fromEl.placeholder = '฿/м² от'; }
+    if (toEl) { toEl.value = _filterPriceToM2 !== Infinity ? _filterPriceToM2 : ''; toEl.placeholder = '฿/м² до'; }
+  } else {
+    if (fromEl) { fromEl.value = _filterPriceFrom || ''; fromEl.placeholder = 'Значение от'; }
+    if (toEl) { toEl.value = _filterPriceTo !== Infinity ? _filterPriceTo : ''; toEl.placeholder = 'Значение до'; }
+  }
+  buildPriceHints(_allUnits);
+  updatePriceLabel();
+}
+
 function onPriceInput() {
   const from = parseFloat(document.getElementById('uf-price-from')?.value) || 0;
   const to = parseFloat(document.getElementById('uf-price-to')?.value) || 0;
-  _filterPriceFrom = from;
-  _filterPriceTo = to || Infinity;
+  if (_priceMode === 'm2') {
+    _filterPriceFromM2 = from;
+    _filterPriceToM2 = to || Infinity;
+  } else {
+    _filterPriceFrom = from;
+    _filterPriceTo = to || Infinity;
+  }
   updatePriceLabel();
   // Снимаем выделение с подсказок
   document.querySelectorAll('.uf-price-hint').forEach(h => h.classList.remove('selected'));
@@ -1698,10 +1757,10 @@ function selectPriceHint(type, val, el) {
   const toEl = document.getElementById('uf-price-to');
   if (type === 'from') {
     fromEl.value = val;
-    _filterPriceFrom = val;
+    if (_priceMode === 'm2') _filterPriceFromM2 = val; else _filterPriceFrom = val;
   } else {
     toEl.value = val;
-    _filterPriceTo = val || Infinity;
+    if (_priceMode === 'm2') _filterPriceToM2 = val || Infinity; else _filterPriceTo = val || Infinity;
   }
   document.querySelectorAll(`.uf-price-hint[data-type="${type}"]`).forEach(h => h.classList.remove('selected'));
   el.classList.add('selected');
@@ -1710,35 +1769,67 @@ function selectPriceHint(type, val, el) {
 }
 
 function updatePriceLabel() {
-  const from = _filterPriceFrom;
-  const to = _filterPriceTo;
+  const isM2 = _priceMode === 'm2';
+  const from = isM2 ? _filterPriceFromM2 : _filterPriceFrom;
+  const to = isM2 ? _filterPriceToM2 : _filterPriceTo;
   const fmt = n => n >= 1000000 ? (n/1000000).toFixed(1).replace('.0','') + 'M' : n >= 1000 ? Math.round(n/1000) + 'K' : n;
+  const suffix = isM2 ? '/м²' : '';
   let label = 'Любая';
-  if (from && to !== Infinity) label = `${fmt(from)} — ${fmt(to)}`;
-  else if (from) label = `от ${fmt(from)}`;
-  else if (to !== Infinity) label = `до ${fmt(to)}`;
+  if (from && to !== Infinity) label = `${fmt(from)}${suffix} — ${fmt(to)}${suffix}`;
+  else if (from) label = `от ${fmt(from)}${suffix}`;
+  else if (to !== Infinity) label = `до ${fmt(to)}${suffix}`;
   const lbl = document.getElementById('uf-price-label');
   if (lbl) lbl.textContent = label;
 }
 
+// 17.07.26, по просьбе Ильи: подсказки цены теперь зависят от вкладки — "за
+// всё" остаются как были (фиксированные шаги 4-15 млн), а "за м²" считаются
+// из РЕАЛЬНОГО разброса price_per_sqm юнитов этого проекта (тот же приём,
+// что computeM2Steps() в поисковике/на карте — округляем в красивые шаги).
 function buildPriceHints(units) {
-  const hints = [4,5,6,7,8,9,10,11,12,13,14,15].map(m => m * 1000000);
   const container = document.getElementById('uf-price-hints');
   if (!container) return;
-  container.innerHTML = hints.map(v => {
-    const label = (v/1000000) + ' млн';
-    return `
-      <div class="uf-price-hint" data-type="from" data-val="${v}" onclick="selectPriceHint('from',${v},this)">${label}</div>
-      <div class="uf-price-hint" data-type="to" data-val="${v}" onclick="selectPriceHint('to',${v},this)">${label}</div>`;
-  }).join('');
+  if (_priceMode === 'm2') {
+    const vals = (units || []).map(u => u._pricePerSqm).filter(v => v != null && isFinite(v));
+    if (!vals.length) { container.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--muted)">Нет данных по площади</div>'; return; }
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const roundedMin = Math.floor(min / 5000) * 5000;
+    const roundedMax = Math.max(roundedMin + 5000, Math.ceil(max / 5000) * 5000);
+    const step = Math.max(5000, Math.ceil(((roundedMax - roundedMin) / 6) / 5000) * 5000);
+    const hints = [];
+    for (let v = roundedMin + step; v < roundedMax; v += step) hints.push(v);
+    hints.push(roundedMax);
+    container.innerHTML = hints.map(v => {
+      const label = v.toLocaleString('ru');
+      return `
+        <div class="uf-price-hint" data-type="from" data-val="${v}" onclick="selectPriceHint('from',${v},this)">${label}</div>
+        <div class="uf-price-hint" data-type="to" data-val="${v}" onclick="selectPriceHint('to',${v},this)">${label}</div>`;
+    }).join('');
+  } else {
+    const hints = [4,5,6,7,8,9,10,11,12,13,14,15].map(m => m * 1000000);
+    container.innerHTML = hints.map(v => {
+      const label = (v/1000000) + ' млн';
+      return `
+        <div class="uf-price-hint" data-type="from" data-val="${v}" onclick="selectPriceHint('from',${v},this)">${label}</div>
+        <div class="uf-price-hint" data-type="to" data-val="${v}" onclick="selectPriceHint('to',${v},this)">${label}</div>`;
+    }).join('');
+  }
 }
 
 function applyUnitFilters() {
   const filtered = _allUnits.filter(u => {
     if (_unitSearch && !u.room_no.toUpperCase().includes(_unitSearch)) return false;
     if (_filterTypes.size > 0 && !_filterTypes.has(u._category)) return false;
-    if (_filterPriceFrom && u.selling_price < _filterPriceFrom) return false;
-    if (_filterPriceTo !== Infinity && u.selling_price > _filterPriceTo) return false;
+    if (_priceMode === 'm2') {
+      if (_filterPriceFromM2 || _filterPriceToM2 !== Infinity) {
+        if (u._pricePerSqm == null) return false; // нет данных по площади/цене за м² — не можем подтвердить, что подходит
+        if (_filterPriceFromM2 && u._pricePerSqm < _filterPriceFromM2) return false;
+        if (_filterPriceToM2 !== Infinity && u._pricePerSqm > _filterPriceToM2) return false;
+      }
+    } else {
+      if (_filterPriceFrom && u.selling_price < _filterPriceFrom) return false;
+      if (_filterPriceTo !== Infinity && u.selling_price > _filterPriceTo) return false;
+    }
     if (_filterStatus && u.status !== _filterStatus) return false;
     return true;
   });
@@ -1754,11 +1845,17 @@ function applyUnitFilters() {
 }
 
 function resetUnitFilters() {
-  _filterTypes.clear(); _filterPriceFrom = 0; _filterPriceTo = Infinity; _filterStatus = 'available'; _unitSearch = ''; const si = document.getElementById('unit-search-input'); if(si) si.value = '';
+  _filterTypes.clear();
+  _filterPriceFrom = 0; _filterPriceTo = Infinity;
+  _filterPriceFromM2 = 0; _filterPriceToM2 = Infinity;
+  _priceMode = 'total';
+  _filterStatus = 'available'; _unitSearch = ''; const si = document.getElementById('unit-search-input'); if(si) si.value = '';
   const fromEl = document.getElementById('uf-price-from');
   const toEl = document.getElementById('uf-price-to');
-  if (fromEl) fromEl.value = '';
-  if (toEl) toEl.value = '';
+  if (fromEl) { fromEl.value = ''; fromEl.placeholder = 'Значение от'; }
+  if (toEl) { toEl.value = ''; toEl.placeholder = 'Значение до'; }
+  document.getElementById('uf-price-tab-total')?.classList.add('act');
+  document.getElementById('uf-price-tab-m2')?.classList.remove('act');
   document.getElementById('uf-type-label').textContent = 'Тип';
   document.getElementById('uf-price-label').textContent = 'Цена';
   document.getElementById('uf-status-label').textContent = 'Статус';
@@ -1766,6 +1863,7 @@ function resetUnitFilters() {
   document.querySelector('#uf-type-dd .uf-option[data-val=""]')?.classList.add('selected');
   document.querySelector('#uf-status-dd .uf-option[data-val="available"]')?.classList.add('selected');
   document.querySelectorAll('.uf-price-hint').forEach(h => h.classList.remove('selected'));
+  buildPriceHints(_allUnits);
   applyUnitFilters();
 }
 
@@ -2374,7 +2472,7 @@ function applyURLFilters() {
     if (lbl) lbl.textContent = _filterTypes.size === 1 ? [..._filterTypes][0] : `${_filterTypes.size} типа`;
   }
 
-  // Цена
+  // Цена — обычная ("за всё")
   const priceFrom = params.get('priceFrom');
   const priceTo = params.get('priceTo');
   if (priceFrom) {
@@ -2387,7 +2485,26 @@ function applyURLFilters() {
     const el = document.getElementById('uf-price-to');
     if (el) el.value = _filterPriceTo;
   }
-  if (priceFrom || priceTo) updatePriceLabel();
+
+  // 17.07.26, по просьбе Ильи: цена "за м²", переданная из поисковика/с карты
+  // (см. projectUrlWithFilters в flox-web.html) — раньше сюда прилетать было
+  // некуда, страница эту цену просто игнорировала, из-за чего цифры на карте
+  // и здесь расходились. Теперь понимаем и такой параметр тоже.
+  const priceFromM2 = params.get('priceFromM2');
+  const priceToM2 = params.get('priceToM2');
+  if (priceFromM2 || priceToM2) {
+    _priceMode = 'm2';
+    if (priceFromM2) _filterPriceFromM2 = parseInt(priceFromM2);
+    if (priceToM2) _filterPriceToM2 = parseInt(priceToM2);
+    document.getElementById('uf-price-tab-total')?.classList.remove('act');
+    document.getElementById('uf-price-tab-m2')?.classList.add('act');
+    const fromEl = document.getElementById('uf-price-from'), toEl = document.getElementById('uf-price-to');
+    if (fromEl) { fromEl.value = _filterPriceFromM2 || ''; fromEl.placeholder = '฿/м² от'; }
+    if (toEl) { toEl.value = _filterPriceToM2 !== Infinity ? _filterPriceToM2 : ''; toEl.placeholder = '฿/м² до'; }
+    buildPriceHints(_allUnits);
+  }
+
+  if (priceFrom || priceTo || priceFromM2 || priceToM2) updatePriceLabel();
 }
 
 loadProject();
