@@ -511,7 +511,11 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .project-cards{display:flex;flex-direction:column;gap:12px;}
 .project-card{
   display:grid;grid-template-columns:240px 1fr;
-  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  /* 17.07.26, по просьбе Ильи: убрали серую обводку карточки в обычном
+     состоянии — граница остаётся прозрачной (border не убран целиком, а
+     только сделан невидимым), чтобы при ховере фиолетовая обводка не
+     сдвигала карточку/картинку на 1px — просто меняется цвет. */
+  background:var(--surface);border:1px solid transparent;border-radius:14px;
   overflow:hidden;cursor:pointer;text-decoration:none;color:var(--text);
   opacity:0;transform:translateY(14px);
   transition:border-color .2s, transform .35s cubic-bezier(.4,0,.2,1), opacity .35s ease;
@@ -551,7 +555,8 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pc-type-row{display:flex;justify-content:space-between;align-items:center;}
 .pc-type-name{font-size:12px;color:var(--muted);}
 .pc-type-price{font-size:12px;font-weight:600;color:#5E17EB;}
-.pc-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--line);}
+/* 17.07.26, по просьбе Ильи: убрали серую разделительную линию над "от X млн ฿" */
+.pc-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;}
 .pc-from{font-size:12px;color:var(--muted);}
 .pc-from b{font-size:14px;font-weight:700;color:#5E17EB;}
 .pc-comm{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--text);transition:opacity .2s;}
@@ -1448,6 +1453,33 @@ function matchingUnitEntries(p) {
   });
 }
 
+// 17.07.26, по просьбе Ильи: карточка проекта в списке должна показывать ВСЕ
+// типы кондо, которые сейчас реально есть у проекта (не старый захардкоженный
+// список демо-типов), и минимальную цену по каждому — НЕЗАВИСИМО от активного
+// фильтра типа/цены/срока сдачи (карточка — универсальная витрина проекта, а
+// не отражение текущего фильтра; сам фильтр по-прежнему учитывается только в
+// том, какие ПРОЕКТЫ вообще показываются в списке, и передаётся дальше по
+// ссылке при переходе в проект — см. projectUrlWithFilters). Раньше здесь
+// брался только p.unitTypes (вручную вписанный демо-список) — из-за этого
+// карточка могла показывать типы/цены, которых у проекта уже нет, или не
+// показывать реальные новые типы.
+function projectTypeSummary(p) {
+  const rows = unitAreaData[p.id];
+  if (rows && rows.length) {
+    const minPriceByType = {};
+    rows.forEach(r => {
+      if (!r.type) return; // нераспознанный тип — нечего подписать в карточке
+      if (minPriceByType[r.type] == null || r.price < minPriceByType[r.type]) minPriceByType[r.type] = r.price;
+    });
+    const order = UNIT_TYPES.map(t => t.label);
+    return Object.keys(minPriceByType)
+      .sort((a, b) => order.indexOf(a) - order.indexOf(b))
+      .map(name => ({ name, price: minPriceByType[name] }));
+  }
+  // реальных данных по проекту нет вовсе — старый список демо-типов как fallback
+  return (p.unitTypes || []).map(t => ({ name: t.name, price: t.price }));
+}
+
 // ── FILTER PROJECTS ───────────────────────
 // 17.07.26, по просьбе Ильи: район/округ/застройщик (выбранные из
 // автокомплита поиска — см. filterByDistrict/filterByAmphoe/filterByDeveloper
@@ -1689,9 +1721,15 @@ function cardHTML(p) {
     `<div class="pc-dot ${i === 0 ? 'act' : ''}" id="${cardId}-d${i}"></div>`
   ).join('');
 
-  const types = (p.unitTypes || []).map(t =>
+  const typeSummary = projectTypeSummary(p);
+  const types = typeSummary.map(t =>
     `<div class="pc-type-row"><div class="pc-type-name">${t.name}</div><div class="pc-type-price">от ${fmtMln(t.price)}</div></div>`
   ).join('');
+  // 17.07.26, по просьбе Ильи: раз типы/цены в карточке теперь настоящие —
+  // общая цена "от" внизу карточки тоже должна быть настоящей минимальной
+  // ценой среди них, а не отдельным захардкоженным p.priceFrom (иначе они
+  // могли бы разойтись между собой на одной и той же карточке).
+  const minPrice = typeSummary.length ? Math.min(...typeSummary.map(t => t.price)) : p.priceFrom;
 
   const commClass = meetingMode ? 'pc-comm hidden' : 'pc-comm';
   const commHtml = `<div class="${commClass}">💰 ${p.commission || 10}%</div>`;
@@ -1721,7 +1759,7 @@ function cardHTML(p) {
         <div class="pc-sub">${p.districtRu}, Пхукет</div>
         <div class="pc-types">${types}</div>
         <div class="pc-footer">
-          <div class="pc-from">от <b>${fmtMln(p.priceFrom)}</b></div>
+          <div class="pc-from">от <b>${fmtMln(minPrice)}</b></div>
           ${commHtml}
         </div>
       </div>
