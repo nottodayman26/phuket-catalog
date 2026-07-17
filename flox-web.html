@@ -484,8 +484,16 @@ body.map-fake-fullscreen-active .map-info-card{
    везде. transform уже используется для центрирования (translate(-50%,-50%)
    — метка встаёт ровно на свои координаты), поэтому scale добавляется
    вторым значением в той же transform-строке, а не отдельным свойством. */
-.map-plaque{transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
-.map-plaque:hover{transform:translate(-50%,-50%) scale(1.08);}
+/* 17.07.26 (2), по просьбе Ильи: плашка (не активная/выбранная — та залита
+   MAP_PIN_COLOR через инлайн-style, который всегда побеждает над этими
+   правилами, см. getPlaqueLayoutActive) теперь подстраивается под тему сайта
+   (var(--surface)/var(--text) вместо всегда белого фона/чёрного текста), и
+   темнеет при наведении в светлой теме / светлеет в тёмной — var(--surface-2)
+   в обеих темах устроен именно так относительно var(--surface) (см. :root/
+   body.light в начале CSS), поэтому одно правило работает правильно в обеих
+   темах без отдельных ветвлений. */
+.map-plaque{background:var(--surface);color:var(--text);transition:transform .15s cubic-bezier(.34,1.56,.64,1),background .15s ease;}
+.map-plaque:hover{background:var(--surface-2);transform:translate(-50%,-50%) scale(1.08);}
 .map-dot{transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
 .map-dot:hover{transform:translate(-50%,-50%) scale(1.6);}
 
@@ -514,9 +522,11 @@ body.map-fake-fullscreen-active .map-info-card{
 }
 .map-info-card.act{display:block;}
 .map-info-card:hover{transform:scale(1.035);}
-.mic-img-wrap{position:relative;height:150px;background:var(--surface-2);}
-.mic-img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s ease;}
-.mic-img-wrap img.act{opacity:1;}
+/* 17.07.26: та же плёнка-трек (.pc-track/.pc-slide), что и у карточек
+   списка, — см. большой комментарий у .pc-track в CSS выше. overflow:hidden
+   обязателен (раньше был не нужен — картинки лежали друг на друге через
+   opacity, теперь трек реально шире контейнера и едет горизонтально). */
+.mic-img-wrap{position:relative;height:150px;background:var(--surface-2);overflow:hidden;}
 .mic-status{
   position:absolute;top:8px;left:8px;font-size:10px;font-weight:500;padding:3px 9px;
   border-radius:20px;background:rgba(0,0,0,0.45);color:#fff;white-space:nowrap;
@@ -630,17 +640,29 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 /* Фото */
 .pc-img-wrap{padding:10px 0 10px 10px;}
 .pc-img{position:relative;width:100%;height:172px;border-radius:10px;overflow:hidden;background:var(--surface-2);}
-.pc-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .4s ease, transform .4s ease;opacity:0;}
-.pc-img img.act{opacity:1;}
-.pc-img img:first-child{opacity:1;}
-.project-card:hover .pc-img img.act{transform:scale(1.04);}
+/* 17.07.26, по просьбе Ильи: перешли с кросс-фейда (прозрачность) на
+   "плёнку" фото, которая физически едет по горизонтали — тот же приём, что
+   в присланном offer.html (.unit-track/.unit-slide + goTo() через
+   translateX), включая возврат на первую картинку — там это не мгновенный
+   прыжок и не текущий у нас ранее fade, а настоящая протяжка через все
+   промежуточные кадры. Один общий .pc-track на всю ширину блока, внутри —
+   .pc-slide на каждое фото шириной 100% (flex:0 0 100%); чтобы попасть на
+   кадр N, просто сдвигаем весь трек на -N×100% — сам браузер плавно
+   анимирует переход между любыми двумя положениями transform, в какую бы
+   сторону и на сколько кадров ни требовалось прыгнуть (см. pcSetSlide в
+   скрипте — там же логика для .mic-img-wrap, см. ниже, использует те же
+   классы и ту же функцию). */
+.pc-track{position:absolute;inset:0;display:flex;width:100%;height:100%;transition:transform .7s cubic-bezier(.4,0,.2,1);}
+.pc-slide{position:relative;flex:0 0 100%;width:100%;height:100%;}
+.pc-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .4s ease;}
+.project-card:hover .pc-slide img{transform:scale(1.04);}
 .pc-status{
   font-size:10px;font-weight:500;padding:3px 9px;border-radius:20px;
   background:var(--surface-3);color:var(--muted);
   white-space:nowrap;
 }
 .pc-status.completed{background:var(--surface-3);}
-.pc-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;pointer-events:none;}
+.pc-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;pointer-events:none;z-index:1;}
 .pc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.4);transition:background .2s;}
 .pc-dot.act{background:#fff;}
 
@@ -1817,8 +1839,10 @@ function cardHTML(p) {
   const photos = p.photos || ['1.avif'];
   const cardId = 'pc-' + p.id;
 
-  const imgs = photos.map((f, i) =>
-    `<img src="${BASE_IMG + p.id + '/' + f}" class="${i === 0 ? 'act' : ''}" alt="${p.name}"/>`
+  // 17.07.26: .pc-slide вместо плоского списка img — плёнка-трек, см.
+  // комментарий у .pc-track в CSS и pcSetSlide в скрипте.
+  const imgs = photos.map(f =>
+    `<div class="pc-slide"><img src="${BASE_IMG + p.id + '/' + f}" alt="${p.name}"/></div>`
   ).join('');
 
   const dots = photos.map((_, i) =>
@@ -1844,7 +1868,7 @@ function cardHTML(p) {
        onmouseleave="pcStopSlide('${cardId}')">
       <div class="pc-img-wrap">
         <div class="pc-img" id="${cardId}-img">
-          ${imgs}
+          <div class="pc-track">${imgs}</div>
           <div class="pc-dots" id="${cardId}-dots">${dots}</div>
           <div class="pc-nav">
             <div class="pc-nav-prev" onclick="pcNav('${cardId}',-1,${photos.length});event.stopPropagation()"></div>
@@ -1878,16 +1902,21 @@ const _pcSlideState = {};
 const _pcTimers = {};
 const _pcReturnTimers = {}; // 17.07.26: см. pcStopSlide ниже — таймер возврата на первую картинку
 
+// 17.07.26, по просьбе Ильи (по образцу presneteного offer.html —
+// .unit-track/.unit-slide + goTo()): вместо кросс-фейда прозрачностью —
+// физическая "плёнка" с фото, которая едет по горизонтали. Просто сдвигаем
+// .pc-track на -i×100% — CSS-transition (см. .pc-track в CSS) сам плавно
+// анимирует переход, в том числе "прыжок" на несколько кадров назад/вперёд
+// разом (например, возврат на первую картинку из pcStopSlide ниже) — это и
+// даёт ту самую протяжку через промежуточные кадры, а не мгновенный скачок.
 function pcSetSlide(cardId, idx, total) {
   const wrap = document.getElementById(cardId + '-img');
   if (!wrap) return;
-  const imgs = wrap.querySelectorAll('img');
+  const track = wrap.querySelector('.pc-track');
   const dots = wrap.querySelectorAll('.pc-dot');
   const i = ((idx % total) + total) % total;
   _pcSlideState[cardId] = i;
-  imgs.forEach((el, j) => {
-    el.classList.toggle('act', j === i);
-  });
+  if (track) track.style.transform = `translateX(-${i * 100}%)`;
   dots.forEach((d, j) => d.classList.toggle('act', j === i));
 }
 
@@ -1909,8 +1938,8 @@ function pcStartSlide(cardId, total) {
 // 17.07.26, по просьбе Ильи: убрали мышку с карточки — через 2 секунды (если
 // за это время мышку не навели обратно — см. clearTimeout в pcStartSlide
 // выше) плавно возвращаемся на самую первую картинку. "Плавно" — тот же
-// кроссфейд по opacity, что и у обычного перелистывания (см. transition у
-// .pc-img img/.mic-img-wrap img в CSS), отдельной анимации не требуется —
+// слайд-переход трека, что и у обычного перелистывания (см. transition у
+// .pc-track в CSS и pcSetSlide выше), отдельной анимации не требуется —
 // pcSetSlide(cardId,0,...) сам её запускает.
 function pcStopSlide(cardId) {
   clearInterval(_pcTimers[cardId]);
@@ -2434,13 +2463,21 @@ function getPlaqueLayout() {
   if (!_plaqueLayout) {
     // Белая плашка с тёмным текстом (не залитая цветом) — так у Трендагента на
     // скрине от Ильи: маленький цветной акцент-точка слева + округлённая цена.
+    // 17.07.26, по просьбе Ильи: фон/цвет текста теперь НЕ в инлайн-style (как
+    // было — background:#fff;color:#16161f, всегда белая независимо от темы
+    // сайта), а через класс .map-plaque в CSS (background:var(--surface),
+    // color:var(--text)) — так плашка подхватывает тёмную/светлую тему сайта,
+    // и заодно у .map-plaque:hover появляется возможность потемнеть/посветлеть
+    // при наведении (инлайн-style нельзя переопределить через :hover — он
+    // всегда побеждает над правилами из CSS, поэтому это принципиально нужно
+    // было вынести из style в класс).
     _plaqueLayout = ymaps.templateLayoutFactory.createClass(
       // 16.07.26, по просьбе Ильи: убрали тень и серую обводку — чище смотрится.
       // 16.07.26: точка внутри плашки была 6px, а обычная точка на карте
       // (DOT_SIZE) — 10px — по просьбе Ильи делаем их одного размера.
       `<div class="map-plaque" style="position:relative;transform:translate(-50%,-50%);display:inline-flex;` +
-      `align-items:center;padding:5px 10px;border-radius:14px;background:#fff;` +
-      `font:600 12px 'Inter',system-ui,sans-serif;color:#16161f;white-space:nowrap;">` +
+      `align-items:center;padding:5px 10px;border-radius:14px;` +
+      `font:600 12px 'Inter',system-ui,sans-serif;white-space:nowrap;">` +
       `<span style="width:${DOT_SIZE}px;height:${DOT_SIZE}px;border-radius:50%;background:${MAP_PIN_COLOR};` +
       `margin-right:6px;flex-shrink:0;"></span>$[properties.iconContent]</div>`
     );
@@ -2655,8 +2692,9 @@ function mapCardHTML(p) {
   const statusLabel = STATUS_LABELS[p.status] || p.status || 'Строится';
   const isCompleted = p.status === 'Completed' || p.status === 'Ready to Move';
   const photos = p.photos || ['1.avif'];
-  const imgs = photos.map((f, i) =>
-    `<img src="${BASE_IMG + p.id + '/' + f}" class="${i === 0 ? 'act' : ''}" alt="${p.name}"/>`
+  // 17.07.26: .pc-slide/.pc-track — та же плёнка-трек, что и у карточек списка.
+  const imgs = photos.map(f =>
+    `<div class="pc-slide"><img src="${BASE_IMG + p.id + '/' + f}" alt="${p.name}"/></div>`
   ).join('');
   const dots = photos.map((_, i) => `<div class="pc-dot ${i === 0 ? 'act' : ''}"></div>`).join('');
 
@@ -2680,7 +2718,7 @@ function mapCardHTML(p) {
   // исключение — крестик закрытия, у него по-прежнему stopPropagation).
   return `
     <div class="mic-img-wrap" id="mapInfoCard-img">
-      ${imgs}
+      <div class="pc-track">${imgs}</div>
       <div class="mic-status">${statusText}</div>
       <button class="mic-close" onclick="event.stopPropagation();closeMapInfoCard();">✕</button>
       <div class="pc-dots">${dots}</div>
