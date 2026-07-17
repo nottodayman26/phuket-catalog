@@ -16,7 +16,7 @@ const CSS = `
 .flox-tb-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
 .flox-tb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#5E17EB,#7B3FF5);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;}
 .flox-tb-avatar-wrap{position:relative;}
-.flox-tb-popover{position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:1px solid var(--line-2);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.2);z-index:400;min-width:200px;padding:8px;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .18s,transform .18s;}
+.flox-tb-popover{position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border-radius:14px;z-index:400;min-width:200px;padding:8px;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .18s,transform .18s;}
 .flox-tb-popover.vis{opacity:1;pointer-events:all;transform:translateY(0);}
 .flox-tb-popover-info{padding:10px 12px 8px;border-bottom:1px solid var(--line);margin-bottom:6px;}
 .flox-tb-popover-name{font-size:13px;font-weight:600;}
@@ -30,7 +30,7 @@ const CSS = `
 .flox-tb-theme{width:30px;height:30px;border-radius:8px;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
 .flox-tb-theme:hover{background:var(--surface-3);}
 .flox-tb-dd-wrap{position:relative;}
-.flox-tb-dd{position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border:1px solid var(--line-2);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.25);z-index:400;min-width:220px;padding:8px;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .18s,transform .18s;}
+.flox-tb-dd{position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border-radius:14px;z-index:400;min-width:220px;padding:8px;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .18s,transform .18s;}
 .flox-tb-dd.vis{opacity:1;pointer-events:all;transform:translateY(0);}
 .flox-tb-dd-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px 4px;}
 .flox-tb-dd-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .12s;color:var(--text);text-decoration:none;}
