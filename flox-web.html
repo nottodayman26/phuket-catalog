@@ -403,7 +403,15 @@ input,button{font-family:inherit;}
    не в скруглённом квадрате). Без тени — по просьбе Ильи, тень убрали
    отовсюду у этих кнопок (и здесь, и в обычном, и в фуллскрин-режиме). */
 .map-fullscreen-btn{
-  position:fixed;top:var(--map-ctrl-top, 72px);right:16px;z-index:2147483000;
+  /* 17.07.26, по просьбе Ильи: z-index был запредельным (2147483000 — почти
+     максимум, что вообще допускает CSS) и перекрывал всплывающие окна
+     "Клиенты"/"Инструменты" (.flox-tb-popover/.flox-tb-dd в topbar.js,
+     z-index:400) и подсказки поисковика (.autocomplete, z-index:300), если
+     они открыты поверх карты. 250 — всё ещё выше самой карты и шапки сайта
+     (.flox-topbar, z-index:200), но ниже всех выпадающих окон/подсказок,
+     которым и положено быть на самом верху.
+  */
+  position:fixed;top:var(--map-ctrl-top, 72px);right:16px;z-index:250;
   border-radius:50%;
 }
 /* 16.07.26, по просьбе Ильи, 1:1 со скрином — +/- теперь одна цельная
@@ -415,7 +423,7 @@ input,button{font-family:inherit;}
    комментарий у .map-fullscreen-btn выше). Сама механика (клики, setZoom) не
    менялась. */
 .map-zoom-group{
-  position:fixed;top:var(--map-ctrl-mid, 50vh);right:16px;z-index:2147483000;
+  position:fixed;top:var(--map-ctrl-mid, 50vh);right:16px;z-index:250; /* см. комментарий у .map-fullscreen-btn выше про 250 вместо 2147483000 */
   transform:translateY(-50%);
   display:flex;flex-direction:column;
   /* 17.07.26, по просьбе Ильи: тоже теперь по теме, не всегда белый фон */
@@ -423,6 +431,12 @@ input,button{font-family:inherit;}
 }
 .map-zoom-group .map-ctrl-btn{background:none;border-radius:0;}
 .map-zoom-group .map-ctrl-btn:first-child{border-bottom:1px solid var(--line-2);}
+/* 17.07.26, по просьбе Ильи: у +/- ховер не темнел на практике — у
+   .map-ctrl-btn:hover уже стоит background:var(--surface-2), но правило
+   ".map-zoom-group .map-ctrl-btn{background:none}" ВЫШЕ имеет ту же
+   специфичность (0,2,0) и идёт позже в файле, поэтому побеждало даже при
+   наведении. Здесь специфичность выше (0,3,0) — гарантированно перебивает. */
+.map-zoom-group .map-ctrl-btn:hover{background:var(--surface-3);}
 /* 16.07.26, по просьбе Ильи: кнопки всё ещё "катались" вместе со скроллом,
    хотя стоит position:fixed — значит что-то в разметке страницы (скорее
    всего в topbar.js, который сюда не присылали) ломает position:fixed у
@@ -462,12 +476,20 @@ input,button{font-family:inherit;}
    от края до края экрана (см. .map-view-wrap), поэтому left:16px без
    дополнительных расчётов симметричен right:16px у кнопок. */
 .map-info-card{
-  display:none;position:fixed;top:var(--map-ctrl-top, 72px);left:16px;z-index:2147483000;
+  display:none;position:fixed;top:var(--map-ctrl-top, 72px);left:16px;z-index:250; /* см. комментарий у .map-fullscreen-btn выше про 250 вместо 2147483000 */
   width:320px;max-width:calc(100vw - 32px);
   background:var(--surface);border-radius:14px;overflow:hidden;
   color:var(--text);cursor:pointer;
+  /* 17.07.26, по просьбе Ильи: плавно увеличивается при наведении мышкой на
+     весь блок, плавно уменьшается обратно, когда мышки нет. transform-origin
+     — верхний левый угол (а не центр по умолчанию), чтобы блок расширялся
+     "от своего угла", а не съезжал в сторону — угол и так уже прибит к
+     конкретной точке экрана (top/left выше). */
+  transform:scale(1);transform-origin:top left;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1);
 }
 .map-info-card.act{display:block;}
+.map-info-card:hover{transform:scale(1.035);}
 .mic-img-wrap{position:relative;height:150px;background:var(--surface-2);}
 .mic-img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s ease;}
 .mic-img-wrap img.act{opacity:1;}
@@ -1825,8 +1847,12 @@ function cardHTML(p) {
 }
 
 // ── Листалка фото в карточке ──────────────────────────────────────────────
+// Общие функции — используются и карточками списка (.project-card), и
+// инфо-блоком на карте (#mapInfoCard, cardId='mapInfoCard') — правки здесь
+// автоматически применяются к обоим местам сразу.
 const _pcSlideState = {};
 const _pcTimers = {};
+const _pcReturnTimers = {}; // 17.07.26: см. pcStopSlide ниже — таймер возврата на первую картинку
 
 function pcSetSlide(cardId, idx, total) {
   const wrap = document.getElementById(cardId + '-img');
@@ -1849,14 +1875,28 @@ function pcNav(cardId, dir, total) {
 function pcStartSlide(cardId, total) {
   if (total <= 1) return;
   clearInterval(_pcTimers[cardId]);
+  clearTimeout(_pcReturnTimers[cardId]); // 17.07.26: снова навели мышку раньше 2 секунд — отменяем запланированный возврат на первую картинку
   _pcTimers[cardId] = setInterval(() => {
     const cur = _pcSlideState[cardId] || 0;
     pcSetSlide(cardId, cur + 1, total);
   }, 900);
 }
 
+// 17.07.26, по просьбе Ильи: убрали мышку с карточки — через 2 секунды (если
+// за это время мышку не навели обратно — см. clearTimeout в pcStartSlide
+// выше) плавно возвращаемся на самую первую картинку. "Плавно" — тот же
+// кроссфейд по opacity, что и у обычного перелистывания (см. transition у
+// .pc-img img/.mic-img-wrap img в CSS), отдельной анимации не требуется —
+// pcSetSlide(cardId,0,...) сам её запускает.
 function pcStopSlide(cardId) {
   clearInterval(_pcTimers[cardId]);
+  clearTimeout(_pcReturnTimers[cardId]);
+  _pcReturnTimers[cardId] = setTimeout(() => {
+    const wrap = document.getElementById(cardId + '-img');
+    if (!wrap) return;
+    const total = wrap.querySelectorAll('img').length;
+    if (total > 1) pcSetSlide(cardId, 0, total);
+  }, 2000);
 }
 
 function showCards(projects, label) {
@@ -2606,16 +2646,20 @@ function mapCardHTML(p) {
   const commHtml = `<div class="${commClass}">💰 ${p.commission || 10}%</div>`;
   const statusText = isCompleted ? statusLabel : `${statusLabel} · ${p.completion}`;
 
+  // 17.07.26, по просьбе Ильи: переход в проект теперь возможен и по клику
+  // на саму картинку — раньше там на весь кадр лежали невидимые .pc-nav-prev/
+  // .pc-nav-next (ручное перелистывание фото со stopPropagation), из-за чего
+  // клик по картинке вообще ничего не открывал. Убрали их: перелистывание
+  // фото в этом блоке и так работает само по наведению мышки (см.
+  // pcStartSlide в addCustomMapControls) — ручные стрелки ему не нужны, а
+  // вся картинка теперь просто часть общего клика по карточке (единственное
+  // исключение — крестик закрытия, у него по-прежнему stopPropagation).
   return `
     <div class="mic-img-wrap" id="mapInfoCard-img">
       ${imgs}
       <div class="mic-status">${statusText}</div>
       <button class="mic-close" onclick="event.stopPropagation();closeMapInfoCard();">✕</button>
       <div class="pc-dots">${dots}</div>
-      <div class="pc-nav">
-        <div class="pc-nav-prev" onclick="event.stopPropagation();pcNav('mapInfoCard',-1,${photos.length});"></div>
-        <div class="pc-nav-next" onclick="event.stopPropagation();pcNav('mapInfoCard',1,${photos.length});"></div>
-      </div>
     </div>
     <div class="mic-body">
       <div class="mic-name">${p.name}</div>
