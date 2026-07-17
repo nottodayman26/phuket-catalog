@@ -1009,6 +1009,13 @@ function setPage(name) {
     mapCtrlRefs?.exitFakeFullscreen?.();
     mapCtrlRefs?.setControlsVisible?.(false);
   }
+  // 17.07.26, по просьбе Ильи (найден баг): "Поиск" > карта (страница
+  // прокручена вниз — карта специально рендерится в 2 экрана высотой) >
+  // "Инструменты"/"Клиенты" — новая вкладка открывалась с той же прокруткой,
+  // что была на карте, а не с начала. Каждое переключение вкладок в этом SPA
+  // должно выглядеть как переход на отдельную страницу — сбрасываем скролл
+  // наверх при любом переключении.
+  window.scrollTo(0, 0);
   document.querySelectorAll('.page').forEach(p => p.classList.remove('act'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('act'));
   document.getElementById('page-' + name).classList.add('act');
@@ -2262,16 +2269,19 @@ function resetAll() {
   syncMapWithFilters();
 }
 
-// Полный сброс поиска: фильтры + анимация счётчика + принудительный запуск поиска
+// 17.07.26, по прямой просьбе Ильи (найден баг): эта функция вызывается из
+// topbar.js _onSearch(), когда агент жмёт "Поиск", уже находясь на вкладке
+// "Поиск" — в частности, ИМЕННО так происходит переход "поисковик > карта >
+// "Поиск" в топбаре": карта — это просто вид ВНУТРИ страницы поиска, а не
+// отдельная вкладка, поэтому #page-search всё это время остаётся активной, и
+// topbar.js считает, что мы "уже на Поиске", и раньше звал freshSearch()
+// вместо resetSearchPageToClean(). Старая freshSearch() сбрасывала фильтры,
+// но затем сама вызывала doSearch() — то есть тут же показывала список
+// карточек вместо чистого экрана, да и карту не закрывала вовсе. Ilya хочет,
+// чтобы клик по "Поиск" ВСЕГДА вёл на один и тот же чистый экран, откуда бы
+// его ни нажали — так что теперь это просто алиас на resetSearchPageToClean().
 function freshSearch() {
-  filters = {propType:'condo', unitTypes:null, price:null, completion:null};
-  tmpUnitTypes = [];
-  document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('act',i===0));
-  updateChips();
-  document.getElementById('searchInput').value = '';
-  loadUnitCount();
-  doSearch();
-  syncMapWithFilters();
+  resetSearchPageToClean();
 }
 
 // ── TYPE MODAL ────────────────────────────
