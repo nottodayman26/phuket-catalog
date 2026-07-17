@@ -310,7 +310,8 @@ input,button{font-family:inherit;}
 
 /* Results */
 .search-results{width:100%;max-width:900px;margin-top:24px;}
-.results-label{font-size:13px;color:var(--muted);margin-bottom:14px;}
+.results-label{display:flex;justify-content:flex-end;margin-bottom:14px;}
+.results-label span{font-size:12px;color:var(--muted);background:var(--surface-3);padding:4px 12px;border-radius:20px;white-space:nowrap;}
 
 /* ── "На карте" — кнопка-переключатель в строке фильтров (слева от лупы)
    + сама карта проектов. 15.07.26 (3): два равноправных переключателя вида —
@@ -1816,7 +1817,7 @@ function showCards(projects, label) {
     return;
   }
   el.innerHTML = `
-    <div class="results-label">${label}</div>
+    <div class="results-label"><span>${label}</span></div>
     <div class="project-cards">${projects.map(cardHTML).join('')}</div>`;
   // Каскадное появление
   el.querySelectorAll('.project-card').forEach((card, i) => {
