@@ -180,6 +180,22 @@ input,button{font-family:inherit;}
 }
 .reset-all:hover{opacity:.8;}
 
+/* 17.07.26, по просьбе Ильи: район/округ/застройщик, выбранные из
+   автокомплита поиска, теперь показываются отдельной плашкой-фильтром со
+   своим крестиком (тот же приём accent-soft, что и у активных Тип/Цена/Срок
+   сдачи) — стоит ПЕРЕД "Сбросить все" по порядку в разметке, поэтому кнопка
+   сброса всегда остаётся крайней правой. */
+.loc-chip{
+  display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--accent);
+  padding:6px 8px 6px 13px;background:var(--accent-soft);border-radius:20px;
+}
+.loc-chip .fd-clear-x-inline{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;font-size:9px;color:var(--accent);
+  opacity:.75;cursor:pointer;transition:opacity .15s ease,background .15s ease;
+}
+.loc-chip .fd-clear-x-inline:hover{opacity:1;background:rgba(94,23,235,0.15);}
+
 /* ══ ФИЛЬТРЫ — ЗАЯКОРЕННЫЕ ДРОПДАУНЫ (Тип/Цена/Срок сдачи) ══
    17.07.26: заменили модалку по центру экрана с затемнением на компактные
    панели прямо под кнопками фильтров — согласованный макет см.
@@ -748,7 +764,11 @@ body.map-fake-fullscreen-active{overflow:hidden;}
         <input class="search-input" id="searchInput" type="text"
           placeholder="Проект, застройщик, район"
           oninput="onSearchInput(this.value)" autocomplete="off">
-        <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+        <!-- 17.07.26, по просьбе Ильи: убрали крестик очистки текста поиска —
+             район/округ/застройщик, выбранные из автокомплита, теперь сами
+             очищают текст и показываются отдельной плашкой-фильтром со своим
+             крестиком под поиском (см. .loc-chip/updateChips) — этот крестик
+             дублировал её и больше не нужен. -->
       </div>
       <div class="filter-sep"></div>
       <button class="filter-btn" id="filterTypeBtn" onclick="toggleDropdown('type', this)">
@@ -1024,7 +1044,7 @@ const COMPLETION_OPTIONS = [
 
 // ── STATE ─────────────────────────────────
 let AGENT = null;
-let filters = { propType: 'condo', unitTypes: null, price: null, completion: null };
+let filters = { propType: 'condo', unitTypes: null, price: null, completion: null, district: null, amphoe: null, developer: null };
 let tmpType = 'all';
 let tmpCompletion = null;
 
@@ -1130,7 +1150,7 @@ function resetSearchPageToClean() {
   syncAccentPill(true); // 16.07.26: без этого фиолетовая плашка оставалась над "На карте" — см. коммент выше
   document.getElementById('searchResults').style.display = '';
   // 17.07.26: полный сброс к дефолту — фильтры, тип, текст поиска, результаты.
-  filters = { propType: 'condo', unitTypes: null, price: null, completion: null };
+  filters = { propType: 'condo', unitTypes: null, price: null, completion: null, district: null, amphoe: null, developer: null };
   tmpUnitTypes = [];
   resetPriceState(); // 17.07.26: заякоренные дропдауны цены — сбрасываем committed/pending обеих вкладок и поля ввода
   closeAllFilterDropdowns();
@@ -1278,13 +1298,38 @@ async function loadUnitAreaData() {
 // Поэтому вообще ВСЕ реальные юниты типа "1 bedroom plus" распознавались как
 // просто "1 спальня", и ни один реальный юнит никогда не помечался как "1
 // спальня+" — фильтр по этому конкретному типу оставался пустым везде.
-// Чиним, выбирая самое ДЛИННОЕ (то есть самое точное) совпадение среди всех
-// псевдонимов, а не первое по порядку в списке.
+// Чинили, выбирая самое ДЛИННОЕ (то есть самое точное) совпадение среди всех
+// псевдонимов, а не первое по порядку в списке — но этого оказалось
+// НЕДОСТАТОЧНО, см. следующий комментарий.
+//
+// 17.07.26 (round 2), по найденному Ильёй багу: КатаБелло стал показываться
+// как проект с "3 спальни" (которых там по факту нет), а Пентхаус вообще
+// перестал находиться ГДЕ БЫ ТО НИ БЫЛО. Причина — реальные пентхаусы в базе,
+// судя по всему, называются составными строками вида "3-Bedroom Penthouse"/
+// "4 Bedroom Penthouse" (число спален + слово "penthouse" в одной строке).
+// У такой строки одновременно совпадают И псевдоним "3 bedroom"/"4 bedroom"
+// (для "3 спальни"/"4 спальни и более"), И псевдоним "penthouse" (для
+// "Пентхаус") — оба длиной 9 символов, ничья по длине. При равной длине
+// побеждает тот, что просто раньше проверился по порядку в UNIT_TYPES — а
+// "3 спальни"/"4 спальни и более" в массиве идут РАНЬШЕ "Пентхаус", поэтому
+// именно они и побеждали при равенстве длин (условие было "строго больше",
+// ничья доставалась первому). Из-за этого реальные пентхаусы с упоминанием
+// числа спален в названии ошибочно помечались как обычная N-спальная
+// квартира — и никогда как Пентхаус.
+// Пентхаус — это отдельная, самостоятельная категория в этом каталоге (не
+// разновидность "N спален"): если в названии юнита вообще упоминается
+// пентхаус, это Пентхаус, даже если там же указано число спален. Поэтому
+// проверяем пентхаус-псевдонимы ПЕРВЫМИ и с безусловным приоритетом — а уже
+// среди всех остальных типов (не Пентхаус) выбираем самое длинное совпадение,
+// как и раньше.
 function matchUnitTypeLabel(rawType) {
   if (!rawType) return null;
   const rt = String(rawType).toLowerCase();
+  const penthouse = UNIT_TYPES.find(t => t.label === 'Пентхаус');
+  if (penthouse && penthouse.match.some(m => rt.includes(m))) return penthouse.label;
   let best = null, bestLen = -1;
   UNIT_TYPES.forEach(t => {
+    if (t.label === 'Пентхаус') return;
     t.match.forEach(m => {
       if (rt.includes(m) && m.length > bestLen) { best = t.label; bestLen = m.length; }
     });
@@ -1407,13 +1452,24 @@ function matchingUnitEntries(p) {
 }
 
 // ── FILTER PROJECTS ───────────────────────
-// Список карточек показывает проект, только если у него есть ХОТЯ БЫ ОДИН
-// юнит, подходящий под все активные фильтры совместно (см. matchingUnitEntries
-// выше) — теперь ровно то же самое условие, что решает, показывать ли точку/
-// плашку этого проекта на карте.
+// 17.07.26, по просьбе Ильи: район/округ/застройщик (выбранные из
+// автокомплита поиска — см. filterByDistrict/filterByAmphoe/filterByDeveloper
+// ниже) теперь тоже настоящие фильтры уровня проекта — как и тип/цена/срок
+// сдачи, применяются здесь же, в одном месте, и точно так же совместно
+// работают со всеми остальными фильтрами (список и карта опять смотрят в
+// одну и ту же функцию — см. историю про matchingUnitEntries выше).
+// Список карточек показывает проект, только если он проходит район/округ/
+// застройщика (если выбраны) И у него есть ХОТЯ БЫ ОДИН юнит, подходящий под
+// тип/цену/срок сдачи совместно (см. matchingUnitEntries выше) — то же самое
+// условие, что решает, показывать ли точку/плашку этого проекта на карте.
 function applyFilters(list) {
   if (filters.propType && filters.propType !== 'condo') return [];
-  return list.filter(p => matchingUnitEntries(p).length > 0);
+  return list.filter(p => {
+    if (filters.district && p.district !== filters.district) return false;
+    if (filters.amphoe && p.amphoe !== filters.amphoe) return false;
+    if (filters.developer && p.developer !== filters.developer) return false;
+    return matchingUnitEntries(p).length > 0;
+  });
 }
 
 // 16.07.26, по просьбе Ильи: карта должна сразу отражать применённый фильтр
@@ -1439,7 +1495,6 @@ function syncMapWithFilters() {
 
 // ── AUTOCOMPLETE ──────────────────────────
 function onSearchInput(val) {
-  document.getElementById('searchClear').classList.toggle('vis', val.length > 0);
   if (val.length < 2) { hideAC(); if (!val) clearResults(); return; }
   const ac = document.getElementById('autocomplete');
   let html = '';
@@ -1497,7 +1552,6 @@ function hideAC() { document.getElementById('autocomplete').classList.remove('vi
 
 function clearSearch() {
   document.getElementById('searchInput').value = '';
-  document.getElementById('searchClear').classList.remove('vis');
   hideAC(); clearResults();
   // 17.07.26, по найденному Ильёй багу: набрал "Камала" > на карте остались
   // только точки этого района (через filterByDistrict/showCards) > стёр текст
@@ -1515,37 +1569,68 @@ document.addEventListener('click', e => {
 });
 
 // ── SEARCH ACTIONS ────────────────────────
+// 17.07.26, по прямой просьбе Ильи: выбор района/округа/застройщика из
+// автокомплита поиска теперь настоящий ФИЛЬТР (filters.district/amphoe/
+// developer — см. applyFilters выше), а не разовая подстановка текста в
+// строку поиска. Разница: теперь после выбора района агент может ДОБАВИТЬ
+// тип/цену/срок сдачи, и они будут работать СОВМЕСТНО с районом (а не
+// сбрасывать его) — раньше это был просто текст в поисковой строке, который
+// участвовал в обычном текстовом поиске наравне с ручным вводом, что и
+// приводило к путанице. Строка поиска после выбора очищается — сам факт
+// активного фильтра теперь виден отдельной плашкой под поиском (см.
+// updateChips), а не текстом в самом поле. Район/округ/застройщик — взаимно
+// исключающие между собой (выбор одного гасит два других), но полностью
+// совместимы с типом/ценой/сроком сдачи.
 function filterByDistrict(district) {
   hideAC();
-  document.getElementById('searchInput').value = district;
-  const filtered = applyFilters(PROJECTS.filter(p => p.district === district));
-  showCards(filtered, `Проекты в районе ${district}`);
+  filters.district = district; filters.amphoe = null; filters.developer = null;
+  document.getElementById('searchInput').value = '';
+  updateChips();
+  doSearch();
+  syncMapWithFilters();
 }
 
 function filterByAmphoe(amphoe) {
   hideAC();
-  document.getElementById('searchInput').value = amphoe;
-  const inAmphoe = Object.entries(DISTRICTS).filter(([,d])=>d.amphoe===amphoe).map(([en])=>en);
-  const filtered = applyFilters(PROJECTS.filter(p => inAmphoe.includes(p.district)));
-  showCards(filtered, `Проекты в округе ${amphoe}`);
+  filters.amphoe = amphoe; filters.district = null; filters.developer = null;
+  document.getElementById('searchInput').value = '';
+  updateChips();
+  doSearch();
+  syncMapWithFilters();
 }
 
 function filterByDeveloper(dev) {
   hideAC();
-  document.getElementById('searchInput').value = dev;
-  const filtered = applyFilters(PROJECTS.filter(p => p.developer === dev));
-  showDevGroup(dev, filtered);
+  filters.developer = dev; filters.district = null; filters.amphoe = null;
+  document.getElementById('searchInput').value = '';
+  updateChips();
+  doSearch();
+  syncMapWithFilters();
 }
 
 let _searchDone = false;
 
+// 17.07.26: раньше выбор района/округа/застройщика вообще не заходил сюда —
+// каждый рисовал результат сам (showCards/showDevGroup) в обход applyFilters
+// с текстом поиска. Теперь это обычные поля filters (см. выше), поэтому
+// достаточно одной общей функции — она уже учитывает район/округ/застройщика
+// внутри applyFilters, и добавляет к ним ещё и текст, если он есть (обычный
+// текстовый поиск по имени/району/застройщику, как и раньше).
 function doSearch() {
   _searchDone = true;
   const val = document.getElementById('searchInput').value.trim();
   hideAC();
   const base = val ? PROJECTS.filter(p => matchProject(val, p)) : PROJECTS;
   const filtered = applyFilters(base);
-  showCards(filtered, `Найдено: ${filtered.length}`);
+  if (filters.developer) {
+    showDevGroup(filters.developer, filtered);
+  } else if (filters.district) {
+    showCards(filtered, `Проекты в районе ${DISTRICTS[filters.district]?.ru || filters.district}`);
+  } else if (filters.amphoe) {
+    showCards(filtered, `Проекты в округе ${AMPHOE_RU[filters.amphoe] || filters.amphoe}`);
+  } else {
+    showCards(filtered, `Найдено: ${filtered.length}`);
+  }
 }
 
 function autoSearch() {
@@ -2472,8 +2557,40 @@ function updateChips() {
   // Раньше здесь ещё рисовался ряд отдельных плашек-фильтров с крестиками —
   // убрали (см. комментарий у .active-filters в CSS), оставили только кнопку
   // сброса, и только когда реально есть что сбрасывать.
+  //
+  // 17.07.26, по просьбе Ильи: район/округ/застройщик, выбранные из
+  // автокомплита поиска, теперь тоже показываются здесь отдельной плашкой со
+  // своим крестиком (раньше просто оставались текстом в самой строке поиска
+  // без всякого визуального следа фильтра) — она всегда идёт ПЕРЕД "Сбросить
+  // все", чтобы кнопка сброса оставалась крайней правой, даже когда фильтров
+  // несколько одновременно (см. .loc-chip в CSS).
+  let locChip = '';
+  if (filters.district) {
+    hasActive = true;
+    const label = DISTRICTS[filters.district]?.ru || filters.district;
+    locChip = `<span class="loc-chip">${label}<span class="fd-clear-x-inline" onclick="clearLocationFilter(event)">✕</span></span>`;
+  } else if (filters.amphoe) {
+    hasActive = true;
+    const label = AMPHOE_RU[filters.amphoe] || filters.amphoe;
+    locChip = `<span class="loc-chip">${label}<span class="fd-clear-x-inline" onclick="clearLocationFilter(event)">✕</span></span>`;
+  } else if (filters.developer) {
+    hasActive = true;
+    locChip = `<span class="loc-chip">${filters.developer}<span class="fd-clear-x-inline" onclick="clearLocationFilter(event)">✕</span></span>`;
+  }
+
   document.getElementById('activeFilters').innerHTML =
-    hasActive ? `<button class="reset-all" onclick="resetAll()">Сбросить все</button>` : '';
+    locChip + (hasActive ? `<button class="reset-all" onclick="resetAll()">Сбросить все</button>` : '');
+}
+
+// 17.07.26: сброс района/округа/застройщика — плашка выше со своим крестиком.
+// Тип/цена/срок сдачи не трогает, они независимы (тот же принцип, что и
+// clearTypeFilter/clearPriceFilter/clearCompFilter рядом).
+function clearLocationFilter(e) {
+  if (e) e.stopPropagation();
+  filters.district = null; filters.amphoe = null; filters.developer = null;
+  updateChips();
+  autoSearch();
+  syncMapWithFilters();
 }
 
 // 17.07.26: сброс цены вынесен в отдельную функцию — вызывается и из
@@ -2486,7 +2603,7 @@ function resetPriceState(){
 }
 
 function resetAll() {
-  filters = {propType:'condo', unitTypes:null, price:null, completion:null};
+  filters = {propType:'condo', unitTypes:null, price:null, completion:null, district:null, amphoe:null, developer:null};
   tmpUnitTypes = [];
   resetPriceState();
   document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('act',i===0));
@@ -2527,6 +2644,20 @@ function closeAllFilterDropdowns(){
   if (priceDD && priceDD.classList.contains('vis')){
     const st = currentPriceState();
     if (st.pending.from || st.pending.to) commitPrice();
+  }
+  // 17.07.26, по найденному Ильёй багу: отметил один или несколько типов в
+  // дропдауне "Тип" и кликнул мимо (не на кнопку "Применить") — выбор
+  // пропадал, ничего не применялось. Причина: у цены закрытие панели кликом
+  // мимо уже само коммитило черновой выбор (см. выше), а у типа — нет, там
+  // применение было только явной кнопкой "Применить" внутри applyTypeFilter().
+  // Делаем как у цены: закрытие дропдауна типа ЛЮБЫМ способом (клик мимо,
+  // открытие другого фильтра) тоже применяет то, что уже отмечено галочками.
+  const typeDD = document.getElementById('ddType');
+  if (typeDD && typeDD.classList.contains('vis')) {
+    filters.unitTypes = tmpUnitTypes.length ? [...tmpUnitTypes] : null;
+    updateChips();
+    autoSearch();
+    syncMapWithFilters();
   }
   document.querySelectorAll('.filter-dropdown').forEach(d => d.classList.remove('vis'));
 }
@@ -2571,11 +2702,10 @@ function openTypeDropdown(){
   renderTypeRows();
 }
 function applyTypeFilter(){
-  filters.unitTypes = tmpUnitTypes.length ? [...tmpUnitTypes] : null;
-  updateChips();
+  // 17.07.26: применение теперь делает closeAllFilterDropdowns() само — она
+  // одинаково коммитит и цену, и тип при закрытии дропдауна ЛЮБЫМ способом
+  // (эта кнопка "Применить" — лишь один из способов закрыть его).
   closeAllFilterDropdowns();
-  autoSearch();
-  syncMapWithFilters();
 }
 function clearTypeFilter(e){
   e.stopPropagation();
@@ -2625,16 +2755,56 @@ function setPriceVal(side, v){
   renderPriceCols();
   if (st.pending.from && st.pending.to) commitPrice();
 }
+// 17.07.26, по найденному Ильёй багу: ручной ввод цифр в поля "цена от"/"цена
+// до" вообще ни на что не влиял — эта функция раньше умела реагировать
+// ТОЛЬКО на очистку поля (стереть текст целиком), а на реально введённое
+// число не реагировала никак: не обновляла pending, не применяла фильтр.
+// Работали только клики по готовым пресетам (setPriceVal). Теперь разбираем
+// то, что человек напечатал, и применяем ровно как при клике на пресет — те
+// же правила (взаимоисключение "за всё"/"за м²", коммит при заполнении обоих
+// полей). Принимает и просто число ("6000000"), и с "млн" ("6 млн"), и с
+// пробелами-разделителями тысяч ("6 000 000") — в режиме "за всё" маленькое
+// число без "млн" (например "6") тоже считается миллионами, как на пресетах.
+function parsePriceInput(raw, mode) {
+  if (raw == null) return null;
+  let s = String(raw).trim().toLowerCase();
+  if (!s) return null;
+  const hasMln = /млн/.test(s);
+  s = s.replace(/млн/g, '').replace(/฿/g, '').replace(/за\s*м²?/g, '');
+  s = s.replace(/[\s ]/g, '').replace(/,/g, '.');
+  if (!s) return null;
+  const parts = s.split('.');
+  if (parts.length > 2) s = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+  const num = parseFloat(s);
+  if (!isFinite(num) || num <= 0) return null;
+  let result = num;
+  // mode здесь — это priceMode ('all'/'m2'), а не filters.price.mode
+  // ('total'/'m2') — обычная цена ("за всё") называется 'all' в priceState.
+  if (mode === 'all' && (hasMln || num < 1000)) result = num * 1e6;
+  return Math.round(result);
+}
 function onPriceInput(side){
   const el = document.getElementById(side==='from' ? 'priceFromInput' : 'priceToInput');
-  if (el.value.trim() !== '') return;
+  const raw = el.value.trim();
   const st = currentPriceState();
-  st.pending[side] = null;
-  renderPriceCols();
-  if (st.committed[side] !== null) {
-    st.committed[side] = null;
-    syncFiltersPriceFromState(); updateChips(); autoSearch(); syncMapWithFilters();
+  if (raw === '') {
+    st.pending[side] = null;
+    renderPriceCols();
+    if (st.committed[side] !== null) {
+      st.committed[side] = null;
+      syncFiltersPriceFromState(); updateChips(); autoSearch(); syncMapWithFilters();
+    }
+    return;
   }
+  const val = parsePriceInput(raw, priceMode);
+  if (val == null) return; // ещё не похоже на число (человек только начал печатать) — ничего не трогаем, ждём следующих символов
+  const other = priceState[priceMode === 'all' ? 'm2' : 'all'];
+  if (other.committed.from || other.committed.to || other.pending.from || other.pending.to) {
+    other.committed = { from:null, to:null }; other.pending = { from:null, to:null };
+  }
+  st.pending[side] = val;
+  renderPriceCols();
+  if (st.pending.from && st.pending.to) commitPrice();
 }
 function commitPrice(){
   const st = currentPriceState();
