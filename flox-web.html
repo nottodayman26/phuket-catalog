@@ -557,20 +557,9 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pc-comm{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--text);transition:opacity .2s;}
 .pc-comm.hidden{opacity:0;pointer-events:none;}
 
-/* Dev group */
-.dev-group{margin-bottom:10px;}
-.dev-group-header{
-  display:flex;align-items:center;gap:10px;
-  padding:12px 16px;background:var(--surface);
-  border:1px solid var(--line);border-radius:12px;
-  cursor:pointer;transition:border-color .15s;font-size:13px;font-weight:600;
-}
-.dev-group-header:hover{border-color:var(--accent);}
-.dev-group-count{font-size:11px;color:var(--muted);margin-left:auto;}
-.dev-group-chevron{color:var(--muted);transition:transform .2s;}
-.dev-group.open .dev-group-chevron{transform:rotate(180deg);}
-.dev-group-items{display:none;padding:6px 0 0 12px;}
-.dev-group.open .dev-group-items{display:flex;flex-direction:column;gap:6px;}
+/* 17.07.26, по просьбе Ильи: убрали сворачиваемую карточку застройщика
+   (showDevGroup) — проекты застройщика теперь показываются обычным списком
+   карточек, как везде. CSS-класс держали здесь же — тоже убрали. */
 
 /* ══ MODALS ══ */
 .modal-overlay{
@@ -1586,12 +1575,17 @@ document.addEventListener('click', e => {
 // участвовал в обычном текстовом поиске наравне с ручным вводом, что и
 // приводило к путанице. Строка поиска после выбора очищается — сам факт
 // активного фильтра теперь виден отдельной плашкой под поиском (см.
-// updateChips), а не текстом в самом поле. Район/округ/застройщик — взаимно
-// исключающие между собой (выбор одного гасит два других), но полностью
-// совместимы с типом/ценой/сроком сдачи.
+// updateChips), а не текстом в самом поле.
+//
+// 17.07.26 (round 2), по прямой просьбе Ильи: район/округ — это ОДНО и то же
+// измерение (округ просто крупнее района), поэтому они по-прежнему гасят
+// друг друга. А вот застройщик — измерение НЕЗАВИСИМОЕ (можно искать
+// конкретного застройщика В конкретном районе одновременно) — раньше выбор
+// застройщика ошибочно гасил район/округ и наоборот, теперь они спокойно
+// сочетаются.
 function filterByDistrict(district) {
   hideAC();
-  filters.district = district; filters.amphoe = null; filters.developer = null;
+  filters.district = district; filters.amphoe = null;
   document.getElementById('searchInput').value = '';
   updateChips();
   doSearch();
@@ -1600,7 +1594,7 @@ function filterByDistrict(district) {
 
 function filterByAmphoe(amphoe) {
   hideAC();
-  filters.amphoe = amphoe; filters.district = null; filters.developer = null;
+  filters.amphoe = amphoe; filters.district = null;
   document.getElementById('searchInput').value = '';
   updateChips();
   doSearch();
@@ -1609,7 +1603,7 @@ function filterByAmphoe(amphoe) {
 
 function filterByDeveloper(dev) {
   hideAC();
-  filters.developer = dev; filters.district = null; filters.amphoe = null;
+  filters.developer = dev;
   document.getElementById('searchInput').value = '';
   updateChips();
   doSearch();
@@ -1624,21 +1618,20 @@ let _searchDone = false;
 // достаточно одной общей функции — она уже учитывает район/округ/застройщика
 // внутри applyFilters, и добавляет к ним ещё и текст, если он есть (обычный
 // текстовый поиск по имени/району/застройщику, как и раньше).
+//
+// 17.07.26 (round 2), по просьбе Ильи: убрали особые подписи "Проекты в
+// районе X"/"Застройщик: X" и отдельную сворачиваемую карточку для
+// застройщика (showDevGroup) — они дублировали то, что теперь и так видно
+// плашкой(-ами) фильтра под поиском (см. updateChips), а сама карточка
+// застройщика к тому же иногда не показывала проекты внутри себя. Теперь
+// везде один и тот же обычный список карточек, как при обычном поиске.
 function doSearch() {
   _searchDone = true;
   const val = document.getElementById('searchInput').value.trim();
   hideAC();
   const base = val ? PROJECTS.filter(p => matchProject(val, p)) : PROJECTS;
   const filtered = applyFilters(base);
-  if (filters.developer) {
-    showDevGroup(filters.developer, filtered);
-  } else if (filters.district) {
-    showCards(filtered, `Проекты в районе ${DISTRICTS[filters.district]?.ru || filters.district}`);
-  } else if (filters.amphoe) {
-    showCards(filtered, `Проекты в округе ${AMPHOE_RU[filters.amphoe] || filters.amphoe}`);
-  } else {
-    showCards(filtered, `Найдено: ${filtered.length}`);
-  }
+  showCards(filtered, `Найдено: ${filtered.length}`);
 }
 
 function autoSearch() {
@@ -1793,30 +1786,9 @@ function showCards(projects, label) {
   });
 }
 
-function showDevGroup(dev, projects) {
-  lastFilteredProjects = projects;
-  // 16.07.26, по просьбе Ильи: поиск/фильтр не должен двигать/зумить карту.
-  if (mapViewActive) renderProjectPins(projects, { fitBounds: false });
-  const el = document.getElementById('searchResults');
-  if (!projects.length) {
-    el.innerHTML = `<div class="no-results"><div class="no-results-icon">🔍</div><div>Нет проектов этого застройщика</div></div>`;
-    return;
-  }
-  el.innerHTML = `
-    <div class="results-label">Застройщик: ${dev}</div>
-    <div class="dev-group open" id="devGroup">
-      <div class="dev-group-header" onclick="this.closest('.dev-group').classList.toggle('open')">
-        <span>🏗️ ${dev}</span>
-        <span class="dev-group-count">${projects.length} проект${projects.length===1?'':'а'}</span>
-        <svg class="dev-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-      </div>
-      <div class="dev-group-items">${projects.map(cardHTML).join('')}</div>
-    </div>`;
-}
-
 // ── КАРТА ПРОЕКТОВ ("На карте") ───────────────────────────────────────────
 // 14.07.26: показывает те же проекты, что сейчас в списке (lastFilteredProjects,
-// обновляется в showCards/showDevGroup) — по умолчанию, до первого поиска,
+// обновляется в showCards) — по умолчанию, до первого поиска,
 // это все проекты (PROJECTS), как и на списке карточек. Карта создаётся один
 // раз при первом переключении на "На карте" (не на каждой загрузке страницы —
 // бережём дневной лимит запросов к API). Координаты у проекта — поля lat/lng
@@ -2580,30 +2552,45 @@ function updateChips() {
   // без всякого визуального следа фильтра) — она всегда идёт ПЕРЕД "Сбросить
   // все", чтобы кнопка сброса оставалась крайней правой, даже когда фильтров
   // несколько одновременно (см. .loc-chip в CSS).
-  let locChip = '';
+  //
+  // 17.07.26 (round 2), по просьбе Ильи: район/округ и застройщик — независимые
+  // измерения (см. коммент у filterByDistrict/filterByAmphoe/filterByDeveloper
+  // выше) и теперь могут быть активны ОДНОВРЕМЕННО — значит, нужны ДВЕ
+  // отдельные плашки одновременно, каждая со своим крестиком, а не одна общая
+  // на троих, как было раньше.
+  let chips = '';
   if (filters.district) {
     hasActive = true;
     const label = DISTRICTS[filters.district]?.ru || filters.district;
-    locChip = `<span class="loc-chip">${label}<span class="fd-clear-x-inline" onclick="clearLocationFilter(event)">✕</span></span>`;
+    chips += `<span class="loc-chip">${label}<span class="fd-clear-x-inline" onclick="clearDistrictFilter(event)">✕</span></span>`;
   } else if (filters.amphoe) {
     hasActive = true;
     const label = AMPHOE_RU[filters.amphoe] || filters.amphoe;
-    locChip = `<span class="loc-chip">${label}<span class="fd-clear-x-inline" onclick="clearLocationFilter(event)">✕</span></span>`;
-  } else if (filters.developer) {
+    chips += `<span class="loc-chip">${label}<span class="fd-clear-x-inline" onclick="clearDistrictFilter(event)">✕</span></span>`;
+  }
+  if (filters.developer) {
     hasActive = true;
-    locChip = `<span class="loc-chip">${filters.developer}<span class="fd-clear-x-inline" onclick="clearLocationFilter(event)">✕</span></span>`;
+    chips += `<span class="loc-chip">${filters.developer}<span class="fd-clear-x-inline" onclick="clearDeveloperFilter(event)">✕</span></span>`;
   }
 
   document.getElementById('activeFilters').innerHTML =
-    locChip + (hasActive ? `<button class="reset-all" onclick="resetAll()">Сбросить все</button>` : '');
+    chips + (hasActive ? `<button class="reset-all" onclick="resetAll()">Сбросить все</button>` : '');
 }
 
-// 17.07.26: сброс района/округа/застройщика — плашка выше со своим крестиком.
-// Тип/цена/срок сдачи не трогает, они независимы (тот же принцип, что и
-// clearTypeFilter/clearPriceFilter/clearCompFilter рядом).
-function clearLocationFilter(e) {
+// 17.07.26 (round 2): район/округ и застройщик теперь сбрасываются отдельными
+// крестиками (у каждой плашки свой) — раньше был один общий clearLocationFilter
+// на все три поля сразу, что не позволяло снять только одно из них, оставив
+// другое активным.
+function clearDistrictFilter(e) {
   if (e) e.stopPropagation();
-  filters.district = null; filters.amphoe = null; filters.developer = null;
+  filters.district = null; filters.amphoe = null;
+  updateChips();
+  autoSearch();
+  syncMapWithFilters();
+}
+function clearDeveloperFilter(e) {
+  if (e) e.stopPropagation();
+  filters.developer = null;
   updateChips();
   autoSearch();
   syncMapWithFilters();
