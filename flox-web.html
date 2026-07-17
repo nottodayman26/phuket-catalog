@@ -286,8 +286,10 @@ input,button{font-family:inherit;}
 /* Autocomplete */
 .autocomplete{
   position:absolute;top:calc(100% + 6px);left:0;right:0;
-  background:var(--surface);border:1px solid var(--line-2);
-  border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25);
+  /* 17.07.26, по просьбе Ильи: убрали обводку и тень — без них чище, как и
+     у остальных выпадающих панелей на сайте. */
+  background:var(--surface);
+  border-radius:12px;
   z-index:300;overflow:hidden;display:none;
 }
 .autocomplete.vis{display:block;}
@@ -403,15 +405,24 @@ input,button{font-family:inherit;}
    не в скруглённом квадрате). Без тени — по просьбе Ильи, тень убрали
    отовсюду у этих кнопок (и здесь, и в обычном, и в фуллскрин-режиме). */
 .map-fullscreen-btn{
-  /* 17.07.26, по просьбе Ильи: z-index был запредельным (2147483000 — почти
-     максимум, что вообще допускает CSS) и перекрывал всплывающие окна
-     "Клиенты"/"Инструменты" (.flox-tb-popover/.flox-tb-dd в topbar.js,
-     z-index:400) и подсказки поисковика (.autocomplete, z-index:300), если
-     они открыты поверх карты. 250 — всё ещё выше самой карты и шапки сайта
-     (.flox-topbar, z-index:200), но ниже всех выпадающих окон/подсказок,
-     которым и положено быть на самом верху.
-  */
-  position:fixed;top:var(--map-ctrl-top, 72px);right:16px;z-index:250;
+  /* 17.07.26 (2), по просьбе Ильи: прошлая правка (250) была неверной —
+     z-index сравнивается по числу, только если элементы соревнуются в ОДНОМ
+     и том же контексте наложения (stacking context), а #flox-topbar
+     (position:sticky + z-index:200 в topbar.js) как раз СОЗДАЁТ свой
+     собственный контекст. Это значит, что z-index:400 у вложенных туда
+     .flox-tb-dd/.flox-tb-popover ("Инструменты"/"Клиенты") виден только
+     ВНУТРИ этого контекста — снаружи всё это поддерево целиком всегда стоит
+     на отметке 200, сколько бы ни было z-index у элементов внутри. Значит
+     250 (> 200) всё равно перекрывало выпадающее меню целиком, несмотря на
+     видимость его собственного z-index:400. Правильный фикс — быть НИЖЕ 200
+     в обычном режиме (тогда вся шапка со своими попапами гарантированно
+     выше, что бы внутри неё ни происходило), и только в CSS-фуллскрине карты
+     подниматься существенно выше — см. правило ниже с
+     body.map-fake-fullscreen-active, которое включается тем же кодом, что
+     уже переключает .map-fake-fullscreen (см. setFakeFullscreen в скрипте):
+     без этого кнопки/инфо-блок совсем пропадали бы под самой картой в
+     фуллскрине (.map-view-wrap.map-fake-fullscreen — z-index:999999999). */
+  position:fixed;top:var(--map-ctrl-top, 72px);right:16px;z-index:150;
   border-radius:50%;
 }
 /* 16.07.26, по просьбе Ильи, 1:1 со скрином — +/- теперь одна цельная
@@ -423,7 +434,7 @@ input,button{font-family:inherit;}
    комментарий у .map-fullscreen-btn выше). Сама механика (клики, setZoom) не
    менялась. */
 .map-zoom-group{
-  position:fixed;top:var(--map-ctrl-mid, 50vh);right:16px;z-index:250; /* см. комментарий у .map-fullscreen-btn выше про 250 вместо 2147483000 */
+  position:fixed;top:var(--map-ctrl-mid, 50vh);right:16px;z-index:150; /* см. большой комментарий у .map-fullscreen-btn выше */
   transform:translateY(-50%);
   display:flex;flex-direction:column;
   /* 17.07.26, по просьбе Ильи: тоже теперь по теме, не всегда белый фон */
@@ -437,6 +448,19 @@ input,button{font-family:inherit;}
    специфичность (0,2,0) и идёт позже в файле, поэтому побеждало даже при
    наведении. Здесь специфичность выше (0,3,0) — гарантированно перебивает. */
 .map-zoom-group .map-ctrl-btn:hover{background:var(--surface-3);}
+/* 17.07.26 (2), по просьбе Ильи: "фуллскрин полетел — кнопок не видно" —
+   именно из-за прошлого понижения z-index (см. комментарий у
+   .map-fullscreen-btn выше) кнопки/инфо-блок (теперь z-index:150) оказались
+   НИЖЕ самой развёрнутой карты (.map-view-wrap.map-fake-fullscreen,
+   z-index:999999999) и стали невидимы/некликабельны в фуллскрин-режиме.
+   body.map-fake-fullscreen-active уже переключается существующим кодом (см.
+   setFakeFullscreen в скрипте) — переиспользуем этот же класс, чтобы именно
+   В ЭТОМ режиме поднять кнопки/инфо-блок значительно выше карты. */
+body.map-fake-fullscreen-active .map-fullscreen-btn,
+body.map-fake-fullscreen-active .map-zoom-group,
+body.map-fake-fullscreen-active .map-info-card{
+  z-index:1000000000;
+}
 /* 16.07.26, по просьбе Ильи: кнопки всё ещё "катались" вместе со скроллом,
    хотя стоит position:fixed — значит что-то в разметке страницы (скорее
    всего в topbar.js, который сюда не присылали) ломает position:fixed у
@@ -476,7 +500,7 @@ input,button{font-family:inherit;}
    от края до края экрана (см. .map-view-wrap), поэтому left:16px без
    дополнительных расчётов симметричен right:16px у кнопок. */
 .map-info-card{
-  display:none;position:fixed;top:var(--map-ctrl-top, 72px);left:16px;z-index:250; /* см. комментарий у .map-fullscreen-btn выше про 250 вместо 2147483000 */
+  display:none;position:fixed;top:var(--map-ctrl-top, 72px);left:16px;z-index:150; /* см. большой комментарий у .map-fullscreen-btn выше про контексты наложения */
   width:320px;max-width:calc(100vw - 32px);
   background:var(--surface);border-radius:14px;overflow:hidden;
   color:var(--text);cursor:pointer;
