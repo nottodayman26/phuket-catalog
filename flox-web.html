@@ -888,6 +888,17 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 </div>
 
 <script>
+// 17.07.26, по вопросу Ильи: при обычной перезагрузке страницы (F5/
+// Ctrl+Shift+R) браузер по умолчанию сам пытается восстановить прежнюю
+// прокрутку (history.scrollRestoration по умолчанию 'auto') — то есть то,
+// открывается ли страница ровно сверху при обновлении, до этой правки
+// зависело от браузера/конкретного случая, а не гарантировалось кодом
+// (отсюда и "то ли баг, то ли случайность"). Отключаем автовосстановление и
+// сами прокручиваем наверх при каждой загрузке — теперь это гарантировано
+// всегда, в любом браузере.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+
 // ── CONFIG ───────────────────────────────
 const SUPABASE_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
