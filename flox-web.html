@@ -962,52 +962,21 @@ let filters = { propType: 'condo', unitTypes: null, price: null, completion: nul
 let tmpType = 'all';
 let tmpCompletion = null;
 
-// 16.07.26, по просьбе Ильи (переделываем логику, а не патчи — сам так
-// попросил, дважды): текущие фильтры + текст поиска сохраняем в
-// sessionStorage при каждом реальном изменении (см. вызовы
-// persistSearchState() ниже) — это переживает ПОЛНУЮ перезагрузку страницы в
-// одной и той же вкладке, а именно так topbar.js уходит на unit.html/
-// project.html и возвращается обратно через "Поиск" (обычный location.href,
-// а не переключение SPA-вкладки). Работает надёжнее, чем document.referrer
-// или history.back(): у НОВОЙ вкладки, открытой через target="_blank"/
-// window.open с этого же сайта (а именно так у нас открывается unit.html/
-// project.html — см. cardHTML, renderProjectPins), браузер копирует
-// sessionStorage вкладки-родителя в момент открытия.
-//
-// 16.07.26 (по видео Ильи — нашёлся настоящий баг предыдущей версии): mало
-// сохранять САМ ФАКТ наличия каких-то фильтров — resetSearchPageToClean()
-// раньше показывал каталог БЕЗУСЛОВНО при любом возврате на "Поиск", и это
-// само по себе персистилось (persistSearchState вызывается из doSearch) —
-// получался порочный круг: один-единственный такой возврат (даже с самой
-// первой, чистой, никогда не искавшейся страницы) НАВСЕГДА помечал вкладку
-// как "было что показывать", и дальше каталог вылезал уже при любом заходе,
-// включая настоящий Ctrl+Shift+R с нуля. Поэтому сохраняем ОТДЕЛЬНЫЙ флаг
-// wasActive — "реально ли было что показать" (шёл настоящий поиск ИЛИ была
-// открыта карта) — и обновляем/читаем именно его, а не просто факт наличия
-// записи.
-const SEARCH_STATE_KEY = 'flox-search-state';
-function persistSearchState() {
-  try {
-    sessionStorage.setItem(SEARCH_STATE_KEY, JSON.stringify({
-      filters,
-      searchInput: document.getElementById('searchInput')?.value || '',
-      wasActive: !!(_searchDone || mapViewActive),
-    }));
-  } catch (e) {}
-}
-function restoreSearchState() {
-  try {
-    const raw = sessionStorage.getItem(SEARCH_STATE_KEY);
-    if (!raw) return false;
-    const saved = JSON.parse(raw);
-    if (saved && saved.filters) filters = saved.filters;
-    if (saved && typeof saved.searchInput === 'string') {
-      const el = document.getElementById('searchInput');
-      if (el) el.value = saved.searchInput;
-    }
-    return !!(saved && saved.wasActive);
-  } catch (e) { return false; }
-}
+// 17.07.26, по прямой просьбе Ильи: убрали весь механизм на sessionStorage
+// (persistSearchState/restoreSearchState/wasActive), который был здесь до
+// этого. История: сначала пытались отличать "первый холодный заход" от
+// "вернулись через topbar" по document.referrer (ненадёжно), потом завели
+// sessionStorage-флаг wasActive (сам оказался источником бага — единственный
+// возврат на "Поиск" мог навсегда пометить вкладку как "было что
+// показывать", и каталог потом вылезал даже на чистом Ctrl+Shift+R). Илья
+// посмотрел это вживую и попросил ПРОЩЕ: и обычная перезагрузка страницы, и
+// возврат на "Поиск" из Инструменты/Клиенты/карты должны ВСЕГДА показывать
+// чистый экран — без проектов и без прежних фильтров, с анимацией счётчика
+// (см. loadUnitCount()) — см. resetSearchPageToClean() и бутстрап
+// initAgent().then(...) ниже. Единственное, что должно показывать прежнее
+// состояние — нативная кнопка "назад" в браузере, а это работает само собой
+// через bfcache (страница просто размораживается, этот код вообще не
+// перезапускается) и никак не завязано на данный код.
 
 const fmtMln = n => n >= 1000000 ? (n/1e6).toFixed(1).replace('.0','') + ' млн ฿' : n.toLocaleString('ru') + ' ฿';
 
@@ -1050,23 +1019,20 @@ function setPage(name) {
   if (enteringSearch) resetSearchPageToClean();
 }
 
-// По просьбе Ильи: возврат на "Поиск" из Инструменты/Клиенты и т.п. должен
-// показывать страницу такой же чистой, как до первого поиска — без открытого
-// списка результатов и без карты (даже если до перехода на другую вкладку
-// список/карта были открыты). Сами введённый текст и выбранные фильтры не
-// трогаем — сбрасываем только то, что было ПОКАЗАНО.
-// 16.07.26, по просьбе Ильи (найден баг, потом ещё раз переделано по видео):
-// первая попытка — при возврате на "Поиск" ВСЕГДА показывать каталог заново
-// (doSearch() безусловно) — создавала порочный круг: doSearch() сам ставит
-// _searchDone=true и вызывает persistSearchState(), а значит один-единственный
-// такой возврат навсегда помечал вкладку как "тут что-то искали" — и дальше
-// каталог вылезал уже ВСЕГДА, включая настоящий Ctrl+Shift+R с чистой вкладки
-// (это и увидел Илья на видео). Правильно — показывать каталог заново ТОЛЬКО
-// если до этого возврата реально было что показывать: либо уже шёл поиск
-// (_searchDone), либо была открыта карта (mapViewActive, у неё свой независимый
-// вход через кнопку "На карте" без обязательного "Найти"). Это надо прочитать
-// ДО того, как мы всё обнулим ниже — иначе поздно.
-// 16.07.26, по видео Ильи: там же нашёлся ещё один баг — "На карте" оставалась
+// 17.07.26, по прямой и повторной просьбе Ильи: возврат на "Поиск" из
+// Инструменты/Клиенты/карты, а ТАКЖЕ обычная перезагрузка страницы (см.
+// initAgent().then(...) ниже) теперь ВСЕГДА показывают страницу в точности
+// такой же чистой, как при первом заходе — без проектов, без карты и БЕЗ
+// ранее выбранных фильтров/текста поиска, плюс заново проигрывается
+// анимация счётчика (loadUnitCount()). Раньше здесь была условная логика
+// (показывать каталог заново, только если до этого "реально было что
+// показывать") на основе флага в sessionStorage — по видео Ильи выяснилось,
+// что сам этот флаг время от времени залипал в "true" и каталог вылезал там,
+// где Илья явно просил чистый экран. Убрали условность целиком: теперь один
+// и тот же результат в любом сценарии, кроме нативной кнопки "назад" в
+// браузере — та работает через bfcache, минуя этот код, и там, где нужно,
+// по-прежнему честно восстанавливает прежнее состояние сама.
+// 16.07.26, по видео Ильи: там же нашёлся баг — "На карте" оставалась
 // подсвечена (фиолетовая плашка-подложка) даже после возврата на список,
 // потому что классы accent/accent-off меняли тут вручную, а саму плашку
 // (.accent-pill) двигает отдельно syncAccentPill() — без вызова она просто не
@@ -1082,7 +1048,6 @@ let _resettingSearchPage = false;
 function resetSearchPageToClean() {
   if (_resettingSearchPage) return;
   _resettingSearchPage = true;
-  const wasActive = _searchDone || mapViewActive; // читаем ДО сброса — см. коммент выше
   document.getElementById('mapViewWrap').classList.remove('act');
   mapViewActive = false;
   mapCtrlRefs?.exitFakeFullscreen?.(); // 16.07.26: не уходить со страницы в развёрнутом виде карты (см. addCustomMapControls)
@@ -1091,13 +1056,14 @@ function resetSearchPageToClean() {
   document.getElementById('mapToggleBtn').classList.remove('accent');
   syncAccentPill(true); // 16.07.26: без этого фиолетовая плашка оставалась над "На карте" — см. коммент выше
   document.getElementById('searchResults').style.display = '';
-  if (wasActive) {
-    doSearch(); // покажет то же самое, что реально было (список или карта) — сам ставит _searchDone=true и персистит
-  } else {
-    document.getElementById('searchResults').innerHTML = '';
-    _searchDone = false;
-    persistSearchState(); // 16.07.26: явно фиксируем wasActive=false, чтобы не унаследовать чужой "true" из предыдущей записи
-  }
+  // 17.07.26: полный сброс к дефолту — фильтры, тип, текст поиска, результаты.
+  filters = { propType: 'condo', unitTypes: null, price: null, completion: null };
+  tmpUnitTypes = [];
+  document.querySelectorAll('.type-btn').forEach((b, i) => b.classList.toggle('act', i === 0));
+  updateChips();
+  clearSearch(); // чистит текст поиска, крестик и #searchResults (см. функцию ниже)
+  _searchDone = false;
+  loadUnitCount(); // 17.07.26: заново проигрываем анимацию счётчика "Более NNN предложений"
   setTimeout(() => { _resettingSearchPage = false; }, 50);
 }
 
@@ -1247,7 +1213,6 @@ function syncMapWithFilters() {
   // карту саму по себе — только добавлять/убирать точки. Карту двигает
   // только сам пользователь (см. fitBounds:false).
   if (mapViewActive) renderProjectPins(filtered, { fitBounds: false });
-  persistSearchState(); // 16.07.26: см. коммент у объявления filters выше
 }
 
 // ── AUTOCOMPLETE ──────────────────────────
@@ -1351,7 +1316,6 @@ function doSearch() {
   const base = val ? PROJECTS.filter(p => matchProject(val, p)) : PROJECTS;
   const filtered = applyFilters(base);
   showCards(filtered, `Найдено: ${filtered.length}`);
-  persistSearchState(); // 16.07.26: см. коммент у объявления filters выше
 }
 
 function autoSearch() {
@@ -1584,7 +1548,6 @@ function setResultsView(view) {
       resizeProjectsMapHeight();
     }
   }
-  persistSearchState(); // 16.07.26: открытие/закрытие карты тоже меняет "wasActive" — см. коммент у объявления filters
 }
 
 // 15.07.26 (10): позиционирует .accent-pill. История правок (чтобы больше не
@@ -2979,30 +2942,16 @@ function showAuthIfNeeded() {
 
 initAgent().then(() => {
   showAuthIfNeeded();
-  // 16.07.26, по просьбе Ильи (переделали логику, не просто патч — сам так
-  // просил): раньше пытались отличить "первый холодный заход" от "вернулись
-  // через topbar" по document.referrer — ненадёжно, например переход
-  // "Инструменты"/"Клиенты" с юнита/проекта делает ЕЩЁ ОДНУ перезагрузку
-  // страницы (см. _go() в topbar.js), где referrer уже не указывает прямо на
-  // unit/project.html, хотя по сути мы всё ещё "вернулись" оттуда. Теперь
-  // ориентируемся не на сам факт наличия сохранённого состояния, а на флаг
-  // wasActive внутри него (см. persistSearchState/restoreSearchState у
-  // объявления filters выше) — true, только если ДО ухода со страницы поиска
-  // реально был показан список (doSearch) или была открыта карта. Это чинит
-  // баг из видео Ильи 16.07.26: раньше ЛЮБОЙ первый переход "назад на Поиск"
-  // (даже с чистой, никогда не искавшейся страницы) навсегда помечал вкладку
-  // как "было состояние", и проекты потом вылезали при каждой перезагрузке.
-  const wasActive = restoreSearchState();
-  if (wasActive) updateChips(); // 16.07.26: без этого кнопки Тип/Цена/Срок сдачи остались бы с дефолтным текстом, хотя filters уже восстановлены
+  // 17.07.26, по прямой и повторной просьбе Ильи: убрали восстановление
+  // фильтров/результатов через sessionStorage целиком (см. коммент у
+  // объявления filters выше). Любая перезагрузка flox-web.html — будь то
+  // обычный переход по ссылке "Поиск" из project.html/unit.html, F5 или
+  // Ctrl+Shift+R — теперь всегда показывает чистый экран: без проектов, без
+  // фильтров, с анимацией счётчика (loadUnitCount() ниже вызывается
+  // безусловно). Единственное, что показывает прежнее состояние — нативная
+  // кнопка "назад" в браузере (bfcache, этот код вообще не перезапускается).
   const p = localStorage.getItem('flox-page');
   if (p) { localStorage.removeItem('flox-page'); setPage(p); }
-  // Если в итоге показана именно страница поиска (а не "Инструменты"/
-  // "Клиенты" из localStorage выше) и до этого реально было активное
-  // состояние (wasActive) — сразу показываем каталог с восстановленными
-  // фильтрами. На настоящем первом заходе в новой вкладке sessionStorage
-  // пуст и wasActive=false — каталог по-прежнему не появляется сам, только
-  // после явного "Найти".
-  if (wasActive && document.getElementById('page-search')?.classList.contains('act')) doSearch();
 });
 loadUnitCount();
 loadSoldTicker();
