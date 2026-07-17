@@ -1276,15 +1276,6 @@ function matchUnitTypeLabel(rawType) {
   const found = UNIT_TYPES.find(t => t.match.some(m => rt.includes(m)));
   return found ? found.label : null;
 }
-// Самая дешёвая РЕАЛЬНАЯ цена конкретного типа юнита в конкретном проекте —
-// null, если по нему ещё нет данных (не пришли/не загружены), тогда вызывающий
-// код сам решает, использовать ли старую захардкоженную цену как запасной
-// вариант.
-function getRealPriceForType(projectId, typeName) {
-  const rows = (unitAreaData[projectId] || []).filter(r => r.type && typeName && r.type.toLowerCase() === typeName.toLowerCase());
-  if (!rows.length) return null;
-  return Math.min(...rows.map(r => r.price));
-}
 // Шаги пресетов "за м²" — считаем из реального разброса цена/м² по всем
 // загруженным юнитам (не подбираем на глаз, как для "за всё"), округляя до
 // красивых чисел, штук 10.
@@ -1320,17 +1311,35 @@ function getMatchingUnitPricesPerSqm(p) {
 // проекта, если тип тоже не выбран); используется и для отбора проектов
 // (applyFilters), и для того, какую цену показать на плашке карты
 // (getPlaqueDisplayPrice) — одна и та же логика в обоих местах.
-// 17.07.26: цена каждого подходящего типа теперь берётся РЕАЛЬНАЯ (см.
-// getRealPriceForType/unitAreaData выше), если по этому проекту+типу уже
-// загружены данные из Supabase — иначе как раньше, старая захардкоженная
-// t.price (пока данные не пришли, или для чисто демонстрационных проектов).
+// 17.07.26 (уточнение по факту от Ильи): первая версия правки (см. историю
+// ниже) только ПОДМЕНЯЛА цену у типов, уже вручную вписанных в
+// PROJECTS[].unitTypes — этого оказалось НЕДОСТАТОЧНО. У The Title Vivana
+// фильтр "8-15 млн" показал 11.9 (Пентхаус), хотя внутри проекта есть юнит
+// дешевле — по всей видимости, этот реальный юнит вообще не попадает ни в
+// одну из 4 вручную заведённых строк unitTypes (например, его room_type не
+// совпадает ни с одним из псевдонимов в UNIT_TYPES, или это тип, которого в
+// unitTypes для этого проекта попросту нет). Раз так, любая подмена "цена
+// внутри уже существующей строки" эти лишние реальные юниты в принципе не
+// увидит. Теперь: если по проекту вообще есть выгруженные из Supabase
+// реальные юниты — используем ИХ ЦЕЛИКОМ (а не только пересечение с
+// unitTypes), и только если по проекту реальных данных нет вовсе — старое
+// поведение на захардкоженных unitTypes, как раньше.
 function getMatchingUnitPrices(p) {
+  const realRows = unitAreaData[p.id];
+  if (realRows && realRows.length) {
+    if (filters.unitTypes && filters.unitTypes.length) {
+      // юнит без распознанного типа (r.type===null) при активном фильтре по
+      // типу пропускаем — не можем подтвердить, что он подходит
+      return realRows.filter(r => r.type && filters.unitTypes.some(ft => r.type.toLowerCase().includes(ft.toLowerCase()))).map(r => r.price);
+    }
+    return realRows.map(r => r.price);
+  }
   const types = (p.unitTypes && p.unitTypes.length) ? p.unitTypes : null;
-  if (!types) return [p.priceFrom]; // нет детальных данных по типам юнитов — fallback на общую цену проекта
+  if (!types) return [p.priceFrom]; // нет ни реальных данных, ни детальных данных по типам юнитов — fallback на общую цену проекта
   const relevant = (filters.unitTypes && filters.unitTypes.length)
     ? types.filter(t => filters.unitTypes.some(ft => t.name.toLowerCase().includes(ft.toLowerCase())))
     : types;
-  return relevant.map(t => getRealPriceForType(p.id, t.name) ?? t.price); // может быть пусто — тогда проект и так отсеян ниже по типу
+  return relevant.map(t => t.price); // может быть пусто — тогда проект и так отсеян ниже по типу
 }
 
 // ── FILTER PROJECTS ───────────────────────
@@ -2127,20 +2136,45 @@ function getPlaqueLayout() {
 // чтобы завести очередь у проекта, нужно проставить эти поля вручную в
 // нужных элементах его unitTypes.
 function getMapMatchingUnits(p) {
-  const types = (p.unitTypes && p.unitTypes.length) ? p.unitTypes : [{ name: '', price: p.priceFrom }];
+  // 17.07.26 (уточнение по факту от Ильи): первая версия правки только
+  // подменяла цену у типов, УЖЕ вписанных вручную в unitTypes — этого
+  // недостаточно, если у проекта есть реальный юнит типа, которого среди
+  // вписанных вручную строк нет вообще (или его room_type не распознался ни
+  // одним псевдонимом в UNIT_TYPES) — такой юнит был просто невидим для
+  // плашки. Пример: The Title Vivana, фильтр 8-15 млн показал 11.9
+  // (Пентхаус), хотя есть юнит дешевле. Теперь: если по проекту вообще есть
+  // реальные данные из Supabase — строим список ЦЕЛИКОМ из них (а не только
+  // из пересечения с unitTypes); срок сдачи/статус по очереди (см. коммент
+  // выше) при этом всё равно берём из вручную заведённой строки unitTypes с
+  // тем же названием типа, если она есть — а если нет, наследуем от всего
+  // проекта, как и раньше. Юнит с нераспознанным типом (name:'') просто
+  // наследует срок сдачи всего проекта целиком.
+  const realRows = unitAreaData[p.id];
+  let types;
+  if (realRows && realRows.length) {
+    const bucketByType = {};
+    (p.unitTypes || []).forEach(t => { if (t.name) bucketByType[t.name.toLowerCase()] = t; });
+    types = realRows.map(r => {
+      const bucket = r.type ? bucketByType[r.type.toLowerCase()] : null;
+      return {
+        name: r.type || '',
+        price: r.price,
+        completionYear: bucket?.completionYear ?? p.completionYear,
+        completionQ: bucket?.completionQ ?? p.completionQ,
+        status: bucket?.status ?? p.status,
+      };
+    });
+  } else {
+    types = ((p.unitTypes && p.unitTypes.length) ? p.unitTypes : [{ name: '', price: p.priceFrom }])
+      .map(t => ({
+        name: t.name || '',
+        price: t.price,
+        completionYear: t.completionYear ?? p.completionYear,
+        completionQ: t.completionQ ?? p.completionQ,
+        status: t.status ?? p.status,
+      }));
+  }
   return types
-    .map(t => ({
-      name: t.name || '',
-      // 17.07.26, по найденному Ильёй багу: плашка карты показывала
-      // устаревшую захардкоженную цену типа (t.price) вместо реальной
-      // минимальной доступной сейчас — берём реальную цену из Supabase
-      // (см. getRealPriceForType/unitAreaData выше), если она уже загружена
-      // по этому проекту+типу, иначе используем старую как запасной вариант.
-      price: getRealPriceForType(p.id, t.name) ?? t.price,
-      completionYear: t.completionYear ?? p.completionYear,
-      completionQ: t.completionQ ?? p.completionQ,
-      status: t.status ?? p.status,
-    }))
     .filter(u => {
       if (filters.unitTypes && filters.unitTypes.length) {
         const match = filters.unitTypes.some(ft => u.name.toLowerCase().includes(ft.toLowerCase()));
