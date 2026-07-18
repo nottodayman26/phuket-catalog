@@ -24,9 +24,16 @@
   --green: #7BAF6E;
   --green-soft: rgba(123,175,110,0.15);
   --red: #FF6B6B;
+  --red-soft: rgba(255,107,107,0.14);
   --project-color: #5E17EB;
   --project-soft: rgba(94,23,235,0.18);
   --surface-glass: rgba(17,17,24,0.66);
+  /* 18.07.26, по просьбе Ильи: токены для поисковика юнитов в стиле
+     flox-web.html — .fd-checkbox/.fd-price-input там же используют var
+     price-pill-bg/checkbox-bg (в тёмной теме = surface-2, в светлой — чистый
+     белый, см. body.light ниже). */
+  --price-pill-bg: var(--surface-2);
+  --checkbox-bg: var(--surface-2);
 }
 body.light {
   --bg: #F5F5F7;
@@ -39,8 +46,11 @@ body.light {
   --muted: rgba(0,0,0,0.45);
   --muted-2: rgba(0,0,0,0.22);
   --accent-soft: rgba(94,23,235,0.1);
+  --red-soft: rgba(224,85,85,0.1);
   --project-soft: rgba(94,23,235,0.1);
   --surface-glass: rgba(255,255,255,0.66);
+  --price-pill-bg: #ffffff;
+  --checkbox-bg: #ffffff;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-family: 'Inter', system-ui, sans-serif; scroll-behavior: smooth; }
@@ -278,150 +288,119 @@ a { color: inherit; text-decoration: none; }
 .us-val { font-size: 13px; font-weight: 600; }
 .us-price { color: var(--project-color); }
 
-/* ── UNIT SEARCH BAR ─── */
-/* Сама поисковая строка — самостоятельная "таблетка", крупнее прежней;
-   фильтры больше не вложены внутрь неё (не "таблетка в таблетке") */
-.unit-search-bar {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--surface); border: 1px solid var(--line-2);
-  border-radius: 14px; padding: 13px 18px; margin-bottom: 12px;
-  transition: border-color .2s, box-shadow .2s;
+/* ── ПОИСКОВИК ЮНИТОВ — в стиле flox-web.html (18.07.26, по согласованному
+   макету project_search_mockup.html) ───
+   Строка поиска и все фильтры — в одной "ленте", без обводок и теней в
+   покое, разделители между смысловыми группами тонкой линией (как
+   .search-box-wrap/.filter-sep в flox-web.html). Фиолетовая заливка — только
+   у реально применённого фильтра (.has-value); наведение и открытая (но
+   ещё ничего не выбравшая) шторка красятся нейтрально — только смена
+   цвета текста (muted → text), без "таблетки". */
+.unit-search-bar{
+  width:100%; display:flex; align-items:center; flex-wrap:wrap;
+  gap:2px; padding:6px; row-gap:6px; margin-bottom:12px;
+  background:var(--surface); border-radius:28px;
 }
-.unit-search-bar:focus-within {
-  border-color: var(--project-color);
-  box-shadow: 0 0 0 3px rgba(94,23,235,0.1);
-}
-.unit-search-icon { color: var(--muted); flex-shrink:0; display:flex; align-items:center; }
-.unit-search-icon svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.7; }
-.unit-search-input {
-  flex:1; border:none; outline:none; background:transparent;
-  font-size:15px; color:var(--text); font-family:inherit; min-width:0;
-}
-.unit-search-input::placeholder { color:var(--muted); }
-/* Отдельная строка с фильтрами — под поисковой строкой, без обёртки-таблетки */
-.unit-filters-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom: 14px; }
-.usf-btn {
-  display:flex; align-items:center; gap:3px;
-  font-size:11px; font-weight:500; color:var(--muted);
-  padding:4px 10px; border-radius:20px;
-  border:0.5px solid var(--line-2); background:var(--surface);
-  cursor:pointer; white-space:nowrap; font-family:inherit;
-  transition:border-color .2s, color .2s, transform .2s cubic-bezier(.34,1.56,.64,1);
-}
-.usf-btn:hover { border-color:var(--project-color); color:var(--project-color); transform:scale(1.05); }
-.usf-btn svg { width:10px; height:10px; }
-.usf-reset {
-  font-size:11px; color:var(--muted); cursor:pointer; padding:4px 6px;
-  border-radius:6px; font-family:inherit; background:none; border:none;
-  transition:color .15s, transform .2s;
-  margin-left: auto;
-}
-.usf-reset:hover { color:var(--project-color); transform:scale(1.05); }
+.usb-input-seg{ display:flex; align-items:center; gap:8px; flex:1; min-width:160px; padding:9px 8px 9px 18px; }
+.usb-input-seg svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.7; color:var(--muted); flex-shrink:0; }
+.unit-search-input{flex:1;border:none;outline:none;background:transparent;font-size:14.5px;color:var(--text);font-family:inherit;min-width:0;}
+.unit-search-input::placeholder{color:var(--muted-2);}
+.usf-sep{width:1px;height:22px;background:var(--line-2);flex-shrink:0;margin:0 2px;}
 
-/* ── UNITS FILTERS (старые) ─── */
-.units-filters {
-  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center;
+.usf-btn{
+  display:flex;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:500;color:var(--muted);
+  padding:9px 13px;border-radius:20px;
+  border:none;background:none;
+  cursor:pointer;white-space:nowrap;font-family:inherit;
+  transition:color .2s ease .05s;
 }
-.uf-group { display: flex; flex-direction: column; gap: 5px; position: relative; }
-.uf-label { display: none; }
+.usf-btn:hover{color:var(--text);}
+.usf-btn.open{color:var(--text);}
+.usf-btn.has-value{background:var(--project-soft);color:var(--project-color);}
+.usf-btn svg{width:11px;height:11px;opacity:.6;flex-shrink:0;transition:transform .2s,opacity .2s;}
+.usf-btn.open svg{transform:rotate(180deg);opacity:1;}
 
-/* Кастомная кнопка-пилюля */
-.uf-btn-custom {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
-  border: 0.5px solid var(--line-2); background: var(--surface); color: var(--text);
-  font-family: inherit; cursor: pointer; white-space: nowrap;
-  transition: border-color .15s, background .15s;
-  user-select: none;
+/* "Сбросить все" — под лентой, слева, без иконки; появляется только когда
+   реально есть что сбрасывать (как reset-all в flox-web.html). */
+.active-filters{display:none;align-items:center;width:100%;margin-top:10px;padding-left:24px;min-height:0;}
+.active-filters.vis{display:flex;}
+.reset-all{
+  font-size:11.5px;font-weight:600;color:var(--red);cursor:pointer;
+  padding:6px 12px;background:var(--red-soft);border:none;border-radius:20px;
+  font-family:inherit;transition:opacity .15s ease;
 }
-.uf-btn-custom:hover { border-color: var(--project-color); color: var(--project-color); }
-.uf-btn-custom.open { border-color: var(--project-color); color: var(--project-color); background: var(--accent-soft); }
-.uf-btn-custom.has-value { border-color: var(--project-color); color: var(--project-color); background: var(--accent-soft); }
-.uf-btn-custom svg { opacity: .5; flex-shrink: 0; transition: transform .2s; }
-.uf-btn-custom.open svg { transform: rotate(180deg); opacity: 1; }
+.reset-all:hover{opacity:.8;}
 
-/* Дропдаун-панель. Плавная анимация без "перебора" (без пружинного отскока —
-   он и читался как дёрганость), только мягкий ease-out. */
-.uf-dropdown {
-  display: block; position: fixed;
-  background: var(--surface); border: 1px solid var(--line-2);
-  border-radius: 12px; z-index: 9999; min-width: 200px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-  overflow: hidden;
-  opacity: 0; pointer-events: none;
-  transform: translateY(-4px) scale(0.98);
-  transform-origin: top left;
-  transition: opacity .16s cubic-bezier(.22,1,.36,1), transform .16s cubic-bezier(.22,1,.36,1);
+/* Шторки — стиль .filter-dropdown: без обводки, мягкая тень, радиус 16px */
+.uf-dropdown{
+  position:absolute;top:calc(100% + 10px);left:0;
+  min-width:230px;background:var(--surface);
+  border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.14);
+  padding:8px;z-index:350;
+  opacity:0;transform:translateY(-6px);pointer-events:none;
+  transition:opacity .15s ease,transform .15s ease;
 }
-/* Навешивается на секунду через JS, когда один дропдаун мгновенно уступает
-   место другому (наведение с одного фильтра сразу на соседний) — без этого
-   старый успевал доиграть анимацию закрытия поверх/рядом с новым, и казалось,
-   что окна прыгают и перекрывают друг друга */
 .uf-dropdown.no-anim { transition: none !important; }
-.uf-dropdown.open {
-  opacity: 1; pointer-events: all;
-  transform: translateY(0) scale(1);
-}
+.uf-dropdown.open{opacity:1;transform:translateY(0);pointer-events:all;}
 
-/* Опции */
-.uf-option {
-  padding: 10px 14px; font-size: 13px; cursor: pointer;
-  transition: background .12s; color: var(--text);
-  display: flex; align-items: center; gap: 8px;
+/* Тип — чекбоксы, как .fd-row/.fd-checkbox в flox-web.html, без "таблетки"
+   при наведении — только смена цвета текста. */
+.fd-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;}
+.fd-checkbox{
+  width:17px;height:17px;border-radius:6px;border:1px solid var(--line-2);
+  background:var(--checkbox-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .12s;
 }
-.uf-option:hover { background: var(--surface-2); }
-.uf-option.selected { color: var(--project-color); font-weight: 600; }
-.uf-option.selected::after { content: '✓'; margin-left: auto; font-size: 12px; }
+.fd-row.act .fd-checkbox{background:var(--project-color);border-color:var(--project-color);}
+.fd-row.act .fd-checkbox::after{content:'✓';font-size:9.5px;color:#fff;}
+.fd-row-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.fd-row-label{font-size:13px;font-weight:500;color:var(--muted);transition:color .12s ease .05s;flex:1;}
+.fd-row:hover .fd-row-label{color:var(--text);}
+.fd-row.act .fd-row-label{color:var(--text);}
 
-/* Цена */
-/* 17.07.26, по просьбе Ильи: вкладки "За всё"/"За м²" — тот же приём, что
-   уже согласован в поисковике (flox-web.html), только цвета/отступы под
-   локальную палитру этой страницы (var(--project-color) вместо --accent). */
-.uf-price-tabs { display: flex; gap: 4px; padding: 12px 14px 0; }
-.uf-price-tab {
-  flex: 1; padding: 7px 0; border-radius: 8px; font-size: 12.5px; font-weight: 500;
-  border: none; background: none; color: var(--muted); cursor: pointer; font-family: inherit;
-  transition: background .15s, color .15s;
-}
-.uf-price-tab.act { background: var(--accent-soft); color: var(--project-color); }
-.uf-price-panel { padding: 14px; }
-.uf-price-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.uf-price-input {
-  flex: 1; padding: 8px 10px; border-radius: 8px; font-size: 13px;
-  border: 1px solid var(--line-2); background: var(--surface-2); color: var(--text);
-  font-family: inherit; transition: border-color .15s; outline: none;
-}
-.uf-price-input:focus { border-color: var(--project-color); }
-.uf-price-input::placeholder { color: var(--muted); }
-.uf-price-sep { color: var(--muted); font-size: 13px; flex-shrink: 0; }
-.uf-price-hints-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
-.uf-price-hint {
-  padding: 8px 10px; font-size: 12px; cursor: pointer;
-  color: var(--muted); transition: background .12s, color .12s;
-  text-align: center; border-bottom: 1px solid var(--line);
-}
-.uf-price-hint:nth-child(odd) { border-right: 1px solid var(--line); }
-.uf-price-hint:hover { background: var(--surface-2); color: var(--text); }
-.uf-price-hint.selected { color: var(--project-color); font-weight: 600; }
+/* Статус — квадраты-чекбоксы вместо заливки строки, без "таблетки" на ховере */
+.fd-list-item{padding:9px 10px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:color .12s ease .05s;display:flex;align-items:center;gap:10px;}
+.fd-list-item:hover{color:var(--text);}
+.fd-list-item.act{color:var(--project-color);font-weight:600;}
+.fd-list-item.act .fd-checkbox{background:var(--project-color);border-color:var(--project-color);}
+.fd-list-item.act .fd-checkbox::after{content:'✓';font-size:9.5px;color:#fff;}
 
-.uf-reset {
-  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
-  border: 0.5px solid var(--line-2); background: none; color: var(--muted);
-  font-family: inherit; cursor: pointer;
-  transition: all .15s; margin-left: auto;
+/* Цена — вкладки "За всё"/"За м²" + пилюли-инпуты + два столбца подсказок,
+   без сетки с линиями (см. .fd-price-* в flox-web.html) */
+.uf-price-dd{min-width:290px;}
+.uf-price-tabs{display:flex;gap:4px;padding:2px 4px 10px;}
+.uf-price-tab{
+  padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;
+  color:var(--muted);background:none;border:none;cursor:pointer;font-family:inherit;
+  transition:background .12s,color .12s;
 }
-.uf-reset:hover { border-color: var(--project-color); color: var(--project-color); }
-.uf-group-toggle {
-  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
-  border: 0.5px solid var(--line-2); background: none; color: var(--muted);
-  font-family: inherit; cursor: pointer;
-  transition: all .15s;
+.uf-price-tab:hover{color:var(--text);}
+.uf-price-tab.act{background:var(--project-soft);color:var(--project-color);}
+.uf-price-inputs{display:flex;align-items:center;gap:8px;padding:4px 4px 10px;}
+.uf-price-input-wrap{
+  flex:1;display:flex;align-items:center;background:var(--price-pill-bg);
+  border:1.5px solid transparent;border-radius:10px;padding:8px 10px;
+  transition:border-color .15s;
 }
-.uf-group-toggle.flat {
-  border-color: var(--project-color);
-  background: var(--accent-soft);
-  color: var(--project-color);
-}
+.uf-price-input-wrap:hover,.uf-price-input-wrap:focus-within{ border-color:rgba(94,23,235,0.45); }
+.uf-price-input-wrap input{border:none;background:none;color:var(--text);font-size:13px;outline:none;width:100%;font-family:inherit;}
+.uf-price-input-wrap input::placeholder{color:var(--muted-2);}
+.uf-price-dash{color:var(--muted);font-size:13px;}
+.uf-price-cols{display:flex;gap:8px;padding:0 4px;}
+.uf-price-col{flex:1;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;}
+/* Кастомный скролл — тот же приём, что у .fd-price-col в flox-web.html */
+.uf-price-col{ scrollbar-width:thin; scrollbar-color:var(--line-2) transparent; }
+.uf-price-col::-webkit-scrollbar{ width:4px; }
+.uf-price-col::-webkit-scrollbar-track{ background:transparent; }
+.uf-price-col::-webkit-scrollbar-thumb{ background:var(--line-2); border-radius:10px; }
+.uf-price-col::-webkit-scrollbar-button{ display:none; width:0; height:0; }
+.uf-price-opt{padding:7px 8px;border-radius:8px;font-size:12.5px;color:var(--muted);cursor:pointer;text-align:left;background:none;border:none;font-family:inherit;transition:color .1s ease .05s;}
+.uf-price-opt:hover{color:var(--text);}
+.uf-price-opt.act{color:var(--project-color);font-weight:600;background:var(--project-soft);}
+/* Гасим пресеты, которые дали бы невозможный диапазон (от 4, до 3) */
+.uf-price-opt:disabled{opacity:.3;cursor:default;pointer-events:none;}
+
 .units-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
 
 .uf-overlay { display: none; position: fixed; inset: 0; z-index: 199; }
@@ -784,15 +763,19 @@ a { color: inherit; text-decoration: none; }
 
 .reward-card {
   background: var(--surface);
-  border: 1px solid var(--line);
   border-radius: 14px; padding: 18px;
+  /* 18.07.26, по просьбе Ильи: убрали обводку, вместо неё — тень как у
+     попапов в топбаре (см. .flox-tb-popover/.flox-tb-dd в topbar.js), но
+     сразу в покое, а не только при наведении; сама тень при наведении
+     раньше была заметно крупнее (0 8px 28px) — уменьшили. */
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
   position: relative; overflow: hidden;
   display: var(--meeting-reward-display);
   transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
 }
 .reward-card:hover {
   transform: scale(1.025);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.16);
 }
 .reward-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
 .reward-pct { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
@@ -807,26 +790,28 @@ a { color: inherit; text-decoration: none; }
 .reward-table-btn:hover{color:var(--text);border-color:var(--line);}
 
 .price-card {
-  background: var(--surface); border: 1px solid var(--line);
+  background: var(--surface);
   border-radius: 14px; padding: 18px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
   transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
 }
 .price-card:hover {
   transform: scale(1.025);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.16);
 }
 .price-from-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
 .price-from-val { font-size: 24px; font-weight: 700; color: var(--project-color); }
 .price-to { font-size: 13px; color: var(--muted); margin-top: 2px; }
 
 .info-card {
-  background: var(--surface); border: 1px solid var(--line);
+  background: var(--surface);
   border-radius: 14px; padding: 18px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
   transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
 }
 .info-card:hover {
   transform: scale(1.025);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.16);
 }
 .info-card-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
 
@@ -1181,7 +1166,13 @@ function renderProject(d) {
 function scrollToVisual() {
   const section = document.getElementById('s-visual');
   if (!section) return;
-  const topbarH = document.querySelector('.topbar').offsetHeight;
+  // 18.07.26, найденный баг: клик по фото в hero молча ничего не делал —
+  // тут был document.querySelector('.topbar'), а такого класса в разметке
+  // больше нет (шапка теперь #flox-topbar/.flox-topbar из topbar.js, см. тот
+  // же расчёт чуть выше, в обработчике клика по вкладкам) — .offsetHeight у
+  // null бросал исключение, и scrollToVisual() падала до самого scrollTo.
+  const topbarEl = document.querySelector('.flox-topbar') || document.getElementById('flox-topbar');
+  const topbarH = topbarEl ? topbarEl.offsetHeight : 0;
   const tabsH = document.querySelector('.tabs-wrap').offsetHeight;
   const top = section.getBoundingClientRect().top + window.scrollY - topbarH - tabsH - 8;
   window.scrollTo({ top, behavior: 'smooth' });
@@ -1305,83 +1296,87 @@ function renderUnits(d) {
     <div id="units-filters-wrap" style="display:none">
       <div class="uf-overlay" id="uf-overlay" onclick="closeAllDropdowns()"></div>
 
-      <!-- Поисковая строка — самостоятельная таблетка, без фильтров внутри -->
+      <!-- Поисковая строка + все фильтры — одна лента, стиль flox-web.html -->
       <div class="unit-search-bar">
-        <div class="unit-search-icon">
+        <div class="usb-input-seg">
           <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
+          <input class="unit-search-input" id="unit-search-input"
+            placeholder="Введите номер юнита"
+            oninput="onUnitSearch(this.value)"/>
         </div>
-        <input class="unit-search-input" id="unit-search-input"
-          placeholder="Введите номер юнита"
-          oninput="onUnitSearch(this.value)"/>
+
+        <div class="usf-sep"></div>
+
+        <!-- Тип -->
+        <div onmouseenter="openUfDropdown('uf-type-dd','uf-type-btn')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')" style="position:relative">
+          <button class="usf-btn" id="uf-type-btn">
+            <span id="uf-type-label">Тип</span>
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          <div class="uf-dropdown" id="uf-type-dd" onmouseenter="cancelUfClose('uf-type-dd')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')">
+            <div class="fd-row" data-val="1 спальня" onclick="selectType(this)">
+              <div class="fd-checkbox"></div><span class="fd-row-dot" style="background:#5E17EB"></span><span class="fd-row-label">1 спальня</span>
+            </div>
+            <div class="fd-row" data-val="1 спальня+" onclick="selectType(this)">
+              <div class="fd-checkbox"></div><span class="fd-row-dot" style="background:#4ECDC4"></span><span class="fd-row-label">1 спальня+</span>
+            </div>
+            <div class="fd-row" data-val="2 спальни" onclick="selectType(this)">
+              <div class="fd-checkbox"></div><span class="fd-row-dot" style="background:#E88FB4"></span><span class="fd-row-label">2 спальни</span>
+            </div>
+            <div class="fd-row" data-val="Пентхаус" onclick="selectType(this)">
+              <div class="fd-checkbox"></div><span class="fd-row-dot" style="background:#C9A84C"></span><span class="fd-row-label">Пентхаус</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Цена -->
+        <div onmouseenter="openUfDropdown('uf-price-dd','uf-price-btn')" onmouseleave="scheduleUfClose('uf-price-dd','uf-price-btn')" style="position:relative">
+          <button class="usf-btn" id="uf-price-btn">
+            <span id="uf-price-label">Цена</span>
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          <div class="uf-dropdown uf-price-dd" id="uf-price-dd" onmouseenter="cancelUfClose('uf-price-dd')" onmouseleave="scheduleUfClose('uf-price-dd','uf-price-btn')">
+            <!-- 17.07.26, по просьбе Ильи: режим "За м²" — фильтр "за м²",
+                 применённый в поисковике/на карте, тоже должен попадать сюда.
+                 18.07.26: стиль/анимации/шторка переделаны под flox-web.html
+                 (см. project_search_mockup.html, согласовано с Ильёй). -->
+            <div class="uf-price-tabs">
+              <button class="uf-price-tab act" id="uf-price-tab-total" type="button" onclick="setUfPriceMode('total')">За всё</button>
+              <button class="uf-price-tab" id="uf-price-tab-m2" type="button" onclick="setUfPriceMode('m2')">За м²</button>
+            </div>
+            <div class="uf-price-inputs">
+              <div class="uf-price-input-wrap"><input id="uf-price-from" type="text" inputmode="decimal" placeholder="от" oninput="onPriceInput()"></div>
+              <span class="uf-price-dash">—</span>
+              <div class="uf-price-input-wrap"><input id="uf-price-to" type="text" inputmode="decimal" placeholder="до" oninput="onPriceInput()"></div>
+            </div>
+            <div class="uf-price-cols" id="uf-price-hints"></div>
+          </div>
+        </div>
+
+        <!-- Статус -->
+        <div onmouseenter="openUfDropdown('uf-status-dd','uf-status-btn')" onmouseleave="scheduleUfClose('uf-status-dd','uf-status-btn')" style="position:relative">
+          <button class="usf-btn" id="uf-status-btn">
+            <span id="uf-status-label">Статус</span>
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          <div class="uf-dropdown" id="uf-status-dd" onmouseenter="cancelUfClose('uf-status-dd')" onmouseleave="scheduleUfClose('uf-status-dd','uf-status-btn')">
+            <div class="fd-list-item act" data-val="available" onclick="selectStatus(this)"><div class="fd-checkbox"></div><span>Доступные</span></div>
+            <div class="fd-list-item" data-val="sold" onclick="selectStatus(this)"><div class="fd-checkbox"></div><span>Проданные</span></div>
+            <div class="fd-list-item" data-val="" onclick="selectStatus(this)"><div class="fd-checkbox"></div><span>Все юниты</span></div>
+          </div>
+        </div>
+
+        <div class="usf-sep"></div>
+
+        <!-- Группировка -->
+        <button class="usf-btn" id="uf-group-btn" onclick="toggleGrouping()">
+          <span id="uf-group-label">По корпусам</span>
+        </button>
       </div>
 
-      <!-- Фильтры — отдельной строкой под поисковой строкой -->
-      <div class="unit-filters-row">
-
-          <!-- Тип -->
-          <div onmouseenter="openUfDropdown('uf-type-dd','uf-type-btn')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')" style="position:relative">
-            <button class="usf-btn" id="uf-type-btn">
-              <span id="uf-type-label">Тип</span>
-              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
-            </button>
-            <div class="uf-dropdown" id="uf-type-dd" onmouseenter="cancelUfClose('uf-type-dd')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')">
-              <div class="uf-option selected" data-val="" onclick="selectType(this)">Все типы</div>
-              <div class="uf-option" data-val="1 спальня" onclick="selectType(this)"><span class="unit-dot" style="background:#5E17EB"></span>1 спальня</div>
-              <div class="uf-option" data-val="1 спальня+" onclick="selectType(this)"><span class="unit-dot" style="background:#4ECDC4"></span>1 спальня+</div>
-              <div class="uf-option" data-val="2 спальни" onclick="selectType(this)"><span class="unit-dot" style="background:#E88FB4"></span>2 спальни</div>
-              <div class="uf-option" data-val="Пентхаус" onclick="selectType(this)"><span class="unit-dot" style="background:#C9A84C"></span>Пентхаус</div>
-            </div>
-          </div>
-
-          <!-- Цена -->
-          <div onmouseenter="openUfDropdown('uf-price-dd','uf-price-btn')" onmouseleave="scheduleUfClose('uf-price-dd','uf-price-btn')" style="position:relative">
-            <button class="usf-btn" id="uf-price-btn">
-              <span id="uf-price-label">Цена</span>
-              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
-            </button>
-            <div class="uf-dropdown" id="uf-price-dd" style="min-width:280px" onmouseenter="cancelUfClose('uf-price-dd')" onmouseleave="scheduleUfClose('uf-price-dd','uf-price-btn')">
-              <!-- 17.07.26, по просьбе Ильи: добавили режим "За м²" — раньше
-                   тут была только обычная цена, и фильтр "за м²", применённый
-                   в поисковике/на карте, вообще не мог сюда попасть (у этой
-                   страницы не было параметра для него), из-за чего цифры на
-                   карте и на странице проекта расходились. -->
-              <div class="uf-price-tabs">
-                <button class="uf-price-tab act" id="uf-price-tab-total" type="button" onclick="setUfPriceMode('total')">За всё</button>
-                <button class="uf-price-tab" id="uf-price-tab-m2" type="button" onclick="setUfPriceMode('m2')">За м²</button>
-              </div>
-              <div class="uf-price-panel">
-                <div class="uf-price-row">
-                  <input class="uf-price-input" id="uf-price-from" type="number" min="0" step="1000000" placeholder="Значение от" oninput="onPriceInput()">
-                  <span class="uf-price-sep">—</span>
-                  <input class="uf-price-input" id="uf-price-to" type="number" min="0" step="1000000" placeholder="Значение до" oninput="onPriceInput()">
-                </div>
-              </div>
-              <div class="uf-price-hints-grid" id="uf-price-hints"></div>
-            </div>
-          </div>
-
-          <!-- Статус -->
-          <div onmouseenter="openUfDropdown('uf-status-dd','uf-status-btn')" onmouseleave="scheduleUfClose('uf-status-dd','uf-status-btn')" style="position:relative">
-            <button class="usf-btn" id="uf-status-btn">
-              <span id="uf-status-label">Статус</span>
-              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
-            </button>
-            <div class="uf-dropdown" id="uf-status-dd" onmouseenter="cancelUfClose('uf-status-dd')" onmouseleave="scheduleUfClose('uf-status-dd','uf-status-btn')">
-              <div style="display:flex;border-bottom:0.5px solid var(--line)">
-                <div class="uf-option selected" data-val="available" onclick="selectStatus(this)" style="flex:1;border-radius:8px 0 0 0"><span class="ut-status-dot ut-available"></span>Доступные</div>
-                <div class="uf-option" data-val="sold" onclick="selectStatus(this)" style="flex:1;border-left:0.5px solid var(--line);border-radius:0 8px 0 0"><span class="ut-status-dot ut-sold"></span>Проданные</div>
-              </div>
-              <div class="uf-option" data-val="" onclick="selectStatus(this)" style="border-radius:0 0 8px 8px">Все юниты</div>
-            </div>
-          </div>
-
-          <!-- Группировка -->
-          <button class="usf-btn" id="uf-group-btn" onclick="toggleGrouping()">
-            <span id="uf-group-label">По корпусам</span>
-          </button>
-
-          <!-- Сброс -->
-          <button class="usf-reset" onclick="resetUnitFilters()">↺ Сбросить</button>
+      <!-- Сброс — под лентой, слева, видим только когда есть активный фильтр -->
+      <div class="active-filters" id="uf-active-filters">
+        <button class="reset-all" onclick="resetUnitFilters()">Сбросить все</button>
       </div>
 
       <div class="units-count" id="units-count"></div>
@@ -1518,8 +1513,9 @@ function toggleGrouping() {
   _groupByBuilding = !_groupByBuilding;
   const btn = document.getElementById('uf-group-btn');
   const lbl = document.getElementById('uf-group-label');
-  if (btn) btn.classList.toggle('flat', !_groupByBuilding);
+  if (btn) btn.classList.toggle('has-value', !_groupByBuilding);
   if (lbl) lbl.textContent = _groupByBuilding ? 'По корпусам' : 'Без разделения';
+  updateResetVisibility();
 
   // При возврате к корпусам — пересоздаём скелет
   if (_groupByBuilding && window._currentProjectData) {
@@ -1616,16 +1612,16 @@ function openUfDropdown(ddId, btnId) {
       requestAnimationFrame(() => requestAnimationFrame(() => d.classList.remove('no-anim')));
     }
   });
-  document.querySelectorAll('.uf-btn-custom.open').forEach(b => {
+  document.querySelectorAll('.usf-btn.open').forEach(b => {
     if (b.id !== btnId) b.classList.remove('open');
   });
   const dd = document.getElementById(ddId);
   const btn = document.getElementById(btnId);
   if (!dd || !btn) return;
-  // Позиционируем через fixed
-  const rect = btn.getBoundingClientRect();
-  dd.style.top = (rect.bottom + 6) + 'px';
-  dd.style.left = rect.left + 'px';
+  // 18.07.26: позиционирование теперь через CSS (position:absolute;
+  // top:calc(100% + 10px) относительно обёртки), как .filter-dropdown в
+  // flox-web.html — раньше здесь были ручные inline top/left под старый
+  // position:fixed, которые било по новому CSS и уводило шторку не туда.
   dd.classList.add('open');
   if (btn) btn.classList.add('open');
 }
@@ -1651,6 +1647,10 @@ let _priceMode = 'total'; // 'total' | 'm2'
 let _filterPriceFromM2 = 0;
 let _filterPriceToM2 = Infinity;
 let _filterStatus = 'available';
+// 18.07.26, по просьбе Ильи: слово "Статус" на кнопке видно только до
+// первого клика по любой строке этого фильтра (см. selectStatus ниже) —
+// после сброса/перезагрузки страницы гасим этот флаг обратно.
+let _statusTouched = false;
 
 // ── Дропдауны ─────────────────────────────────────────────────────────────
 function toggleDropdown(id) {
@@ -1670,56 +1670,52 @@ function toggleDropdown(id) {
 
 function closeAllDropdowns() {
   document.querySelectorAll('.uf-dropdown').forEach(d => d.classList.remove('open'));
-  document.querySelectorAll('.uf-btn-custom').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.usf-btn').forEach(b => b.classList.remove('open'));
   const ov = document.getElementById('uf-overlay');
   if (ov) ov.classList.remove('open');
 }
 
+// 18.07.26, по согласованному макету (project_search_mockup.html): "Тип" —
+// чекбоксы без отдельной строки "Все типы" (снимается склёвыванием всех
+// галочек или "Сбросить все"), стиль/анимации — как .fd-row в flox-web.html.
 function selectType(el) {
   const val = el.dataset.val;
-  if (val === '') {
-    // "Все типы" — сбрасываем
-    _filterTypes.clear();
-    document.querySelectorAll('#uf-type-dd .uf-option').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
-  } else {
-    // Снимаем "Все типы"
-    document.querySelector('#uf-type-dd .uf-option[data-val=""]').classList.remove('selected');
-    if (_filterTypes.has(val)) {
-      _filterTypes.delete(val);
-      el.classList.remove('selected');
-    } else {
-      _filterTypes.add(val);
-      el.classList.add('selected');
-    }
-    // Если ничего не выбрано — ставим "Все типы"
-    if (_filterTypes.size === 0) {
-      document.querySelector('#uf-type-dd .uf-option[data-val=""]').classList.add('selected');
-    }
-  }
-  // Обновляем лейбл кнопки
+  if (_filterTypes.has(val)) { _filterTypes.delete(val); el.classList.remove('act'); }
+  else { _filterTypes.add(val); el.classList.add('act'); }
   const lbl = document.getElementById('uf-type-label');
-  if (_filterTypes.size === 0) lbl.textContent = 'Тип';
-  else if (_filterTypes.size === 1) lbl.textContent = [..._filterTypes][0];
-  else lbl.textContent = `${_filterTypes.size} типа`;
+  const btn = document.getElementById('uf-type-btn');
+  if (_filterTypes.size === 0) { lbl.textContent = 'Тип'; btn.classList.remove('has-value'); }
+  else { lbl.textContent = _filterTypes.size === 1 ? [..._filterTypes][0] : `${_filterTypes.size} типа`; btn.classList.add('has-value'); }
   // НЕ закрываем дропдаун — можно выбрать несколько
+  updateResetVisibility();
   applyUnitFilters();
 }
 
+// 18.07.26, по просьбе Ильи: слово "Статус" на кнопке видно только до
+// первого клика по любой строке (в т.ч. повторного клика на "Доступные" по
+// умолчанию) или после сброса/перезагрузки — дальше кнопка всегда
+// показывает реальный выбор, включая "Все юниты", и не закрывает шторку
+// сама (можно спокойно кликнуть по другому варианту сразу следом).
 function selectStatus(el) {
   _filterStatus = el.dataset.val;
-  document.querySelectorAll('#uf-status-dd .uf-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  const labels = {available:'Доступные', '':'Все', sold:'Проданные'};
+  _statusTouched = true;
+  document.querySelectorAll('#uf-status-dd .fd-list-item').forEach(o => o.classList.remove('act'));
+  el.classList.add('act');
+  const labels = {available:'Доступные', '':'Все юниты', sold:'Проданные'};
   document.getElementById('uf-status-label').textContent = labels[el.dataset.val] || 'Все';
-  closeAllDropdowns();
+  document.getElementById('uf-status-btn')?.classList.add('has-value');
+  updateResetVisibility();
   applyUnitFilters();
 }
 
 // 17.07.26, по просьбе Ильи: переключение вкладок "За всё"/"За м²" — меняет
 // _priceMode, перерисовывает подсказки под РЕАЛЬНЫЙ разброс цены/м² (см.
 // buildPriceHints) и подставляет в поля от/до то, что уже набрано в этом
-// режиме (если что-то было набрано раньше, до переключения туда-обратно).
+// режиме. 18.07.26, по найденному Ильёй багу: просто переключение вкладки
+// (ничего не выбирая) больше не сбрасывает значение из другой вкладки — обе
+// пары хранятся отдельно и не трогаются, пока не сделан РЕАЛЬНЫЙ выбор (см.
+// onPriceInput/pickPriceHint) — кнопка "Цена" при этом показывает то, что
+// реально применено, а не то, что сейчас открыто на экране (getAppliedPrice).
 function setUfPriceMode(mode) {
   _priceMode = mode;
   document.getElementById('uf-price-tab-total')?.classList.toggle('act', mode === 'total');
@@ -1729,91 +1725,147 @@ function setUfPriceMode(mode) {
     if (fromEl) { fromEl.value = _filterPriceFromM2 || ''; fromEl.placeholder = '฿/м² от'; }
     if (toEl) { toEl.value = _filterPriceToM2 !== Infinity ? _filterPriceToM2 : ''; toEl.placeholder = '฿/м² до'; }
   } else {
-    if (fromEl) { fromEl.value = _filterPriceFrom || ''; fromEl.placeholder = 'Значение от'; }
-    if (toEl) { toEl.value = _filterPriceTo !== Infinity ? _filterPriceTo : ''; toEl.placeholder = 'Значение до'; }
+    if (fromEl) { fromEl.value = _filterPriceFrom || ''; fromEl.placeholder = 'от'; }
+    if (toEl) { toEl.value = _filterPriceTo !== Infinity ? _filterPriceTo : ''; toEl.placeholder = 'до'; }
   }
   buildPriceHints(_allUnits);
   updatePriceLabel();
 }
 
+// 18.07.26, по просьбе Ильи: ручной ввод в "за всё" — короткое число значит
+// миллионы: "12" → 12 000 000, "4,5" (запятая как разделитель) → 4 500 000.
+// Уже "полное" число (вставленное целиком) миллионами не считаем. В "за м²"
+// домножения нет — там вводятся настоящие ฿/м².
+function parsePriceManualInput(raw, mode) {
+  if (raw == null) return null;
+  let s = String(raw).trim().replace(/\s+/g,'').replace(',', '.');
+  if (!s) return null;
+  const num = parseFloat(s);
+  if (!isFinite(num) || num <= 0) return null;
+  if (mode === 'total' && num < 1000) return Math.round(num * 1e6);
+  return Math.round(num);
+}
 function onPriceInput() {
-  const from = parseFloat(document.getElementById('uf-price-from')?.value) || 0;
-  const to = parseFloat(document.getElementById('uf-price-to')?.value) || 0;
-  if (_priceMode === 'm2') {
-    _filterPriceFromM2 = from;
-    _filterPriceToM2 = to || Infinity;
-  } else {
-    _filterPriceFrom = from;
-    _filterPriceTo = to || Infinity;
+  const fromRaw = document.getElementById('uf-price-from')?.value ?? '';
+  const toRaw = document.getElementById('uf-price-to')?.value ?? '';
+  const fromVal = parsePriceManualInput(fromRaw, _priceMode);
+  const toVal = parsePriceManualInput(toRaw, _priceMode);
+  if (fromVal != null || toVal != null) {
+    // мьютекс "за всё"/"за м²" — реальный ввод в одном режиме сбрасывает другой
+    if (_priceMode === 'm2') { _filterPriceFrom = 0; _filterPriceTo = Infinity; }
+    else { _filterPriceFromM2 = 0; _filterPriceToM2 = Infinity; }
   }
-  updatePriceLabel();
-  // Снимаем выделение с подсказок
-  document.querySelectorAll('.uf-price-hint').forEach(h => h.classList.remove('selected'));
-  applyUnitFilters();
-}
-
-function selectPriceHint(type, val, el) {
-  const fromEl = document.getElementById('uf-price-from');
-  const toEl = document.getElementById('uf-price-to');
-  if (type === 'from') {
-    fromEl.value = val;
-    if (_priceMode === 'm2') _filterPriceFromM2 = val; else _filterPriceFrom = val;
-  } else {
-    toEl.value = val;
-    if (_priceMode === 'm2') _filterPriceToM2 = val || Infinity; else _filterPriceTo = val || Infinity;
-  }
-  document.querySelectorAll(`.uf-price-hint[data-type="${type}"]`).forEach(h => h.classList.remove('selected'));
-  el.classList.add('selected');
+  if (_priceMode === 'm2') { _filterPriceFromM2 = fromVal || 0; _filterPriceToM2 = toVal || Infinity; }
+  else { _filterPriceFrom = fromVal || 0; _filterPriceTo = toVal || Infinity; }
+  buildPriceHints(_allUnits);
   updatePriceLabel();
   applyUnitFilters();
 }
 
-function updatePriceLabel() {
+// 18.07.26, по просьбе Ильи: повторный клик по уже выбранной подсказке
+// снимает фильтр по этой стороне (от/до); реальный (новый) выбор в одном
+// режиме сбрасывает то, что было в другом (тот же мьютекс, что и выше).
+function pickPriceHint(type, val) {
   const isM2 = _priceMode === 'm2';
-  const from = isM2 ? _filterPriceFromM2 : _filterPriceFrom;
-  const to = isM2 ? _filterPriceToM2 : _filterPriceTo;
-  const fmt = n => n >= 1000000 ? (n/1000000).toFixed(1).replace('.0','') + 'M' : n >= 1000 ? Math.round(n/1000) + 'K' : n;
-  const suffix = isM2 ? '/м²' : '';
-  let label = 'Любая';
-  if (from && to !== Infinity) label = `${fmt(from)}${suffix} — ${fmt(to)}${suffix}`;
-  else if (from) label = `от ${fmt(from)}${suffix}`;
-  else if (to !== Infinity) label = `до ${fmt(to)}${suffix}`;
-  const lbl = document.getElementById('uf-price-label');
-  if (lbl) lbl.textContent = label;
+  const curFrom = isM2 ? (_filterPriceFromM2 || null) : (_filterPriceFrom || null);
+  const curTo = isM2 ? (_filterPriceToM2 !== Infinity ? _filterPriceToM2 : null) : (_filterPriceTo !== Infinity ? _filterPriceTo : null);
+  const curVal = type === 'from' ? curFrom : curTo;
+  if (curVal === val) {
+    if (type === 'from') { if (isM2) _filterPriceFromM2 = 0; else _filterPriceFrom = 0; }
+    else { if (isM2) _filterPriceToM2 = Infinity; else _filterPriceTo = Infinity; }
+  } else {
+    if (isM2) { _filterPriceFrom = 0; _filterPriceTo = Infinity; }
+    else { _filterPriceFromM2 = 0; _filterPriceToM2 = Infinity; }
+    if (type === 'from') { if (isM2) _filterPriceFromM2 = val; else _filterPriceFrom = val; }
+    else { if (isM2) _filterPriceToM2 = val; else _filterPriceTo = val; }
+  }
+  const fromEl = document.getElementById('uf-price-from'), toEl = document.getElementById('uf-price-to');
+  if (isM2) {
+    if (fromEl) fromEl.value = _filterPriceFromM2 || '';
+    if (toEl) toEl.value = _filterPriceToM2 !== Infinity ? _filterPriceToM2 : '';
+  } else {
+    if (fromEl) fromEl.value = _filterPriceFrom || '';
+    if (toEl) toEl.value = _filterPriceTo !== Infinity ? _filterPriceTo : '';
+  }
+  buildPriceHints(_allUnits);
+  updatePriceLabel();
+  applyUnitFilters();
 }
 
-// 17.07.26, по просьбе Ильи: подсказки цены теперь зависят от вкладки — "за
-// всё" остаются как были (фиксированные шаги 4-15 млн), а "за м²" считаются
-// из РЕАЛЬНОГО разброса price_per_sqm юнитов этого проекта (тот же приём,
-// что computeM2Steps() в поисковике/на карте — округляем в красивые шаги).
+// Реально ПРИМЕНЁННАЯ цена — "за всё" и "за м²" взаимоисключающие (непустой
+// одновременно может быть только один набор), поэтому просто берём тот,
+// где что-то есть, а не тот, что сейчас открыт на экране.
+function getAppliedPrice() {
+  if (_filterPriceFrom || _filterPriceTo !== Infinity) return { mode:'total', from:_filterPriceFrom || null, to:_filterPriceTo !== Infinity ? _filterPriceTo : null };
+  if (_filterPriceFromM2 || _filterPriceToM2 !== Infinity) return { mode:'m2', from:_filterPriceFromM2 || null, to:_filterPriceToM2 !== Infinity ? _filterPriceToM2 : null };
+  return { mode:null, from:null, to:null };
+}
+function updatePriceLabel() {
+  const applied = getAppliedPrice();
+  const btn = document.getElementById('uf-price-btn');
+  const lbl = document.getElementById('uf-price-label');
+  if (!lbl) return;
+  if (applied.from == null && applied.to == null) { lbl.textContent = 'Цена'; btn?.classList.remove('has-value'); updateResetVisibility(); return; }
+  btn?.classList.add('has-value');
+  const fmt = n => n >= 1000000 ? (n/1000000).toFixed(1).replace('.0','') + 'M' : n >= 1000 ? Math.round(n/1000) + 'K' : n;
+  const suffix = applied.mode === 'm2' ? '/м²' : '';
+  let label = 'Любая';
+  if (applied.from != null && applied.to != null) label = `${fmt(applied.from)}${suffix} — ${fmt(applied.to)}${suffix}`;
+  else if (applied.from != null) label = `от ${fmt(applied.from)}${suffix}`;
+  else if (applied.to != null) label = `до ${fmt(applied.to)}${suffix}`;
+  lbl.textContent = label;
+  updateResetVisibility();
+}
+
+// 17.07.26, по просьбе Ильи: подсказки цены зависят от вкладки — "за всё"
+// остаются фиксированными шагами 4-15 млн, а "за м²" считаются из РЕАЛЬНОГО
+// разброса price_per_sqm юнитов этого проекта. 18.07.26: стиль — как
+// .fd-price-col/.fd-price-opt в flox-web.html (два столбца без линий-
+// разделителей, кастомный скролл), плюс гасим (disabled) пресеты, которые
+// дали бы невозможный диапазон (напр. "от 5 млн" и "до 4 млн" одновременно).
 function buildPriceHints(units) {
   const container = document.getElementById('uf-price-hints');
   if (!container) return;
-  if (_priceMode === 'm2') {
+  const isM2 = _priceMode === 'm2';
+  const curFrom = isM2 ? (_filterPriceFromM2 || null) : (_filterPriceFrom || null);
+  const curTo = isM2 ? (_filterPriceToM2 !== Infinity ? _filterPriceToM2 : null) : (_filterPriceTo !== Infinity ? _filterPriceTo : null);
+  let hints;
+  if (isM2) {
     const vals = (units || []).map(u => u._pricePerSqm).filter(v => v != null && isFinite(v));
     if (!vals.length) { container.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--muted)">Нет данных по площади</div>'; return; }
     const min = Math.min(...vals), max = Math.max(...vals);
     const roundedMin = Math.floor(min / 5000) * 5000;
     const roundedMax = Math.max(roundedMin + 5000, Math.ceil(max / 5000) * 5000);
     const step = Math.max(5000, Math.ceil(((roundedMax - roundedMin) / 6) / 5000) * 5000);
-    const hints = [];
+    hints = [];
     for (let v = roundedMin + step; v < roundedMax; v += step) hints.push(v);
     hints.push(roundedMax);
-    container.innerHTML = hints.map(v => {
-      const label = v.toLocaleString('ru');
-      return `
-        <div class="uf-price-hint" data-type="from" data-val="${v}" onclick="selectPriceHint('from',${v},this)">${label}</div>
-        <div class="uf-price-hint" data-type="to" data-val="${v}" onclick="selectPriceHint('to',${v},this)">${label}</div>`;
-    }).join('');
   } else {
-    const hints = [4,5,6,7,8,9,10,11,12,13,14,15].map(m => m * 1000000);
-    container.innerHTML = hints.map(v => {
-      const label = (v/1000000) + ' млн';
-      return `
-        <div class="uf-price-hint" data-type="from" data-val="${v}" onclick="selectPriceHint('from',${v},this)">${label}</div>
-        <div class="uf-price-hint" data-type="to" data-val="${v}" onclick="selectPriceHint('to',${v},this)">${label}</div>`;
-    }).join('');
+    hints = [4,5,6,7,8,9,10,11,12,13,14,15].map(m => m * 1000000);
   }
+  const fmt = v => isM2 ? v.toLocaleString('ru') : (v/1000000) + ' млн';
+  const fromCol = hints.map(v => {
+    const disabled = curTo != null && v > curTo;
+    return `<button class="uf-price-opt ${curFrom===v?'act':''}" ${disabled?'disabled':''} onclick="pickPriceHint('from',${v})">${fmt(v)}</button>`;
+  }).join('');
+  const toCol = hints.map(v => {
+    const disabled = curFrom != null && v < curFrom;
+    return `<button class="uf-price-opt ${curTo===v?'act':''}" ${disabled?'disabled':''} onclick="pickPriceHint('to',${v})">${fmt(v)}</button>`;
+  }).join('');
+  container.innerHTML = `<div class="uf-price-col">${fromCol}</div><div class="uf-price-col">${toCol}</div>`;
+}
+
+// "Сбросить все" — видна только когда реально есть что сбрасывать (как
+// reset-all в flox-web.html); "Доступные" по умолчанию в это не считается,
+// пока статус не тронут (см. _statusTouched в selectStatus).
+function updateResetVisibility() {
+  const hasSearch = _unitSearch !== '';
+  const hasType = _filterTypes.size > 0;
+  const hasPrice = document.getElementById('uf-price-btn')?.classList.contains('has-value');
+  const hasStatus = document.getElementById('uf-status-btn')?.classList.contains('has-value');
+  const hasGroup = document.getElementById('uf-group-btn')?.classList.contains('has-value');
+  const hasAny = hasSearch || hasType || hasPrice || hasStatus || hasGroup;
+  document.getElementById('uf-active-filters')?.classList.toggle('vis', !!hasAny);
 }
 
 function applyUnitFilters() {
@@ -1849,21 +1901,26 @@ function resetUnitFilters() {
   _filterPriceFrom = 0; _filterPriceTo = Infinity;
   _filterPriceFromM2 = 0; _filterPriceToM2 = Infinity;
   _priceMode = 'total';
-  _filterStatus = 'available'; _unitSearch = ''; const si = document.getElementById('unit-search-input'); if(si) si.value = '';
+  _filterStatus = 'available'; _statusTouched = false;
+  _unitSearch = ''; const si = document.getElementById('unit-search-input'); if(si) si.value = '';
   const fromEl = document.getElementById('uf-price-from');
   const toEl = document.getElementById('uf-price-to');
-  if (fromEl) { fromEl.value = ''; fromEl.placeholder = 'Значение от'; }
-  if (toEl) { toEl.value = ''; toEl.placeholder = 'Значение до'; }
+  if (fromEl) { fromEl.value = ''; fromEl.placeholder = 'от'; }
+  if (toEl) { toEl.value = ''; toEl.placeholder = 'до'; }
   document.getElementById('uf-price-tab-total')?.classList.add('act');
   document.getElementById('uf-price-tab-m2')?.classList.remove('act');
   document.getElementById('uf-type-label').textContent = 'Тип';
+  document.getElementById('uf-type-btn')?.classList.remove('has-value');
   document.getElementById('uf-price-label').textContent = 'Цена';
+  document.getElementById('uf-price-btn')?.classList.remove('has-value');
   document.getElementById('uf-status-label').textContent = 'Статус';
-  document.querySelectorAll('.uf-option').forEach(o => o.classList.remove('selected'));
-  document.querySelector('#uf-type-dd .uf-option[data-val=""]')?.classList.add('selected');
-  document.querySelector('#uf-status-dd .uf-option[data-val="available"]')?.classList.add('selected');
-  document.querySelectorAll('.uf-price-hint').forEach(h => h.classList.remove('selected'));
+  document.getElementById('uf-status-btn')?.classList.remove('has-value');
+  document.querySelectorAll('.fd-row').forEach(o => o.classList.remove('act'));
+  document.querySelectorAll('#uf-status-dd .fd-list-item').forEach(o => o.classList.remove('act'));
+  document.querySelector('#uf-status-dd .fd-list-item[data-val="available"]')?.classList.add('act');
+  if (_groupByBuilding === false) { /* оставляем как есть — сброс фильтров не трогает группировку */ }
   buildPriceHints(_allUnits);
+  updateResetVisibility();
   applyUnitFilters();
 }
 
@@ -2465,11 +2522,12 @@ function applyURLFilters() {
     types.split(',').forEach(t => {
       const cat = typeMap[t] || t;
       _filterTypes.add(cat);
-      const opt = document.querySelector(`#uf-type-dd .uf-option[data-val="${cat}"]`);
-      if (opt) { opt.classList.add('selected'); document.querySelector('#uf-type-dd .uf-option[data-val=""]')?.classList.remove('selected'); }
+      const opt = document.querySelector(`#uf-type-dd .fd-row[data-val="${cat}"]`);
+      if (opt) opt.classList.add('act');
     });
     const lbl = document.getElementById('uf-type-label');
     if (lbl) lbl.textContent = _filterTypes.size === 1 ? [..._filterTypes][0] : `${_filterTypes.size} типа`;
+    if (_filterTypes.size) document.getElementById('uf-type-btn')?.classList.add('has-value');
   }
 
   // Цена — обычная ("за всё")
@@ -2501,10 +2559,10 @@ function applyURLFilters() {
     const fromEl = document.getElementById('uf-price-from'), toEl = document.getElementById('uf-price-to');
     if (fromEl) { fromEl.value = _filterPriceFromM2 || ''; fromEl.placeholder = '฿/м² от'; }
     if (toEl) { toEl.value = _filterPriceToM2 !== Infinity ? _filterPriceToM2 : ''; toEl.placeholder = '฿/м² до'; }
-    buildPriceHints(_allUnits);
   }
 
-  if (priceFrom || priceTo || priceFromM2 || priceToM2) updatePriceLabel();
+  if (priceFrom || priceTo || priceFromM2 || priceToM2) { buildPriceHints(_allUnits); updatePriceLabel(); }
+  updateResetVisibility();
 }
 
 loadProject();
