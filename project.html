@@ -765,10 +765,9 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
   border-radius: 14px; padding: 18px;
   /* 18.07.26, по просьбе Ильи: убрали обводку, вместо неё — тень как у
-     попапов в топбаре (см. .flox-tb-popover/.flox-tb-dd в topbar.js), но
-     сразу в покое, а не только при наведении; сама тень при наведении
-     раньше была заметно крупнее (0 8px 28px) — уменьшили. */
-  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+     попапов в топбаре (см. .flox-tb-popover/.flox-tb-dd в topbar.js), только
+     при наведении, в покое тени нет. */
+  box-shadow: none;
   position: relative; overflow: hidden;
   display: var(--meeting-reward-display);
   transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
@@ -792,7 +791,7 @@ a { color: inherit; text-decoration: none; }
 .price-card {
   background: var(--surface);
   border-radius: 14px; padding: 18px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  box-shadow: none;
   transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
 }
 .price-card:hover {
@@ -806,7 +805,7 @@ a { color: inherit; text-decoration: none; }
 .info-card {
   background: var(--surface);
   border-radius: 14px; padding: 18px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  box-shadow: none;
   transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
 }
 .info-card:hover {
@@ -1509,16 +1508,15 @@ function toggleTypeRow(tid) {
   row.classList.toggle('open', !open);
 }
 
-function toggleGrouping() {
-  _groupByBuilding = !_groupByBuilding;
+function setGrouping(byBuilding) {
+  _groupByBuilding = byBuilding;
   const btn = document.getElementById('uf-group-btn');
   const lbl = document.getElementById('uf-group-label');
-  if (btn) btn.classList.toggle('has-value', !_groupByBuilding);
-  if (lbl) lbl.textContent = _groupByBuilding ? 'По корпусам' : 'Без разделения';
-  updateResetVisibility();
+  if (btn) btn.classList.toggle('has-value', !byBuilding);
+  if (lbl) lbl.textContent = byBuilding ? 'По корпусам' : 'Без разделения';
 
   // При возврате к корпусам — пересоздаём скелет
-  if (_groupByBuilding && window._currentProjectData) {
+  if (byBuilding && window._currentProjectData) {
     const wrap = document.getElementById('units-tree-wrap');
     if (wrap) {
       wrap.innerHTML = window._currentProjectData.buildings.map((b, bi) => `
@@ -1533,6 +1531,11 @@ function toggleGrouping() {
         </div>`).join('');
     }
   }
+}
+
+function toggleGrouping() {
+  setGrouping(!_groupByBuilding);
+  updateResetVisibility();
   applyUnitFilters();
 }
 
@@ -1593,9 +1596,28 @@ function renderFlatList(units) {
   }).join('');
 }
 let _unitSearch = '';
+let _unitSearchAlt = '';
+
+// Раскладка ЙЦУКЕН <-> QWERTY по физическому положению клавиш — чтобы
+// поиск по номеру юнита работал, даже если человек не переключил язык
+// ввода (например ввёл "Ф207" вместо "A207").
+const LAYOUT_MAP = (() => {
+  const en = "QWERTYUIOP[]ASDFGHJKL;'ZXCVBNM,./";
+  const ru = "ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ.";
+  const map = {};
+  for (let i = 0; i < en.length; i++) {
+    map[en[i]] = ru[i];
+    map[ru[i]] = en[i];
+  }
+  return map;
+})();
+function convertLayout(str) {
+  return str.split('').map(ch => LAYOUT_MAP[ch] || ch).join('');
+}
 
 function onUnitSearch(val) {
   _unitSearch = val.trim().toUpperCase();
+  _unitSearchAlt = convertLayout(_unitSearch);
   applyUnitFilters();
 }
 
@@ -1870,7 +1892,11 @@ function updateResetVisibility() {
 
 function applyUnitFilters() {
   const filtered = _allUnits.filter(u => {
-    if (_unitSearch && !u.room_no.toUpperCase().includes(_unitSearch)) return false;
+    if (_unitSearch) {
+      const rn = u.room_no.toUpperCase();
+      const hit = rn.includes(_unitSearch) || (_unitSearchAlt && _unitSearchAlt !== _unitSearch && rn.includes(_unitSearchAlt));
+      if (!hit) return false;
+    }
     if (_filterTypes.size > 0 && !_filterTypes.has(u._category)) return false;
     if (_priceMode === 'm2') {
       if (_filterPriceFromM2 || _filterPriceToM2 !== Infinity) {
@@ -1902,7 +1928,7 @@ function resetUnitFilters() {
   _filterPriceFromM2 = 0; _filterPriceToM2 = Infinity;
   _priceMode = 'total';
   _filterStatus = 'available'; _statusTouched = false;
-  _unitSearch = ''; const si = document.getElementById('unit-search-input'); if(si) si.value = '';
+  _unitSearch = ''; _unitSearchAlt = ''; const si = document.getElementById('unit-search-input'); if(si) si.value = '';
   const fromEl = document.getElementById('uf-price-from');
   const toEl = document.getElementById('uf-price-to');
   if (fromEl) { fromEl.value = ''; fromEl.placeholder = 'от'; }
@@ -1918,7 +1944,7 @@ function resetUnitFilters() {
   document.querySelectorAll('.fd-row').forEach(o => o.classList.remove('act'));
   document.querySelectorAll('#uf-status-dd .fd-list-item').forEach(o => o.classList.remove('act'));
   document.querySelector('#uf-status-dd .fd-list-item[data-val="available"]')?.classList.add('act');
-  if (_groupByBuilding === false) { /* оставляем как есть — сброс фильтров не трогает группировку */ }
+  if (_groupByBuilding === false) { setGrouping(true); }
   buildPriceHints(_allUnits);
   updateResetVisibility();
   applyUnitFilters();
