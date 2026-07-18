@@ -212,7 +212,7 @@ input,button{font-family:inherit;}
 .filter-dropdown{
   position:absolute;top:calc(100% + 10px);left:0;
   min-width:230px;background:var(--surface);
-  border-radius:16px;
+  border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.14);
   padding:10px;z-index:350;
   opacity:0;transform:translateY(-6px);pointer-events:none;
   transition:opacity .15s ease,transform .15s ease;
@@ -286,10 +286,14 @@ input,button{font-family:inherit;}
 /* Autocomplete */
 .autocomplete{
   position:absolute;top:calc(100% + 6px);left:0;right:0;
-  /* 17.07.26, по просьбе Ильи: убрали обводку и тень — без них чище, как и
-     у остальных выпадающих панелей на сайте. */
+  /* 17.07.26: убрали обводку и тень — без них чище, как и у остальных
+     выпадающих панелей на сайте.
+     18.07.26, по просьбе Ильи: тень вернули (небольшую, как у топбара, см.
+     .flox-tb-popover/.flox-tb-dd в topbar.js) — без неё в тёмной теме панель
+     сливалась с фоном страницы почти без видимой границы. Обводки по-прежнему
+     нет. */
   background:var(--surface);
-  border-radius:12px;
+  border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.14);
   z-index:300;overflow:hidden;display:none;
 }
 .autocomplete.vis{display:block;}
@@ -731,7 +735,7 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .offers-page{padding:24px;max-width:900px;margin:0 auto;}
 .page-title{font-size:20px;font-weight:700;margin-bottom:20px;}
 .offers-list{display:flex;flex-direction:column;gap:10px;}
-.offer-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s,background-color .2s;cursor:default;}
+.offer-card{background:var(--surface);border:1px solid transparent;border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s,background-color .2s;cursor:default;}
 .offer-card:hover{transform:scale(1.02);border-color:var(--accent);box-shadow:0 4px 20px rgba(94,23,235,0.1);}
 /* 13.07.26: подсветка контура карточки при копировании ссылки — держится
    даже если курсор остаётся над карточкой, поэтому оба варианта (обычный
@@ -753,8 +757,12 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pres-page{padding:24px;max-width:1000px;margin:0 auto;}
 .pres-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
 .pres-actions{display:flex;gap:10px;align-items:center;}
-.pres-clear-btn{padding:8px 14px;border-radius:10px;border:0.5px solid var(--line-2);background:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;transition:color .15s,border-color .15s,transform .2s cubic-bezier(.34,1.56,.64,1);}
-.pres-clear-btn:hover{color:var(--text);border-color:var(--line);transform:scale(1.06);}
+/* 18.07.26, по просьбе Ильи: раньше кнопка была прозрачной с серой обводкой
+   и почти сливалась с фоном страницы — теперь вместо обводки заливка
+   var(--surface-2) (та же "таблетка чуть светлее фона" техника, что и у
+   .results-label/.map-ctrl-btn), обводки нет. */
+.pres-clear-btn{padding:8px 14px;border-radius:10px;border:none;background:var(--surface-2);color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;transition:color .15s,background .15s,transform .2s cubic-bezier(.34,1.56,.64,1);}
+.pres-clear-btn:hover{color:var(--text);background:var(--surface-3);transform:scale(1.06);}
 .pres-share-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .2s cubic-bezier(.34,1.56,.64,1);}
 .pres-share-btn:hover{opacity:.85;transform:scale(1.06);}
 .pres-share-btn:disabled{opacity:.5;cursor:not-allowed;}
@@ -762,7 +770,7 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pres-empty i{font-size:48px;}
 .pres-empty-sub{font-size:12px;color:var(--muted);margin-top:4px;}
 .pres-units{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
-.pres-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;position:relative;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease;}
+.pres-card{background:var(--surface);border-radius:12px;overflow:hidden;position:relative;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease;}
 .pres-card:hover{transform:scale(1.03);box-shadow:0 6px 20px rgba(0,0,0,0.1);}
 .pres-card-img{background:#ffffff;height:160px;display:flex;align-items:center;justify-content:center;border-bottom:0.5px solid var(--line-2);overflow:hidden;position:relative;}
 .pres-card-img img{width:100%;height:100%;object-fit:contain;}
@@ -775,7 +783,7 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pres-card-rows{display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:11px;margin-bottom:8px;}
 .pres-card-rows span:nth-child(odd){color:var(--muted);}
 .pres-card-rows span:nth-child(even){color:var(--text);text-align:right;}
-.pres-card-price{padding-top:8px;border-top:0.5px solid var(--line);font-size:14px;font-weight:600;color:var(--text);}
+.pres-card-price{padding-top:8px;font-size:14px;font-weight:600;color:var(--text);}
 .pres-card-remove{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.45);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;border:none;z-index:2;}
 .pres-card.selected{border:1.5px solid rgba(94,23,235,0.65);box-shadow:0 0 0 2px rgba(94,23,235,0.18);}
 .pres-card.sold{opacity:0.45;}
@@ -789,11 +797,27 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pres-project-block:last-child{margin-bottom:0;}
 .pres-project-block.pres-block-hidden{max-height:0;opacity:0;padding-bottom:0;margin-bottom:0;pointer-events:none;}
 .pres-project-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;transition:color .2s ease;}
-.pres-checkboxes{display:flex;flex-wrap:wrap;gap:8px;}
-.pres-cb-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;padding:5px 10px;border-radius:8px;border:0.5px solid var(--line-2);background:none;transition:border-color .15s,background .15s,transform .2s cubic-bezier(.34,1.56,.64,1);user-select:none;}
-.pres-cb-label:hover{border-color:var(--line);transform:scale(1.06);}
-.pres-cb-label input{accent-color:var(--accent);cursor:pointer;}
-.pres-cb-label.checked{background:rgba(94,23,235,.08);border-color:rgba(94,23,235,.3);color:var(--text);}
+.pres-checkboxes{display:flex;flex-wrap:wrap;gap:2px;}
+/* 18.07.26, по просьбе Ильи: раньше это были "таблетки" (заливка + серая
+   обводка) — убрали и то, и другое. Вместо этого: приглушённый текст в покое
+   (как .fd-row-label у "Тип"), у которого при наведении/выборе одновременно
+   темнеет/светлеет (в зависимости от темы) фон — та же техника var(--surface-2),
+   что и у .ac-item:hover/.map-plaque:hover — и появляется полноценный цвет
+   текста. */
+.pres-cb-label{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;padding:6px 10px;border-radius:8px;background:none;transition:background .15s,color .12s;user-select:none;}
+.pres-cb-label:hover{background:var(--surface-2);color:var(--text);}
+.pres-cb-label.checked{color:var(--text);}
+/* Квадратик — тот же вид, что у .fd-checkbox в фильтре "Тип" (см. выше),
+   только чуть меньше под этот более компактный контекст. Раньше здесь был
+   голый нативный чекбокс (accent-color) — на разных ОС/браузерах выглядел
+   по-разному и не совпадал по стилю с остальным сайтом. */
+.pres-cb-label input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;margin:0;cursor:pointer;position:relative;flex-shrink:0;
+  width:14px;height:14px;border-radius:5px;border:1px solid var(--line-2);
+  background:var(--checkbox-bg);transition:all .12s;
+}
+.pres-cb-label input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent);}
+.pres-cb-label input[type=checkbox]:checked::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;}
 .pres-apply-all-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
 .pres-apply-all-label{font-size:12px;color:var(--text);}
 .flox-toggle{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0;cursor:pointer;}
@@ -827,7 +851,7 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pres-share-row input{flex:1;padding:8px 12px;border-radius:8px;border:none;background:none;color:var(--text);font-size:12px;font-family:inherit;}
 .pres-share-row button{padding:8px 12px;border-radius:8px;border:0.5px solid var(--line-2);background:none;color:var(--text);cursor:pointer;font-size:14px;}
 .activity-list{display:flex;flex-direction:column;gap:10px;}
-.activity-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default;}
+.activity-card{background:var(--surface);border:1px solid transparent;border-radius:14px;padding:16px 18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default;}
 .activity-card:hover{transform:scale(1.02);border-color:var(--accent);box-shadow:0 4px 20px rgba(94,23,235,0.1);}
 .act-client{font-size:14px;font-weight:600;margin-bottom:3px;}
 .act-count{font-size:12px;color:var(--muted);margin-bottom:10px;}
@@ -1105,6 +1129,20 @@ const PROJECTS = [
     url:'project.html?id=OLN' },
 ];
 
+// 18.07.26, по просьбе Ильи: застройщика "Rhom Bho Property PLC" агенты в
+// разговоре называют по-разному (более старым/родственным брендом, на слух,
+// с ошибками транслитерации и т.п.) — подсказка "Застройщики" в поисковике
+// должна находиться по любому из этих вариантов, даже если сам вариант
+// нигде не встречается в данных проектов буквально.
+const DEVELOPER_ALIASES = {
+  'Rhom Bho Property PLC': ['Title', 'the Title', 'Тайтл', 'Ром Бо Проперти', 'Рхом Бо Проперти', 'Ассет Вайс', 'Asset Wise'],
+};
+function developerMatches(q, developer) {
+  if (fuzzyMatch(q, developer)) return true;
+  const aliases = DEVELOPER_ALIASES[developer];
+  return !!aliases && aliases.some(a => fuzzyMatch(q, a));
+}
+
 // ── DISTRICTS ─────────────────────────────
 const DISTRICTS = {
   'Kata Noi':{ru:'Ката Ной',amphoe:'Amphoe Mueang'},'Nai Harn':{ru:'Най Харн',amphoe:'Amphoe Mueang'},
@@ -1341,7 +1379,28 @@ function selectType(type, btn) {
 }
 
 // ── FUZZY ─────────────────────────────────
-function fuzzyMatch(q, text) {
+// 18.07.26, по просьбе Ильи: агент может забыть переключить раскладку
+// клавиатуры (ввести русское слово, пока стоит английская раскладка, или
+// наоборот) — набранный текст в поле при этом превращается в "тарабарщину"
+// (пример от Ильи: хотел набрать "камала", раскладка была английская —
+// в поле оказалось "rfvfkf", это просто те же физические клавиши). Строим
+// карту клавиш ЙЦУКЕН↔QWERTY (по физическому расположению клавиш, как в ОС)
+// и при поиске совпадений пробуем запрос ещё и "перевёрнутым" в обе стороны —
+// нашлось совпадение хоть в каком-то варианте, значит подсказка должна
+// показаться.
+const LAYOUT_EN_RU = {
+  '`':'ё','q':'й','w':'ц','e':'у','r':'к','t':'е','y':'н','u':'г','i':'ш','o':'щ','p':'з','[':'х',']':'ъ',
+  'a':'ф','s':'ы','d':'в','f':'а','g':'п','h':'р','j':'о','k':'л','l':'д',';':'ж',"'":'э',
+  'z':'я','x':'ч','c':'с','v':'м','b':'и','n':'т','m':'ь',',':'б','.':'ю','/':'.'
+};
+const LAYOUT_RU_EN = {};
+Object.entries(LAYOUT_EN_RU).forEach(([en, ru]) => { LAYOUT_RU_EN[ru] = en; });
+function convertLayout(str, map) {
+  let out = '';
+  for (const ch of str.toLowerCase()) out += (map[ch] !== undefined ? map[ch] : ch);
+  return out;
+}
+function fuzzyMatchRaw(q, text) {
   if (!q || !text) return false;
   const ql = q.toLowerCase().trim(), tl = text.toLowerCase();
   if (tl.includes(ql)) return true;
@@ -1350,6 +1409,16 @@ function fuzzyMatch(q, text) {
       if (tl.includes(ql.slice(0,i)+ql.slice(i+1))) return true;
     }
   }
+  return false;
+}
+function fuzzyMatch(q, text) {
+  if (!q || !text) return false;
+  if (fuzzyMatchRaw(q, text)) return true;
+  const ql = q.toLowerCase().trim();
+  const qEnToRu = convertLayout(ql, LAYOUT_EN_RU);
+  if (qEnToRu !== ql && fuzzyMatchRaw(qEnToRu, text)) return true;
+  const qRuToEn = convertLayout(ql, LAYOUT_RU_EN);
+  if (qRuToEn !== ql && fuzzyMatchRaw(qRuToEn, text)) return true;
   return false;
 }
 
@@ -1687,7 +1756,7 @@ function onSearchInput(val) {
       </div>`).join('');
   }
 
-  const devs = [...new Set(PROJECTS.map(p=>p.developer))].filter(d=>fuzzyMatch(val,d));
+  const devs = [...new Set(PROJECTS.map(p=>p.developer))].filter(d=>developerMatches(val,d));
   if (devs.length) {
     html += `<div class="ac-section-title">Застройщики</div>`;
     html += devs.map(d => `
