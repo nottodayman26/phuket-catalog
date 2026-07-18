@@ -9,7 +9,6 @@
 <style>
 :root {
   --meeting-logo-vis: visible;
-  --meeting-reward-display: block;
   --bg: #0d0d18;
   --surface: #111118;
   --surface-2: #1a1a26;
@@ -321,15 +320,18 @@ a { color: inherit; text-decoration: none; }
 .usf-btn svg{width:11px;height:11px;opacity:.6;flex-shrink:0;transition:transform .2s,opacity .2s;}
 .usf-btn.open svg{transform:rotate(180deg);opacity:1;}
 
-/* "Сбросить все" — под лентой, слева, без иконки; появляется только когда
-   реально есть что сбрасывать (как reset-all в flox-web.html). */
-.active-filters{display:none;align-items:center;width:100%;margin-top:10px;padding-left:24px;min-height:0;}
-.active-filters.vis{display:flex;}
+/* Строка под лентой поиска: "Сбросить все" слева (без иконки, появляется
+   только когда реально есть что сбрасывать — как reset-all в flox-web.html),
+   счётчик юнитов справа (таблетка .units-count, как .results-label в
+   flox-web.html, показывает количество проектов). */
+.uf-below-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:10px;padding:0 24px;min-height:0;}
 .reset-all{
   font-size:11.5px;font-weight:600;color:var(--red);cursor:pointer;
   padding:6px 12px;background:var(--red-soft);border:none;border-radius:20px;
   font-family:inherit;transition:opacity .15s ease;
+  opacity:0;visibility:hidden;
 }
+.reset-all.vis{opacity:1;visibility:visible;}
 .reset-all:hover{opacity:.8;}
 
 /* Шторки — стиль .filter-dropdown: без обводки, мягкая тень, радиус 16px */
@@ -401,7 +403,7 @@ a { color: inherit; text-decoration: none; }
 /* Гасим пресеты, которые дали бы невозможный диапазон (от 4, до 3) */
 .uf-price-opt:disabled{opacity:.3;cursor:default;pointer-events:none;}
 
-.units-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.units-count { font-size: 12px; color: var(--muted); background: var(--surface); padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
 
 .uf-overlay { display: none; position: fixed; inset: 0; z-index: 199; }
 .uf-overlay.open { display: block; }
@@ -761,20 +763,32 @@ a { color: inherit; text-decoration: none; }
   display: flex; flex-direction: column; gap: 14px;
 }
 
+/* Обёртка отвечает за плавное схлопывание пространства при скрытии в режиме
+   встречи (см. setRewardVisible ниже) — блоки "Цена от"/"О проекте" ниже
+   плавно поднимаются на её место, а не дёргаются мгновенно. */
+.reward-card-wrap {
+  overflow: hidden;
+  transition: max-height .4s cubic-bezier(.4,0,.2,1);
+}
 .reward-card {
   background: var(--surface);
   border-radius: 14px; padding: 18px;
-  /* 18.07.26, по просьбе Ильи: убрали обводку, вместо неё — тень как у
-     попапов в топбаре (см. .flox-tb-popover/.flox-tb-dd в topbar.js), только
-     при наведении, в покое тени нет. */
-  box-shadow: none;
+  /* 18.07.26, по просьбе Ильи: убрали обводку и тень вовсе (были то в покое,
+     то только на hover — в итоге решили, что карточкам справа тень вообще
+     не нужна). */
   position: relative; overflow: hidden;
-  display: var(--meeting-reward-display);
-  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .35s ease;
 }
 .reward-card:hover {
   transform: scale(1.025);
-  box-shadow: 0 6px 22px rgba(0,0,0,0.16);
+}
+/* Скрытие в режиме встречи — карточка уезжает вверх и тает (вариант 3 из
+   reward_hide_mockup.html, одобрено Ильёй), одновременно с схлопыванием
+   .reward-card-wrap выше. */
+.reward-card.mm-hidden {
+  opacity: 0;
+  transform: translateY(-16px);
+  pointer-events: none;
 }
 .reward-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
 .reward-pct { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
@@ -791,12 +805,10 @@ a { color: inherit; text-decoration: none; }
 .price-card {
   background: var(--surface);
   border-radius: 14px; padding: 18px;
-  box-shadow: none;
-  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
 }
 .price-card:hover {
   transform: scale(1.025);
-  box-shadow: 0 6px 22px rgba(0,0,0,0.16);
 }
 .price-from-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
 .price-from-val { font-size: 24px; font-weight: 700; color: var(--project-color); }
@@ -805,12 +817,10 @@ a { color: inherit; text-decoration: none; }
 .info-card {
   background: var(--surface);
   border-radius: 14px; padding: 18px;
-  box-shadow: none;
-  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
 }
 .info-card:hover {
   transform: scale(1.025);
-  box-shadow: 0 6px 22px rgba(0,0,0,0.16);
 }
 .info-card-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
 
@@ -903,11 +913,15 @@ body.light .page-footer {
 .tick .ago { color: var(--muted); opacity: .7; }
 </style>
 <script>
-// Instant meeting mode — prevents flash before JS loads
+// Instant meeting mode — prevents flash before JS loads.
+// 18.07.26: скрытие блока вознаграждения больше не идёт через этот CSS var
+// (см. setRewardVisible ниже — теперь это анимированное схлопывание, а не
+// мгновенный display:none) — сам блок ещё не существует в DOM на этом этапе
+// (сайдбар рендерится позже, после загрузки проекта), и renderSidebar()
+// сам читает тот же localStorage-флаг напрямую, так что вспышки не будет.
 (function(){
   if (localStorage.getItem("flox-meeting") === "true") {
     document.documentElement.style.setProperty("--meeting-logo-vis", "hidden");
-    document.documentElement.style.setProperty("--meeting-reward-display", "none");
   }
 })();
 </script>
@@ -956,6 +970,16 @@ body.light .page-footer {
 <script>
 const fmt = n => new Intl.NumberFormat('ru-RU').format(n);
 const fmtMln = n => n >= 1000000 ? (n/1000000).toFixed(1).replace('.0','') + ' млн ฿' : fmt(n) + ' ฿';
+// Русское склонение по числительному: pluralRu(1,'юнит','юнита','юнитов') -> 'юнит',
+// pluralRu(2,...) -> 'юнита', pluralRu(5,...) -> 'юнитов', pluralRu(11,...) -> 'юнитов' и т.д.
+function pluralRu(n, one, few, many) {
+  n = Math.abs(n) % 100;
+  const n1 = n % 10;
+  if (n > 10 && n < 20) return many;
+  if (n1 > 1 && n1 < 5) return few;
+  if (n1 === 1) return one;
+  return many;
+}
 let lbPhotos = [], lbIdx = 0;
 function openLightbox(photos, idx) {
   lbPhotos = photos; lbIdx = idx;
@@ -1373,12 +1397,12 @@ function renderUnits(d) {
         </button>
       </div>
 
-      <!-- Сброс — под лентой, слева, видим только когда есть активный фильтр -->
-      <div class="active-filters" id="uf-active-filters">
-        <button class="reset-all" onclick="resetUnitFilters()">Сбросить все</button>
+      <!-- Сброс слева (видим только когда есть активный фильтр) и счётчик
+           юнитов справа — одной строкой под лентой поиска. -->
+      <div class="uf-below-row">
+        <button class="reset-all" id="uf-active-filters" onclick="resetUnitFilters()">Сбросить все</button>
+        <div class="units-count" id="units-count"></div>
       </div>
-
-      <div class="units-count" id="units-count"></div>
     </div>
     <div id="units-tree-wrap">${buildingSkeleton}</div>`;
 }
@@ -1913,7 +1937,7 @@ function applyUnitFilters() {
   });
 
   const count = document.getElementById('units-count');
-  if (count) count.textContent = `Показано ${filtered.length} юнитов`;
+  if (count) count.textContent = `Показано ${filtered.length} ${pluralRu(filtered.length, 'юнит', 'юнита', 'юнитов')}`;
 
   if (_groupByBuilding) {
     if (window._currentProjectData) renderUnitsTree(window._currentProjectData, filtered);
@@ -2484,15 +2508,22 @@ function renderSidebar(d) {
   const pct = (r.percent_from && r.percent_from > 0) ? r.percent_from : 10;
   const pctTo = (r.percent_to && r.percent_to > 0) ? r.percent_to : pct;
   const pctHtml = pct === pctTo
-    ? `<div class="reward-pct">${pct}<sup>%</sup></div>`
-    : `<div class="reward-pct">${pct}–${pctTo}<sup>%</sup></div>`;
+    ? `<div class="reward-pct"><span class="reward-pct-num" data-raw="${pct}">0</span><sup>%</sup></div>`
+    : `<div class="reward-pct"><span class="reward-pct-num" data-raw="${pct}">0</span>–<span class="reward-pct-num" data-raw="${pctTo}">0</span><sup>%</sup></div>`;
 
   const scale = (!r.scale || r.scale === 'уточняется') ? 'Фикс' : r.scale;
   const days = (!r.payment_days || r.payment_days === 0) ? '1 месяц' : `${r.payment_days} дней`;
 
+  // Режим встречи может быть включён ещё до того, как отрисуется сайдбар
+  // (см. _pageMeetingCallback/applyMeetingMode) — читаем тот же флаг, что и
+  // прематурный инлайн-скрипт в <head>, чтобы карточка родилась сразу в
+  // нужном состоянии, без вспышки и без лишней анимации на старте.
+  const mmHidden = localStorage.getItem('flox-meeting') === 'true';
+
   document.getElementById('sidebarCol').innerHTML = `
     <div class="sidebar-inner" id="sidebarInner">
-      <div class="reward-card">
+      <div class="reward-card-wrap" id="rewardCardWrap" ${mmHidden ? 'style="max-height:0"' : ''}>
+      <div class="reward-card${mmHidden ? ' mm-hidden' : ''}">
         <div class="reward-label">🎯 Ваше вознаграждение</div>
         ${pctHtml}
         <div class="reward-rows">
@@ -2502,6 +2533,7 @@ function renderSidebar(d) {
         <a class="reward-table-btn" href="#" onclick="return false" title="Скоро">
           💵 Таблица вознаграждений
         </a>
+      </div>
       </div>
 
       <div class="price-card">
@@ -2527,12 +2559,36 @@ function renderSidebar(d) {
 let meetingMode = false;
 
 function applyMeetingMode() {
-  if (meetingMode) {
-    document.documentElement.style.setProperty('--meeting-logo-vis', 'hidden');
-    document.documentElement.style.setProperty('--meeting-reward-display', 'none');
+  document.documentElement.style.setProperty('--meeting-logo-vis', meetingMode ? 'hidden' : 'visible');
+  setRewardVisible(!meetingMode);
+}
+
+// 18.07.26, по просьбе Ильи: блок вознаграждения скрывается/появляется
+// анимированно (уезжает вверх и тает — вариант 3 из reward_hide_mockup.html),
+// а обёртка .reward-card-wrap одновременно плавно схлопывается по высоте, чтобы
+// "Цена от"/"О проекте" ниже плавно поднимались на её место, а не дёргались.
+// max-height нельзя анимировать из/в "none" — поэтому перед стартом каждого
+// перехода явно фиксируем текущую высоту в пикселях (scrollHeight).
+function setRewardVisible(show) {
+  const wrap = document.getElementById('rewardCardWrap');
+  const card = wrap ? wrap.querySelector('.reward-card') : null;
+  if (!wrap || !card) return; // сайдбар ещё не отрисован — renderSidebar() сам учтёт актуальный флаг при рендере
+  const isHidden = card.classList.contains('mm-hidden');
+  if (show === !isHidden) return; // уже в нужном состоянии (в т.ч. холостой вызов applyMeetingMode() при старте страницы) — ничего не трогаем
+  clearTimeout(wrap._mmTimer);
+  if (show) {
+    card.classList.remove('mm-hidden');
+    wrap.style.maxHeight = wrap.scrollHeight + 'px';
+    // Через setTimeout, а не transitionend — событие транзишена ещё и
+    // всплывает от opacity/transform самой карточки, отслеживать его
+    // надёжность лишняя; таймер просто снимает фиксированную высоту после
+    // окончания перехода, чтобы контент снова мог "дышать".
+    wrap._mmTimer = setTimeout(() => { wrap.style.maxHeight = 'none'; }, 420);
   } else {
-    document.documentElement.style.setProperty('--meeting-logo-vis', 'visible');
-    document.documentElement.style.setProperty('--meeting-reward-display', 'block');
+    wrap.style.maxHeight = wrap.scrollHeight + 'px'; // фиксируем текущую высоту явным числом...
+    void wrap.offsetHeight; // ...и форсируем reflow, чтобы браузер её запомнил до смены значения
+    card.classList.add('mm-hidden');
+    requestAnimationFrame(() => { wrap.style.maxHeight = '0px'; });
   }
 }
 
@@ -2634,6 +2690,7 @@ function animateCount(el, target, duration = 900, formatter) {
 
 function initCountAnimations() {
   // ── Цена от (sidebar) ────────────────────────────────────────────────────
+  // 18.07.26, по просьбе Ильи: анимация замедлена (была 2000мс).
   const priceEl = document.querySelector('.price-from-val');
   if (priceEl) {
     const raw = priceEl.dataset.raw ? parseFloat(priceEl.dataset.raw) : null;
@@ -2641,10 +2698,32 @@ function initCountAnimations() {
       priceEl.textContent = '0 млн ฿'; // скрываем сразу
       const obs = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting) {
-          animateCount(priceEl, raw / 1000000, 2000, v => v.toFixed(1) + ' млн ฿');
+          animateCount(priceEl, raw / 1000000, 3200, v => v.toFixed(1) + ' млн ฿');
         }
       }, { threshold: 0.5 });
       obs.observe(priceEl);
+    }
+  }
+
+  // ── Ваше вознаграждение (sidebar) ────────────────────────────────────────
+  // 18.07.26, по просьбе Ильи: та же анимация счётчика, что у "Цена от" —
+  // проигрывается при первой загрузке и каждый раз, когда агент снова
+  // прокручивает страницу к этому блоку (IntersectionObserver не отписывается).
+  const rewardNums = document.querySelectorAll('.reward-pct-num');
+  if (rewardNums.length) {
+    const rewardCard = document.querySelector('.reward-card');
+    if (rewardCard) {
+      const obs = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) {
+          rewardNums.forEach(el => {
+            const raw = parseFloat(el.dataset.raw);
+            if (isNaN(raw)) return;
+            const isInt = Number.isInteger(raw);
+            animateCount(el, raw, 3200, v => isInt ? Math.round(v).toString() : (Math.round(v * 10) / 10).toFixed(1));
+          });
+        }
+      }, { threshold: 0.5 });
+      obs.observe(rewardCard);
     }
   }
 
