@@ -462,9 +462,39 @@ input,button{font-family:inherit;}
    В ЭТОМ режиме поднять кнопки/инфо-блок значительно выше карты. */
 body.map-fake-fullscreen-active .map-fullscreen-btn,
 body.map-fake-fullscreen-active .map-zoom-group,
-body.map-fake-fullscreen-active .map-info-card{
+body.map-fake-fullscreen-active .map-info-card,
+body.map-fake-fullscreen-active .map-eye-btn,
+body.map-fake-fullscreen-active .map-pins-btn{
   z-index:1000000000;
 }
+/* 18.07.26, по просьбе Ильи: две новые кнопки — "показать/скрыть не попавшие
+   в фильтр" (глаз) и "показать/скрыть все объекты на карте" (точка) — левее
+   разворота, тот же угол/стиль/анимация, что у .map-fullscreen-btn выше (см.
+   большой комментарий там про z-index/позицию — те же соображения). Порядок
+   слева направо: глаз, точка, разворот. */
+.map-eye-btn, .map-pins-btn{
+  position:fixed;top:var(--map-ctrl-top, 72px);z-index:150;
+  border-radius:50%;
+}
+.map-pins-btn{right:70px;}
+.map-eye-btn{right:124px;}
+/* Подсказка при наведении — нейтральная таблетка без обводки и тени (прямая
+   просьба Ильи), текст меняется вместе с состоянием кнопки (см.
+   updateEyeBtn/updatePinsBtn в addCustomMapControls) — всегда описывает
+   действие, которое произойдёт по клику. Кнопки — position:fixed, этого
+   достаточно, чтобы служить containing block для position:absolute у
+   подсказки, отдельный position:relative не нужен. */
+.map-ctrl-tooltip{
+  position:absolute;top:calc(100% + 8px);left:50%;
+  transform:translateX(-50%) translateY(-4px);
+  background:var(--surface);color:var(--muted);
+  font-size:11.5px;font-weight:500;white-space:nowrap;
+  padding:6px 12px;border-radius:20px;
+  opacity:0;pointer-events:none;
+  transition:opacity .15s ease,transform .15s ease;
+  z-index:5;
+}
+.map-ctrl-btn:hover .map-ctrl-tooltip{opacity:1;transform:translateX(-50%) translateY(0);}
 /* 16.07.26, по просьбе Ильи: кнопки всё ещё "катались" вместе со скроллом,
    хотя стоит position:fixed — значит что-то в разметке страницы (скорее
    всего в topbar.js, который сюда не присылали) ломает position:fixed у
@@ -2065,6 +2095,23 @@ let mapPlacemarks = [];
 // (нужен отдельно, чтобы строить ссылку/фото без повторного поиска по id).
 let selectedProjectId = null;
 let mapInfoProject = null;
+// 18.07.26, по просьбе Ильи: две новые кнопки на карте (см. addCustomMapControls
+// ниже) — "глаз" (показать/скрыть на карте проекты, НЕ прошедшие текущий
+// фильтр — агент может показать клиенту альтернативу, если в районе больше
+// ничего не осталось) и "точка" (временно скрыть вообще все точки/плашки —
+// пригодится, когда их станет много). Оба флага влияют ТОЛЬКО на отрисовку
+// карты (renderProjectPins ниже) — сам объект filters, applyFilters, список
+// карточек и "Найдено: N" не трогаются никак, это чисто визуальный режим
+// карты.
+let showUnfilteredOnMap = false;
+let pinsHiddenOnMap = false;
+// mapInfoProjectUnfiltered — true, если сейчас открытый инфо-блок показывает
+// именно такой "не попавший в фильтр" проект (клик по метке, добавленной
+// showUnfilteredOnMap) — тогда переход по клику на инфо-блок должен вести на
+// страницу проекта БЕЗ применения фильтров (см. openMapInfoProject ниже):
+// иначе на самой странице проекта эти же фильтры могут скрыть все юниты,
+// ради которых агент вообще сюда вёл клиента.
+let mapInfoProjectUnfiltered = false;
 // 16.07.26: раньше здесь хранились ссылки на кнопки для ручного пересчёта их
 // позиции — теперь их позиция (--map-ctrl-top/--map-ctrl-mid, см. CSS у
 // .map-fullscreen-btn/.map-zoom-group) непрерывно пересчитывается в
@@ -2386,6 +2433,16 @@ function addCustomMapControls() {
   const ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
   const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   const ICON_MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>';
+  // 18.07.26, по просьбе Ильи: глаз — тот же путь, что уже используется у
+  // кнопки "Смотреть как агент" (см. togglePreviewAsAgent выше по разметке) —
+  // для визуального единства. Перечёркнутый вариант — тот же путь плюс
+  // диагональная линия (тот же приём, что и у самого присланного Ильёй
+  // скриншота с перечёркнутой точкой).
+  const ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+  // Пин — тот же путь, что и у кнопки "Расставить точки" (см. togglePlacementMode).
+  const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  const ICON_PIN_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
 
   // 16.07.26, по просьбе Ильи: не найдена причина, почему сама кнопка не
   // разворачивала карту (иконка не менялась, кнопка "не в углу") — самое
@@ -2448,6 +2505,50 @@ function addCustomMapControls() {
   zoomGroup.appendChild(minusBtn);
   document.body.appendChild(zoomGroup); // 16.07.26: тоже прямо в body, см. комментарий у fsBtn выше
 
+  // 18.07.26, по просьбе Ильи: две новые кнопки левее разворота — "глаз"
+  // (показать/скрыть на карте проекты, не прошедшие текущий фильтр) и "точка"
+  // (скрыть/показать все точки/плашки разом). Стиль/анимация — как у
+  // остальных кнопок карты (.map-ctrl-btn), позиция — тот же фиксированный
+  // верхний угол, что у fsBtn (см. .map-eye-btn/.map-pins-btn в CSS), просто
+  // левее. Подсказка при наведении — таблетка без обводки и тени (см.
+  // .map-ctrl-tooltip в CSS), текст меняется вместе с состоянием кнопки —
+  // всегда описывает, что произойдёт по клику, а не текущее состояние.
+  const eyeBtn = document.createElement('div');
+  eyeBtn.id = 'mapEyeBtn';
+  eyeBtn.className = 'map-ctrl-btn map-eye-btn';
+  function updateEyeBtn() {
+    eyeBtn.innerHTML = (showUnfilteredOnMap ? ICON_EYE_OFF : ICON_EYE) +
+      `<span class="map-ctrl-tooltip">${showUnfilteredOnMap ? 'Скрыть не попавшие в фильтр' : 'Показать не попавшие в фильтр'}</span>`;
+  }
+  updateEyeBtn();
+  eyeBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    showUnfilteredOnMap = !showUnfilteredOnMap;
+    updateEyeBtn();
+    renderProjectPins(lastFilteredProjects, { fitBounds: false });
+  });
+  document.body.appendChild(eyeBtn);
+
+  const pinsBtn = document.createElement('div');
+  pinsBtn.id = 'mapPinsBtn';
+  pinsBtn.className = 'map-ctrl-btn map-pins-btn';
+  function updatePinsBtn() {
+    // 18.07.26, по просьбе Ильи: иконка изначально ПЕРЕЧЁРКНУТАЯ (точки на
+    // карте видны, следующее действие — скрыть их, отсюда крестик уже на
+    // самой иконке-подсказке действия), после клика точки прячутся, а
+    // иконка становится обычной (следующее действие — снова показать).
+    pinsBtn.innerHTML = (pinsHiddenOnMap ? ICON_PIN : ICON_PIN_OFF) +
+      `<span class="map-ctrl-tooltip">${pinsHiddenOnMap ? 'Показать объекты на карте' : 'Скрыть объекты на карте'}</span>`;
+  }
+  updatePinsBtn();
+  pinsBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    pinsHiddenOnMap = !pinsHiddenOnMap;
+    updatePinsBtn();
+    renderProjectPins(lastFilteredProjects, { fitBounds: false });
+  });
+  document.body.appendChild(pinsBtn);
+
   // 16.07.26: кнопки больше не внутри #mapViewWrap, значит и не прячутся
   // сами вместе с ним через display:none — прячем/показываем их вручную
   // отдельным классом (.map-ctrl-hidden в CSS) синхронно с тем, открыта ли
@@ -2474,6 +2575,8 @@ function addCustomMapControls() {
     fsBtn.classList.toggle('map-ctrl-hidden', !on);
     zoomGroup.classList.toggle('map-ctrl-hidden', !on);
     infoCard.classList.toggle('map-ctrl-hidden', !on);
+    eyeBtn.classList.toggle('map-ctrl-hidden', !on);
+    pinsBtn.classList.toggle('map-ctrl-hidden', !on);
   }
 
   // exitFakeFullscreen — чтобы можно было принудительно выйти из нашего
@@ -2606,15 +2709,36 @@ function renderProjectPins(projects, opts) {
   const fitBounds = !opts || opts.fitBounds !== false;
   mapPlacemarks.forEach(pm => projectsMap.geoObjects.remove(pm));
   mapPlacemarks = [];
+  // 18.07.26, по просьбе Ильи: кнопка "скрыть объекты на карте" — просто не
+  // рисуем вообще ничего, до следующего повторного вызова этой же функции
+  // (см. addCustomMapControls). Всё остальное состояние (выделение, инфо-блок)
+  // не трогаем — снова нажали кнопку, метки вернутся как были.
+  if (pinsHiddenOnMap) return;
   // 16.07.26, по просьбе Ильи: доп. проверка ТОЛЬКО для карты — если у
   // проекта нет ни одного юнита, подходящего под тип+цену+срок сдачи
   // совместно (см. getMapMatchingUnits — учитывает очереди), точка/плашка
   // на карте не показывается вообще, даже если сам проект остался в списке
   // (applyFilters для списка сроком сдачи по очередям не занимается, см.
   // коммент там — список сознательно не трогаем).
-  const withCoords = projects
+  let withCoords = projects
     .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number')
     .filter(p => getMapMatchingUnits(p).length > 0);
+
+  // 18.07.26, по просьбе Ильи: кнопка "глаз" — добавляет на карту ЕЩЁ и
+  // проекты, не прошедшие текущий фильтр (координаты у которых вообще
+  // проставлены), чтобы агент мог показать клиенту альтернативу, если в
+  // нужном районе по фильтру больше ничего нет. extraIds — только чтобы
+  // пометить их клик особым образом (см. ниже, selectProject(p,{unfiltered})) —
+  // на группировку/цену плашки (getPlaqueDisplayPrice) это не влияет: для
+  // такого проекта getMapMatchingUnits(p) пуст, и функция уже сама
+  // возвращает p.priceFrom в качестве запасного варианта.
+  const extraIds = new Set();
+  if (showUnfilteredOnMap) {
+    const matchedIds = new Set(withCoords.map(p => p.id));
+    const extras = PROJECTS.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number' && !matchedIds.has(p.id));
+    extras.forEach(p => extraIds.add(p.id));
+    withCoords = withCoords.concat(extras);
+  }
 
   // 17.07.26, по просьбе Ильи: если выбранный (открытый в инфо-блоке) проект
   // из-за смены фильтров пропал с карты — сам инфо-блок должен закрыться, а
@@ -2729,7 +2853,7 @@ function renderProjectPins(projects, opts) {
       // (см. projectsMap.events.add('click', ...) в initProjectsMap) — иначе
       // тот же клик тут же закрыл бы только что открытый инфо-блок.
       e.stopPropagation();
-      selectProject(p);
+      selectProject(p, { unfiltered: extraIds.has(p.id) });
     });
     projectsMap.geoObjects.add(pm);
     mapPlacemarks.push(pm);
@@ -2818,14 +2942,20 @@ function showMapInfoCard(p) {
 // renderProjectPins, см. выше, — иначе рекурсия). closeMapInfoCard — сброс
 // СНАРУЖИ (клик по крестику/по пустой карте/уход со вкладки "На карте") —
 // тут повторный рендер уже нужен, чтобы подсветка с плашки/точки исчезла.
-function selectProject(p) {
+function selectProject(p, opts) {
   selectedProjectId = p.id;
+  // 18.07.26: метка могла появиться на карте только благодаря кнопке "глаз"
+  // (см. renderProjectPins/addCustomMapControls) — тогда сам проект НЕ
+  // подходит под текущий фильтр, и opts.unfiltered=true (см. вызов клика по
+  // метке ниже в renderProjectPins).
+  mapInfoProjectUnfiltered = !!(opts && opts.unfiltered);
   showMapInfoCard(p);
   renderProjectPins(lastFilteredProjects, { fitBounds: false });
 }
 function clearMapSelection() {
   selectedProjectId = null;
   mapInfoProject = null;
+  mapInfoProjectUnfiltered = false;
   const el = document.getElementById('mapInfoCard');
   if (el) el.classList.remove('act');
 }
@@ -2835,7 +2965,12 @@ function closeMapInfoCard() {
 }
 function openMapInfoProject() {
   if (!mapInfoProject) return;
-  window.open(projectUrlWithFilters(mapInfoProject), '_blank');
+  // 18.07.26, по просьбе Ильи: проект, показанный кнопкой "показать не
+  // попавшие в фильтр", не подходит под текущий фильтр по определению —
+  // если передать фильтры и на саму страницу проекта, они могут скрыть там
+  // все юниты. Открываем такой проект обычной ссылкой, без фильтров.
+  const url = mapInfoProjectUnfiltered ? mapInfoProject.url : projectUrlWithFilters(mapInfoProject);
+  window.open(url, '_blank');
 }
 
 // ── Расстановка точек кликом по карте (агентский инструмент) ───────────────
