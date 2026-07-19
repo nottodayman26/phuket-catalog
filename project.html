@@ -332,7 +332,14 @@ a { color: inherit; text-decoration: none; }
    только когда реально есть что сбрасывать — как reset-all в flox-web.html),
    счётчик юнитов справа (таблетка .units-count, как .results-label в
    flox-web.html, показывает количество проектов). */
-.uf-below-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:10px;padding:0 24px;min-height:0;}
+/* 19.07.26, по просьбе Ильи: раньше padding:0 24px держал таблетки на 24px
+   ОТ реальных краёв поисковика (у самого .unit-search-bar своего внешнего
+   отступа нет — его край и есть тот самый "условный край") — визуально
+   казалось, что таблетки болтаются где-то в середине. Сдвинули почти
+   вплотную к краям (2px — чтобы не выглядело обрезанным впритык), но не
+   дальше — .uf-below-row той же ширины, что и сам поисковик, поэтому 2px
+   гарантированно не выходят за его линию. */
+.uf-below-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:10px;padding:0 2px;min-height:0;}
 .reset-all{
   font-size:11.5px;font-weight:600;color:var(--red);cursor:pointer;
   padding:6px 12px;background:var(--red-soft);border:none;border-radius:20px;
@@ -1145,6 +1152,10 @@ function scrollTabs(dir) {
 }
 
 function renderProject(d) {
+  // 19.07.26: держим последние данные проекта в модуле — нужно кнопке
+  // "Ближайшие локации" ниже (goToNearbyLocation), чтобы форсировать загрузку
+  // карты, если по локации кликнули раньше, чем карта успела появиться сама.
+  CURRENT_PROJECT_DATA = d;
   document.documentElement.style.setProperty('--project-color', d.color || '#5E17EB');
   const soft = d.color ? d.color + '22' : 'rgba(94,23,235,0.18)';
   document.documentElement.style.setProperty('--project-soft', soft);
@@ -2402,14 +2413,22 @@ function renderAbout(d) {
     </div>`;
 }
 
+// 19.07.26: минимальный html-escape только для атрибута data-name ниже —
+// в остальном файле такого хелпера нет, но тут он нужен, т.к. n.name — это
+// свободный текст из projects/*.json, который вставляется в HTML-атрибут
+// (клик по блоку "Ближайшие локации", см. goToNearbyLocation).
+function escAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function renderMap(d) {
   return `
     <div class="sec-title">Карта</div>
     <div class="map-wrap" id="mapWrap"><div id="projMap"></div></div>
     <div class="sec-title">Ближайшие локации</div>
-    <div class="nearby-list">
+    <div class="nearby-list" id="nearbyList">
       ${d.nearby.map((n, i) => `
-        <div class="nearby-item">
+        <div class="nearby-item" data-name="${escAttr(n.name)}">
           <span class="nearby-icon">${n.icon}</span>
           <span class="nearby-name">${n.name}</span>
           <div class="nearby-dist">
@@ -2429,6 +2448,7 @@ function renderMap(d) {
 // проекты").
 let projMap = null;
 let _projMapLoadAttempted = false;
+let CURRENT_PROJECT_DATA = null;
 
 function initProjMapLazy(d) {
   const el = document.getElementById('s-map');
@@ -2455,6 +2475,12 @@ function loadProjMap(d) {
   // заблокирован и т.п.) — не даём странице сломаться молча (тот же приём,
   // что и в flox-web).
   if (!window.ymaps) { showMapError(); return; }
+
+  // 19.07.26, по просьбе Ильи: общая база "Ближайших локаций" (аэропорт,
+  // пляж и т.п. — расставляются один раз в flox-web, см. "Расставить
+  // локации" там) грузится тем же ленивым триггером, что и сама карта, а не
+  // при каждом рендере проекта — экономит запросы, пока блок не видно.
+  loadLocations();
 
   ymaps.ready(() => {
     if (!document.getElementById('projMap')) return;
@@ -2495,9 +2521,10 @@ function addCustomProjMapControls(lat, lng) {
   const ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
   const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   const ICON_MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>';
-  // 19.07.26, по просьбе Ильи: "вернуться к проекту" — прицел/мишень, той же
-  // толщины линий, что остальные иконки карты, чтобы не выбивалась.
-  const ICON_RETURN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+  // 19.07.26 (2), по присланному Ильёй референсу: "вернуться к проекту" —
+  // не прицел/мишень (первая версия), а метка-пин (капля со скруглением и
+  // кругом внутри), та же толщина линий, что остальные иконки карты.
+  const ICON_RETURN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>';
 
   // 19.07.26: в отличие от flox-web, где кнопки фуллскрина/зума кладутся
   // прямо в <body> (там был сломан position:fixed у вложенных элементов,
@@ -2559,6 +2586,60 @@ function focusNearby(lat, lng) {
   if (!lat || !lng || !projMap) return;
   projMap.panTo([lat, lng], { flying: true });
 }
+
+// 19.07.26, по просьбе Ильи: клик по блоку "Ближайшие локации" плавно
+// перелетает к этой точке на карте. Координаты — из ОБЩЕЙ таблицы Supabase
+// locations (не из projects/*.json!): Илья расставляет их один раз в
+// flox-web через отдельный инструмент "Расставить локации" (см. комментарий
+// у togglePlacementMode / toggleLocationPlacementMode там же), сверяя по
+// названию — то же самое n.name, что рендерится тут в блоке. Ищем совпадение
+// строго по имени; если в базе такого названия ещё нет — молча ничего не
+// делаем (не ломаем страницу, просто клик "не сработал").
+let _locationsPromise = null;
+function loadLocations() {
+  if (!_locationsPromise) {
+    _locationsPromise = fetch(`${SB_URL}/locations?select=name,lat,lng`, { headers: SB_HEADERS })
+      .then(r => r.ok ? r.json() : [])
+      .then(rows => {
+        const map = {};
+        (rows || []).forEach(r => {
+          if (r && r.name && r.lat != null && r.lng != null) map[r.name] = { lat: +r.lat, lng: +r.lng };
+        });
+        return map;
+      })
+      .catch(() => ({})); // таблицы может ещё не быть/нет сети — просто не подсветим локации кликабельностью
+  }
+  return _locationsPromise;
+}
+
+function goToNearbyLocation(name) {
+  loadLocations().then(map => {
+    const loc = map[name];
+    if (!loc) return; // нет совпадения в общей базе локаций — тихо игнорируем клик
+    const flyTo = () => {
+      document.getElementById('mapWrap')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      focusNearby(loc.lat, loc.lng);
+    };
+    if (projMap) { flyTo(); return; }
+    // Карта ещё не успела появиться (обычно она уже есть — блок "Ближайшие
+    // локации" сразу под картой в одной секции s-map — но на всякий случай
+    // форсируем загрузку и долетаем до точки, как только карта будет готова).
+    if (!CURRENT_PROJECT_DATA) return;
+    loadProjMap(CURRENT_PROJECT_DATA);
+    const wait = setInterval(() => {
+      if (projMap) { clearInterval(wait); flyTo(); }
+    }, 100);
+    setTimeout(() => clearInterval(wait), 5000);
+  });
+}
+
+document.addEventListener('click', (e) => {
+  const item = e.target.closest('.nearby-item');
+  if (!item) return;
+  const name = item.dataset.name;
+  if (!name) return;
+  goToNearbyLocation(name);
+});
 
 function renderFloors(d) {
   const plans = d.floor_plans;

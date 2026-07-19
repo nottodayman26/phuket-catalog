@@ -646,6 +646,14 @@ body.map-fake-fullscreen-active{overflow:hidden;}
   background:var(--surface-2);color:var(--text);font-size:12.5px;font-family:inherit;display:none;
 }
 .map-placement-select.vis{display:block;}
+/* 19.07.26: тот же стиль, что у .map-placement-select — свободный текст
+   вместо выпадающего списка, т.к. названий локаций много и они растут
+   произвольно (в отличие от фиксированного списка проектов). */
+.map-placement-input{
+  flex:1;min-width:220px;padding:7px 10px;border-radius:8px;border:0.5px solid var(--line-2);
+  background:var(--surface-2);color:var(--text);font-size:12.5px;font-family:inherit;display:none;
+}
+.map-placement-input.vis{display:block;}
 .map-placement-hint{font-size:11.5px;color:var(--muted);display:none;}
 .map-placement-hint.vis{display:block;}
 .no-results{
@@ -1024,6 +1032,25 @@ body.map-fake-fullscreen-active{overflow:hidden;}
           </button>
           <select class="map-placement-select" id="placementSelect"></select>
           <span class="map-placement-hint" id="placementHint">Кликни на карте, куда поставить точку для выбранного проекта</span>
+
+          <!-- 19.07.26, по просьбе Ильи: ОТДЕЛЬНЫЙ инструмент — расставляет
+               именованные объекты инфраструктуры (аэропорт, пляж и т.п.) в
+               общую таблицу locations, а не координаты конкретного проекта
+               (см. .map-placement-toggle "Расставить точки" выше). Специально
+               не смешан с ним — свой toggle, свои поля, и они
+               взаимоисключающие (см. toggleLocationPlacementMode /
+               togglePlacementMode в JS). Заполняется один раз для всех
+               проектов сразу — эти точки не видны в самом flox-web, только
+               здесь, админу, но данные читает project.html в блоке "Ближайшие
+               локации" по совпадению названия. -->
+          <div style="flex-basis:100%;height:0"></div>
+          <button class="map-placement-toggle" id="locPlacementToggle" onclick="toggleLocationPlacementMode()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>
+            Расставить локации
+          </button>
+          <input class="map-placement-input" id="locPlacementInput" type="text" list="locNamesList" placeholder="Название локации (напр. Аэропорт) — как в проекте">
+          <datalist id="locNamesList"></datalist>
+          <span class="map-placement-hint" id="locPlacementHint">Кликни на карте, куда поставить локацию с введённым названием. Имя должно 1:1 совпадать с названием в блоке "Ближайшие локации" на странице проекта</span>
         </div>
       </div>
       <div id="projectsMap"></div>
@@ -2120,6 +2147,12 @@ let mapInfoProjectUnfiltered = false;
 // выйти из CSS-fullscreen извне (см. addCustomMapControls).
 let mapCtrlRefs = null;
 let placementMode = false;
+// 19.07.26: состояние ВТОРОГО, отдельного инструмента расстановки —
+// именованных локаций (см. togglePlacementMode/toggleLocationPlacementMode
+// ниже, они взаимоисключающие).
+let locationPlacementMode = false;
+let locationPreviewMarkers = {};
+let _locationNamesLoaded = false;
 // 15.07.26: чисто клиентский переключатель "посмотреть как обычный агент" —
 // ничего не пишет в базу и не трогает AGENT.is_admin, просто на время прячет
 // инструменты расстановки точек у самого админа, чтобы он мог глазами
@@ -2397,6 +2430,15 @@ function initProjectsMap() {
     if (placementMode) {
       const coords = e.get('coords');
       savePlacementClick(coords);
+      return;
+    }
+    // 19.07.26: второй, отдельный режим расстановки — именованных локаций
+    // (см. toggleLocationPlacementMode). Взаимоисключающ с placementMode
+    // выше, поэтому проверяем отдельным if, а не else if — оба никогда не
+    // бывают true одновременно.
+    if (locationPlacementMode) {
+      const coords = e.get('coords');
+      saveLocationClick(coords);
       return;
     }
     // 17.07.26, по просьбе Ильи: клик по пустому месту на карте (не по
@@ -2985,10 +3027,83 @@ function openMapInfoProject() {
 function togglePlacementMode() {
   if (!AGENT?.is_admin || previewAsAgent) return;
   placementMode = !placementMode;
+  // 19.07.26: взаимоисключающе со вторым инструментом (локации) — не мешаем
+  // клики по карте одновременно между двумя режимами.
+  if (placementMode && locationPlacementMode) toggleLocationPlacementMode();
   document.getElementById('placementToggle').classList.toggle('act', placementMode);
   document.getElementById('placementSelect').classList.toggle('vis', placementMode);
   document.getElementById('placementHint').classList.toggle('vis', placementMode);
   if (placementMode) populatePlacementSelect();
+}
+
+// ── Расстановка ИМЕНОВАННЫХ локаций (аэропорт, пляж и т.п.) ────────────────
+// 19.07.26, по просьбе Ильи: специально ОТДЕЛЬНЫЙ инструмент от
+// "Расставить точки" выше — те точки координаты проектов, эти — общая для
+// всех проектов таблица locations (name уникален), которую потом читает
+// project.html в блоке "Ближайшие локации" по совпадению названия. Админ
+// заполняет её один раз, не для каждого проекта. Взаимоисключающ с
+// placementMode (см. togglePlacementMode).
+function toggleLocationPlacementMode() {
+  if (!AGENT?.is_admin || previewAsAgent) return;
+  locationPlacementMode = !locationPlacementMode;
+  if (locationPlacementMode && placementMode) togglePlacementMode();
+  document.getElementById('locPlacementToggle').classList.toggle('act', locationPlacementMode);
+  document.getElementById('locPlacementInput').classList.toggle('vis', locationPlacementMode);
+  document.getElementById('locPlacementHint').classList.toggle('vis', locationPlacementMode);
+  if (locationPlacementMode) {
+    populateLocationNamesDatalist();
+    loadExistingLocationMarkers(); // показать уже расставленные точки — видно, что уже сделано
+  } else {
+    clearLocationPreviewMarkers();
+  }
+}
+
+// Автодополнение имён — собираем уникальные nearby[].name из всех
+// projects/*.json, чтобы админ печатал название, уже гарантированно
+// совпадающее с тем, что покажется в блоке "Ближайшие локации" (иначе клик
+// там ничего не найдёт по имени). Не критично, если что-то не подгрузится —
+// это просто подсказка, ручной ввод по-прежнему работает.
+async function populateLocationNamesDatalist() {
+  if (_locationNamesLoaded) return;
+  _locationNamesLoaded = true;
+  const dl = document.getElementById('locNamesList');
+  if (!dl) return;
+  const names = new Set();
+  await Promise.all(PROJECTS.map(async p => {
+    try {
+      const res = await fetch(`projects/${p.id}.json?v=${Date.now()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      (data.nearby || []).forEach(n => { if (n && n.name) names.add(n.name); });
+    } catch (e) { /* не критично — просто не подскажем этот проект */ }
+  }));
+  dl.innerHTML = [...names].sort((a, b) => a.localeCompare(b))
+    .map(n => `<option value="${String(n).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"></option>`).join('');
+}
+
+// Серые метки-превью уже расставленных (и только что расставленной) локаций —
+// видны ТОЛЬКО пока включён режим "Расставить локации", только этому админу,
+// исчезают при выключении режима (см. clearLocationPreviewMarkers). Обычные
+// агенты/клиенты этот файл вообще не открывают, так что скрывать от них
+// отдельно не нужно.
+function showLocationPreviewMarker(name, lat, lng) {
+  if (!projectsMap) return;
+  if (locationPreviewMarkers[name]) projectsMap.geoObjects.remove(locationPreviewMarkers[name]);
+  const pm = new ymaps.Placemark([lat, lng], { iconContent: name }, { preset: 'islands#grayStretchyIcon' });
+  projectsMap.geoObjects.add(pm);
+  locationPreviewMarkers[name] = pm;
+}
+function clearLocationPreviewMarkers() {
+  Object.values(locationPreviewMarkers).forEach(pm => { if (projectsMap) projectsMap.geoObjects.remove(pm); });
+  locationPreviewMarkers = {};
+}
+async function loadExistingLocationMarkers() {
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/locations?select=name,lat,lng`, { headers: SB });
+    if (!resp.ok) return;
+    const rows = await resp.json();
+    (rows || []).forEach(r => { if (r && r.name && r.lat != null && r.lng != null) showLocationPreviewMarker(r.name, r.lat, r.lng); });
+  } catch (e) { /* таблицы может ещё не быть — тихо пропускаем, это не критично */ }
 }
 
 function populatePlacementSelect() {
@@ -3015,6 +3130,7 @@ function populatePlacementSelect() {
 function togglePreviewAsAgent() {
   if (!AGENT?.is_admin || previewAsAgent) return;
   if (placementMode) togglePlacementMode();
+  if (locationPlacementMode) toggleLocationPlacementMode();
   previewAsAgent = true;
   updatePlacementBarVisibility();
 }
@@ -3059,6 +3175,45 @@ async function savePlacementClick(coords) {
     alert('Координата обновилась только на этой странице, но не сохранилась в базу — не было сети. Обнови страницу и попробуй ещё раз.');
   }
   populatePlacementSelect();
+}
+
+// 19.07.26: сохранение клика во ВТОРОМ инструменте — "Расставить локации"
+// (см. toggleLocationPlacementMode). В отличие от savePlacementClick выше
+// (обновляет lat/lng у существующего проекта по code), тут — upsert строки в
+// отдельную таблицу locations по имени из свободного текстового поля
+// (Prefer: resolution=merge-duplicates — повторный клик с тем же именем
+// просто перезаписывает координаты, что удобно, если промахнулся).
+async function saveLocationClick(coords) {
+  if (!AGENT?.is_admin || previewAsAgent) return;
+  const input = document.getElementById('locPlacementInput');
+  const name = (input?.value || '').trim();
+  if (!name) {
+    alert('Сначала введи название локации (например: Аэропорт) — и только потом кликай по карте.');
+    return;
+  }
+  const [lat, lng] = coords;
+  // Обновляем локально сразу — серая метка появляется мгновенно, не дожидаясь ответа сервера.
+  showLocationPreviewMarker(name, lat, lng);
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/locations`, {
+      method: 'POST',
+      headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify({ name, lat, lng }),
+    });
+    if (!resp.ok) {
+      console.error('locations upsert (сохранение локации) failed:', resp.status, await resp.text());
+      alert(`Локация "${name}" появилась только на этой странице, но не сохранилась в базу (ошибка ${resp.status}). Обнови страницу и попробуй ещё раз — если не поможет, напиши Клоду, нужно проверить права записи в таблицу locations в Supabase.`);
+      return;
+    }
+    const rows = await resp.json().catch(() => null);
+    if (!Array.isArray(rows) || rows.length === 0) {
+      console.error('locations upsert (сохранение локации): 0 строк обновлено — вероятно, нет RLS-политики INSERT/UPDATE для анонимного ключа, или ещё не создана таблица:', name);
+      alert(`Локация "${name}" появилась только на этой странице, но НЕ сохранилась в базу: сервер ответил "успех", но не изменил ни одной строки. Скорее всего, в Supabase не настроена политика (RLS) для таблицы locations, либо самой таблицы ещё нет. Напиши Клоду — он подскажет точный SQL-запрос.`);
+    }
+  } catch (err) {
+    console.error('locations upsert (сохранение локации) network error:', err);
+    alert(`Локация "${name}" появилась только на этой странице, но не сохранилась в базу — не было сети. Обнови страницу и попробуй ещё раз.`);
+  }
 }
 
 // Подтягиваем сохранённые координаты проектов из Supabase поверх хардкод-массива
