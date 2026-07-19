@@ -632,6 +632,13 @@ a { color: inherit; text-decoration: none; }
    (renderConstruction) класс не добавлен, там прежний вид с обводкой. */
 .visual-tab.visual-tab-ghost { border: none; font-weight: 600; }
 .visual-tab.visual-tab-ghost:hover { background: none; color: var(--text); transform: scale(1.04); }
+/* 19.07.26 (2), по просьбе Ильи: у уже выбранной (.act) вкладки наведение не
+   должно "гасить" цвет до var(--text) — она остаётся фиолетовой всегда,
+   независимо от ховера. Селектор с доп. классом .act специфичнее, чем
+   .visual-tab.visual-tab-ghost:hover выше, поэтому перекрывает именно
+   background/color обратно на фиолетовый; transform (лёгкое увеличение) не
+   переопределяем — он не конфликтует и продолжает работать как обычно. */
+.visual-tab.visual-tab-ghost.act:hover { background: var(--project-color); color: #fff; }
 .visual-panel { display: none; }
 .visual-panel.act { display: block; }
 
