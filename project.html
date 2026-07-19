@@ -755,6 +755,23 @@ body.map-fake-fullscreen-active { overflow: hidden; }
    внутри (крупнее и понятнее на карте, чем текст). */
 .map-marker { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
 .map-marker img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* 19.07.26 (2), по просьбе Ильи: метка, которая появляется на карте при клике
+   по блоку "Ближайшие локации" — иконка та же, что в самом блоке. Центрирование
+   на точке и анимация появления — в одном transform (нельзя разносить на
+   inline-style + класс, они бы конфликтовали и одно перетёрло бы другое):
+   стартовое состояние — прозрачно и уменьшено, .show — доводит до полного
+   размера с лёгким "пружинным" перелётом (тот же cubic-bezier, что у других
+   scale-анимаций на этой странице). */
+.map-nearby-marker {
+  position: relative; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface); box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; line-height: 1;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  transition: opacity .25s ease, transform .35s cubic-bezier(.34,1.56,.64,1);
+}
+.map-nearby-marker.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .map-error { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted); font-size: 13px; text-align: center; padding: 20px; }
 .nearby-list { display: flex; flex-direction: column; gap: 8px; }
 .nearby-item {
@@ -2459,7 +2476,7 @@ function renderMap(d) {
     <div class="sec-title">Ближайшие локации</div>
     <div class="nearby-list" id="nearbyList">
       ${d.nearby.map((n, i) => `
-        <div class="nearby-item" data-name="${escAttr(n.name)}">
+        <div class="nearby-item" data-name="${escAttr(n.name)}" data-icon="${escAttr(n.icon)}">
           <span class="nearby-icon">${n.icon}</span>
           <span class="nearby-name">${n.name}</span>
           <div class="nearby-dist">
@@ -2615,7 +2632,44 @@ function addCustomProjMapControls(lat, lng) {
 
 function focusNearby(lat, lng) {
   if (!lat || !lng || !projMap) return;
-  projMap.panTo([lat, lng], { flying: true });
+  // 19.07.26 (2), по просьбе Ильи: раньше был panTo — он только сдвигает
+  // центр и не меняет зум, поэтому если карта была сильно отдалена, клик по
+  // "Ближайшим локациям" выглядел так, будто ничего не произошло (точка и
+  // так уже была видна где-то на экране). setCenter с фиксированным зумом
+  // гарантирует заметное приближение при любом стартовом масштабе, анимация
+  // по-прежнему плавная (duration).
+  projMap.setCenter([lat, lng], 16, { duration: 500 });
+}
+
+// 19.07.26 (2), по просьбе Ильи: помимо перелёта камеры — на самой точке
+// появляется иконка (та же, что в самом блоке "Ближайшие локации" — n.icon),
+// с плавным появлением (не мгновенно). Метка одна на все локации: повторный
+// клик по другой локации убирает старую и ставит новую на её место, а не
+// копит их на карте.
+let nearbyMarkerPlacemark = null;
+function showNearbyMarker(icon, lat, lng) {
+  if (!projMap || !window.ymaps) return;
+  if (nearbyMarkerPlacemark) {
+    projMap.geoObjects.remove(nearbyMarkerPlacemark);
+    nearbyMarkerPlacemark = null;
+  }
+  const layout = ymaps.templateLayoutFactory.createClass(
+    `<div class="map-nearby-marker" id="mapNearbyMarkerEl">${icon || ''}</div>`
+  );
+  nearbyMarkerPlacemark = new ymaps.Placemark([lat, lng], {}, {
+    iconLayout: layout,
+    iconShape: { type: 'Rectangle', coordinates: [[-18, -18], [18, 18]] },
+    hasBalloon: false,
+  });
+  projMap.geoObjects.add(nearbyMarkerPlacemark);
+  // Стартовое состояние (opacity:0, scale уменьшен) задано в CSS у
+  // .map-nearby-marker — тут просто через кадр включаем .show, чтобы
+  // сработал transition, а не мгновенный скачок.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.getElementById('mapNearbyMarkerEl')?.classList.add('show');
+    });
+  });
 }
 
 // 19.07.26, по просьбе Ильи: клик по блоку "Ближайшие локации" плавно
@@ -2643,13 +2697,14 @@ function loadLocations() {
   return _locationsPromise;
 }
 
-function goToNearbyLocation(name) {
+function goToNearbyLocation(name, icon) {
   loadLocations().then(map => {
     const loc = map[name];
     if (!loc) return; // нет совпадения в общей базе локаций — тихо игнорируем клик
     const flyTo = () => {
       document.getElementById('mapWrap')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       focusNearby(loc.lat, loc.lng);
+      showNearbyMarker(icon, loc.lat, loc.lng);
     };
     if (projMap) { flyTo(); return; }
     // Карта ещё не успела появиться (обычно она уже есть — блок "Ближайшие
@@ -2669,7 +2724,7 @@ document.addEventListener('click', (e) => {
   if (!item) return;
   const name = item.dataset.name;
   if (!name) return;
-  goToNearbyLocation(name);
+  goToNearbyLocation(name, item.dataset.icon);
 });
 
 function renderFloors(d) {
