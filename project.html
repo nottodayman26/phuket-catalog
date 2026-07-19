@@ -1582,31 +1582,59 @@ function renderFlatList(units) {
     return;
   }
 
-  // 19.07.26, по просьбе Ильи: в режиме "без разделения" типы больше не
-  // сворачиваются в отдельные плашки по каждому типу — сразу одна общая
-  // таблица со всеми подходящими юнитами (как раскрытая таблица одного
-  // типа, только без деления на типы/корпуса).
-  const tid = 'flat';
-  wrap.innerHTML = `
-    <div class="building-section">
-      <div class="units-table-wrap">
-        <table class="units-table" id="tbl-${tid}">
-          <thead><tr>
-            <th onclick="thSort('tbl-${tid}','room_no',this)">Номер</th>
-            <th class="ut-plan-th">План</th>
-            <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
-            <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
-            <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
-            <th onclick="thSort('tbl-${tid}','price_per_sqm',this)">за м²</th>
-            <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
-            <th class="ut-cart-th">В презентации</th>
-          </tr></thead>
-          <tbody id="tbody-${tid}">
-            ${renderUnitRows(units)}
-          </tbody>
-        </table>
+  const types = [...new Set(units.map(u => u._category))]
+    .sort((a, b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b));
+
+  // 19.07.26, по просьбе Ильи: раньше каждый тип в "без разделения" получал
+  // свою собственную .building-section — визуально это выглядело как
+  // несколько отдельных карточек со скруглениями и зазорами между ними,
+  // тогда как в режиме "по корпусам" все типы внутри одного корпуса лежат
+  // в ОДНОЙ общей карточке. Теперь оборачиваем все type-row в единый
+  // .building-section, чтобы "без разделения" выглядел так же, как список
+  // типов внутри "Корпус X" — просто без заголовка корпуса.
+  const typesHtml = types.map((cat, ti) => {
+    const catUnits = units.filter(u => u._category === cat);
+    const catAvail = catUnits.filter(u => u.status === 'available').length;
+    const priceFrom = Math.min(...catUnits.map(u => u.selling_price));
+    const priceTo   = Math.max(...catUnits.map(u => u.selling_price));
+    const areaFrom  = Math.min(...catUnits.map(u => parseFloat(u.area_sqm)));
+    const areaTo    = Math.max(...catUnits.map(u => parseFloat(u.area_sqm)));
+    const priceRange = priceFrom === priceTo ? fmtMln(priceFrom) : `${fmtMln(priceFrom)} — ${fmtMln(priceTo)}`;
+    const color = TYPE_COLORS[cat] || '#888';
+    const tid = `flat-${ti}`;
+    return `
+      <div class="type-row" id="${tid}" onclick="toggleTypeRow('${tid}')">
+        <div class="type-row-name-wrap">
+          <span class="unit-dot" style="background:${color}"></span>
+          <span class="type-row-name">${cat}</span>
+        </div>
+        <span class="type-row-area">${areaFrom}–${areaTo} м²</span>
+        <span class="type-row-meta">${catAvail} доступно</span>
+        <span class="type-row-price">${priceRange}</span>
+        <span class="type-row-chevron">›</span>
       </div>
-    </div>`;
+      <div class="units-sublist" id="sub-${tid}">
+        <div class="units-table-wrap">
+          <table class="units-table" id="tbl-${tid}">
+            <thead><tr>
+              <th onclick="thSort('tbl-${tid}','room_no',this)">Номер</th>
+              <th class="ut-plan-th">План</th>
+              <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
+              <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
+              <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
+              <th onclick="thSort('tbl-${tid}','price_per_sqm',this)">за м²</th>
+              <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
+              <th class="ut-cart-th">В презентации</th>
+            </tr></thead>
+            <tbody id="tbody-${tid}">
+              ${renderUnitRows(catUnits)}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+
+  wrap.innerHTML = `<div class="building-section">${typesHtml}</div>`;
 }
 let _unitSearch = '';
 let _unitSearchAlt = '';
