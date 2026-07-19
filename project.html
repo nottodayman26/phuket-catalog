@@ -622,6 +622,16 @@ a { color: inherit; text-decoration: none; }
 }
 .visual-tab:hover { border-color: var(--project-color); color: var(--project-color); transform: scale(1.06); }
 .visual-tab.act { background: var(--project-color); border-color: var(--project-color); color: #fff; }
+/* 19.07.26, по просьбе Ильи: облегчённый вариант вкладок (вариант 3 из
+   присланного мокапа) — без обводки в состоянии покоя и БЕЗ фона-"таблетки"
+   при наведении (только цвет текста + лёгкое увеличение). Модификатор
+   ПОВЕРХ .visual-tab (не замена класса) — иначе сломался бы селектор
+   .visual-tab, которым switchVisualTab находит соседние вкладки, чтобы снять
+   с них .act. Применяется только к "Рендеры и фото" (renderVisual) и
+   "Поэтажный план" (renderFloors) — у "Этапы строительства"
+   (renderConstruction) класс не добавлен, там прежний вид с обводкой. */
+.visual-tab.visual-tab-ghost { border: none; font-weight: 600; }
+.visual-tab.visual-tab-ghost:hover { background: none; color: var(--text); transform: scale(1.04); }
 .visual-panel { display: none; }
 .visual-panel.act { display: block; }
 
@@ -890,7 +900,7 @@ body.map-fake-fullscreen-active { overflow: hidden; }
 .files-list { display: flex; flex-direction: column; gap: 8px; }
 .file-item {
   display: flex; align-items: center; gap: 12px;
-  background: var(--surface); border: 1px solid var(--line);
+  background: var(--surface); border: 1px solid transparent;
   border-radius: 10px; padding: 13px 16px;
   text-decoration: none; color: var(--text);
   transition: border-color .2s, background .2s, transform .2s cubic-bezier(.34,1.56,.64,1);
@@ -2337,10 +2347,10 @@ function renderVisual(d) {
   return `
     <div class="sec-title">Рендеры и фото</div>
     <div class="visual-tabs">
-      <button class="visual-tab act" onclick="switchVisualTab(this,'vp-ext')">Рендеры: экстерьер</button>
-      <button class="visual-tab" onclick="switchVisualTab(this,'vp-int')">Рендеры: интерьер</button>
-      <button class="visual-tab" onclick="switchVisualTab(this,'vp-showroom-r')">Рендеры: шоурум</button>
-      <button class="visual-tab" onclick="switchVisualTab(this,'vp-showroom')">Фото шоурума</button>
+      <button class="visual-tab visual-tab-ghost act" onclick="switchVisualTab(this,'vp-ext')">Рендеры: экстерьер</button>
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-int')">Рендеры: интерьер</button>
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom-r')">Рендеры: шоурум</button>
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom')">Фото шоурума</button>
     </div>
     <div class="visual-panel act" id="vp-ext">${makeSlider(renders1, 'sl-ext')}</div>
     <div class="visual-panel" id="vp-int">${makeSlider(renders2, 'sl-int')}</div>
@@ -2832,7 +2842,7 @@ function renderFloors(d) {
   // Вкладки корпусов
   const fpBase = `${base}img/${d.id}/floor-plans/`;
   const floorTabs = (plans || []).map((p, i) =>
-    `<button class="visual-tab ${i===0?'act':''}" onclick="switchVisualTab(this,'fp-${i}')">${p.label}</button>`
+    `<button class="visual-tab visual-tab-ghost ${i===0?'act':''}" onclick="switchVisualTab(this,'fp-${i}')">${p.label}</button>`
   ).join('');
   const floorPanels = (plans || []).map((p, i) =>
     `<div class="visual-panel ${i===0?'act':''}" id="fp-${i}">${makeSlider(p.files, 'fsl-'+i, fpBase)}</div>`
@@ -2841,7 +2851,7 @@ function renderFloors(d) {
   // Вкладка мастер план
   const mp = d.master_plan;
   const mpBase = mp ? `${base}img/${d.id}/${mp.folder}/` : '';
-  const mpTab = mp ? `<button class="visual-tab" onclick="switchVisualTab(this,'fp-master')">Мастер план</button>` : '';
+  const mpTab = mp ? `<button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'fp-master')">Мастер план</button>` : '';
   const mpPanel = mp ? `<div class="visual-panel" id="fp-master">${makeSlider(mp.files, 'fsl-master', mpBase)}</div>` : '';
 
   const hasFloors = plans && plans.length;
