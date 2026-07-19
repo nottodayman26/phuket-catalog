@@ -6,6 +6,14 @@
 <title>Flox — Проект</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&subset=cyrillic" rel="stylesheet">
+<!-- 19.07.26, по просьбе Ильи: та же карта, что и в flox-web (JS API
+     Яндекс.Карт, тот же бесплатный ключ), вместо простого iframe-эмбеда —
+     даёт свои кнопки зума/разворота вместо штатных Яндекс.Карт. Сама карта
+     создаётся лениво (см. initProjMapLazy/loadProjMap ниже) — только когда
+     блок "Карта" реально попадёт в область видимости при скролле, а не на
+     каждой загрузке страницы, чтобы не тратить дневной лимit запросов
+     впустую (как и в flox-web). -->
+<script src="https://api-maps.yandex.ru/2.1/?apikey=9f137a3a-c842-4d1b-9c5d-60e9ad353585&lang=ru_RU"></script>
 <style>
 :root {
   --meeting-logo-vis: visible;
@@ -676,10 +684,46 @@ a { color: inherit; text-decoration: none; }
 .info-val { font-weight: 600; }
 
 /* ── MAP ─── */
-/* 19.07.26, по просьбе Ильи: карта — Yandex вместо Google, без серой
-   обводки, высота как у слайдера "Рендеры и фото" (тот же aspect-ratio
-   16/9, а не фиксированные 360px). */
-.map-wrap { border-radius: 14px; overflow: hidden; margin-bottom: 20px; aspect-ratio: 16/9; }
+/* 19.07.26, по просьбе Ильи: та же карта (Yandex JS API), что и в flox-web,
+   вместо простого iframe-эмбеда — со своими кнопками зума/разворота, тем же
+   стилем/иконками, что в flox-web (см. addCustomProjMapControls). Без серой
+   обводки, высота как у слайдера "Рендеры и фото" (тот же aspect-ratio 16/9,
+   а не фиксированные 360px). В отличие от flox-web (там кнопки — в <body>,
+   в обход разметки, из-за сломанного position:fixed у вложенных элементов
+   где-то в топбаре) — здесь кнопки просто position:absolute ВНУТРИ
+   .map-wrap, а в фуллскрине position:fixed получает сам .map-wrap целиком
+   (проверено — так они остаются вложенными и работают без переноса в body). */
+.map-wrap { position: relative; border-radius: 14px; overflow: hidden; margin-bottom: 20px; aspect-ratio: 16/9; background: var(--surface-2); }
+.map-wrap.map-fake-fullscreen { position: fixed; inset: 0; z-index: 99999; border-radius: 0; aspect-ratio: unset; margin-bottom: 0; }
+body.map-fake-fullscreen-active { overflow: hidden; }
+#projMap { width: 100%; height: 100%; }
+.map-ctrl-btn {
+  width: 40px; height: 40px; border-radius: 50%; background: var(--surface); color: var(--text);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background .15s ease, transform .2s cubic-bezier(.34,1.56,.64,1); flex-shrink: 0;
+}
+.map-ctrl-btn:hover { background: var(--surface-2); transform: scale(1.06); }
+.map-ctrl-btn svg { width: 18px; height: 18px; }
+.map-fullscreen-btn { position: absolute; top: 12px; right: 12px; z-index: 10; }
+.map-zoom-group {
+  position: absolute; top: 62px; right: 12px; z-index: 10;
+  display: flex; flex-direction: column;
+  background: var(--surface); border-radius: 20px; overflow: hidden;
+}
+.map-zoom-group .map-ctrl-btn { background: none; border-radius: 0; height: 36px; }
+.map-zoom-group .map-ctrl-btn:first-child { border-bottom: 1px solid var(--line-2); }
+.map-zoom-group .map-ctrl-btn:hover { background: var(--surface-3); }
+/* Метка проекта — та же плашка с точкой, что в flox-web у выбранного
+   проекта (заливка MAP_PIN_COLOR, белый текст), тут она всегда одна и
+   всегда "выбрана", т.к. на этой карте только один объект. */
+.map-plaque {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px 6px 8px; border-radius: 14px;
+  background: var(--project-color); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,.25); transition: transform .15s cubic-bezier(.34,1.56,.64,1);
+}
+.map-plaque:hover { transform: scale(1.06); }
+.map-plaque-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+.map-error { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted); font-size: 13px; text-align: center; padding: 20px; }
 .nearby-list { display: flex; flex-direction: column; gap: 8px; }
 .nearby-item {
   display: flex; align-items: center; gap: 12px;
@@ -1214,6 +1258,11 @@ function renderProject(d) {
   // Запускаем анимацию платежей при скролле
   initPaymentAnimation();
   initCountAnimations();
+
+  // Карта — лениво, только когда блок "Карта" реально попадёт в область
+  // видимости при скролле (см. initProjMapLazy), чтобы не тратить дневной
+  // лимит запросов Яндекс.Карт впустую на каждой загрузке страницы.
+  initProjMapLazy(d);
 }
 
 function scrollToVisual() {
@@ -2329,16 +2378,9 @@ function renderAbout(d) {
 }
 
 function renderMap(d) {
-  const { lat, lng } = d.coords;
   return `
     <div class="sec-title">Карта</div>
-    <div class="map-wrap">
-      <iframe id="gmap-frame" width="100%" height="100%"
-        style="border:0;display:block;"
-        loading="lazy" allowfullscreen
-        src="https://yandex.ru/map-widget/v1/?ll=${lng},${lat}&z=15&pt=${lng},${lat},pm2rdm">
-      </iframe>
-    </div>
+    <div class="map-wrap" id="mapWrap"><div id="projMap"></div></div>
     <div class="sec-title">Ближайшие локации</div>
     <div class="nearby-list">
       ${d.nearby.map((n, i) => `
@@ -2353,12 +2395,120 @@ function renderMap(d) {
     </div>`;
 }
 
-function focusNearby(lat, lng, name) {
-  if (!lat || !lng) return;
-  const frame = document.getElementById('gmap-frame');
-  if (frame) {
-    frame.src = `https://yandex.ru/map-widget/v1/?ll=${lng},${lat}&z=16&pt=${lng},${lat},pm2rdm`;
+// 19.07.26, по просьбе Ильи: карта — тот же Yandex JS API и те же кнопки
+// зума/разворота, что в flox-web, вместо простого iframe-эмбеда. В отличие
+// от flox-web (там на карте — точки ВСЕХ проектов из поиска, с фильтрами,
+// "глазом"/"точкой" и режимом расстановки для админа) — тут всегда ровно
+// одна метка, сам этот проект, поэтому вся логика множества точек/фильтров
+// не переносится (см. переписку с Ильёй: "не должны быть видны все
+// проекты").
+let projMap = null;
+let _projMapLoadAttempted = false;
+
+function initProjMapLazy(d) {
+  const el = document.getElementById('s-map');
+  if (!el) return;
+  const obs = new IntersectionObserver((entries) => {
+    if (!entries[0].isIntersecting) return;
+    obs.disconnect();
+    loadProjMap(d);
+  }, { threshold: 0.01 });
+  obs.observe(el);
+}
+
+function loadProjMap(d) {
+  if (projMap || _projMapLoadAttempted) return;
+  _projMapLoadAttempted = true;
+  const { lat, lng } = d.coords;
+
+  const showMapError = () => {
+    const el = document.getElementById('projMap');
+    if (el) el.innerHTML = '<div class="map-error">Не удалось загрузить карту.<br>Проверьте подключение к интернету и обновите страницу.</div>';
+  };
+
+  // Скрипт api-maps.yandex.ru не подгрузился (нет сети до Яндекса,
+  // заблокирован и т.п.) — не даём странице сломаться молча (тот же приём,
+  // что и в flox-web).
+  if (!window.ymaps) { showMapError(); return; }
+
+  ymaps.ready(() => {
+    if (!document.getElementById('projMap')) return;
+    let pm;
+    try {
+      projMap = new ymaps.Map('projMap', { center: [lat, lng], zoom: 15, controls: [] });
+      const plaqueLayout = ymaps.templateLayoutFactory.createClass(
+        `<div class="map-plaque" style="position:relative;transform:translate(-50%,-50%);">` +
+        `<span class="map-plaque-dot"></span>$[properties.iconContent]</div>`
+      );
+      pm = new ymaps.Placemark([lat, lng], { iconContent: d.name || 'Проект' }, {
+        iconLayout: plaqueLayout,
+        iconShape: { type: 'Rectangle', coordinates: [[-70, -14], [70, 14]] },
+        hasBalloon: false,
+      });
+      projMap.geoObjects.add(pm);
+    } catch (e) { showMapError(); return; }
+
+    addCustomProjMapControls();
+  });
+}
+
+function addCustomProjMapControls() {
+  const wrap = document.getElementById('mapWrap');
+  if (!wrap || document.getElementById('mapFsBtn')) return; // уже добавлены
+
+  // Те же иконки/пути, что и в flox-web (см. addCustomMapControls там) — для
+  // визуального единообразия между страницами.
+  const ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+  const ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+  const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  const ICON_MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>';
+
+  // 19.07.26: в отличие от flox-web, где кнопки фуллскрина/зума кладутся
+  // прямо в <body> (там был сломан position:fixed у вложенных элементов,
+  // судя по всему из-за topbar.js) — тут кнопки остаются ВНУТРИ .map-wrap
+  // (position:absolute), а фуллскрин раздувает position:fixed на самом
+  // .map-wrap. Проверено — работает без переноса в body.
+  let isFs = false;
+  function setFs(on) {
+    isFs = on;
+    wrap.classList.toggle('map-fake-fullscreen', on);
+    document.body.classList.toggle('map-fake-fullscreen-active', on);
+    fsBtn.innerHTML = on ? ICON_COLLAPSE : ICON_EXPAND;
+    if (projMap?.container?.fitToViewport) requestAnimationFrame(() => projMap.container.fitToViewport());
   }
+  const fsBtn = document.createElement('div');
+  fsBtn.id = 'mapFsBtn';
+  fsBtn.className = 'map-ctrl-btn map-fullscreen-btn';
+  fsBtn.innerHTML = ICON_EXPAND;
+  fsBtn.addEventListener('click', e => { e.stopPropagation(); setFs(!isFs); });
+  wrap.appendChild(fsBtn);
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && isFs) setFs(false); });
+
+  const zoomGroup = document.createElement('div');
+  zoomGroup.className = 'map-zoom-group';
+  const plusBtn = document.createElement('div');
+  plusBtn.className = 'map-ctrl-btn';
+  plusBtn.innerHTML = ICON_PLUS;
+  plusBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (projMap) projMap.setZoom(projMap.getZoom() + 1, { checkZoomRange: true, duration: 200 });
+  });
+  const minusBtn = document.createElement('div');
+  minusBtn.className = 'map-ctrl-btn';
+  minusBtn.innerHTML = ICON_MINUS;
+  minusBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (projMap) projMap.setZoom(projMap.getZoom() - 1, { checkZoomRange: true, duration: 200 });
+  });
+  zoomGroup.appendChild(plusBtn);
+  zoomGroup.appendChild(minusBtn);
+  wrap.appendChild(zoomGroup);
+}
+
+function focusNearby(lat, lng) {
+  if (!lat || !lng || !projMap) return;
+  projMap.panTo([lat, lng], { flying: true });
 }
 
 function renderFloors(d) {
