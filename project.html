@@ -676,11 +676,14 @@ a { color: inherit; text-decoration: none; }
 .info-val { font-weight: 600; }
 
 /* ── MAP ─── */
-.map-wrap { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 20px; }
+/* 19.07.26, по просьбе Ильи: карта — Yandex вместо Google, без серой
+   обводки, высота как у слайдера "Рендеры и фото" (тот же aspect-ratio
+   16/9, а не фиксированные 360px). */
+.map-wrap { border-radius: 14px; overflow: hidden; margin-bottom: 20px; aspect-ratio: 16/9; }
 .nearby-list { display: flex; flex-direction: column; gap: 8px; }
 .nearby-item {
   display: flex; align-items: center; gap: 12px;
-  background: var(--surface); border: 1px solid var(--line);
+  background: var(--surface); border: 1px solid transparent;
   border-radius: 10px; padding: 11px 14px;
   cursor: pointer;
   transition: border-color .2s, background .2s, transform .2s cubic-bezier(.34,1.56,.64,1);
@@ -2329,11 +2332,11 @@ function renderMap(d) {
   const { lat, lng } = d.coords;
   return `
     <div class="sec-title">Карта</div>
-    <div class="map-wrap" style="margin-bottom:20px;">
-      <iframe id="gmap-frame" width="100%" height="360"
-        style="border:0;border-radius:14px;overflow:hidden;border:1px solid var(--line);"
+    <div class="map-wrap">
+      <iframe id="gmap-frame" width="100%" height="100%"
+        style="border:0;display:block;"
         loading="lazy" allowfullscreen
-        src="https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed">
+        src="https://yandex.ru/map-widget/v1/?ll=${lng},${lat}&z=15&pt=${lng},${lat},pm2rdm">
       </iframe>
     </div>
     <div class="sec-title">Ближайшие локации</div>
@@ -2354,7 +2357,7 @@ function focusNearby(lat, lng, name) {
   if (!lat || !lng) return;
   const frame = document.getElementById('gmap-frame');
   if (frame) {
-    frame.src = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+    frame.src = `https://yandex.ru/map-widget/v1/?ll=${lng},${lat}&z=16&pt=${lng},${lat},pm2rdm`;
   }
 }
 
