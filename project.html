@@ -412,14 +412,20 @@ a { color: inherit; text-decoration: none; }
 /* Корпус вынесен из таблицы: заголовок — обычная строка над карточкой,
    без белого прямоугольника; сама карточка теперь содержит только таблицу
    типов/юнитов, поэтому её верхние углы нужно скруглять отдельно. */
+/* 19.07.26, по просьбе Ильи: раньше отступа под лентой поиска не было вообще —
+   в режиме "по корпусам" его частично заменял текст "Корпус X", а в "без
+   разделения" карточка садилась вплотную к фильтрам. Теперь отступ реальный
+   и одинаковый в обоих режимах — на самой обёртке списка, а не на заголовке. */
+#units-tree-wrap { margin-top: 16px; }
 .building-block-wrap { margin-bottom: 18px; }
 .building-block-wrap:last-child { margin-bottom: 0; }
+/* 19.07.26, по просьбе Ильи: корпус без юнитов теперь не показывается вообще
+   (раньше оставался заголовок с "Нет юнитов"). */
+.building-block-wrap.hidden { display: none; }
 .building-heading {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
   padding: 2px 4px 10px;
 }
 .building-heading-title { font-size: 14px; font-weight: 700; color: var(--text); }
-.building-heading-count { font-size: 12px; color: var(--muted); font-weight: 400; white-space: nowrap; }
 /* 19.07.26, по просьбе Ильи: убрали серую обводку карточки корпуса — теперь
    просто плитка на фоне var(--surface), без border (тот же принцип, что и у
    компактной таблицы юнитов ниже). */
@@ -427,7 +433,6 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
   border-radius: 12px; overflow: hidden;
 }
-.building-section.hidden { display: none; }
 
 /* Строки типов — та же сетка из 5 равных долей, что и заголовок корпуса,
    плюс узкая колонка под шеврон, чтобы обе строки были одного масштаба.
@@ -461,11 +466,22 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
 }
 .units-table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
-.units-table th, .units-table td { width: 12.5%; }
+/* 19.07.26, по просьбе Ильи: раньше все 8 колонок были равны (12.5% каждая) —
+   из-за этого у коротких колонок (Номер/План/Эт.) оставалось много лишнего
+   воздуха, а длинный заголовок "В презентации" не помещался. Ширины ниже
+   подобраны под реальное содержимое каждой колонки. */
+.units-table th:nth-child(1), .units-table td:nth-child(1) { width: 12%; }  /* Номер */
+.units-table th:nth-child(2), .units-table td:nth-child(2) { width: 8%; }   /* План */
+.units-table th:nth-child(3), .units-table td:nth-child(3) { width: 6%; }   /* Эт. */
+.units-table th:nth-child(4), .units-table td:nth-child(4) { width: 12%; }  /* Площадь */
+.units-table th:nth-child(5), .units-table td:nth-child(5) { width: 13%; }  /* Цена */
+.units-table th:nth-child(6), .units-table td:nth-child(6) { width: 13%; }  /* за м² */
+.units-table th:nth-child(7), .units-table td:nth-child(7) { width: 12%; }  /* Статус */
+.units-table th:nth-child(8), .units-table td:nth-child(8) { width: 24%; }  /* В презентации */
 .units-table th {
   text-align: center; padding: 8px 16px;
   font-size: 9.5px; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: .04em;
   background: var(--surface); cursor: pointer; user-select: none;
   transition: color .15s;
 }
@@ -1315,7 +1331,6 @@ function renderUnits(d) {
     <div class="building-block-wrap" id="bsec-${bi}">
       <div class="building-heading">
         <span class="building-heading-title">Корпус ${b}</span>
-        <span class="building-heading-count" id="bcount-${bi}"></span>
       </div>
       <div class="building-section" id="bcard-${bi}">
         <div id="btypes-${bi}"></div>
@@ -1463,11 +1478,6 @@ function renderUnitsTree(d, units) {
     const bi = d.buildings.indexOf(b);
     const bUnits = units.filter(u => u.tower === b);
     const avail = bUnits.filter(u => u.status === 'available').length;
-    // 19.07.26, по просьбе Ильи: "X доступно · Y всего" у заголовка корпуса
-    // убрали, но "Нет юнитов" для пустого корпуса оставили — это по-прежнему
-    // единственный сигнал, что в корпусе нет данных вообще.
-    const countEl = document.getElementById('bcount-' + bi);
-    if (countEl) countEl.textContent = bUnits.length ? '' : 'Нет юнитов';
 
     const types = [...new Set(bUnits.map(u => u._category))]
       .sort((a, b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b));
@@ -1517,17 +1527,10 @@ function renderUnitsTree(d, units) {
     const el = document.getElementById('btypes-' + bi);
     if (el) el.innerHTML = typesHtml;
 
-    // Если в корпусе нет юнитов — прячем белую карточку-таблицу совсем,
-    // остаётся только заголовок "Корпус X" с надписью "Нет юнитов" справа
-    const cardEl = document.getElementById('bcard-' + bi);
-    if (cardEl) cardEl.classList.toggle('hidden', !bUnits.length);
-
-    // Перемещаем секцию без юнитов в конец DOM
+    // 19.07.26, по просьбе Ильи: корпус без юнитов теперь не показывается
+    // вообще (раньше оставался заголовок "Корпус X · Нет юнитов").
     const sec = document.getElementById('bsec-' + bi);
-    if (sec && !bUnits.length) {
-      const wrap = document.getElementById('units-tree-wrap');
-      if (wrap) wrap.appendChild(sec);
-    }
+    if (sec) sec.classList.toggle('hidden', !bUnits.length);
   });
 }
 
@@ -1555,7 +1558,6 @@ function setGrouping(byBuilding) {
         <div class="building-block-wrap" id="bsec-${bi}">
           <div class="building-heading">
             <span class="building-heading-title">Корпус ${b}</span>
-            <span class="building-heading-count" id="bcount-${bi}"></span>
           </div>
           <div class="building-section" id="bcard-${bi}">
             <div id="btypes-${bi}"></div>
