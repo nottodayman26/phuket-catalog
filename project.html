@@ -705,24 +705,49 @@ body.map-fake-fullscreen-active { overflow: hidden; }
 .map-ctrl-btn:hover { background: var(--surface-2); transform: scale(1.06); }
 .map-ctrl-btn svg { width: 18px; height: 18px; }
 .map-fullscreen-btn { position: absolute; top: 12px; right: 12px; z-index: 10; }
+/* 19.07.26, по просьбе Ильи: кнопка "вернуться к проекту" — левее
+   разворота, тот же стиль/анимация (см. .map-ctrl-btn:hover), с подсказкой
+   при наведении — таблетка без обводки/тени (см. .map-ctrl-tooltip), текст
+   не меняется (в отличие от eye/pins-кнопок flox-web — тут только одно
+   действие). Плавно возвращает карту к метке проекта, если агент
+   проскроллил/уехал в сторону (см. returnToMarker в скрипте). */
+.map-return-btn { position: absolute; top: 12px; right: 62px; z-index: 10; }
+.map-ctrl-tooltip {
+  position: absolute; top: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  background: var(--surface); color: var(--muted);
+  font-size: 11.5px; font-weight: 500; white-space: nowrap;
+  padding: 6px 12px; border-radius: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .15s ease, transform .15s ease;
+  z-index: 5;
+}
+.map-ctrl-btn:hover .map-ctrl-tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* 19.07.26, по просьбе Ильи: +/- не увеличивались при наведении и стояли не
+   по центру правого края карты — оба фикса разом. (а) Центр: top:50% +
+   translateY(-50%) на самой группе вместо фиксированных 62px сверху. (б)
+   Увеличение: раньше group имел overflow:hidden (чтобы обрезать квадратные
+   уголки кнопок под скруглённую "таблетку") — тот же класс бага, что уже
+   чинили у reward-card (см. историю выше): overflow:hidden на родителе
+   обрезает transform:scale() дочерней кнопки при наведении, поэтому
+   увеличение было незаметно. Убрали overflow:hidden совсем — вместо него
+   скругляем сами кнопки по отдельности (верхняя — верхние углы, нижняя —
+   нижние), так "таблетка" выглядит цельной без обрезки увеличения. */
 .map-zoom-group {
-  position: absolute; top: 62px; right: 12px; z-index: 10;
+  position: absolute; top: 50%; right: 12px; z-index: 10;
+  transform: translateY(-50%);
   display: flex; flex-direction: column;
-  background: var(--surface); border-radius: 20px; overflow: hidden;
+  background: var(--surface); border-radius: 20px;
 }
 .map-zoom-group .map-ctrl-btn { background: none; border-radius: 0; height: 36px; }
-.map-zoom-group .map-ctrl-btn:first-child { border-bottom: 1px solid var(--line-2); }
+.map-zoom-group .map-ctrl-btn:first-child { border-bottom: 1px solid var(--line-2); border-top-left-radius: 20px; border-top-right-radius: 20px; }
+.map-zoom-group .map-ctrl-btn:last-child { border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
 .map-zoom-group .map-ctrl-btn:hover { background: var(--surface-3); }
-/* Метка проекта — та же плашка с точкой, что в flox-web у выбранного
-   проекта (заливка MAP_PIN_COLOR, белый текст), тут она всегда одна и
-   всегда "выбрана", т.к. на этой карте только один объект. */
-.map-plaque {
-  display: flex; align-items: center; gap: 6px; padding: 6px 12px 6px 8px; border-radius: 14px;
-  background: var(--project-color); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(0,0,0,.25); transition: transform .15s cubic-bezier(.34,1.56,.64,1);
-}
-.map-plaque:hover { transform: scale(1.06); }
-.map-plaque-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+/* 19.07.26, по просьбе Ильи: метка проекта — больше не плашка с названием,
+   а скруглённый квадрат без обводки и тени с первым рендером проекта
+   внутри (крупнее и понятнее на карте, чем текст). */
+.map-marker { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+.map-marker img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .map-error { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted); font-size: 13px; text-align: center; padding: 20px; }
 .nearby-list { display: flex; flex-direction: column; gap: 8px; }
 .nearby-item {
@@ -2436,23 +2461,31 @@ function loadProjMap(d) {
     let pm;
     try {
       projMap = new ymaps.Map('projMap', { center: [lat, lng], zoom: 15, controls: [] });
-      const plaqueLayout = ymaps.templateLayoutFactory.createClass(
-        `<div class="map-plaque" style="position:relative;transform:translate(-50%,-50%);">` +
-        `<span class="map-plaque-dot"></span>$[properties.iconContent]</div>`
+
+      // 19.07.26, по просьбе Ильи: метка — больше не плашка с названием, а
+      // скруглённый квадрат без обводки/тени с первым рендером проекта
+      // внутри (тот же файл, что уже используется как главное фото в hero
+      // — см. renderHero/photos[0]).
+      const base = location.pathname.replace(/\/[^\/]*$/, "/");
+      const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
+      const firstRender = local.length ? (local[0].startsWith('http') ? local[0] : `${base}img/${d.id}/${local[0]}`) : '';
+      const markerLayout = ymaps.templateLayoutFactory.createClass(
+        `<div class="map-marker" style="position:relative;transform:translate(-50%,-50%);">` +
+        (firstRender ? `<img src="${firstRender}" alt="">` : '') + `</div>`
       );
-      pm = new ymaps.Placemark([lat, lng], { iconContent: d.name || 'Проект' }, {
-        iconLayout: plaqueLayout,
-        iconShape: { type: 'Rectangle', coordinates: [[-70, -14], [70, 14]] },
+      pm = new ymaps.Placemark([lat, lng], {}, {
+        iconLayout: markerLayout,
+        iconShape: { type: 'Rectangle', coordinates: [[-22, -22], [22, 22]] },
         hasBalloon: false,
       });
       projMap.geoObjects.add(pm);
     } catch (e) { showMapError(); return; }
 
-    addCustomProjMapControls();
+    addCustomProjMapControls(lat, lng);
   });
 }
 
-function addCustomProjMapControls() {
+function addCustomProjMapControls(lat, lng) {
   const wrap = document.getElementById('mapWrap');
   if (!wrap || document.getElementById('mapFsBtn')) return; // уже добавлены
 
@@ -2462,6 +2495,9 @@ function addCustomProjMapControls() {
   const ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
   const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   const ICON_MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>';
+  // 19.07.26, по просьбе Ильи: "вернуться к проекту" — прицел/мишень, той же
+  // толщины линий, что остальные иконки карты, чтобы не выбивалась.
+  const ICON_RETURN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
 
   // 19.07.26: в отличие от flox-web, где кнопки фуллскрина/зума кладутся
   // прямо в <body> (там был сломан position:fixed у вложенных элементов,
@@ -2484,6 +2520,19 @@ function addCustomProjMapControls() {
   wrap.appendChild(fsBtn);
 
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && isFs) setFs(false); });
+
+  // 19.07.26, по просьбе Ильи: кнопка левее разворота — плавно возвращает
+  // карту к метке проекта (на случай если агент проскроллил/уехал в
+  // сторону), тот же стиль/анимация, что у остальных кнопок, плюс подсказка
+  // при наведении "Вернуться к проекту" (см. .map-ctrl-tooltip).
+  const returnBtn = document.createElement('div');
+  returnBtn.className = 'map-ctrl-btn map-return-btn';
+  returnBtn.innerHTML = ICON_RETURN + '<span class="map-ctrl-tooltip">Вернуться к проекту</span>';
+  returnBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (projMap) projMap.setCenter([lat, lng], 15, { duration: 400 });
+  });
+  wrap.appendChild(returnBtn);
 
   const zoomGroup = document.createElement('div');
   zoomGroup.className = 'map-zoom-group';
