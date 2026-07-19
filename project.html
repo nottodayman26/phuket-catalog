@@ -755,16 +755,17 @@ body.map-fake-fullscreen-active { overflow: hidden; }
    внутри (крупнее и понятнее на карте, чем текст). */
 .map-marker { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
 .map-marker img { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* 19.07.26 (2), по просьбе Ильи: метка, которая появляется на карте при клике
-   по блоку "Ближайшие локации" — иконка та же, что в самом блоке. Центрирование
-   на точке и анимация появления — в одном transform (нельзя разносить на
-   inline-style + класс, они бы конфликтовали и одно перетёрло бы другое):
-   стартовое состояние — прозрачно и уменьшено, .show — доводит до полного
-   размера с лёгким "пружинным" перелётом (тот же cubic-bezier, что у других
-   scale-анимаций на этой странице). */
+/* 19.07.26 (2)/(3), по просьбе Ильи: метка, которая появляется на карте при
+   клике по блоку "Ближайшие локации" — иконка та же, что в самом блоке.
+   Центрирование на точке и анимация появления — в одном transform (нельзя
+   разносить на inline-style + класс, они бы конфликтовали и одно перетёрло
+   бы другое): стартовое состояние — прозрачно и уменьшено, .show — доводит
+   до полного размера с лёгким "пружинным" перелётом (тот же cubic-bezier,
+   что у других scale-анимаций на этой странице). Без тени (убрали по
+   просьбе Ильи — 19.07.26 (3)). */
 .map-nearby-marker {
   position: relative; width: 36px; height: 36px; border-radius: 50%;
-  background: var(--surface); box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  background: var(--surface);
   display: flex; align-items: center; justify-content: center;
   font-size: 17px; line-height: 1;
   transform: translate(-50%, -50%) scale(0.4);
@@ -772,6 +773,28 @@ body.map-fake-fullscreen-active { overflow: hidden; }
   transition: opacity .25s ease, transform .35s cubic-bezier(.34,1.56,.64,1);
 }
 .map-nearby-marker.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+/* 19.07.26 (3), по просьбе Ильи: кружок в левом верхнем углу карты —
+   раскрывает список "Ближайших локаций" без иконок, прямо на карте (удобно
+   в фуллскрине, где сам блок под картой не виден). Сама кнопка наследует
+   .map-ctrl-btn как есть — там уже нет ни тени, ни обводки, только
+   background + анимация увеличения при наведении. */
+.map-nearby-toggle-btn { position: absolute; top: 12px; left: 12px; z-index: 10; }
+.map-nearby-panel {
+  position: absolute; top: 62px; left: 12px; z-index: 10;
+  background: var(--surface); border-radius: 14px;
+  padding: 6px; min-width: 200px; max-width: 260px;
+  max-height: 320px; overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  opacity: 0; transform: translateY(-8px) scale(0.97);
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s cubic-bezier(.34,1.56,.64,1);
+}
+.map-nearby-panel.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+.map-nearby-panel-item {
+  padding: 9px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 500;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.map-nearby-panel-item:hover { background: var(--surface-2); color: var(--project-color); }
 .map-error { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted); font-size: 13px; text-align: center; padding: 20px; }
 .nearby-list { display: flex; flex-direction: column; gap: 8px; }
 .nearby-item {
@@ -2555,11 +2578,11 @@ function loadProjMap(d) {
       projMap.geoObjects.add(pm);
     } catch (e) { showMapError(); return; }
 
-    addCustomProjMapControls(lat, lng);
+    addCustomProjMapControls(lat, lng, d.nearby);
   });
 }
 
-function addCustomProjMapControls(lat, lng) {
+function addCustomProjMapControls(lat, lng, nearby) {
   const wrap = document.getElementById('mapWrap');
   if (!wrap || document.getElementById('mapFsBtn')) return; // уже добавлены
 
@@ -2606,8 +2629,49 @@ function addCustomProjMapControls(lat, lng) {
   returnBtn.addEventListener('click', e => {
     e.stopPropagation();
     if (projMap) projMap.setCenter([lat, lng], 15, { duration: 400 });
+    // 19.07.26 (3), по просьбе Ильи: "вернуться к проекту" убирает и метку
+    // ближайшей локации, если она была поставлена кликом по блоку ниже —
+    // логично, что "вернуться" значит вернуться к чистому виду проекта.
+    clearNearbyMarker();
   });
   wrap.appendChild(returnBtn);
+
+  // 19.07.26 (3), по просьбе Ильи: кружок в левом верхнем углу — раскрывает
+  // тот же список "Ближайших локаций", что под картой, но без иконок и прямо
+  // на самой карте. Нужен для фуллскрин-режима, где блок под картой не
+  // виден. Сам кружок — без тени/обводки (наследует .map-ctrl-btn как есть,
+  // там их и так нет), с той же анимацией увеличения/затемнения при
+  // наведении.
+  const ICON_LIST = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+  const listBtn = document.createElement('div');
+  listBtn.className = 'map-ctrl-btn map-nearby-toggle-btn';
+  listBtn.innerHTML = ICON_LIST;
+  wrap.appendChild(listBtn);
+
+  const panel = document.createElement('div');
+  panel.className = 'map-nearby-panel';
+  panel.innerHTML = (nearby || []).map(n =>
+    `<div class="map-nearby-panel-item" data-name="${escAttr(n.name)}" data-icon="${escAttr(n.icon)}">${n.name}</div>`
+  ).join('');
+  wrap.appendChild(panel);
+
+  listBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    panel.classList.toggle('show');
+  });
+  panel.addEventListener('click', e => {
+    const item = e.target.closest('.map-nearby-panel-item');
+    if (!item) return;
+    e.stopPropagation();
+    panel.classList.remove('show');
+    goToNearbyLocation(item.dataset.name, item.dataset.icon);
+  });
+  // Клик мимо панели и кнопки — закрывает её, обычное поведение дропдауна.
+  document.addEventListener('click', e => {
+    if (!panel.classList.contains('show')) return;
+    if (panel.contains(e.target) || listBtn.contains(e.target)) return;
+    panel.classList.remove('show');
+  });
 
   const zoomGroup = document.createElement('div');
   zoomGroup.className = 'map-zoom-group';
@@ -2670,6 +2734,15 @@ function showNearbyMarker(icon, lat, lng) {
       document.getElementById('mapNearbyMarkerEl')?.classList.add('show');
     });
   });
+}
+
+// 19.07.26 (3), по просьбе Ильи: убирает метку ближайшей локации с карты —
+// используется кнопкой "вернуться к проекту" (см. addCustomProjMapControls).
+function clearNearbyMarker() {
+  if (nearbyMarkerPlacemark && projMap) {
+    projMap.geoObjects.remove(nearbyMarkerPlacemark);
+    nearbyMarkerPlacemark = null;
+  }
 }
 
 // 19.07.26, по просьбе Ильи: клик по блоку "Ближайшие локации" плавно
