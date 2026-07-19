@@ -420,23 +420,25 @@ a { color: inherit; text-decoration: none; }
 }
 .building-heading-title { font-size: 14px; font-weight: 700; color: var(--text); }
 .building-heading-count { font-size: 12px; color: var(--muted); font-weight: 400; white-space: nowrap; }
+/* 19.07.26, по просьбе Ильи: убрали серую обводку карточки корпуса — теперь
+   просто плитка на фоне var(--surface), без border (тот же принцип, что и у
+   компактной таблицы юнитов ниже). */
 .building-section {
-  background: var(--surface); border: 0.5px solid var(--line-2);
+  background: var(--surface);
   border-radius: 12px; overflow: hidden;
 }
 .building-section.hidden { display: none; }
 
 /* Строки типов — та же сетка из 5 равных долей, что и заголовок корпуса,
-   плюс узкая колонка под шеврон, чтобы обе строки были одного масштаба. */
+   плюс узкая колонка под шеврон, чтобы обе строки были одного масштаба.
+   19.07.26: линия-разделитель между строками убрана — только hover. */
 .type-row {
   display: grid;
   grid-template-columns: 1.4fr 1fr 1fr 1fr 44px;
   align-items: center;
   padding: 10px 16px; cursor: pointer;
   transition: background .15s; user-select: none;
-  border-bottom: 0.5px solid var(--line);
 }
-.type-row:last-of-type { border-bottom: none; }
 .type-row:hover { background: var(--surface-2); }
 .type-row.open { background: var(--surface-2); }
 .type-row-left { display: contents; }
@@ -452,20 +454,22 @@ a { color: inherit; text-decoration: none; }
 .units-sublist { display: none; }
 .units-sublist.open { display: block; }
 
-/* ── UNITS TABLE ─── */
+/* ── UNITS TABLE — компактный список, без обводки (одобрено Ильёй, см.
+   units_table_final_mockup.html) ─── */
 .units-table-wrap {
   overflow-x: auto;
-  border-top: 0.5px solid var(--line);
   background: var(--surface);
 }
-.units-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.units-table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+.units-table th, .units-table td { width: 12.5%; }
 .units-table th {
   text-align: center; padding: 8px 16px;
-  font-size: 10px; color: var(--muted); border-bottom: 0.5px solid var(--line);
-  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+  font-size: 9.5px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
   background: var(--surface); cursor: pointer; user-select: none;
   transition: color .15s;
 }
+.units-table th:first-child { text-align: left; }
 .units-table th:hover { color: var(--project-color); }
 .units-table th.sort-asc::after  { content: ' ↑'; color: var(--project-color); }
 .units-table th.sort-desc::after { content: ' ↓'; color: var(--project-color); }
@@ -477,26 +481,21 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface); color: var(--text); font-family: inherit;
   outline: none;
 }
-.units-table td { padding: 9px 16px; border-bottom: 0.5px solid var(--line); background: var(--surface); text-align: center; }
-.units-table tr:last-child td { border-bottom: none; }
-.units-table tr:hover td { background: var(--surface-2); }
-/* Точка — "двухтоновое дыхание": яркость и насыщенность плавно перетекают
-   из приглушённого тона в яркий и обратно, с лёгким изменением размера
-   (тот же приём, что в unit.html/offer.html). currentColor берёт цвет из
-   color, заданного вместе с background у каждого статуса. */
-.ut-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; position: relative; animation: glow-pulse 2.2s ease-in-out infinite; }
-.ut-available { background: var(--green); color: var(--green); }
-.ut-sold { background: var(--muted-2); color: var(--muted-2); }
-@keyframes glow-pulse {
-  0%, 100% { filter: brightness(0.75) saturate(0.7); transform: scale(0.92); }
-  50% { filter: brightness(1.5) saturate(1.4); transform: scale(1.08); }
-}
+.units-table td { padding: 7px 16px; background: var(--surface); text-align: center; }
+.units-table td:first-child { text-align: left; }
+.units-table tbody tr { transition: background .12s, opacity .12s; }
+.units-table tbody tr:hover td { background: var(--surface-2); }
+/* Проданный лот — тусклая строка целиком (см. renderUnitRows: номер и
+   планировка больше не ведут на страницу юнита, кнопка "в презентацию"
+   задизейблена). */
+.ut-row-sold { opacity: .45; }
 .ut-price { color: var(--project-color); font-weight: 600; }
+.ut-price-sqm { color: var(--muted); }
 .unit-num-link { font-weight: 600; color: var(--text); text-decoration: none; display: inline-block; transition: transform .15s ease; }
 .unit-num-link:hover { transform: scale(1.08); }
 .ut-plan-cell { padding: 6px 16px !important; }
 .ut-plan-link {
-  display: inline-block; width: 40px; height: 40px; border-radius: 8px;
+  display: inline-block; width: 36px; height: 36px; border-radius: 8px;
   overflow: hidden; background: #ffffff; border: 1px solid var(--line-2);
   transition: transform .15s ease, border-color .15s ease;
 }
@@ -518,24 +517,29 @@ a { color: inherit; text-decoration: none; }
 .plan-hover-preview.show { opacity: 1; transform: scale(1); }
 .plan-hover-preview img { display: block; max-width: 260px; max-height: 260px; border-radius: 6px; }
 
-/* Равные колонки в таблице юнитов — делят всю ширину без остатка */
-.units-table { table-layout: fixed; width: 100%; }
-.units-table th, .units-table td { width: 12.5%; }
+/* Статус — просто цветной текст, без "дышащей" точки (одобрено Ильёй) */
+.ut-status-text { font-size: 11.5px; font-weight: 600; }
+.ut-status-text.avail { color: var(--green); }
+.ut-status-text.sold { color: var(--muted); }
 
-/* Корзина — добавление юнита в презентацию без перехода на страницу юнита */
+/* Корзина — добавление юнита в презентацию без перехода на страницу юнита.
+   19.07.26, по просьбе Ильи: нейтральный (не фиолетовый) hover, без подсказки
+   при наведении; для проданных лотов — задизейблена (см. renderUnitRows). */
 .ut-cart-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 8px;
-  background: var(--surface-2); border: 1px solid var(--line-2);
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--surface-3); border: none;
   color: var(--muted); cursor: pointer; font-family: inherit; padding: 0;
-  transition: transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+  transition: transform .15s ease, background .15s ease, color .15s ease;
 }
 .ut-cart-btn svg { width: 16px; height: 16px; }
-.ut-cart-btn:hover { transform: scale(1.12); border-color: var(--project-color); color: var(--project-color); }
+.ut-cart-btn:hover { transform: scale(1.12); background: var(--surface-2); color: var(--text); }
 .ut-cart-btn.ut-cart-added {
-  background: var(--project-color); border-color: var(--project-color); color: #fff;
+  background: var(--project-color); color: #fff;
 }
 .ut-cart-btn.ut-cart-added:hover { transform: scale(1.12); }
+.ut-cart-btn:disabled { cursor: default; opacity: .5; }
+.ut-cart-btn:disabled:hover { transform: none; background: var(--surface-3); color: var(--muted); }
 .units-loading { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
 .units-empty { padding: 32px 16px; text-align: center; color: var(--muted); font-size: 13px; }
 
@@ -765,9 +769,12 @@ a { color: inherit; text-decoration: none; }
 
 /* Обёртка отвечает за плавное схлопывание пространства при скрытии в режиме
    встречи (см. setRewardVisible ниже) — блоки "Цена от"/"О проекте" ниже
-   плавно поднимаются на её место, а не дёргаются мгновенно. */
+   плавно поднимаются на её место, а не дёргаются мгновенно.
+   18.07.26, по просьбе Ильи: overflow:hidden держим только на время самого
+   перехода (включается/выключается из setRewardVisible), а не постоянно —
+   иначе он обрезает hover-scale карточки прямыми углами обёртки, из-за чего
+   при наведении казалось, что у карточки появляются квадратные края. */
 .reward-card-wrap {
-  overflow: hidden;
   transition: max-height .4s cubic-bezier(.4,0,.2,1);
 }
 .reward-card {
@@ -1308,7 +1315,7 @@ function renderUnits(d) {
     <div class="building-block-wrap" id="bsec-${bi}">
       <div class="building-heading">
         <span class="building-heading-title">Корпус ${b}</span>
-        <span class="building-heading-count" id="bcount-${bi}">загрузка...</span>
+        <span class="building-heading-count" id="bcount-${bi}"></span>
       </div>
       <div class="building-section" id="bcard-${bi}">
         <div id="btypes-${bi}"></div>
@@ -1456,10 +1463,11 @@ function renderUnitsTree(d, units) {
     const bi = d.buildings.indexOf(b);
     const bUnits = units.filter(u => u.tower === b);
     const avail = bUnits.filter(u => u.status === 'available').length;
+    // 19.07.26, по просьбе Ильи: "X доступно · Y всего" у заголовка корпуса
+    // убрали, но "Нет юнитов" для пустого корпуса оставили — это по-прежнему
+    // единственный сигнал, что в корпусе нет данных вообще.
     const countEl = document.getElementById('bcount-' + bi);
-    if (countEl) countEl.textContent = bUnits.length
-      ? `${avail} доступно · ${bUnits.length} всего`
-      : 'Нет юнитов';
+    if (countEl) countEl.textContent = bUnits.length ? '' : 'Нет юнитов';
 
     const types = [...new Set(bUnits.map(u => u._category))]
       .sort((a, b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b));
@@ -1492,11 +1500,11 @@ function renderUnitsTree(d, units) {
                 <th onclick="thSort('tbl-${tid}','room_no',this)" title="Сортировка по номеру">Номер</th>
                 <th class="ut-plan-th">План</th>
                 <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
-                <th onclick="thSort('tbl-${tid}','room_type',this)">Тип</th>
                 <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
                 <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
+                <th onclick="thSort('tbl-${tid}','price_per_sqm',this)">за м²</th>
                 <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
-                <th class="ut-cart-th" title="В презентацию"></th>
+                <th class="ut-cart-th">В презентации</th>
               </tr></thead>
               <tbody id="tbody-${tid}">
                 ${renderUnitRows(catUnits)}
@@ -1547,7 +1555,7 @@ function setGrouping(byBuilding) {
         <div class="building-block-wrap" id="bsec-${bi}">
           <div class="building-heading">
             <span class="building-heading-title">Корпус ${b}</span>
-            <span class="building-heading-count" id="bcount-${bi}">загрузка...</span>
+            <span class="building-heading-count" id="bcount-${bi}"></span>
           </div>
           <div class="building-section" id="bcard-${bi}">
             <div id="btypes-${bi}"></div>
@@ -1604,11 +1612,11 @@ function renderFlatList(units) {
                 <th onclick="thSort('tbl-${tid}','room_no',this)">Номер</th>
                 <th class="ut-plan-th">План</th>
                 <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
-                <th onclick="thSort('tbl-${tid}','room_type',this)">Тип</th>
                 <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
                 <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
+                <th onclick="thSort('tbl-${tid}','price_per_sqm',this)">за м²</th>
                 <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
-                <th class="ut-cart-th" title="В презентацию"></th>
+                <th class="ut-cart-th">В презентации</th>
               </tr></thead>
               <tbody id="tbody-${tid}">
                 ${renderUnitRows(catUnits)}
@@ -2004,7 +2012,14 @@ function renderUnitRows(units) {
   const projId = window._currentProjectData?.id || '';
   const base = location.pathname.replace(/\/[^\/]*$/, "/");
   return units.map(u => {
+    // 19.07.26, по просьбе Ильи: проданный лот нельзя добавить в презентацию
+    // и нельзя открыть через номер/планировку — вся строка тусклая (см.
+    // .ut-row-sold в CSS). Номер/планировка остаются теми же тегами (<a>),
+    // просто без реальной ссылки, чтобы наведение на планировку по-прежнему
+    // показывало превью — только сам переход на страницу юнита заблокирован.
+    const isSold = u.status !== 'available';
     const unitUrl = `unit.html?unit=${encodeURIComponent(u.room_no)}&project=${projId}`;
+    const linkAttrs = isSold ? `href="#" onclick="return false"` : `href="${unitUrl}" target="_blank"`;
     // Миниатюра планировки — тот же файл, что показывает unit.html:
     // img/{проект}/units/{площадь с 2 знаками}_{plan_code}.jpg
     let planCell;
@@ -2012,35 +2027,42 @@ function renderUnitRows(units) {
       const fileName = `${Number(u.area_sqm).toFixed(2)}_${u.plan_code}.jpg`;
       const planSrc = `${base}img/${projId}/units/${encodeURIComponent(fileName)}`;
       planCell = `
-        <a href="${unitUrl}" target="_blank" class="ut-plan-link">
+        <a ${linkAttrs} class="ut-plan-link">
           <img class="ut-plan-thumb" src="${planSrc}" alt="Планировка ${u.room_no}" loading="lazy"
                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                onmouseenter="showPlanPreview(this)" onmouseleave="hidePlanPreview()">
           <span class="ut-plan-fallback">—</span>
         </a>`;
     } else {
-      planCell = `<a href="${unitUrl}" target="_blank" class="ut-plan-link"><span class="ut-plan-fallback" style="display:flex">—</span></a>`;
+      planCell = `<a ${linkAttrs} class="ut-plan-link"><span class="ut-plan-fallback" style="display:flex">—</span></a>`;
     }
     const addedClass = isInPresentation(u.room_no) ? 'ut-cart-added' : '';
+    const sqmPrice = (u._pricePerSqm != null) ? fmt(Math.round(u._pricePerSqm)) : '—';
+    const sqmValue = (u._pricePerSqm != null) ? Math.round(u._pricePerSqm) : 0;
+    const cartBtn = isSold
+      ? `<button type="button" class="ut-cart-btn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+        </button>`
+      : `<button type="button" class="ut-cart-btn ${addedClass}" data-room="${u.room_no}" data-project="${projId}"
+                onclick="toggleUnitPresentation(this, event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+        </button>`;
     return `
-    <tr>
-      <td><a href="${unitUrl}" class="unit-num-link" target="_blank">${u.room_no}</a></td>
+    <tr${isSold ? ' class="ut-row-sold"' : ''}>
+      <td><a ${linkAttrs} class="unit-num-link">${u.room_no}</a></td>
       <td class="ut-plan-cell">${planCell}</td>
       <td>${u.floor}</td>
-      <td style="color:var(--muted);font-size:11px">${u.room_type}</td>
       <td>${u.area_sqm} м²</td>
       <td class="ut-price" data-price="${u.selling_price}">${fmtMln(u.selling_price)}</td>
-      <td><span class="ut-status-dot ${u.status==='available'?'ut-available':'ut-sold'}"></span>${u.status==='available'?'Свободен':'Продан'}</td>
-      <td>
-        <button type="button" class="ut-cart-btn ${addedClass}" data-room="${u.room_no}" data-project="${projId}"
-                onclick="toggleUnitPresentation(this, event)" title="Добавить в презентацию">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 6h12l-1.2 8.6a1.5 1.5 0 0 1-1.49 1.3H6.69a1.5 1.5 0 0 1-1.49-1.3L4 6Z"/>
-            <path d="M4 6 3.2 3H1.5"/>
-            <path d="M7.5 6V4.5a2.5 2.5 0 0 1 5 0V6"/>
-          </svg>
-        </button>
-      </td>
+      <td class="ut-price-sqm" data-value="${sqmValue}">${sqmPrice}</td>
+      <td><span class="ut-status-text ${u.status==='available'?'avail':'sold'}">${u.status==='available'?'Свободен':'Продан'}</span></td>
+      <td>${cartBtn}</td>
     </tr>`;
   }).join('');
 }
@@ -2099,7 +2121,10 @@ function thSort(tblId, col, th) {
   th.closest('tr').querySelectorAll('th').forEach(t => t.classList.remove('sort-asc','sort-desc'));
   th.classList.add(dir === 1 ? 'sort-asc' : 'sort-desc');
 
-  // Собираем строки, сортируем, вставляем обратно
+  // Собираем строки, сортируем, вставляем обратно.
+  // 19.07.26: колонку "Тип" убрали, добавили "за м²" — индексы ячеек ниже
+  // пересчитаны под новый порядок: 0 Номер, 1 План, 2 Эт., 3 Площадь,
+  // 4 Цена, 5 за м², 6 Статус, 7 в презентацию.
   const rows = [...tbody.querySelectorAll('tr')];
   rows.sort((a, b) => {
     let av, bv;
@@ -2114,17 +2139,16 @@ function thSort(tblId, col, th) {
     } else if (col === 'floor') {
       av = parseInt(a.cells[2]?.textContent) || 0;
       bv = parseInt(b.cells[2]?.textContent) || 0;
-    } else if (col === 'room_type') {
-      av = a.cells[3]?.textContent || '';
-      bv = b.cells[3]?.textContent || '';
-      return dir * av.localeCompare(bv);
     } else if (col === 'area_sqm') {
-      av = parseFloat(a.cells[4]?.textContent) || 0;
-      bv = parseFloat(b.cells[4]?.textContent) || 0;
+      av = parseFloat(a.cells[3]?.textContent) || 0;
+      bv = parseFloat(b.cells[3]?.textContent) || 0;
     } else if (col === 'selling_price') {
       // Парсим из fmtMln — берём data-price если есть, иначе текст
-      av = parseFloat(a.cells[5]?.dataset?.price || a.cells[5]?.textContent.replace(/[^\d.]/g,'')) || 0;
-      bv = parseFloat(b.cells[5]?.dataset?.price || b.cells[5]?.textContent.replace(/[^\d.]/g,'')) || 0;
+      av = parseFloat(a.cells[4]?.dataset?.price || a.cells[4]?.textContent.replace(/[^\d.]/g,'')) || 0;
+      bv = parseFloat(b.cells[4]?.dataset?.price || b.cells[4]?.textContent.replace(/[^\d.]/g,'')) || 0;
+    } else if (col === 'price_per_sqm') {
+      av = parseFloat(a.cells[5]?.dataset?.value) || 0;
+      bv = parseFloat(b.cells[5]?.dataset?.value) || 0;
     }
     return dir * (av - bv);
   });
@@ -2522,7 +2546,7 @@ function renderSidebar(d) {
 
   document.getElementById('sidebarCol').innerHTML = `
     <div class="sidebar-inner" id="sidebarInner">
-      <div class="reward-card-wrap" id="rewardCardWrap" ${mmHidden ? 'style="max-height:0"' : ''}>
+      <div class="reward-card-wrap" id="rewardCardWrap" ${mmHidden ? 'style="max-height:0;overflow:hidden"' : ''}>
       <div class="reward-card${mmHidden ? ' mm-hidden' : ''}">
         <div class="reward-label">🎯 Ваше вознаграждение</div>
         ${pctHtml}
@@ -2577,14 +2601,17 @@ function setRewardVisible(show) {
   if (show === !isHidden) return; // уже в нужном состоянии (в т.ч. холостой вызов applyMeetingMode() при старте страницы) — ничего не трогаем
   clearTimeout(wrap._mmTimer);
   if (show) {
+    wrap.style.overflow = 'hidden'; // держим, пока контент раскрывается — потом снимаем
     card.classList.remove('mm-hidden');
     wrap.style.maxHeight = wrap.scrollHeight + 'px';
     // Через setTimeout, а не transitionend — событие транзишена ещё и
     // всплывает от opacity/transform самой карточки, отслеживать его
     // надёжность лишняя; таймер просто снимает фиксированную высоту после
-    // окончания перехода, чтобы контент снова мог "дышать".
-    wrap._mmTimer = setTimeout(() => { wrap.style.maxHeight = 'none'; }, 420);
+    // окончания перехода, чтобы контент снова мог "дышать", и убирает
+    // overflow:hidden, чтобы hover-scale карточки больше не обрезался.
+    wrap._mmTimer = setTimeout(() => { wrap.style.maxHeight = 'none'; wrap.style.overflow = ''; }, 420);
   } else {
+    wrap.style.overflow = 'hidden'; // на время схлопывания — иначе контент вылезет за пределы
     wrap.style.maxHeight = wrap.scrollHeight + 'px'; // фиксируем текущую высоту явным числом...
     void wrap.offsetHeight; // ...и форсируем reflow, чтобы браузер её запомнил до смены значения
     card.classList.add('mm-hidden');
