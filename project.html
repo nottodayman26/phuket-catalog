@@ -465,15 +465,22 @@ a { color: inherit; text-decoration: none; }
   overflow-x: auto;
   background: var(--surface);
 }
-.units-table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: auto; }
-/* 19.07.26, по просьбе Ильи: фиксированные % ширины ломались на широких
-   экранах — короткие колонки (План/Эт./В презентации) растягивались вместе
-   с таблицей, хотя их содержимому это не нужно, и вокруг тележки/иконки
-   появлялось много лишнего воздуха. auto-layout считает ширину каждой
-   колонки по её реальному содержимому (заголовок + ячейки), а остаток
-   ширины таблицы браузер сам распределяет пропорционально между колонками
-   с более длинным содержимым (Цена/за м²/Статус) — так столбцы выглядят
-   равномерно на любом экране. */
+.units-table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+/* 19.07.26, по просьбе Ильи: auto-layout сжимал короткие колонки (Номер/
+   Эт./Площадь) вплотную к их содержимому — свободного места внутри ячейки
+   не оставалось, и text-align:center визуально ничем не отличался от
+   left. Body-wrap ограничен max-width:1200px (см. выше), поэтому таблица
+   больше не может раздуться на широких экранах — можно вернуть fixed-
+   раскладку с процентами, но в этот раз с запасом воздуха у каждой
+   колонки, чтобы центрирование было заметно и выглядело гармонично. */
+.units-table th:nth-child(1), .units-table td:nth-child(1) { width: 13%; }  /* Номер */
+.units-table th:nth-child(2), .units-table td:nth-child(2) { width: 10%; }  /* План */
+.units-table th:nth-child(3), .units-table td:nth-child(3) { width: 7%; }   /* Эт. */
+.units-table th:nth-child(4), .units-table td:nth-child(4) { width: 13%; }  /* Площадь */
+.units-table th:nth-child(5), .units-table td:nth-child(5) { width: 15%; }  /* Цена */
+.units-table th:nth-child(6), .units-table td:nth-child(6) { width: 13%; }  /* за м² */
+.units-table th:nth-child(7), .units-table td:nth-child(7) { width: 14%; }  /* Статус */
+.units-table th:nth-child(8), .units-table td:nth-child(8) { width: 15%; }  /* В подборку */
 .units-table th,
 .units-table td { white-space: nowrap; }
 .units-table th {
@@ -484,8 +491,6 @@ a { color: inherit; text-decoration: none; }
   transition: color .15s;
 }
 .units-table th.ut-plan-th, .units-table th.ut-cart-th { cursor: default; }
-.units-table th.ut-plan-th:hover, .units-table th.ut-cart-th:hover { color: var(--muted); }
-.units-table th:first-child { text-align: left; }
 .units-table th:hover { color: var(--project-color); }
 .units-table th.sort-asc::after  { content: ' ↑'; color: var(--project-color); }
 .units-table th.sort-desc::after { content: ' ↓'; color: var(--project-color); }
@@ -498,7 +503,6 @@ a { color: inherit; text-decoration: none; }
   outline: none;
 }
 .units-table td { padding: 7px 16px; background: var(--surface); text-align: center; }
-.units-table td:first-child { text-align: left; }
 .units-table tbody tr { transition: background .12s, opacity .12s; }
 .units-table tbody tr:hover td { background: var(--surface-2); }
 /* Проданный лот — тусклая строка целиком (см. renderUnitRows: номер и
@@ -525,7 +529,7 @@ a { color: inherit; text-decoration: none; }
 .plan-hover-preview {
   display: none; position: fixed; z-index: 500;
   background: #ffffff; border-radius: 12px; padding: 8px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
   pointer-events: none;
   opacity: 0; transform: scale(0.9);
   transition: opacity .18s ease, transform .22s cubic-bezier(.34,1.56,.64,1);
@@ -645,7 +649,7 @@ a { color: inherit; text-decoration: none; }
 .desc-text { font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 24px; }
 .facilities-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px,1fr)); gap: 10px; margin-bottom: 24px; }
 .fac-item {
-  background: var(--surface); border: 1px solid var(--line);
+  background: var(--surface); border: 1px solid transparent;
   border-radius: 10px; padding: 12px 14px;
   font-size: 13px; display: flex; align-items: center; gap: 8px;
   transition: transform .2s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .2s;
@@ -658,7 +662,7 @@ a { color: inherit; text-decoration: none; }
 }
 .fac-icon { font-size: 18px; }
 .info-box {
-  background: var(--surface); border: 1px solid var(--line);
+  background: var(--surface);
   border-radius: 12px; padding: 16px;
 }
 .info-row {
@@ -1514,7 +1518,7 @@ function renderUnitsTree(d, units) {
                 <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
                 <th onclick="thSort('tbl-${tid}','price_per_sqm',this)">за м²</th>
                 <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
-                <th class="ut-cart-th">В презентации</th>
+                <th class="ut-cart-th">В подборку</th>
               </tr></thead>
               <tbody id="tbody-${tid}">
                 ${renderUnitRows(catUnits)}
@@ -1624,7 +1628,7 @@ function renderFlatList(units) {
               <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
               <th onclick="thSort('tbl-${tid}','price_per_sqm',this)">за м²</th>
               <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
-              <th class="ut-cart-th">В презентации</th>
+              <th class="ut-cart-th">В подборку</th>
             </tr></thead>
             <tbody id="tbody-${tid}">
               ${renderUnitRows(catUnits)}
