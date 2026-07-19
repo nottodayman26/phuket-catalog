@@ -465,19 +465,17 @@ a { color: inherit; text-decoration: none; }
   overflow-x: auto;
   background: var(--surface);
 }
-.units-table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
-/* 19.07.26, по просьбе Ильи: раньше все 8 колонок были равны (12.5% каждая) —
-   из-за этого у коротких колонок (Номер/План/Эт.) оставалось много лишнего
-   воздуха, а длинный заголовок "В презентации" не помещался. Ширины ниже
-   подобраны под реальное содержимое каждой колонки. */
-.units-table th:nth-child(1), .units-table td:nth-child(1) { width: 12%; }  /* Номер */
-.units-table th:nth-child(2), .units-table td:nth-child(2) { width: 8%; }   /* План */
-.units-table th:nth-child(3), .units-table td:nth-child(3) { width: 6%; }   /* Эт. */
-.units-table th:nth-child(4), .units-table td:nth-child(4) { width: 12%; }  /* Площадь */
-.units-table th:nth-child(5), .units-table td:nth-child(5) { width: 13%; }  /* Цена */
-.units-table th:nth-child(6), .units-table td:nth-child(6) { width: 13%; }  /* за м² */
-.units-table th:nth-child(7), .units-table td:nth-child(7) { width: 12%; }  /* Статус */
-.units-table th:nth-child(8), .units-table td:nth-child(8) { width: 24%; }  /* В презентации */
+.units-table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: auto; }
+/* 19.07.26, по просьбе Ильи: фиксированные % ширины ломались на широких
+   экранах — короткие колонки (План/Эт./В презентации) растягивались вместе
+   с таблицей, хотя их содержимому это не нужно, и вокруг тележки/иконки
+   появлялось много лишнего воздуха. auto-layout считает ширину каждой
+   колонки по её реальному содержимому (заголовок + ячейки), а остаток
+   ширины таблицы браузер сам распределяет пропорционально между колонками
+   с более длинным содержимым (Цена/за м²/Статус) — так столбцы выглядят
+   равномерно на любом экране. */
+.units-table th,
+.units-table td { white-space: nowrap; }
 .units-table th {
   text-align: center; padding: 8px 16px;
   font-size: 9.5px; color: var(--muted);
@@ -485,6 +483,8 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface); cursor: pointer; user-select: none;
   transition: color .15s;
 }
+.units-table th.ut-plan-th, .units-table th.ut-cart-th { cursor: default; }
+.units-table th.ut-plan-th:hover, .units-table th.ut-cart-th:hover { color: var(--muted); }
 .units-table th:first-child { text-align: left; }
 .units-table th:hover { color: var(--project-color); }
 .units-table th.sort-asc::after  { content: ' ↑'; color: var(--project-color); }
@@ -1582,52 +1582,31 @@ function renderFlatList(units) {
     return;
   }
 
-  const types = [...new Set(units.map(u => u._category))]
-    .sort((a, b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b));
-
-  wrap.innerHTML = types.map((cat, ti) => {
-    const catUnits = units.filter(u => u._category === cat);
-    const catAvail = catUnits.filter(u => u.status === 'available').length;
-    const priceFrom = Math.min(...catUnits.map(u => u.selling_price));
-    const priceTo   = Math.max(...catUnits.map(u => u.selling_price));
-    const areaFrom  = Math.min(...catUnits.map(u => parseFloat(u.area_sqm)));
-    const areaTo    = Math.max(...catUnits.map(u => parseFloat(u.area_sqm)));
-    const priceRange = priceFrom === priceTo ? fmtMln(priceFrom) : `${fmtMln(priceFrom)} — ${fmtMln(priceTo)}`;
-    const color = TYPE_COLORS[cat] || '#888';
-    const tid = `flat-${ti}`;
-    return `
-      <div class="building-section">
-        <div class="type-row" id="${tid}" onclick="toggleTypeRow('${tid}')">
-          <div class="type-row-name-wrap">
-            <span class="unit-dot" style="background:${color}"></span>
-            <span class="type-row-name">${cat}</span>
-          </div>
-          <span class="type-row-area">${areaFrom}–${areaTo} м²</span>
-          <span class="type-row-meta">${catAvail} доступно</span>
-          <span class="type-row-price">${priceRange}</span>
-          <span class="type-row-chevron">›</span>
-        </div>
-        <div class="units-sublist" id="sub-${tid}">
-          <div class="units-table-wrap">
-            <table class="units-table" id="tbl-${tid}">
-              <thead><tr>
-                <th onclick="thSort('tbl-${tid}','room_no',this)">Номер</th>
-                <th class="ut-plan-th">План</th>
-                <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
-                <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
-                <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
-                <th onclick="thSort('tbl-${tid}','price_per_sqm',this)">за м²</th>
-                <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
-                <th class="ut-cart-th">В презентации</th>
-              </tr></thead>
-              <tbody id="tbody-${tid}">
-                ${renderUnitRows(catUnits)}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
+  // 19.07.26, по просьбе Ильи: в режиме "без разделения" типы больше не
+  // сворачиваются в отдельные плашки по каждому типу — сразу одна общая
+  // таблица со всеми подходящими юнитами (как раскрытая таблица одного
+  // типа, только без деления на типы/корпуса).
+  const tid = 'flat';
+  wrap.innerHTML = `
+    <div class="building-section">
+      <div class="units-table-wrap">
+        <table class="units-table" id="tbl-${tid}">
+          <thead><tr>
+            <th onclick="thSort('tbl-${tid}','room_no',this)">Номер</th>
+            <th class="ut-plan-th">План</th>
+            <th onclick="thSort('tbl-${tid}','floor',this)">Эт.</th>
+            <th onclick="thSort('tbl-${tid}','area_sqm',this)">Площадь</th>
+            <th onclick="thSort('tbl-${tid}','selling_price',this)">Цена</th>
+            <th onclick="thSort('tbl-${tid}','price_per_sqm',this)">за м²</th>
+            <th onclick="thSort('tbl-${tid}','status',this)">Статус</th>
+            <th class="ut-cart-th">В презентации</th>
+          </tr></thead>
+          <tbody id="tbody-${tid}">
+            ${renderUnitRows(units)}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
 }
 let _unitSearch = '';
 let _unitSearchAlt = '';
