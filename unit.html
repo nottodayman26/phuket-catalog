@@ -12,6 +12,10 @@
      вкладками (см. subscribeUnitLikeRealtime) — сама страница по-прежнему
      работает и без этой библиотеки (обычные fetch-запросы никуда не делись). -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- 20.07.26, по просьбе Ильи: та же карта (Yandex JS API), что и в
+     project.html, вместо простого iframe-эмбеда Google Maps — см.
+     loadProjMap/addCustomProjMapControls ниже. -->
+<script src="https://api-maps.yandex.ru/2.1/?apikey=9f137a3a-c842-4d1b-9c5d-60e9ad353585&lang=ru_RU"></script>
 <style>
 :root{
   --bg:#0d0d18;--surface:#111118;--surface-2:#1a1a26;--surface-3:#222232;
@@ -203,6 +207,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .rew-row span{color:var(--muted)}
 .rew-row b{font-weight:500}
 .rew-btn{display:block;width:100%;padding:8px;border-radius:8px;border:0.5px solid var(--line-2);background:none;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;text-align:center;margin-top:10px;font-family:inherit;transition:all .15s}
+
+/* 20.07.26, по просьбе Ильи: то же появление/скрытие в режиме встречи, что
+   и в project.html (setRewardVisible) — карточка уезжает вверх и тает, а
+   обёртка одновременно схлопывается по высоте, чтобы кнопки ниже плавно
+   поднимались на её место, а не дёргались мгновенно. */
+.reward-card-wrap{transition:max-height .4s cubic-bezier(.4,0,.2,1)}
+.reward-section{transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .35s ease}
+.reward-section.mm-hidden{opacity:0;transform:translateY(-16px);pointer-events:none}
 .rew-btn:hover{color:var(--text);border-color:var(--line)}
 
 /* ── ADD TO PRESENTATION ── */
@@ -324,9 +336,39 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .info-label{color:var(--muted)}
 .info-val{font-weight:600}
 
-.map-wrap{border-radius:14px;overflow:hidden;margin-bottom:20px}
+/* 20.07.26, по просьбе Ильи: та же карта Yandex JS API со своими кнопками
+   зума/разворота/возврата/списка локаций, что и в project.html — см.
+   addCustomProjMapControls в скрипте ниже. Высота — тот же aspect-ratio
+   16/9, что и у слайдера "Рендеры и фото", вместо фиксированных 320px у
+   старого Google Maps iframe. */
+.map-wrap{position:relative;border-radius:14px;overflow:hidden;margin-bottom:20px;aspect-ratio:16/9;background:var(--surface-2)}
+.map-wrap.map-fake-fullscreen{position:fixed;inset:0;z-index:99999;border-radius:0;aspect-ratio:unset;margin-bottom:0}
+body.map-fake-fullscreen-active{overflow:hidden}
+#projMap{width:100%;height:100%}
+.map-ctrl-btn{width:40px;height:40px;border-radius:50%;background:var(--surface);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s ease,transform .2s cubic-bezier(.34,1.56,.64,1);flex-shrink:0}
+.map-ctrl-btn:hover{background:var(--surface-2);transform:scale(1.06)}
+.map-ctrl-btn svg{width:18px;height:18px}
+.map-fullscreen-btn{position:absolute;top:12px;right:12px;z-index:10}
+.map-return-btn{position:absolute;top:12px;right:62px;z-index:10}
+.map-ctrl-tooltip{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);background:var(--surface);color:var(--muted);font-size:11.5px;font-weight:500;white-space:nowrap;padding:6px 12px;border-radius:20px;opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;z-index:5}
+.map-ctrl-btn:hover .map-ctrl-tooltip{opacity:1;transform:translateX(-50%) translateY(0)}
+.map-zoom-group{position:absolute;top:50%;right:12px;z-index:10;transform:translateY(-50%);display:flex;flex-direction:column;background:var(--surface);border-radius:20px}
+.map-zoom-group .map-ctrl-btn{background:none;border-radius:0;height:36px}
+.map-zoom-group .map-ctrl-btn:first-child{border-bottom:1px solid var(--line-2);border-top-left-radius:20px;border-top-right-radius:20px}
+.map-zoom-group .map-ctrl-btn:last-child{border-bottom-left-radius:20px;border-bottom-right-radius:20px}
+.map-zoom-group .map-ctrl-btn:hover{background:var(--surface-3)}
+.map-marker{width:44px;height:44px;border-radius:12px;overflow:hidden;background:var(--surface-2)}
+.map-marker img{width:100%;height:100%;object-fit:cover;display:block}
+.map-nearby-marker{position:relative;width:36px;height:36px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;transform:translate(-50%,-50%) scale(0.4);opacity:0;transition:opacity .25s ease,transform .35s cubic-bezier(.34,1.56,.64,1)}
+.map-nearby-marker.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.map-nearby-toggle-btn{position:absolute;top:12px;left:12px;z-index:10}
+.map-nearby-panel{position:absolute;top:62px;left:12px;z-index:10;background:var(--surface);border-radius:14px;padding:6px;min-width:200px;max-width:260px;max-height:320px;overflow-y:auto;box-shadow:0 3px 12px rgba(0,0,0,0.1);opacity:0;transform:translateY(-8px) scale(0.97);pointer-events:none;transition:opacity .18s ease,transform .18s cubic-bezier(.34,1.56,.64,1)}
+.map-nearby-panel.show{opacity:1;transform:translateY(0) scale(1);pointer-events:all}
+.map-nearby-panel-item{padding:9px 12px;border-radius:9px;font-size:12.5px;font-weight:500;color:var(--muted);cursor:pointer;transition:color .15s}
+.map-nearby-panel-item:hover{color:var(--text)}
+.map-error{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;text-align:center;padding:20px}
 .nearby-list{display:flex;flex-direction:column;gap:8px}
-.nearby-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid transparent;border-radius:10px;padding:11px 14px;transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
+.nearby-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid transparent;border-radius:10px;padding:11px 14px;cursor:pointer;transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
 .nearby-item:hover{border-color:var(--project-color);background:var(--surface-2);transform:scale(1.02)}
 .nearby-icon{font-size:20px;width:30px;text-align:center}
 .nearby-name{font-size:13px;font-weight:500;flex:1}
@@ -814,12 +856,15 @@ function renderProjectBlocks(pd, allowed) {
   const show = key => !allowed || allowed.includes(key);
   const parts = [];
   // Порядок: описание + инфраструктура, потом детали проекта, дальше как
-  // было (карта, галерея, платежи, обслуживание, файлы).
+  // было (карта, галерея, платежи), плюс этапы строительства (только
+  // агентский вид — ключ 'construction' нет в наборе блоков, доступных для
+  // клиентских презентаций во flox-web), обслуживание, файлы.
   if (show('description') && pd.description) parts.push(renderDescriptionBlock(pd));
   if (show('developer') && (pd.developer || (pd.buildings && pd.buildings.length) || pd.completion)) parts.push(renderDeveloperBlock(pd));
   if (show('nearby') && pd.coords && pd.coords.lat) parts.push(renderMapBlock(pd));
   if (show('gallery') && pd.gallery && pd.gallery.local && pd.gallery.local.length) parts.push(renderGalleryBlock(pd));
   if (show('payment_schedule') && pd.payment_schedule && pd.payment_schedule.length) parts.push(`<div id="projPaymentSection">${renderPaymentBlock(pd)}</div>`);
+  if (show('construction') && !isClientMode) parts.push(renderConstructionBlock(pd));
   if (show('maintenance') && pd.maintenance) parts.push(renderMaintBlock(pd));
   if (show('files') && pd.files && pd.files.length) parts.push(renderFilesBlock(pd));
   if (!parts.length) return '';
@@ -858,19 +903,21 @@ function renderDescriptionBlock(d) {
     </div>` : ''}`;
 }
 
+// 19.07.26: минимальный html-escape только для атрибута data-name/data-icon
+// ниже — n.name/n.icon это свободный текст из projects/*.json.
+function escAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function renderMapBlock(d) {
-  const { lat, lng } = d.coords || {};
   return `
     <div class="sec-title">Карта</div>
-    <div class="map-wrap">
-      <iframe width="100%" height="320" style="border:0;display:block" loading="lazy" allowfullscreen
-        src="https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed"></iframe>
-    </div>
+    <div class="map-wrap" id="mapWrap"><div id="projMap"></div></div>
     ${(d.nearby && d.nearby.length) ? `
     <div class="sec-title">Ближайшие локации</div>
-    <div class="nearby-list">
+    <div class="nearby-list" id="nearbyList">
       ${d.nearby.map(n => `
-        <div class="nearby-item">
+        <div class="nearby-item" data-name="${escAttr(n.name)}" data-icon="${escAttr(n.icon)}">
           <span class="nearby-icon">${n.icon}</span>
           <span class="nearby-name">${n.name}</span>
           <div class="nearby-dist">
@@ -880,6 +927,236 @@ function renderMapBlock(d) {
         </div>`).join('')}
     </div>` : ''}`;
 }
+
+// ── КАРТА (перенесено из project.html) — тот же Yandex JS API, те же кнопки
+// зума/разворота/возврата/списка ближайших локаций, что и на странице
+// проекта. Единственное отличие: карта грузится лениво по появлению
+// #mapWrap в зоне видимости (тот же приём, что раньше был завязан на id
+// "s-map" в project.html — здесь такой секции нет, поэтому наблюдаем прямо
+// за обёрткой карты). ──────────────────────────────────────────────────────
+let projMap = null;
+let _projMapLoadAttempted = false;
+let CURRENT_PROJECT_DATA = null;
+
+function initProjMapLazy(d) {
+  const el = document.getElementById('mapWrap');
+  if (!el) return;
+  const obs = new IntersectionObserver((entries) => {
+    if (!entries[0].isIntersecting) return;
+    obs.disconnect();
+    loadProjMap(d);
+  }, { threshold: 0.01 });
+  obs.observe(el);
+}
+
+function loadProjMap(d) {
+  if (projMap || _projMapLoadAttempted) return;
+  _projMapLoadAttempted = true;
+  const { lat, lng } = d.coords;
+
+  const showMapError = () => {
+    const el = document.getElementById('projMap');
+    if (el) el.innerHTML = '<div class="map-error">Не удалось загрузить карту.<br>Проверьте подключение к интернету и обновите страницу.</div>';
+  };
+
+  if (!window.ymaps) { showMapError(); return; }
+
+  loadLocations();
+
+  ymaps.ready(() => {
+    if (!document.getElementById('projMap')) return;
+    let pm;
+    try {
+      projMap = new ymaps.Map('projMap', { center: [lat, lng], zoom: 15, controls: [] });
+
+      const base = location.pathname.replace(/\/[^\/]*$/, '/');
+      const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
+      const firstRender = local.length ? (local[0].startsWith('http') ? local[0] : `${base}img/${d.id}/${local[0]}`) : '';
+      const markerLayout = ymaps.templateLayoutFactory.createClass(
+        `<div class="map-marker" style="position:relative;transform:translate(-50%,-50%);">` +
+        (firstRender ? `<img src="${firstRender}" alt="">` : '') + `</div>`
+      );
+      pm = new ymaps.Placemark([lat, lng], {}, {
+        iconLayout: markerLayout,
+        iconShape: { type: 'Rectangle', coordinates: [[-22, -22], [22, 22]] },
+        hasBalloon: false,
+      });
+      projMap.geoObjects.add(pm);
+    } catch (e) { showMapError(); return; }
+
+    addCustomProjMapControls(lat, lng, d.nearby);
+  });
+}
+
+function addCustomProjMapControls(lat, lng, nearby) {
+  const wrap = document.getElementById('mapWrap');
+  if (!wrap || document.getElementById('mapFsBtn')) return;
+
+  const ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+  const ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+  const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  const ICON_MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>';
+  const ICON_RETURN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>';
+
+  let isFs = false;
+  function setFs(on) {
+    isFs = on;
+    wrap.classList.toggle('map-fake-fullscreen', on);
+    document.body.classList.toggle('map-fake-fullscreen-active', on);
+    fsBtn.innerHTML = on ? ICON_COLLAPSE : ICON_EXPAND;
+    if (projMap?.container?.fitToViewport) requestAnimationFrame(() => projMap.container.fitToViewport());
+  }
+  const fsBtn = document.createElement('div');
+  fsBtn.id = 'mapFsBtn';
+  fsBtn.className = 'map-ctrl-btn map-fullscreen-btn';
+  fsBtn.innerHTML = ICON_EXPAND;
+  fsBtn.addEventListener('click', e => { e.stopPropagation(); setFs(!isFs); });
+  wrap.appendChild(fsBtn);
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && isFs) setFs(false); });
+
+  const returnBtn = document.createElement('div');
+  returnBtn.className = 'map-ctrl-btn map-return-btn';
+  returnBtn.innerHTML = ICON_RETURN + '<span class="map-ctrl-tooltip">Вернуться к проекту</span>';
+  returnBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (projMap) projMap.setCenter([lat, lng], 15, { duration: 400 });
+    clearNearbyMarker();
+  });
+  wrap.appendChild(returnBtn);
+
+  const ICON_LIST = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+  const listBtn = document.createElement('div');
+  listBtn.className = 'map-ctrl-btn map-nearby-toggle-btn';
+  listBtn.innerHTML = ICON_LIST;
+  wrap.appendChild(listBtn);
+
+  const panel = document.createElement('div');
+  panel.className = 'map-nearby-panel';
+  panel.innerHTML = (nearby || []).map(n =>
+    `<div class="map-nearby-panel-item" data-name="${escAttr(n.name)}" data-icon="${escAttr(n.icon)}">${n.name}</div>`
+  ).join('');
+  wrap.appendChild(panel);
+
+  listBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    panel.classList.toggle('show');
+  });
+  panel.addEventListener('click', e => {
+    const item = e.target.closest('.map-nearby-panel-item');
+    if (!item) return;
+    e.stopPropagation();
+    panel.classList.remove('show');
+    goToNearbyLocation(item.dataset.name, item.dataset.icon);
+  });
+  document.addEventListener('click', e => {
+    if (!panel.classList.contains('show')) return;
+    if (panel.contains(e.target) || listBtn.contains(e.target)) return;
+    panel.classList.remove('show');
+  });
+
+  const zoomGroup = document.createElement('div');
+  zoomGroup.className = 'map-zoom-group';
+  const plusBtn = document.createElement('div');
+  plusBtn.className = 'map-ctrl-btn';
+  plusBtn.innerHTML = ICON_PLUS;
+  plusBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (projMap) projMap.setZoom(projMap.getZoom() + 1, { checkZoomRange: true, duration: 200 });
+  });
+  const minusBtn = document.createElement('div');
+  minusBtn.className = 'map-ctrl-btn';
+  minusBtn.innerHTML = ICON_MINUS;
+  minusBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (projMap) projMap.setZoom(projMap.getZoom() - 1, { checkZoomRange: true, duration: 200 });
+  });
+  zoomGroup.appendChild(plusBtn);
+  zoomGroup.appendChild(minusBtn);
+  wrap.appendChild(zoomGroup);
+}
+
+function focusNearby(lat, lng) {
+  if (!lat || !lng || !projMap) return;
+  projMap.setCenter([lat, lng], 16, { duration: 500 });
+}
+
+let nearbyMarkerPlacemark = null;
+function showNearbyMarker(icon, lat, lng) {
+  if (!projMap || !window.ymaps) return;
+  if (nearbyMarkerPlacemark) {
+    projMap.geoObjects.remove(nearbyMarkerPlacemark);
+    nearbyMarkerPlacemark = null;
+  }
+  const layout = ymaps.templateLayoutFactory.createClass(
+    `<div class="map-nearby-marker" id="mapNearbyMarkerEl">${icon || ''}</div>`
+  );
+  nearbyMarkerPlacemark = new ymaps.Placemark([lat, lng], {}, {
+    iconLayout: layout,
+    iconShape: { type: 'Rectangle', coordinates: [[-18, -18], [18, 18]] },
+    hasBalloon: false,
+  });
+  projMap.geoObjects.add(nearbyMarkerPlacemark);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.getElementById('mapNearbyMarkerEl')?.classList.add('show');
+    });
+  });
+}
+
+function clearNearbyMarker() {
+  if (nearbyMarkerPlacemark && projMap) {
+    projMap.geoObjects.remove(nearbyMarkerPlacemark);
+    nearbyMarkerPlacemark = null;
+  }
+}
+
+// Координаты — из ОБЩЕЙ таблицы Supabase locations (не из projects/*.json),
+// та же база, что расставляется один раз в flox-web — см. комментарий в
+// project.html у одноимённой функции.
+let _locationsPromise = null;
+function loadLocations() {
+  if (!_locationsPromise) {
+    _locationsPromise = fetch(`${SUPABASE_URL}/locations?select=name,lat,lng`, { headers: SB })
+      .then(r => r.ok ? r.json() : [])
+      .then(rows => {
+        const map = {};
+        (rows || []).forEach(r => {
+          if (r && r.name && r.lat != null && r.lng != null) map[r.name] = { lat: +r.lat, lng: +r.lng };
+        });
+        return map;
+      })
+      .catch(() => ({}));
+  }
+  return _locationsPromise;
+}
+
+function goToNearbyLocation(name, icon) {
+  loadLocations().then(map => {
+    const loc = map[name];
+    if (!loc) return;
+    const flyTo = () => {
+      document.getElementById('mapWrap')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      focusNearby(loc.lat, loc.lng);
+      showNearbyMarker(icon, loc.lat, loc.lng);
+    };
+    if (projMap) { flyTo(); return; }
+    if (!CURRENT_PROJECT_DATA) return;
+    loadProjMap(CURRENT_PROJECT_DATA);
+    const wait = setInterval(() => {
+      if (projMap) { clearInterval(wait); flyTo(); }
+    }, 100);
+    setTimeout(() => clearInterval(wait), 5000);
+  });
+}
+
+document.addEventListener('click', (e) => {
+  const item = e.target.closest('.nearby-item');
+  if (!item) return;
+  const name = item.dataset.name;
+  if (!name) return;
+  goToNearbyLocation(name, item.dataset.icon);
+});
 
 function renderGalleryBlock(d) {
   const base = location.pathname.replace(/\/[^\/]*$/, '/');
@@ -966,6 +1243,56 @@ function renderPaymentBlock(d) {
   return `
     <div class="sec-title">График платежей</div>
     <div class="ps-list">${items}</div>`;
+}
+
+// 20.07.26, по просьбе Ильи: тот же блок "Этапы строительства", что и в
+// project.html (renderConstruction) — те же вкладки по датам съёмки и тот же
+// слайдер, что у "Рендеры и фото"/"Поэтажный план", плюс тот же плейсхолдер
+// "netetapov.png", если застройщик ещё не публиковал фото со стройки. Только
+// в агентском виде — см. show('construction') && !isClientMode в
+// renderProjectBlocks.
+function renderConstructionBlock(d) {
+  const stages = d.construction_progress;
+  const base = location.pathname.replace(/\/[^\/]*$/, '/');
+
+  const makeSlider = (files, sliderId, imgBase) => {
+    if (!files || !files.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Фото появятся позже</div>`;
+    return `
+      <div class="visual-slider" id="${sliderId}"
+        data-idx="0" data-count="${files.length}"
+        onmousedown="sliderDragStart(event,'${sliderId}')"
+        ontouchstart="sliderTouchStart(event,'${sliderId}')">
+        <div class="visual-slides" id="${sliderId}-slides">
+          ${files.map((f, i) => `
+            <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
+              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:contain;background:var(--surface-2)"/>
+            </div>`).join('')}
+        </div>
+        <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>
+        <button class="visual-arrow next" onclick="sliderNav('${sliderId}',1);event.stopPropagation()">›</button>
+        <div class="visual-counter" id="${sliderId}-counter">1 / ${files.length}</div>
+      </div>`;
+  };
+
+  const cpBase = `${base}img/${d.id}/stroyka/`;
+  const stageTabs = (stages || []).map((s, i) =>
+    `<button class="visual-tab visual-tab-ghost ${i===0?'act':''}" onclick="switchVisualTab(this,'cp-${i}')">${s.label}</button>`
+  ).join('');
+  const stagePanels = (stages || []).map((s, i) =>
+    `<div class="visual-panel ${i===0?'act':''}" id="cp-${i}">${makeSlider(s.files, 'csl-'+i, cpBase)}</div>`
+  ).join('');
+
+  const hasStages = stages && stages.length;
+  if (!hasStages) return `
+    <div class="sec-title">Этапы строительства</div>
+    <div class="visual-slider" style="cursor:default">
+      <img src="${base}img/common/netetapov.png" alt="Застройщик не публиковал этапы строительства этого проекта" style="width:100%;height:100%;object-fit:cover;display:block"/>
+    </div>`;
+
+  return `
+    <div class="sec-title">Этапы строительства</div>
+    <div class="visual-tabs">${stageTabs}</div>
+    ${stagePanels}`;
 }
 
 function renderMaintBlock(d) {
@@ -1166,6 +1493,10 @@ function renderUnit(u, proj, pd, allowedBlocks) {
   const pct = (reward.percent_from && reward.percent_from > 0) ? reward.percent_from : 10;
   const scale = (!reward.scale || reward.scale === 'уточняется') ? 'Фикс' : reward.scale;
   const days = (!reward.payment_days || reward.payment_days === 0) ? '30 дней' : `${reward.payment_days} дней`;
+  // Режим встречи может быть включён ещё до отрисовки сайдбара — читаем тот
+  // же флаг, что и обработчик ниже, чтобы карточка сразу родилась в нужном
+  // состоянии, без вспышки и без лишней анимации на старте (как в project.html).
+  const mmHidden = localStorage.getItem('flox-meeting') === 'true';
 
   // MAIN
   document.getElementById('mainContent').innerHTML = `
@@ -1208,6 +1539,7 @@ function renderUnit(u, proj, pd, allowedBlocks) {
 
   loadPlanImage(u, proj);
   initProjectPaymentAnimation();
+  if (pd) { CURRENT_PROJECT_DATA = pd; initProjMapLazy(pd); }
 
   // SIDEBAR
   document.getElementById('sidebarContent').innerHTML = `
@@ -1246,7 +1578,8 @@ function renderUnit(u, proj, pd, allowedBlocks) {
     </button>
     ` : ''}
 
-    <div class="sc accent-border reward-section">
+    <div class="reward-card-wrap" id="rewardCardWrap" ${mmHidden ? 'style="max-height:0;overflow:hidden"' : ''}>
+    <div class="sc accent-border reward-section${mmHidden ? ' mm-hidden' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div class="sc-label" style="margin:0">Вознаграждение</div>
         <span style="font-size:14px">💰</span>
@@ -1255,6 +1588,7 @@ function renderUnit(u, proj, pd, allowedBlocks) {
       <div class="rew-row"><span>Шкала</span><b>${scale}</b></div>
       <div class="rew-row"><span>Срок выплаты</span><b>${days}</b></div>
       <button class="rew-btn" onclick="return false">💵 Таблица вознаграждений</button>
+    </div>
     </div>
 
     <button class="add-btn" id="addBtn" onclick="togglePresentation()">
@@ -1269,9 +1603,12 @@ function renderUnit(u, proj, pd, allowedBlocks) {
     </div>
   `;
 
-  // Применяем режим встречи ПОСЛЕ того как DOM отрендерен
-  const _m = localStorage.getItem('flox-meeting') === 'true';
-  document.querySelectorAll('.reward-section').forEach(el => el.style.display = (_m || isClientMode) ? 'none' : '');
+  // Состояние режима встречи уже заложено в разметку выше (mmHidden) — тут
+  // остаётся только клиентский режим, который скрывает вознаграждение
+  // насовсем (не переключается во время сессии, анимация тут не нужна).
+  if (isClientMode) {
+    document.querySelectorAll('.reward-section').forEach(el => el.style.display = 'none');
+  }
 
   // В клиентском режиме "Добавить в презентацию"/"Забронировать" — это
   // агентские инструменты (пишут в локальный localStorage того, кто открыл
@@ -1343,11 +1680,13 @@ function renderUnit(u, proj, pd, allowedBlocks) {
   animateRewardAmount(u.selling_price, pct);
 }
 
+// 20.07.26, по просьбе Ильи: анимация подсчёта замедлена (была 900мс) — тот
+// же порядок длительности, что у аналогичных счётчиков в project.html.
 function animateRewardAmount(sellingPrice, pct) {
   const el = document.getElementById('rewAmount');
   if (!el || !sellingPrice || !pct) return;
   const target = Math.round(sellingPrice * pct / 100);
-  const dur = 900;
+  const dur = 3200;
   const start = performance.now();
   function step(now) {
     const t = Math.min(1, (now - start) / dur);
@@ -1358,6 +1697,32 @@ function animateRewardAmount(sellingPrice, pct) {
     else el.textContent = target.toLocaleString('ru') + ' ฿';
   }
   requestAnimationFrame(step);
+}
+
+// 20.07.26, по просьбе Ильи: та же анимация скрытия/появления в режиме
+// встречи, что и в project.html (setRewardVisible) — карточка уезжает вверх
+// и тает, обёртка одновременно схлопывается по высоте, max-height нельзя
+// анимировать из/в "none", поэтому перед стартом каждого перехода явно
+// фиксируем текущую высоту в пикселях (scrollHeight).
+function setRewardVisible(show) {
+  const wrap = document.getElementById('rewardCardWrap');
+  const card = wrap ? wrap.querySelector('.reward-section') : null;
+  if (!wrap || !card) return;
+  const isHidden = card.classList.contains('mm-hidden');
+  if (show === !isHidden) return;
+  clearTimeout(wrap._mmTimer);
+  if (show) {
+    wrap.style.overflow = 'hidden';
+    card.classList.remove('mm-hidden');
+    wrap.style.maxHeight = wrap.scrollHeight + 'px';
+    wrap._mmTimer = setTimeout(() => { wrap.style.maxHeight = 'none'; wrap.style.overflow = ''; }, 420);
+  } else {
+    wrap.style.overflow = 'hidden';
+    wrap.style.maxHeight = wrap.scrollHeight + 'px';
+    void wrap.offsetHeight;
+    card.classList.add('mm-hidden');
+    requestAnimationFrame(() => { wrap.style.maxHeight = '0px'; });
+  }
 }
 
 function alignSidebarToPlan() {
@@ -1413,8 +1778,9 @@ function togglePresentation() {
 }
 
 // Callback от topbar — скрываем вознаграждение при переключении встречи
+// (та же анимированная логика, что и в project.html).
 window._pageMeetingCallback = function(m) {
-  document.querySelectorAll('.reward-section').forEach(el => el.style.display = m ? 'none' : '');
+  setRewardVisible(!m);
 };
 
 // ── КЛИЕНТСКИЕ ДЕЙСТВИЯ: бронь и запись на показ ────────────────────────────
