@@ -627,9 +627,10 @@ a { color: inherit; text-decoration: none; }
    при наведении (только цвет текста + лёгкое увеличение). Модификатор
    ПОВЕРХ .visual-tab (не замена класса) — иначе сломался бы селектор
    .visual-tab, которым switchVisualTab находит соседние вкладки, чтобы снять
-   с них .act. Применяется только к "Рендеры и фото" (renderVisual) и
-   "Поэтажный план" (renderFloors) — у "Этапы строительства"
-   (renderConstruction) класс не добавлен, там прежний вид с обводкой. */
+   с них .act. 20.07.26: теперь применяется везде, где встречаются такие
+   вкладки — "Рендеры и фото" (renderVisual), "Поэтажный план" (renderFloors)
+   и "Этапы строительства" (renderConstruction), для единообразия на случай
+   новых блоков в этом же стиле. */
 .visual-tab.visual-tab-ghost { border: none; font-weight: 600; }
 .visual-tab.visual-tab-ghost:hover { background: none; color: var(--text); transform: scale(1.04); }
 /* 19.07.26 (2), по просьбе Ильи: у уже выбранной (.act) вкладки наведение не
@@ -699,11 +700,10 @@ a { color: inherit; text-decoration: none; }
 }
 .info-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px;
+  padding: 9px 0; font-size: 13px;
   transition: transform .2s cubic-bezier(.34,1.56,.64,1); cursor: default;
 }
 .info-row:hover { transform: translateX(4px); }
-.info-row:last-child { border-bottom: none; }
 .info-label { color: var(--muted); }
 .info-val { font-weight: 600; }
 
@@ -839,26 +839,16 @@ body.map-fake-fullscreen-active { overflow: hidden; }
   background: var(--surface); border: 0.5px solid var(--line-2);
   border-radius: 12px; overflow: hidden;
 }
-.white-card .ps-timeline { padding: 20px 16px 0; }
-.white-card .ps-table { border-top: none; }
 
 /* ── PAYMENT ─── */
-.ps-timeline {
-  display: flex; align-items: flex-start;
-  margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; gap: 0;
-  scrollbar-width: none;
-}
-.ps-timeline::-webkit-scrollbar { display: none; }
-.ps-step {
-  flex: 1; min-width: 72px; text-align: center; position: relative;
-  padding-bottom: 4px;
-  transition: transform .2s cubic-bezier(.34,1.56,.64,1); cursor: default;
-}
-.ps-step:hover { transform: scale(1.12); }
-.ps-circle-wrap {
-  position: relative; width: 56px; height: 56px;
-  margin: 0 auto 8px; z-index: 1;
-}
+/* 20.07.26, по просьбе Ильи: карточки вместо ряда кружков + таблицы (см.
+   комментарий в renderPayment). Кольцо (.ps-circle-*) — тот же компонент и
+   та же анимация заполнения, что и раньше, просто больше не в отдельном
+   узком .ps-step, а слева от карточки. Стиль карточки — тот же, что уже
+   используется у "Файлов проекта"/"Ближайших локаций" (var(--surface),
+   прозрачная обводка, при наведении — фиолетовая обводка + едва заметное
+   увеличение), для единообразия по странице. */
+.ps-circle-wrap { position: relative; width: 56px; height: 56px; flex-shrink: 0; z-index: 1; }
 .ps-circle-wrap svg { transform: rotate(-90deg); }
 .ps-circle-track { stroke: var(--line-2); fill: none; stroke-width: 3; }
 .ps-circle-fill {
@@ -872,18 +862,20 @@ body.map-fake-fullscreen-active { overflow: hidden; }
   display: flex; align-items: center; justify-content: center;
   font-size: 10px; font-weight: 700; color: var(--project-color);
 }
-.ps-step-label { font-size: 10px; color: var(--muted); line-height: 1.4; margin-top: 4px; word-break: keep-all; }
-.ps-table { width: 100%; border-collapse: collapse; }
-.ps-table th {
-  text-align: left; padding: 10px 14px;
-  font-size: 11px; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .05em;
-  border-bottom: 0.5px solid var(--line);
+.ps-list { display: flex; flex-direction: column; gap: 8px; }
+.ps-item {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface); border: 1px solid transparent;
+  border-radius: 12px; padding: 10px 16px 10px 10px;
+  transition: border-color .2s, transform .2s cubic-bezier(.34,1.56,.64,1);
 }
-.ps-table tbody tr:first-child td { border-top: none; }
-.ps-table td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--line); }
-.ps-table tr:last-child td { border-bottom: none; }
-.ps-pct { font-weight: 700; color: var(--project-color); font-size: 15px; }
+.ps-item:hover { border-color: var(--project-color); transform: scale(1.02); }
+.ps-item-info { flex: 1; min-width: 0; }
+.ps-item-stage { font-size: 13px; font-weight: 700; }
+.ps-item-note { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+/* Число справа — обычный цвет текста (чёрный в светлой теме, белый в
+   тёмной), не фиолетовый: акцент остаётся только на самих кольцах. */
+.ps-pct { font-weight: 700; color: var(--text); font-size: 17px; flex-shrink: 0; }
 
 /* ── MAINTENANCE ─── */
 .maint-row {
@@ -2898,7 +2890,7 @@ function renderConstruction(d) {
   // Вкладки по датам съёмки
   const cpBase = `${base}img/${d.id}/stroyka/`;
   const stageTabs = (stages || []).map((s, i) =>
-    `<button class="visual-tab ${i===0?'act':''}" onclick="switchVisualTab(this,'cp-${i}')">${s.label}</button>`
+    `<button class="visual-tab visual-tab-ghost ${i===0?'act':''}" onclick="switchVisualTab(this,'cp-${i}')">${s.label}</button>`
   ).join('');
   const stagePanels = (stages || []).map((s, i) =>
     `<div class="visual-panel ${i===0?'act':''}" id="cp-${i}">${makeSlider(s.files, 'csl-'+i, cpBase)}</div>`
@@ -2933,45 +2925,41 @@ function renderPayment(d) {
     '3rd Installment':'3-й взнос',
   };
 
+  // 20.07.26, по просьбе Ильи: список карточек вместо ряда кружков + таблицы
+  // ниже (см. мокапы payment-schedule-mockup.html / -variant2-refined.html,
+  // "вариант 2, уточнённый"). Кружок теперь показывает НАКОПИТЕЛЬНЫЙ итог
+  // (0→100%, cum), а не процент самого этапа — визуально совпадает с тем,
+  // сколько кольцо реально закрашено. Процент самого этапа — справа,
+  // обычным цветом текста (.ps-pct, var(--text)), не фиолетовым — акцент
+  // остаётся только на кольцах. Подзаголовок (.ps-item-note) — из p.note,
+  // как и раньше, просто больше не задублирован под каждым кружком в
+  // отдельном ряду, а стоит один раз под названием этапа.
   const circ = 2 * Math.PI * 23; // r=23 → ≈144.5
   let cum = 0;
-  const steps = d.payment_schedule.map((p, i) => {
+  const items = d.payment_schedule.map((p, i) => {
     cum += p.percent;
     const offset = circ * (1 - cum / total); // для анимации — кумулятивный
     const label = stageRu[p.stage] || p.stage;
     return `
-      <div class="ps-step" id="pss-${i}">
+      <div class="ps-item">
         <div class="ps-circle-wrap">
           <svg viewBox="0 0 56 56" width="56" height="56">
             <circle class="ps-circle-track" cx="28" cy="28" r="23"/>
             <circle class="ps-circle-fill" id="psf-${i}" cx="28" cy="28" r="23" data-offset="${offset}"/>
           </svg>
-          <div class="ps-circle-pct" data-target="${p.percent}">0%</div>
+          <div class="ps-circle-pct" data-target="${cum}">0%</div>
         </div>
-        <div class="ps-step-label">${label}</div>
+        <div class="ps-item-info">
+          <div class="ps-item-stage">${label}</div>
+          ${p.note ? `<div class="ps-item-note">${p.note}</div>` : ''}
+        </div>
+        <div class="ps-pct" data-target="${p.percent}">0%</div>
       </div>`;
   }).join('');
 
   return `
     <div class="sec-title">График платежей</div>
-    <div class="white-card">
-      <div class="ps-timeline" id="psTimeline">${steps}</div>
-      <table class="ps-table">
-        <thead><tr><th>Этап</th><th>Условие</th><th style="text-align:right">%</th></tr></thead>
-        <tbody>
-          ${d.payment_schedule.map(p => `
-            <tr>
-              <td>${p.stage}</td>
-              <td>${p.note}</td>
-              <td style="text-align:right"><span class="ps-pct" data-target="${p.percent}">0%</span></td>
-            </tr>`).join('')}
-        </tbody>
-        <tfoot><tr>
-          <td colspan="2" style="padding:12px 14px;font-size:12px;color:var(--muted)">Итого</td>
-          <td style="text-align:right;padding:12px 14px;font-weight:700">${total}%</td>
-        </tr></tfoot>
-      </table>
-    </div>`;
+    <div class="ps-list" id="psTimeline">${items}</div>`;
 }
 
 function renderMaint(d) {
