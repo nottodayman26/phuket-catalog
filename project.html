@@ -834,12 +834,6 @@ body.map-fake-fullscreen-active { overflow: hidden; }
 .nearby-dist-val { font-size: 12px; font-weight: 600; }
 .nearby-time { font-size: 11px; color: var(--muted); }
 
-/* ── WHITE CARD ─── */
-.white-card {
-  background: var(--surface); border: 0.5px solid var(--line-2);
-  border-radius: 12px; overflow: hidden;
-}
-
 /* ── PAYMENT ─── */
 /* 20.07.26, по просьбе Ильи: карточки вместо ряда кружков + таблицы (см.
    комментарий в renderPayment). Кольцо (.ps-circle-*) — тот же компонент и
@@ -878,21 +872,26 @@ body.map-fake-fullscreen-active { overflow: hidden; }
 .ps-pct { font-weight: 700; color: var(--text); font-size: 17px; flex-shrink: 0; }
 
 /* ── MAINTENANCE ─── */
+/* 20.07.26 (3), по просьбе Ильи: вариант 1 из maintenance-mockup.html —
+   тот же стиль карточки-строки, что у "Файлов"/"Ближайших локаций"/графика
+   платежей (var(--surface) в состоянии покоя, а не surface-2 — так строки
+   светлее на белой теме и не отличаются от остальных карточек страницы; в
+   тёмной теме surface/surface-2 почти не отличаются, поэтому там всё
+   осталось "норм", как и просил Илья). */
+.maint-list { display: flex; flex-direction: column; gap: 8px; }
 .maint-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 13px;
-  gap: 24px;
-  transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .15s;
-  cursor: default;
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface); border: 1px solid transparent;
+  border-radius: 12px; padding: 12px 16px;
+  transition: border-color .2s, background .2s, transform .2s cubic-bezier(.34,1.56,.64,1);
 }
-.maint-row:hover { transform: translateX(4px); background: var(--surface-2); }
-.maint-row:last-child { border-bottom: none; }
-.maint-label { color: var(--muted); flex: 1; }
-.maint-val { font-weight: 600; flex-shrink: 0; text-align: right; }
+.maint-row:hover { border-color: var(--project-color); background: var(--surface-2); transform: scale(1.02); }
+.maint-icon { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
+.maint-label { color: var(--muted); font-size: 13px; flex: 1; }
+.maint-val { font-weight: 700; font-size: 13.5px; flex-shrink: 0; text-align: right; }
 .maint-note {
-  margin-top: 14px; padding: 12px 14px;
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 10px; font-size: 12px; color: var(--muted); line-height: 1.6;
+  margin-top: 4px; padding: 12px 14px; background: var(--project-soft);
+  border-radius: 10px; font-size: 12px; color: var(--text); line-height: 1.6;
 }
 
 /* ── FILES ─── */
@@ -2969,11 +2968,11 @@ function renderMaint(d) {
   const noteHtml = (m.notes && m.notes !== 'Данные уточняются') ? `<div class="maint-note">${m.notes}</div>` : '';
   return `
     <div class="sec-title">Обслуживание</div>
-    <div class="white-card">
-      <div class="maint-row"><span class="maint-label">Common fee</span><span class="maint-val">${cfAmt}</span></div>
-      <div class="maint-row"><span class="maint-label">Sinking fund</span><span class="maint-val">${sfAmt}</span></div>
-      <div class="maint-row"><span class="maint-label">Регистрация — Фрихолд</span><span class="maint-val">${m.registration.freehold}</span></div>
-      <div class="maint-row"><span class="maint-label">Регистрация — Лизхолд</span><span class="maint-val">${m.registration.leasehold}</span></div>
+    <div class="maint-list">
+      <div class="maint-row"><span class="maint-icon">💳</span><span class="maint-label">Common fee / Плата за обслуживание</span><span class="maint-val">${cfAmt}</span></div>
+      <div class="maint-row"><span class="maint-icon">🏦</span><span class="maint-label">Sinking fund / Резервный фонд</span><span class="maint-val">${sfAmt}</span></div>
+      <div class="maint-row"><span class="maint-icon">🏠</span><span class="maint-label">Регистрация — Фрихолд</span><span class="maint-val">${m.registration.freehold}</span></div>
+      <div class="maint-row"><span class="maint-icon">📜</span><span class="maint-label">Регистрация — Лизхолд</span><span class="maint-val">${m.registration.leasehold}</span></div>
       ${noteHtml}
     </div>`;
 }
