@@ -19,7 +19,7 @@
   --text:#ffffff;--muted:rgba(255,255,255,0.45);
   --accent:#5E17EB;--accent-soft:rgba(94,23,235,0.18);
   --green:#7BAF6E;--red:#FF6B6B;--red-soft:rgba(255,107,107,0.15);--green-soft:rgba(123,175,110,0.15);
-  --project-color:#5E17EB;
+  --project-color:#5E17EB;--project-soft:rgba(94,23,235,0.18);
 }
 /* Цвета статусов в светлой (клиентской) теме приведены к тем же оттенкам,
    что и в offer.html (#15803d / #dc2626), чтобы "Свободен"/"Продан"
@@ -30,6 +30,7 @@ body.light{
   --text:#1a1a1a;--muted:rgba(0,0,0,0.45);
   --accent:#5E17EB;--accent-soft:rgba(94,23,235,0.1);
   --green:#15803d;--red:#dc2626;--red-soft:#fee2e2;--green-soft:#dcfce7;
+  --project-soft:rgba(94,23,235,0.1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
@@ -135,7 +136,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 /* Без position:sticky — планировка просто часть обычного потока страницы
    и уезжает вверх при скролле вместе со всем остальным (как и блок цены
    справа), а не остаётся висеть на месте. */
-.plan-card{position:relative;background:#ffffff;border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden;height:480px;display:flex;align-items:center;justify-content:center}
+.plan-card{position:relative;background:#ffffff;border-radius:12px;overflow:hidden;height:480px;display:flex;align-items:center;justify-content:center}
 .plan-card img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .plan-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted)}
 .plan-placeholder i{font-size:56px}
@@ -185,9 +186,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .p-val{font-weight:500}
 
 /* ── SIDEBAR CARDS ── */
-.sc{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;padding:14px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease}
-.sc:hover{transform:scale(1.02);box-shadow:0 6px 20px rgba(0,0,0,0.1)}
-.sc.accent-border{border-color:var(--line-2)}
+.sc{background:var(--surface);border-radius:12px;padding:14px;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.sc:hover{transform:scale(1.02)}
 .sc-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
 .sc-price{font-size:26px;font-weight:700;margin-bottom:2px}
 .sc-price-exact{font-size:12px;color:var(--muted);margin-bottom:11px}
@@ -318,16 +318,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .fac-item{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;display:flex;align-items:center;gap:8px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default}
 .fac-item:hover{transform:scale(1.04);border-color:var(--project-color);box-shadow:0 4px 16px rgba(94,23,235,0.12)}
 .fac-icon{font-size:18px}
-.info-box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
-.info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;transition:transform .2s cubic-bezier(.34,1.56,.64,1);cursor:default}
+.info-box{background:var(--surface);border-radius:12px;padding:16px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px;transition:transform .2s cubic-bezier(.34,1.56,.64,1);cursor:default}
 .info-row:hover{transform:translateX(4px)}
-.info-row:last-child{border-bottom:none}
 .info-label{color:var(--muted)}
 .info-val{font-weight:600}
 
-.map-wrap{border-radius:14px;overflow:hidden;border:1px solid var(--line);margin-bottom:20px}
+.map-wrap{border-radius:14px;overflow:hidden;margin-bottom:20px}
 .nearby-list{display:flex;flex-direction:column;gap:8px}
-.nearby-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 14px;transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
+.nearby-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid transparent;border-radius:10px;padding:11px 14px;transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
 .nearby-item:hover{border-color:var(--project-color);background:var(--surface-2);transform:scale(1.02)}
 .nearby-icon{font-size:20px;width:30px;text-align:center}
 .nearby-name{font-size:13px;font-weight:500;flex:1}
@@ -339,6 +338,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .visual-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--line-2);color:var(--muted);transition:all .2s cubic-bezier(.34,1.56,.64,1);background:none;font-family:inherit}
 .visual-tab:hover{border-color:var(--project-color);color:var(--project-color);transform:scale(1.06)}
 .visual-tab.act{background:var(--project-color);border-color:var(--project-color);color:#fff}
+/* 20.07.26, по просьбе Ильи: те же облегчённые вкладки без обводки/"таблетки"
+   при наведении, что уже применены в project.html (renderVisual) — здесь для
+   единообразия с обновлённым дизайном. */
+.visual-tab.visual-tab-ghost{border:none;font-weight:600}
+.visual-tab.visual-tab-ghost:hover{background:none;color:var(--text);transform:scale(1.04)}
+.visual-tab.visual-tab-ghost.act:hover{background:var(--project-color);color:#fff}
 .visual-panel{display:none}
 .visual-panel.act{display:block}
 .visual-slider{position:relative;overflow:hidden;border-radius:12px;background:var(--surface-2);user-select:none;aspect-ratio:16/9}
@@ -352,35 +357,34 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .visual-arrow.next{right:12px}
 .visual-counter{position:absolute;bottom:12px;right:14px;font-size:11px;color:rgba(255,255,255,0.75);background:rgba(0,0,0,0.4);padding:3px 10px;border-radius:20px}
 
-.white-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden}
-.white-card .ps-timeline{padding:20px 16px 0}
-.white-card .ps-table{border-top:none}
-.ps-timeline{display:flex;align-items:flex-start;margin-bottom:24px;overflow-x:auto;padding-bottom:4px;gap:0;scrollbar-width:none}
-.ps-timeline::-webkit-scrollbar{display:none}
-.ps-step{flex:1;min-width:72px;text-align:center;position:relative;padding-bottom:4px;transition:transform .2s cubic-bezier(.34,1.56,.64,1);cursor:default}
-.ps-step:hover{transform:scale(1.12)}
-.ps-circle-wrap{position:relative;width:56px;height:56px;margin:0 auto 8px;z-index:1}
+/* 20.07.26, по просьбе Ильи: тот же дизайн, что и в project.html —
+   карточки-строки вместо ряда кружков + таблицы (см. renderPayment) и
+   вместо строк с серой рамкой снизу (см. renderMaint). Кольцо (.ps-circle-*)
+   — тот же компонент, что и раньше, просто теперь слева от карточки, а не в
+   отдельном узком .ps-step. */
+.ps-circle-wrap{position:relative;width:56px;height:56px;flex-shrink:0;z-index:1}
 .ps-circle-wrap svg{transform:rotate(-90deg)}
 .ps-circle-track{stroke:var(--line-2);fill:none;stroke-width:3}
 .ps-circle-fill{fill:none;stroke-width:3;stroke-linecap:round;stroke:var(--project-color);stroke-dasharray:145;stroke-dashoffset:145;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)}
 .ps-circle-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--project-color)}
-.ps-step-label{font-size:10px;color:var(--muted);line-height:1.4;margin-top:4px;word-break:keep-all}
-.ps-table{width:100%;border-collapse:collapse}
-.ps-table th{text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid var(--line)}
-.ps-table tbody tr:first-child td{border-top:none}
-.ps-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--line)}
-.ps-table tr:last-child td{border-bottom:none}
-.ps-pct{font-weight:700;color:var(--project-color);font-size:15px}
+.ps-list{display:flex;flex-direction:column;gap:8px}
+.ps-item{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid transparent;border-radius:12px;padding:10px 16px 10px 10px;transition:border-color .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
+.ps-item:hover{border-color:var(--project-color);transform:scale(1.02)}
+.ps-item-info{flex:1;min-width:0}
+.ps-item-stage{font-size:13px;font-weight:700}
+.ps-item-note{font-size:11.5px;color:var(--muted);margin-top:2px}
+.ps-pct{font-weight:700;color:var(--text);font-size:17px;flex-shrink:0}
 
-.maint-row{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line);font-size:13px;gap:24px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .15s;cursor:default}
-.maint-row:hover{transform:translateX(4px);background:var(--surface-2)}
-.maint-row:last-child{border-bottom:none}
-.maint-label{color:var(--muted);flex:1}
-.maint-val{font-weight:600;flex-shrink:0;text-align:right}
-.maint-note{margin-top:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.6}
+.maint-list{display:flex;flex-direction:column;gap:8px}
+.maint-row{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid transparent;border-radius:12px;padding:12px 16px;transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
+.maint-row:hover{border-color:var(--project-color);background:var(--surface-2);transform:scale(1.02)}
+.maint-icon{font-size:18px;width:26px;text-align:center;flex-shrink:0}
+.maint-label{color:var(--muted);font-size:13px;flex:1}
+.maint-val{font-weight:700;font-size:13.5px;flex-shrink:0;text-align:right}
+.maint-note{margin-top:4px;padding:12px 14px;background:var(--project-soft);border-radius:10px;font-size:12px;color:var(--text);line-height:1.6}
 
 .files-list{display:flex;flex-direction:column;gap:8px}
-.file-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 16px;text-decoration:none;color:var(--text);transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
+.file-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid transparent;border-radius:10px;padding:13px 16px;text-decoration:none;color:var(--text);transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
 .file-item:hover{border-color:var(--project-color);background:var(--surface-2);transform:scale(1.02)}
 .file-icon{font-size:22px}
 .file-name{font-size:13px;font-weight:500;flex:1}
@@ -827,10 +831,10 @@ function renderDeveloperBlock(d) {
     <div class="sec-title">Детали проекта</div>
     <div class="info-box">
       <div class="info-row"><span class="info-label">Застройщик</span><span class="info-val">${d.developer || '—'}</span></div>
+      <div class="info-row"><span class="info-label">Район</span><span class="info-val">${[d.district, d.amphoe].filter(Boolean).join(', ') || '—'}</span></div>
+      <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion || '—'}</span></div>
       <div class="info-row"><span class="info-label">Корпуса</span><span class="info-val">${(d.buildings && d.buildings.length) ? d.buildings.join(', ') : '—'}</span></div>
       <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors || '—'}</span></div>
-      <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion || '—'}</span></div>
-      <div class="info-row"><span class="info-label">Район</span><span class="info-val">${[d.district, d.amphoe].filter(Boolean).join(', ') || '—'}</span></div>
     </div>`;
 }
 
@@ -907,10 +911,10 @@ function renderGalleryBlock(d) {
   return `
     <div class="sec-title">Рендеры и фото</div>
     <div class="visual-tabs">
-      <button class="visual-tab act" onclick="switchVisualTab(this,'vp-ext')">Экстерьер</button>
-      <button class="visual-tab" onclick="switchVisualTab(this,'vp-int')">Интерьер</button>
-      <button class="visual-tab" onclick="switchVisualTab(this,'vp-showroom-r')">Шоурум: рендеры</button>
-      <button class="visual-tab" onclick="switchVisualTab(this,'vp-showroom')">Шоурум: фото</button>
+      <button class="visual-tab visual-tab-ghost act" onclick="switchVisualTab(this,'vp-ext')">Рендеры: экстерьер</button>
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-int')">Рендеры: интерьер</button>
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom-r')">Рендеры: шоурум</button>
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom')">Фото шоурума</button>
     </div>
     <div class="visual-panel act" id="vp-ext">${makeSlider(renders1, 'sl-ext')}</div>
     <div class="visual-panel" id="vp-int">${makeSlider(renders2, 'sl-int')}</div>
@@ -932,45 +936,36 @@ function renderPaymentBlock(d) {
     '1st Installment':'1-й взнос','2nd Installment':'2-й взнос',
     '3rd Installment':'3-й взнос',
   };
+  // 20.07.26, по просьбе Ильи: тот же дизайн карточек, что и в project.html
+  // (renderPayment) — кольцо показывает НАКОПИТЕЛЬНЫЙ итог (0→100%), а не
+  // процент самого этапа; процент этапа — справа, обычным цветом текста
+  // (.ps-pct, var(--text)), не фиолетовым.
   const circ = 2 * Math.PI * 23;
   let cum = 0;
-  const steps = d.payment_schedule.map(p => {
+  const items = d.payment_schedule.map((p, i) => {
     cum += p.percent;
     const offset = circ * (1 - cum / total);
     const label = stageRu[p.stage] || p.stage;
     return `
-      <div class="ps-step">
+      <div class="ps-item">
         <div class="ps-circle-wrap">
           <svg viewBox="0 0 56 56" width="56" height="56">
             <circle class="ps-circle-track" cx="28" cy="28" r="23"/>
-            <circle class="ps-circle-fill" cx="28" cy="28" r="23" data-offset="${offset}"/>
+            <circle class="ps-circle-fill" id="psf-${i}" cx="28" cy="28" r="23" data-offset="${offset}"/>
           </svg>
-          <div class="ps-circle-pct" data-target="${p.percent}">0%</div>
+          <div class="ps-circle-pct" data-target="${cum}">0%</div>
         </div>
-        <div class="ps-step-label">${label}</div>
+        <div class="ps-item-info">
+          <div class="ps-item-stage">${label}</div>
+          ${p.note ? `<div class="ps-item-note">${p.note}</div>` : ''}
+        </div>
+        <div class="ps-pct" data-target="${p.percent}">0%</div>
       </div>`;
   }).join('');
 
   return `
     <div class="sec-title">График платежей</div>
-    <div class="white-card">
-      <div class="ps-timeline">${steps}</div>
-      <table class="ps-table">
-        <thead><tr><th>Этап</th><th>Условие</th><th style="text-align:right">%</th></tr></thead>
-        <tbody>
-          ${d.payment_schedule.map(p => `
-            <tr>
-              <td>${p.stage}</td>
-              <td>${p.note}</td>
-              <td style="text-align:right"><span class="ps-pct" data-target="${p.percent}">0%</span></td>
-            </tr>`).join('')}
-        </tbody>
-        <tfoot><tr>
-          <td colspan="2" style="padding:12px 14px;font-size:12px;color:var(--muted)">Итого</td>
-          <td style="text-align:right;padding:12px 14px;font-weight:700">${total}%</td>
-        </tr></tfoot>
-      </table>
-    </div>`;
+    <div class="ps-list">${items}</div>`;
 }
 
 function renderMaintBlock(d) {
@@ -980,11 +975,11 @@ function renderMaintBlock(d) {
   const noteHtml = (m.notes && m.notes !== 'Данные уточняются') ? `<div class="maint-note">${m.notes}</div>` : '';
   return `
     <div class="sec-title">Обслуживание</div>
-    <div class="white-card">
-      <div class="maint-row"><span class="maint-label">Common fee</span><span class="maint-val">${cfAmt}</span></div>
-      <div class="maint-row"><span class="maint-label">Sinking fund</span><span class="maint-val">${sfAmt}</span></div>
-      <div class="maint-row"><span class="maint-label">Регистрация — Фрихолд</span><span class="maint-val">${m.registration.freehold}</span></div>
-      <div class="maint-row"><span class="maint-label">Регистрация — Лизхолд</span><span class="maint-val">${m.registration.leasehold}</span></div>
+    <div class="maint-list">
+      <div class="maint-row"><span class="maint-icon">💳</span><span class="maint-label">Common fee / Плата за обслуживание</span><span class="maint-val">${cfAmt}</span></div>
+      <div class="maint-row"><span class="maint-icon">🏦</span><span class="maint-label">Sinking fund / Резервный фонд</span><span class="maint-val">${sfAmt}</span></div>
+      <div class="maint-row"><span class="maint-icon">🏠</span><span class="maint-label">Регистрация — Фрихолд</span><span class="maint-val">${m.registration.freehold}</span></div>
+      <div class="maint-row"><span class="maint-icon">📜</span><span class="maint-label">Регистрация — Лизхолд</span><span class="maint-val">${m.registration.leasehold}</span></div>
       ${noteHtml}
     </div>`;
 }
@@ -1151,6 +1146,10 @@ function renderUnit(u, proj, pd, allowedBlocks) {
   const isAvail = u.status === 'available';
   const projectColor = pd?.color || proj.color || '#5E17EB';
   document.documentElement.style.setProperty('--project-color', projectColor);
+  // 20.07.26, по просьбе Ильи: та же подложка под заметкой "Обслуживание",
+  // что и в project.html (renderProject) — оттенок цвета конкретного
+  // проекта, а не фиксированный фиолетовый.
+  document.documentElement.style.setProperty('--project-soft', projectColor + '22');
 
   document.title = `Flox — ${u.room_no}`;
 
