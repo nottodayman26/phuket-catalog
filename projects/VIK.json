@@ -186,7 +186,7 @@
     {
       "stage": "Reservation",
       "percent": 2,
-      "note": "Бронирование"
+      "note": "При отправке документов застройщику"
     },
     {
       "stage": "Sign Contract (SPA)",
@@ -196,27 +196,27 @@
     {
       "stage": "Foundation Complete",
       "percent": 15,
-      "note": "По завершению фундамента"
+      "note": "По завершении этапа строительства"
     },
     {
       "stage": "Structure Complete",
       "percent": 15,
-      "note": "По завершению конструкции"
+      "note": "По завершении этапа строительства"
     },
     {
       "stage": "Rooftop Complete",
       "percent": 10,
-      "note": "По завершению кровли"
+      "note": "По завершении этапа строительства"
     },
     {
       "stage": "Interior & Finishing",
       "percent": 20,
-      "note": "Отделочные работы"
+      "note": "По завершении этапа строительства"
     },
     {
       "stage": "Transfer of Ownership",
       "percent": 10,
-      "note": "Передача ключей"
+      "note": "При приемке квартиры"
     }
   ],
   "maintenance": {
