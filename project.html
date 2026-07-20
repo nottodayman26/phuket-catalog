@@ -910,6 +910,15 @@ body.map-fake-fullscreen-active { overflow: hidden; }
 .file-type { font-size: 11px; color: var(--muted); background: var(--surface-2); padding: 2px 7px; border-radius: 5px; }
 .file-arrow { color: var(--muted); }
 
+/* 20.07.26 (4), по просьбе Ильи: пустой, невидимый отступ после "Файлов
+   проекта" — без него на невысоких страницах короткие последние разделы
+   ("Обслуживание", "Файлы проекта") физически невозможно докрутить до
+   линии-якоря под шапкой (там просто не остаётся места для прокрутки), и
+   их иконка в баре вкладок никогда не подсвечивалась бы, даже когда они
+   реально видны на экране. Сам по себе не виден и не влияет на вёрстку —
+   просто даёт скролл-спаю "докрутить" последние разделы до нужной позиции. */
+.scrollspy-spacer { height: 260px; }
+
 /* ── SIDEBAR ─── */
 .sidebar-col {
   display: flex; flex-direction: column; gap: 14px;
@@ -995,21 +1004,6 @@ body.map-fake-fullscreen-active { overflow: hidden; }
 .action-btn.primary { background: var(--project-color); color: #fff; }
 .action-btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--line-2); }
 .action-btn:hover { opacity: 0.85; }
-
-/* ── FOOTER ─── */
-.page-footer {
-  margin-top: 48px;
-  border-top: 2px solid var(--text);
-  background: var(--text);
-  min-height: 60px;
-  opacity: 0;
-  transition: opacity .3s ease;
-}
-.page-footer.visible { opacity: 1; }
-body.light .page-footer {
-  border-top-color: #1C1C2E;
-  background: #1C1C2E;
-}
 
 /* ── LIGHTBOX ─── */
 .lightbox {
@@ -1280,6 +1274,7 @@ function renderProject(d) {
     <div id="s-construction" class="page-section">${renderConstruction(d)}</div>
     <div id="s-maint"   class="page-section">${renderMaint(d)}</div>
     <div id="s-files"   class="page-section">${renderFiles(d)}</div>
+    <div class="scrollspy-spacer" aria-hidden="true"></div>
   `;
 
   // Клик по вкладке → плавный скролл
@@ -1295,26 +1290,56 @@ function renderProject(d) {
     });
   });
 
-  // Активная вкладка при скролле
+  // Активная вкладка при скролле.
+  // 20.07.26 (4), по просьбе Ильи: раньше подсветка иконки строилась на
+  // IntersectionObserver с фиксированным "окном" (rootMargin) — при быстрой
+  // прокрутке или коротких блоках (например, "Обслуживание") обсервер мог
+  // отдать за один тик сразу НЕСКОЛЬКО entries с isIntersecting:true, и
+  // выигрывал тот, что просто последним попался в forEach, а не реально
+  // видимый сверху блок — из-за этого иконка иногда подсвечивала не тот
+  // раздел или не подсвечивалась вовсе. Теперь вместо этого на каждый кадр
+  // прокрутки вычисляем "текущей" секцией ПОСЛЕДНЮЮ, чей верх уже пересёк
+  // линию-якорь под топбаром+баром вкладок — этот способ детерминирован и не
+  // зависит от высоты блока или порядка срабатывания обсервера.
   const sectionIds = ['s-units','s-about','s-map','s-visual','s-payment','s-floors','s-construction','s-maint','s-files'];
+  const sectionEls = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
   let _lastActiveTabTarget = null;
-  const obs = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        // Дёргаем автопрокрутку бара вкладок только при РЕАЛЬНОЙ смене активной вкладки,
-        // а не при каждом повторном срабатывании обсервера (например, из-за догрузки картинок) —
-        // иначе это перебивает ручную прокрутку бара стрелками/пальцем
-        if (_lastActiveTabTarget === entry.target.id) return;
-        _lastActiveTabTarget = entry.target.id;
-        document.querySelectorAll('.tab').forEach(t => {
-          const isAct = t.dataset.target === entry.target.id;
-          t.classList.toggle('act', isAct);
-          if (isAct) t.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-        });
-      }
+  let _spyTicking = false;
+  function updateActiveTab() {
+    _spyTicking = false;
+    if (!sectionEls.length) return;
+    const topbarEl = document.querySelector('.flox-topbar') || document.getElementById('flox-topbar');
+    const topbarH = topbarEl ? topbarEl.offsetHeight : 0;
+    const tabsWrapEl2 = document.getElementById('tabsWrap');
+    const tabsH = tabsWrapEl2 ? tabsWrapEl2.offsetHeight : 0;
+    const anchor = topbarH + tabsH + 16;
+    let activeId = sectionEls[0].id;
+    for (const el of sectionEls) {
+      if (el.getBoundingClientRect().top - anchor <= 0) activeId = el.id;
+    }
+    // Докрутили до самого низа страницы (дальше скроллить некуда) — считаем
+    // активным последний раздел, даже если формально его верх ещё не дошёл
+    // до линии-якоря (актуально на невысоких страницах/больших экранах, где
+    // .scrollspy-spacer выше не даёт достаточного запаса).
+    if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+      activeId = sectionEls[sectionEls.length - 1].id;
+    }
+    if (activeId === _lastActiveTabTarget) return;
+    _lastActiveTabTarget = activeId;
+    document.querySelectorAll('.tab').forEach(t => {
+      const isAct = t.dataset.target === activeId;
+      t.classList.toggle('act', isAct);
+      if (isAct) t.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
     });
-  }, { rootMargin: '-108px 0px -55% 0px', threshold: 0 });
-  sectionIds.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
+  }
+  function onScrollSpy() {
+    if (_spyTicking) return;
+    _spyTicking = true;
+    requestAnimationFrame(updateActiveTab);
+  }
+  window.addEventListener('scroll', onScrollSpy, { passive: true });
+  window.addEventListener('resize', onScrollSpy);
+  updateActiveTab();
 
   // Стрелки прокрутки бара вкладок — каждая появляется только если есть куда листать в её сторону
   updateTabsArrows();
@@ -1338,12 +1363,6 @@ function renderProject(d) {
 
   // Ограничиваем высоту sidebar до начала карты
   setTimeout(updateSidebarHeight, 300);
-
-  // Показываем футер плавно после загрузки
-  setTimeout(() => {
-    const footer = document.querySelector('.page-footer');
-    if (footer) footer.classList.add('visible');
-  }, 500);
 
   // Запускаем анимацию платежей при скролле
   initPaymentAnimation();
@@ -2491,10 +2510,10 @@ function renderAbout(d) {
     <div class="sec-title">Детали проекта</div>
     <div class="info-box">
       <div class="info-row"><span class="info-label">Застройщик</span><span class="info-val">${d.developer}</span></div>
+      <div class="info-row"><span class="info-label">Район</span><span class="info-val">${d.district}, ${d.amphoe}</span></div>
+      <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion}</span></div>
       <div class="info-row"><span class="info-label">Корпуса</span><span class="info-val">${d.buildings.join(', ')}</span></div>
       <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors}</span></div>
-      <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion}</span></div>
-      <div class="info-row"><span class="info-label">Район</span><span class="info-val">${d.district}, ${d.amphoe}</span></div>
     </div>`;
 }
 
@@ -3035,9 +3054,9 @@ function renderSidebar(d) {
         <div class="info-card-title">О проекте</div>
         <div class="info-row"><span class="info-label">Застройщик</span><span class="info-val">${d.developer}</span></div>
         <div class="info-row"><span class="info-label">Район</span><span class="info-val">${d.district}</span></div>
-        <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors}</span></div>
-        <div class="info-row"><span class="info-label">Корпусов</span><span class="info-val">${d.buildings.length}</span></div>
         <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion}</span></div>
+        <div class="info-row"><span class="info-label">Корпусов</span><span class="info-val">${d.buildings.length}</span></div>
+        <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors}</span></div>
       </div>
     </div>
   `;
@@ -3263,8 +3282,6 @@ function updateSidebarHeight() {
   if (h > 0) sidebarCol.style.height = h + 'px';
 }
 </script>
-<!-- FOOTER -->
-<div class="page-footer"></div>
 
 <script src="topbar.js"></script>
 <script>floxTopbar.init({activePage:'project'});</script>
