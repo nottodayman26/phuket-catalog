@@ -1374,11 +1374,31 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .auth-status-box.rejected{background:var(--red-soft);color:#e05555;}
 .auth-btn{display:block;width:100%;padding:12px;border-radius:12px;border:none;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;box-sizing:border-box;}
 .auth-btn.secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--line-2);}
+/* 21.07.26 (2): data-userpic="false" не убрал чёрные края — сам <iframe>,
+   который вставляет виджет Telegram, шире и «квадратнее» видимой синей
+   кнопки внутри него (у iframe свой прямоугольный документ с непрозрачным
+   фоном), поэтому по углам скруглённой кнопки проступал прямоугольный тёмный
+   край iframe. Обрезаем сам iframe скруглением — это надёжнее, чем полагаться
+   на то, что нарисует внутри сам виджет. */
+#tgLoginWrap iframe{border-radius:12px!important;overflow:hidden;}
 
 /* ── PROFILE / AGENTS EDITOR ── (21.07.26, "дай доступ к редактуре информации агента") */
-.pe-field{margin-bottom:12px;}
+.pe-field{margin-bottom:16px;}
 .pe-field label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
-.pe-field input, .pe-field select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text);font-size:13.5px;font-family:inherit;}
+/* 21.07.26 (2), по прямой правке Ильи: убрали серую "таблетку" (заливка +
+   рамка) у полей формы — теперь просто подчёркивание, без залитого фона и
+   без прямоугольной обводки. */
+.pe-field input{width:100%;box-sizing:border-box;padding:8px 2px;border:none;border-bottom:1.5px solid var(--line-2);border-radius:0;background:none;color:var(--text);font-size:13.5px;font-family:inherit;transition:border-color .15s;}
+.pe-field input:focus{outline:none;border-bottom-color:var(--accent);}
+/* Кастомный разворот "Статус" в стиле уже существующих заякоренных
+   дропдаунов площадки (см. .fd-list/.fd-list-item — тот же вид, что у
+   фильтра "Срок сдачи" на странице поиска) — вместо стандартного браузерного
+   <select>, который не вписывался в общий стиль. */
+.ae-status-trigger{display:flex;align-items:center;justify-content:space-between;width:100%;box-sizing:border-box;padding:8px 2px;border:none;border-bottom:1.5px solid var(--line-2);cursor:pointer;font-size:13.5px;color:var(--text);font-family:inherit;transition:border-color .15s;}
+.ae-status-trigger:hover, .ae-status-trigger.vis{border-bottom-color:var(--accent);}
+.ae-status-chevron{color:var(--muted);font-size:11px;transition:transform .15s;}
+.ae-status-trigger.vis .ae-status-chevron{transform:rotate(180deg);color:var(--accent);}
+.ae-status-list{margin-top:4px;padding:4px;background:var(--surface-2);border-radius:10px;}
 
 /* ── ПОДДЕРЖКА НА ЭКРАНЕ ВХОДА ── (21.07.26, по просьбе Ильи) */
 .auth-support{position:absolute;left:0;right:0;bottom:22px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 20px;}
@@ -4718,6 +4738,18 @@ async function onTelegramAuth(tgUser) {
     renderAgent();
     renderAgentPopover();
     document.getElementById('authScreen').style.display = 'none';
+    // 21.07.26, найден Ильёй баг ("при первом входе не запускается анимация"):
+    // loadUnitCount() раньше вызывался безусловно в _floxBoot(), в момент
+    // ЗАГРУЗКИ страницы — включая тот случай, когда экран входа ещё лежит
+    // поверх всего. Анимация 0→N успевала доиграть и застыть на финальном
+    // числе, пока была не видна за экраном входа — и к моменту, когда вход
+    // подтверждался и экран убирался, зритель видел уже готовое число без
+    // самой анимации. При перезагрузке с уже одобренным агентом экран входа
+    // никогда не показывался, поэтому там анимация и так играла на виду —
+    // отсюда разница "при первом входе не играет, при перезагрузке играет".
+    // Теперь считаем именно в момент, когда страница реально становится
+    // видна (см. также showAuthIfNeeded ниже, для случая без экрана входа).
+    loadUnitCount();
   } catch(e) {
     console.error('Auth error:', e);
   }
@@ -4733,6 +4765,11 @@ function showAuthIfNeeded() {
   if (!AGENT) {
     setAuthScreenState(AGENT_AUTH_STATE || 'default');
     document.getElementById('authScreen').style.display = 'flex';
+  } else {
+    // Уже одобренный агент, кэш из localStorage — экран входа вообще не
+    // показываем, страница видна сразу, поэтому и анимацию счётчика играем
+    // прямо здесь (см. общий комментарий у loadUnitCount() ниже в _floxBoot).
+    loadUnitCount();
   }
 }
 
@@ -4767,8 +4804,7 @@ function _floxBoot() {
     // объявления filters выше). Любая перезагрузка flox-web.html — будь то
     // обычный переход по ссылке "Поиск" из project.html/unit.html, F5 или
     // Ctrl+Shift+R — теперь всегда показывает чистый экран: без проектов, без
-    // фильтров, с анимацией счётчика (loadUnitCount() ниже вызывается
-    // безусловно). Единственное, что показывает прежнее состояние — нативная
+    // фильтров. Единственное, что показывает прежнее состояние — нативная
     // кнопка "назад" в браузере (bfcache, этот код вообще не перезапускается).
     const p = localStorage.getItem('flox-page');
     if (p) { localStorage.removeItem('flox-page'); setPage(p); }
@@ -4781,7 +4817,14 @@ function _floxBoot() {
       if (AGENT) openProfileEditor();
     }
   });
-  loadUnitCount();
+  // 21.07.26: loadUnitCount() (анимация счётчика "Более NNN предложений")
+  // сюда больше НЕ вызывается безусловно — теперь она вызывается ровно в тот
+  // момент, когда страница реально становится видна человеку: либо сразу
+  // здесь же в showAuthIfNeeded() (агент уже одобрен, экран входа не
+  // показывается), либо в onTelegramAuth() сразу после того, как экран входа
+  // прячется (свежий вход). Иначе анимация проигрывалась вхолостую за
+  // экраном входа и к моменту входа уже была не видна — баг, который нашёл
+  // Илья ("при первом входе не запускается анимация").
   loadSoldTicker();
   loadProjectCoords();
   // 17.07.26, по найденному Ильёй багу (плашка карты показывала устаревшую
@@ -5273,28 +5316,61 @@ async function renderAdminAgentsList() {
   const statusLabel = s => (s === 'rejected') ? '<span style="color:#e05555">отклонён</span>'
     : (s === 'pending') ? '<span style="color:#c98a00">на рассмотрении</span>'
     : '<span style="color:#2e9e5b">одобрен</span>';
-  // 21.07.26, по прямой правке Ильи: карточки агентов — белые прямоугольники
-  // без серой обводки (было border:1px solid var(--line)); лёгкая тень вместо
-  // рамки — просто чтобы карточки отделялись друг от друга визуально.
+  // 21.07.26 (2), по прямой правке Ильи: убрали "таблетку" у строк агентов
+  // целиком (была белая заливка + тень) — теперь это просто строки списка,
+  // разделённые тонкой линией снизу, без фона/рамки/тени. У кнопки
+  // "Изменить" тоже убрали обводку — теперь просто текст-ссылка.
   body.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto;">
+    <div style="display:flex;flex-direction:column;max-height:46vh;overflow-y:auto;">
       ${_allAgentsCache.map(a => `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border:none;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);">
           <div>
-            <div style="font-size:13.5px;font-weight:600;color:#111118;">${_peEsc(a.full_name) || '—'}${a.is_admin ? ' 👑' : ''}</div>
-            <div style="font-size:11.5px;color:rgba(0,0,0,.5);">${_peEsc(a.agency) || '—'} · ${_peEsc(a.phone) || '—'} · ${statusLabel(a.status)}</div>
+            <div style="font-size:13.5px;font-weight:600;">${_peEsc(a.full_name) || '—'}${a.is_admin ? ' 👑' : ''}</div>
+            <div style="font-size:11.5px;color:var(--muted);">${_peEsc(a.agency) || '—'} · ${_peEsc(a.phone) || '—'} · ${statusLabel(a.status)}</div>
           </div>
-          <button class="modal-clear" style="border:1px solid var(--line-2);border-radius:8px;padding:6px 12px;flex-shrink:0;" onclick="openAgentEditRow('${a.id}')">Изменить</button>
+          <button class="modal-clear" style="border:none;padding:6px 4px;flex-shrink:0;" onclick="openAgentEditRow('${a.id}')">Изменить</button>
         </div>`).join('')}
     </div>
     <div id="agentEditRowWrap"></div>`;
 }
+
+// 21.07.26 (2), по прямой правке Ильи: вместо стандартного <select> —
+// кастомный разворот в стиле уже существующих заякоренных дропдаунов сайта
+// (см. .fd-list/.fd-list-item, тот же вид, что у фильтра "Срок сдачи").
+const AE_STATUS_LABELS = { approved: 'Одобрен', pending: 'На рассмотрении', rejected: 'Отклонён' };
+let _aeStatusValue = 'approved';
+
+function toggleAeStatusList() {
+  const list = document.getElementById('aeStatusList');
+  const trigger = document.getElementById('aeStatusTrigger');
+  const willShow = list.style.display === 'none';
+  list.style.display = willShow ? 'block' : 'none';
+  trigger.classList.toggle('vis', willShow);
+}
+function selectAeStatus(value) {
+  _aeStatusValue = value;
+  document.getElementById('aeStatusTriggerLabel').textContent = AE_STATUS_LABELS[value];
+  document.querySelectorAll('#aeStatusList .fd-list-item').forEach(el => {
+    el.classList.toggle('act', el.dataset.value === value);
+  });
+  document.getElementById('aeStatusList').style.display = 'none';
+  document.getElementById('aeStatusTrigger').classList.remove('vis');
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('#aeStatusTrigger') || e.target.closest('#aeStatusList')) return;
+  const list = document.getElementById('aeStatusList');
+  if (list && list.style.display !== 'none') {
+    list.style.display = 'none';
+    document.getElementById('aeStatusTrigger')?.classList.remove('vis');
+  }
+});
 
 function openAgentEditRow(id) {
   const a = _allAgentsCache.find(x => String(x.id) === String(id));
   if (!a) return;
   // 21.07.26, по просьбе Ильи: поле "Комиссия" убрано из формы — commission_rate_pct
   // в базе не трогаем вообще (не входит в PATCH ниже), остаётся как было.
+  _aeStatusValue = a.status || 'approved';
   document.getElementById('agentEditRowWrap').innerHTML = `
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
       <div class="pe-field"><label>Полное имя</label><input id="aeFullName" value="${_peEsc(a.full_name)}"></div>
@@ -5302,11 +5378,15 @@ function openAgentEditRow(id) {
       <div class="pe-field"><label>Телефон</label><input id="aePhone" value="${_peEsc(a.phone)}"></div>
       <div class="pe-field">
         <label>Статус</label>
-        <select id="aeStatus">
-          <option value="approved" ${(a.status==='approved'||!a.status)?'selected':''}>Одобрен</option>
-          <option value="pending" ${a.status==='pending'?'selected':''}>На рассмотрении</option>
-          <option value="rejected" ${a.status==='rejected'?'selected':''}>Отклонён</option>
-        </select>
+        <div class="ae-status-trigger" id="aeStatusTrigger" onclick="toggleAeStatusList()">
+          <span id="aeStatusTriggerLabel">${AE_STATUS_LABELS[_aeStatusValue]}</span>
+          <span class="ae-status-chevron">⌄</span>
+        </div>
+        <div class="fd-list ae-status-list" id="aeStatusList" style="display:none;">
+          <div class="fd-list-item ${_aeStatusValue==='approved'?'act':''}" data-value="approved" onclick="selectAeStatus('approved')">Одобрен</div>
+          <div class="fd-list-item ${_aeStatusValue==='pending'?'act':''}" data-value="pending" onclick="selectAeStatus('pending')">На рассмотрении</div>
+          <div class="fd-list-item ${_aeStatusValue==='rejected'?'act':''}" data-value="rejected" onclick="selectAeStatus('rejected')">Отклонён</div>
+        </div>
       </div>
       <div class="modal-actions">
         <button class="modal-clear" onclick="document.getElementById('agentEditRowWrap').innerHTML=''">Отмена</button>
@@ -5320,7 +5400,7 @@ async function saveAgentEditRow(id) {
   const full_name = document.getElementById('aeFullName').value.trim();
   const agency = document.getElementById('aeAgency').value.trim();
   const phone = document.getElementById('aePhone').value.trim();
-  const status = document.getElementById('aeStatus').value;
+  const status = _aeStatusValue;
   const msg = document.getElementById('aeStatusMsg');
   msg.textContent = 'Сохраняю…';
   try {
