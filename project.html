@@ -1719,9 +1719,14 @@ function renderProject(d) {
   // "Ближайшие локации" ниже (goToNearbyLocation), чтобы форсировать загрузку
   // карты, если по локации кликнули раньше, чем карта успела появиться сама.
   CURRENT_PROJECT_DATA = d;
-  document.documentElement.style.setProperty('--project-color', d.color || '#5E17EB');
-  const soft = d.color ? d.color + '22' : 'rgba(94,23,235,0.18)';
-  document.documentElement.style.setProperty('--project-soft', soft);
+  // 21.07.26, по прямой просьбе Ильи: раньше у каждого проекта была своя тема
+  // (d.color из JSON проекта — золотой у VIK, зелёный у KAT и т.д.), из-за
+  // этого страницы разных проектов выглядели несогласованно. Теперь у всех
+  // проектов единая фиолетовая тема Flox, независимо от d.color в JSON —
+  // само поле color в JSON проекта можно не трогать/не удалять, оно просто
+  // больше не используется здесь.
+  document.documentElement.style.setProperty('--project-color', '#5E17EB');
+  document.documentElement.style.setProperty('--project-soft', 'rgba(94,23,235,0.18)');
   document.title = `Flox — ${d.name}`;
 
   renderHero(d);

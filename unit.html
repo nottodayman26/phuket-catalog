@@ -1471,12 +1471,13 @@ function animateProjCount(el, target, duration, formatter) {
 
 function renderUnit(u, proj, pd, allowedBlocks) {
   const isAvail = u.status === 'available';
-  const projectColor = pd?.color || proj.color || '#5E17EB';
-  document.documentElement.style.setProperty('--project-color', projectColor);
-  // 20.07.26, по просьбе Ильи: та же подложка под заметкой "Обслуживание",
-  // что и в project.html (renderProject) — оттенок цвета конкретного
-  // проекта, а не фиксированный фиолетовый.
-  document.documentElement.style.setProperty('--project-soft', projectColor + '22');
+  // 21.07.26, по прямой и более новой просьбе Ильи: единая фиолетовая тема
+  // для ВСЕХ проектов (см. тот же фикс в project.html/renderProject) —
+  // отменяет более раннее решение от 20.07.26 использовать цвет конкретного
+  // проекта здесь. Если это было важно сохранить именно на unit.html —
+  // скажи, откачу обратно только для этого файла.
+  document.documentElement.style.setProperty('--project-color', '#5E17EB');
+  document.documentElement.style.setProperty('--project-soft', 'rgba(94,23,235,0.18)');
 
   document.title = `Flox — ${u.room_no}`;
 

@@ -1363,7 +1363,7 @@ body.map-fake-fullscreen-active{overflow:hidden;}
    именно это Илья описал как «анонимный доступ по умолчанию, минуя эту
    страницу». Теперь это настоящий полноэкранный блокирующий оверлей. */
 .auth-screen{position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;}
-.auth-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:32px 28px 28px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.25);}
+.auth-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:32px 28px 28px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.1);}
 .auth-logo{font-size:26px;font-weight:700;letter-spacing:-0.05em;color:var(--text);margin-bottom:14px;}
 .auth-logo-dot{width:7px;height:7px;border-radius:50%;background:#FF6B6B;display:inline-block;margin-left:2px;margin-bottom:11px;}
 .auth-emoji{font-size:34px;margin-bottom:10px;}
@@ -1382,10 +1382,10 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 
 /* ── ПОДДЕРЖКА НА ЭКРАНЕ ВХОДА ── (21.07.26, по просьбе Ильи) */
 .auth-support{position:absolute;left:0;right:0;bottom:22px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 20px;}
-.auth-support-text{font-size:11.5px;color:var(--muted);}
-.auth-support-row{display:flex;align-items:center;gap:12px;}
-.auth-support-qr{width:52px;height:52px;flex-shrink:0;border-radius:8px;overflow:hidden;}
-.auth-support-cap{font-size:11.5px;color:var(--muted);line-height:1.5;text-align:left;}
+.auth-support-text{font-size:13px;color:var(--muted);}
+.auth-support-row{display:flex;align-items:center;gap:14px;}
+.auth-support-qr{width:72px;height:72px;flex-shrink:0;border-radius:10px;overflow:hidden;}
+.auth-support-cap{font-size:13px;color:var(--muted);line-height:1.5;text-align:left;}
 .auth-support-cap span{display:block;color:var(--muted);opacity:.75;}
 </style>
 </head>
@@ -4565,6 +4565,17 @@ function renderAgent() {
   // Сохраняем для других страниц
   try { localStorage.setItem('flox-agent', JSON.stringify(AGENT)); } catch(e) {}
   updatePlacementBarVisibility();
+  // 21.07.26, найден Ильёй баг ("при первой загрузке нет кнопки Агенты, при
+  // перезагрузке появляется"): пункт "Агенты" в поповере показывает/прячет
+  // topbar.js в своей _loadAgent() — но она вызывается только один раз, при
+  // floxTopbar.init(), ДО того как AGENT вообще известен (виджет входа ещё
+  // не отработал). При самом первом входе (без предыдущего кэша) renderAgent()
+  // выше обновляет аватар/имя вручную, но никогда не просит topbar.js заново
+  // проверить is_admin и показать пункт меню — только перезагрузка страницы
+  // (где init() снова читает уже свежий localStorage) чинила это задним
+  // числом. Явно перевызываем _loadAgent() отсюда же, чтобы пункт появлялся
+  // сразу, без перезагрузки.
+  if (window.floxTopbar?._loadAgent) floxTopbar._loadAgent();
 }
 
 // 14.07.26: показывает панель "Расставить точки" только агенту с is_admin=true
@@ -4789,7 +4800,7 @@ function _floxBoot() {
   // .auth-support в CSS и разметку #authScreen ниже).
   const supportQr = document.getElementById('authSupportQr');
   if (supportQr && window.floxQrSvg) {
-    supportQr.innerHTML = window.floxQrSvg('https://t.me/flox_help', 52, 'M');
+    supportQr.innerHTML = window.floxQrSvg('https://t.me/flox_help', 72, 'M');
   }
 }
 if (document.readyState === 'loading') {
@@ -5262,13 +5273,16 @@ async function renderAdminAgentsList() {
   const statusLabel = s => (s === 'rejected') ? '<span style="color:#e05555">отклонён</span>'
     : (s === 'pending') ? '<span style="color:#c98a00">на рассмотрении</span>'
     : '<span style="color:#2e9e5b">одобрен</span>';
+  // 21.07.26, по прямой правке Ильи: карточки агентов — белые прямоугольники
+  // без серой обводки (было border:1px solid var(--line)); лёгкая тень вместо
+  // рамки — просто чтобы карточки отделялись друг от друга визуально.
   body.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto;">
       ${_allAgentsCache.map(a => `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border:none;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
           <div>
-            <div style="font-size:13.5px;font-weight:600;">${_peEsc(a.full_name) || '—'}${a.is_admin ? ' 👑' : ''}</div>
-            <div style="font-size:11.5px;color:var(--muted);">${_peEsc(a.agency) || '—'} · ${_peEsc(a.phone) || '—'} · ${statusLabel(a.status)}</div>
+            <div style="font-size:13.5px;font-weight:600;color:#111118;">${_peEsc(a.full_name) || '—'}${a.is_admin ? ' 👑' : ''}</div>
+            <div style="font-size:11.5px;color:rgba(0,0,0,.5);">${_peEsc(a.agency) || '—'} · ${_peEsc(a.phone) || '—'} · ${statusLabel(a.status)}</div>
           </div>
           <button class="modal-clear" style="border:1px solid var(--line-2);border-radius:8px;padding:6px 12px;flex-shrink:0;" onclick="openAgentEditRow('${a.id}')">Изменить</button>
         </div>`).join('')}
@@ -5279,12 +5293,13 @@ async function renderAdminAgentsList() {
 function openAgentEditRow(id) {
   const a = _allAgentsCache.find(x => String(x.id) === String(id));
   if (!a) return;
+  // 21.07.26, по просьбе Ильи: поле "Комиссия" убрано из формы — commission_rate_pct
+  // в базе не трогаем вообще (не входит в PATCH ниже), остаётся как было.
   document.getElementById('agentEditRowWrap').innerHTML = `
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
       <div class="pe-field"><label>Полное имя</label><input id="aeFullName" value="${_peEsc(a.full_name)}"></div>
       <div class="pe-field"><label>Агентство</label><input id="aeAgency" value="${_peEsc(a.agency)}"></div>
       <div class="pe-field"><label>Телефон</label><input id="aePhone" value="${_peEsc(a.phone)}"></div>
-      <div class="pe-field"><label>Комиссия, %</label><input id="aeCommission" type="number" step="0.1" value="${a.commission_rate_pct ?? ''}"></div>
       <div class="pe-field">
         <label>Статус</label>
         <select id="aeStatus">
@@ -5305,22 +5320,44 @@ async function saveAgentEditRow(id) {
   const full_name = document.getElementById('aeFullName').value.trim();
   const agency = document.getElementById('aeAgency').value.trim();
   const phone = document.getElementById('aePhone').value.trim();
-  const commission_rate_pct = parseFloat(document.getElementById('aeCommission').value) || 0;
   const status = document.getElementById('aeStatus').value;
   const msg = document.getElementById('aeStatusMsg');
   msg.textContent = 'Сохраняю…';
   try {
+    // 21.07.26, найден Ильёй баг ("изменения не применяются"): раньше тут
+    // стояло Prefer: return=minimal и проверка только resp.ok — а PostgREST
+    // отвечает 2xx/204 ДАЖЕ если WHERE id=eq.… не совпал ни с одной строкой
+    // (например если Row Level Security в Supabase молча блокирует запись в
+    // agents для анонимного ключа) — то есть "успех" в интерфейсе не
+    // гарантирует, что строка правда обновилась. Меняем на
+    // return=representation и явно проверяем, что в ответе действительно
+    // пришла обновлённая строка — если нет, показываем понятную причину
+    // вместо ложного "✅ Сохранено".
     const resp = await fetch(`${SUPABASE_URL}/agents?id=eq.${id}`, {
       method: 'PATCH',
-      headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ full_name, agency, phone, commission_rate_pct, status }),
+      headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ full_name, agency, phone, status }),
     });
-    if (!resp.ok) throw new Error(resp.status);
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error('Ошибка сохранения агента:', resp.status, errText);
+      msg.textContent = `⚠️ Не удалось сохранить (ошибка ${resp.status})`;
+      return;
+    }
+    const rows = await resp.json();
+    if (!Array.isArray(rows) || !rows.length) {
+      // Запрос прошёл без ошибки, но НИ ОДНА строка не обновилась — почти
+      // наверняка Row Level Security в Supabase блокирует запись в agents
+      // для анонимного ключа (та же роль, которой сайт вообще всё читает).
+      console.error('PATCH agents вернул 0 строк — вероятно RLS блокирует запись анонимным ключом.');
+      msg.innerHTML = '⚠️ Не сохранилось: Supabase молча отклонил запись (0 строк изменено). Похоже, в таблице agents не разрешена запись анонимным ключом (Row Level Security) — нужно добавить UPDATE-политику в Supabase, см. SQL, который прислал Клод отдельно.';
+      return;
+    }
     msg.textContent = '✅ Сохранено';
     setTimeout(() => renderAdminAgentsList(), 700);
   } catch(e) {
     console.error('Ошибка сохранения агента:', e);
-    msg.textContent = '⚠️ Не удалось сохранить';
+    msg.textContent = '⚠️ Не удалось сохранить — проверьте соединение и попробуйте ещё раз';
   }
 }
 </script>
@@ -5339,12 +5376,21 @@ async function saveAgentEditRow(id) {
     <div class="auth-sub" id="authSub">
       Войдите через Telegram чтобы получить доступ к каталогу, предложениям и активности клиентов.
     </div>
+    <!-- 21.07.26, по скринам Ильи ("какие-то углы" + "чёрный цвет" у кнопки
+         входа): когда у человека уже есть сохранённая Telegram-сессия в
+         браузере, виджет сам переключается на вариант "Войти как <Имя>" и
+         подрисовывает рядом с круглой кнопкой квадратную аватарку без
+         скругления — именно она и давала острые углы/тёмное пятно рядом с
+         аккуратной кнопкой. data-userpic="false" отключает эту аватарку —
+         кнопка остаётся одинаковой (просто "Войти через Telegram") в любом
+         состоянии, без вставки чужеродного квадрата. -->
     <div id="tgLoginWrap" style="display:flex;justify-content:center;margin-bottom:10px;">
       <!-- Telegram Login Widget -->
       <script async src="https://telegram.org/js/telegram-widget.js?22"
         data-telegram-login="phuket_proptech_bot"
         data-size="large"
         data-radius="12"
+        data-userpic="false"
         data-onauth="onTelegramAuth(user)"
         data-request-access="write">
       </script>
