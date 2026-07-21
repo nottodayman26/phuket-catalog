@@ -13,6 +13,447 @@
      когда агент реально откроет вкладку "На карте", а не на каждой загрузке
      страницы, чтобы не тратить лимит впустую. -->
 <script src="https://api-maps.yandex.ru/2.1/?apikey=9f137a3a-c842-4d1b-9c5d-60e9ad353585&lang=ru_RU"></script>
+<!-- 21.07.26, по просьбе Ильи: тот же самодостаточный QR-энкодер, что и в
+     project.html (без внешних зависимостей/CDN — генерирует и рисует QR
+     прямо в браузере), здесь нужен для серой плашки поддержки на экране
+     входа (см. .auth-support ниже) — чтобы человек, который не может войти,
+     мог отсканировать и написать в поддержку в Telegram. window.floxQrSvg(text,
+     sizePx) можно переиспользовать где угодно ещё. -->
+<script>
+// Minimal, self-contained QR Code Model 2 encoder (Byte mode), ported from the
+// public-domain "qrcode-generator" algorithm (kazuhikoarase). No dependencies.
+// Exposes: makeQR(text, {ecLevel}) -> { size, isDark(row,col) }
+
+const QRMode = { MODE_8BIT_BYTE: 4 };
+const QRErrorCorrectLevel = { L: 1, M: 0, Q: 3, H: 2 };
+// Note: bit patterns per spec: L=01, M=00, Q=11, H=10 -> using spec values below instead.
+const EC_BITS = { L: 0b01, M: 0b00, Q: 0b11, H: 0b10 };
+
+// ---- RS block table (data codewords count etc.) for versions 1-10, EC levels L/M/Q/H ----
+// Format: [totalCodewords, ecCodewordsPerBlock, blocks group1, dataCodewords group1, blocks group2, dataCodewords group2]
+const RS_BLOCK_TABLE = {
+  1: { L:[26,7,1,19,0,0], M:[26,10,1,16,0,0], Q:[26,13,1,13,0,0], H:[26,17,1,9,0,0] },
+  2: { L:[44,10,1,34,0,0], M:[44,16,1,28,0,0], Q:[44,22,1,22,0,0], H:[44,28,1,16,0,0] },
+  3: { L:[70,15,1,55,0,0], M:[70,26,1,44,0,0], Q:[70,36,2,17,0,0], H:[70,44,2,13,0,0] },
+  4: { L:[100,20,1,80,0,0], M:[100,36,2,32,0,0], Q:[100,52,2,24,0,0], H:[100,64,4,9,0,0] },
+  5: { L:[134,26,1,108,0,0], M:[134,48,2,43,0,0], Q:[134,72,2,15,2,16], H:[134,88,2,11,2,12] },
+  6: { L:[172,36,2,68,0,0], M:[172,64,4,27,0,0], Q:[172,96,4,19,0,0], H:[172,112,4,15,0,0] },
+  7: { L:[196,40,2,78,0,0], M:[196,72,4,31,0,0], Q:[196,108,2,14,4,15], H:[196,130,4,13,1,14] },
+  8: { L:[242,48,2,97,0,0], M:[242,88,2,38,2,39], Q:[242,132,4,18,2,19], H:[242,156,4,14,2,15] },
+  9: { L:[292,60,2,116,0,0], M:[292,110,3,36,2,37], Q:[292,160,4,16,4,17], H:[292,192,4,12,4,13] },
+  10:{ L:[346,72,2,68,2,69], M:[346,130,4,43,1,44], Q:[346,192,6,19,2,20], H:[346,224,6,15,2,16] },
+};
+
+// Character capacity (byte mode) per version/EC, used to pick smallest version
+function getRSBlocks(version, ecLevelName) {
+  const t = RS_BLOCK_TABLE[version][ecLevelName];
+  const [totalCw, ecCw, b1, d1, b2, d2] = t;
+  const blocks = [];
+  for (let i=0;i<b1;i++) blocks.push({ totalCount: d1+ecCw, dataCount: d1 });
+  for (let i=0;i<b2;i++) blocks.push({ totalCount: d2+ecCw, dataCount: d2 });
+  return blocks;
+}
+
+function totalDataCodewords(version, ecLevelName) {
+  return getRSBlocks(version, ecLevelName).reduce((a,b)=>a+b.dataCount,0);
+}
+
+// ---- GF(256) math for Reed-Solomon ----
+const GF_EXP = new Array(512);
+const GF_LOG = new Array(256);
+(function initGF(){
+  let x = 1;
+  for (let i=0;i<255;i++){
+    GF_EXP[i] = x;
+    GF_LOG[x] = i;
+    x <<= 1;
+    if (x & 0x100) x ^= 0x11D;
+  }
+  for (let i=255;i<512;i++) GF_EXP[i] = GF_EXP[i-255];
+})();
+function gfMul(a,b){
+  if (a===0||b===0) return 0;
+  return GF_EXP[GF_LOG[a]+GF_LOG[b]];
+}
+
+class Polynomial {
+  constructor(nums){
+    let offset=0;
+    while(offset<nums.length-1 && nums[offset]===0) offset++;
+    this.num = nums.slice(offset);
+  }
+  get(i){ return this.num[i]; }
+  get length(){ return this.num.length; }
+  multiply(e){
+    const num = new Array(this.length + e.length - 1).fill(0);
+    for (let i=0;i<this.length;i++)
+      for (let j=0;j<e.length;j++)
+        num[i+j] ^= gfMul(this.get(i), e.get(j));
+    return new Polynomial(num);
+  }
+}
+function properMod(dividend, divisor){
+  let num = dividend.num.slice();
+  while (num.length - 1 >= divisor.length - 1) {
+    // strip leading zeros
+    let lead=0;
+    while (lead<num.length && num[lead]===0) lead++;
+    num = num.slice(lead);
+    if (num.length - 1 < divisor.length - 1) break;
+    const ratio = GF_LOG[num[0]] - GF_LOG[divisor.get(0)];
+    const rmod = ((ratio % 255) + 255) % 255;
+    for (let i=0;i<divisor.length;i++){
+      num[i] ^= gfMul(divisor.get(i), GF_EXP[rmod]);
+    }
+  }
+  // strip leading zeros
+  let lead=0;
+  while (lead<num.length-1 && num[lead]===0) lead++;
+  return new Polynomial(num.slice(lead));
+}
+function rsGeneratorPoly(ecCount){
+  let g = new Polynomial([1]);
+  for (let i=0;i<ecCount;i++){
+    g = g.multiply(new Polynomial([1, GF_EXP[i]]));
+  }
+  return g;
+}
+
+// ---- Bit buffer ----
+class BitBuffer {
+  constructor(){ this.buffer=[]; this.length=0; }
+  get(index){ const bufIndex = Math.floor(index/8); return ((this.buffer[bufIndex] >>> (7-index%8)) & 1) === 1; }
+  put(num, length){ for (let i=0;i<length;i++) this.putBit(((num >>> (length-i-1)) & 1)===1); }
+  putBit(bit){
+    const bufIndex = Math.floor(this.length/8);
+    if (this.buffer.length <= bufIndex) this.buffer.push(0);
+    if (bit) this.buffer[bufIndex] |= (0x80 >>> (this.length % 8));
+    this.length++;
+  }
+}
+
+function charCountBits(version){
+  if (version <= 9) return 8; // byte mode, versions 1-9
+  return 16; // versions 10-26 use 16
+}
+
+function createData(version, ecLevelName, dataBytes){
+  const buffer = new BitBuffer();
+  buffer.put(QRMode.MODE_8BIT_BYTE, 4);
+  buffer.put(dataBytes.length, charCountBits(version));
+  for (let i=0;i<dataBytes.length;i++) buffer.put(dataBytes[i], 8);
+
+  const rsBlocks = getRSBlocks(version, ecLevelName);
+  const totalDataCount = rsBlocks.reduce((a,b)=>a+b.dataCount,0);
+
+  if (buffer.length + 4 <= totalDataCount * 8) buffer.put(0, 4);
+  while (buffer.length % 8 !== 0) buffer.putBit(false);
+
+  const PAD0 = 0xEC, PAD1 = 0x11;
+  while (true) {
+    if (buffer.length >= totalDataCount*8) break;
+    buffer.put(PAD0, 8);
+    if (buffer.length >= totalDataCount*8) break;
+    buffer.put(PAD1, 8);
+  }
+  return createBytes(buffer, rsBlocks);
+}
+
+function createBytes(buffer, rsBlocks){
+  let offset = 0;
+  const maxDcCount = Math.max(...rsBlocks.map(b=>b.dataCount));
+  const maxEcCount = Math.max(...rsBlocks.map(b=>b.totalCount - b.dataCount));
+  const dcdata = new Array(rsBlocks.length);
+  const ecdata = new Array(rsBlocks.length);
+
+  for (let r=0;r<rsBlocks.length;r++){
+    const dcCount = rsBlocks[r].dataCount;
+    const ecCount = rsBlocks[r].totalCount - dcCount;
+    dcdata[r] = new Array(dcCount);
+    for (let i=0;i<dcCount;i++) dcdata[r][i] = 0xff & buffer.buffer[i+offset];
+    offset += dcCount;
+
+    const rsPoly = rsGeneratorPoly(ecCount);
+    const rawPoly = new Polynomial(dcdata[r].concat(new Array(rsPoly.length-1).fill(0)));
+    const modPoly = properMod(rawPoly, rsPoly);
+    ecdata[r] = new Array(rsPoly.length-1);
+    for (let i=0;i<ecdata[r].length;i++){
+      const modIndex = i + modPoly.length - ecdata[r].length;
+      ecdata[r][i] = (modIndex>=0) ? modPoly.get(modIndex) : 0;
+    }
+  }
+
+  let totalCodeCount = 0;
+  for (const b of rsBlocks) totalCodeCount += b.totalCount;
+  const data = new Array(totalCodeCount);
+  let index = 0;
+  for (let i=0;i<maxDcCount;i++)
+    for (let r=0;r<rsBlocks.length;r++)
+      if (i < dcdata[r].length) data[index++] = dcdata[r][i];
+  for (let i=0;i<maxEcCount;i++)
+    for (let r=0;r<rsBlocks.length;r++)
+      if (i < ecdata[r].length) data[index++] = ecdata[r][i];
+  return data;
+}
+
+// ---- Module matrix building ----
+class QRCodeModel {
+  constructor(version, ecLevelName){
+    this.version = version;
+    this.ecLevelName = ecLevelName;
+    this.moduleCount = version*4 + 17;
+    this.modules = Array.from({length:this.moduleCount}, ()=> new Array(this.moduleCount).fill(null));
+  }
+  isDark(row,col){ return !!this.modules[row][col]; }
+
+  setupPositionProbePattern(row,col){
+    for (let r=-1;r<=7;r++){
+      if (row+r<=-1||this.moduleCount<=row+r) continue;
+      for (let c=-1;c<=7;c++){
+        if (col+c<=-1||this.moduleCount<=col+c) continue;
+        const dark = (0<=r&&r<=6&&(c===0||c===6)) || (0<=c&&c<=6&&(r===0||r===6)) || (2<=r&&r<=4&&2<=c&&c<=4);
+        this.modules[row+r][col+c] = dark;
+      }
+    }
+  }
+  setupTimingPattern(){
+    for (let r=8;r<this.moduleCount-8;r++){
+      if (this.modules[r][6]!=null) continue;
+      this.modules[r][6] = (r%2===0);
+    }
+    for (let c=8;c<this.moduleCount-8;c++){
+      if (this.modules[6][c]!=null) continue;
+      this.modules[6][c] = (c%2===0);
+    }
+  }
+  setupPositionAdjustPattern(){
+    const pos = getAlignmentPatternPositions(this.version);
+    for (let i=0;i<pos.length;i++){
+      for (let j=0;j<pos.length;j++){
+        const row = pos[i], col = pos[j];
+        if (this.modules[row][col]!=null) continue;
+        for (let r=-2;r<=2;r++){
+          for (let c=-2;c<=2;c++){
+            const dark = (r===-2||r===2||c===-2||c===2||(r===0&&c===0));
+            this.modules[row+r][col+c] = dark;
+          }
+        }
+      }
+    }
+  }
+  setupTypeNumber(test){
+    const bits = getBCHTypeNumber(this.version);
+    for (let i=0;i<18;i++){
+      const mod = (!test && ((bits>>i)&1)===1);
+      this.modules[Math.floor(i/3)][i%3 + this.moduleCount-8-3] = mod;
+    }
+    for (let i=0;i<18;i++){
+      const mod = (!test && ((bits>>i)&1)===1);
+      this.modules[i%3 + this.moduleCount-8-3][Math.floor(i/3)] = mod;
+    }
+  }
+  setupTypeInfo(test, maskPattern, ecBits){
+    const data = (ecBits<<3) | maskPattern;
+    const bits = getBCHTypeInfo(data);
+    for (let i=0;i<15;i++){
+      const mod = (!test && ((bits>>i)&1)===1);
+      if (i<6) this.modules[i][8]=mod;
+      else if (i<8) this.modules[i+1][8]=mod;
+      else this.modules[this.moduleCount-15+i][8]=mod;
+    }
+    for (let i=0;i<15;i++){
+      const mod = (!test && ((bits>>i)&1)===1);
+      if (i<8) this.modules[8][this.moduleCount-i-1]=mod;
+      else if (i<9) this.modules[8][15-i-1+1]=mod;
+      else this.modules[8][15-i-1]=mod;
+    }
+    this.modules[this.moduleCount-8][8] = (!test);
+  }
+  mapData(data, maskPattern){
+    let inc=-1, row=this.moduleCount-1, bitIndex=7, byteIndex=0;
+    for (let col=this.moduleCount-1; col>0; col-=2){
+      if (col===6) col--;
+      while (true){
+        for (let c=0;c<2;c++){
+          if (this.modules[row][col-c]==null){
+            let dark=false;
+            if (byteIndex<data.length){
+              dark = ((data[byteIndex]>>>bitIndex)&1)===1;
+            }
+            const m = maskFunc(maskPattern, row, col-c);
+            if (m) dark = !dark;
+            this.modules[row][col-c]=dark;
+            bitIndex--;
+            if (bitIndex===-1){ byteIndex++; bitIndex=7; }
+          }
+        }
+        row += inc;
+        if (row<0||this.moduleCount<=row){ row-=inc; inc=-inc; break; }
+      }
+    }
+  }
+}
+function maskFunc(pattern,row,col){
+  switch(pattern){
+    case 0: return (row+col)%2===0;
+    case 1: return row%2===0;
+    case 2: return col%3===0;
+    case 3: return (row+col)%3===0;
+    case 4: return (Math.floor(row/2)+Math.floor(col/3))%2===0;
+    case 5: return (row*col)%2 + (row*col)%3 === 0;
+    case 6: return ((row*col)%2 + (row*col)%3)%2===0;
+    case 7: return ((row*col)%3 + (row+col)%2)%2===0;
+  }
+  return false;
+}
+function getAlignmentPatternPositions(version){
+  if (version===1) return [];
+  const table = {
+    2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]
+  };
+  return table[version] || [];
+}
+function getBCHTypeInfo(data){
+  let d = data<<10;
+  while (getBCHDigit(d) - getBCHDigit(0x537) >= 0) d ^= (0x537 << (getBCHDigit(d)-getBCHDigit(0x537)));
+  return ((data<<10)|d) ^ 0x5412;
+}
+function getBCHTypeNumber(version){
+  let d = version<<12;
+  while (getBCHDigit(d) - getBCHDigit(0x1F25) >= 0) d ^= (0x1F25 << (getBCHDigit(d)-getBCHDigit(0x1F25)));
+  return (version<<12)|d;
+}
+function getBCHDigit(data){
+  let digit=0;
+  while (data!==0){ digit++; data >>>=1; }
+  return digit;
+}
+
+function calcPenalty(modules){
+  const n = modules.length;
+  let penalty=0;
+  // rule 1
+  for (let r=0;r<n;r++){
+    let count=1;
+    for (let c=1;c<n;c++){
+      if (modules[r][c]===modules[r][c-1]) count++;
+      else { if (count>=5) penalty += 3+(count-5); count=1; }
+    }
+    if (count>=5) penalty += 3+(count-5);
+  }
+  for (let c=0;c<n;c++){
+    let count=1;
+    for (let r=1;r<n;r++){
+      if (modules[r][c]===modules[r-1][c]) count++;
+      else { if (count>=5) penalty += 3+(count-5); count=1; }
+    }
+    if (count>=5) penalty += 3+(count-5);
+  }
+  // rule 2
+  for (let r=0;r<n-1;r++){
+    for (let c=0;c<n-1;c++){
+      const v = modules[r][c];
+      if (v===modules[r][c+1] && v===modules[r+1][c] && v===modules[r+1][c+1]) penalty += 3;
+    }
+  }
+  // rule 3 (simplified pattern search)
+  const pat1=[true,false,true,true,true,false,true,false,false,false,false];
+  const pat2=[false,false,false,false,true,false,true,true,true,false,true];
+  for (let r=0;r<n;r++){
+    for (let c=0;c<=n-11;c++){
+      let m1=true,m2=true;
+      for (let k=0;k<11;k++){
+        if (modules[r][c+k]!==pat1[k]) m1=false;
+        if (modules[r][c+k]!==pat2[k]) m2=false;
+      }
+      if (m1||m2) penalty += 40;
+    }
+  }
+  for (let c=0;c<n;c++){
+    for (let r=0;r<=n-11;r++){
+      let m1=true,m2=true;
+      for (let k=0;k<11;k++){
+        if (modules[r+k][c]!==pat1[k]) m1=false;
+        if (modules[r+k][c]!==pat2[k]) m2=false;
+      }
+      if (m1||m2) penalty += 40;
+    }
+  }
+  // rule 4
+  let dark=0;
+  for (let r=0;r<n;r++) for (let c=0;c<n;c++) if (modules[r][c]) dark++;
+  const ratio = Math.abs(100*dark/(n*n) - 50)/5;
+  penalty += Math.floor(ratio)*10;
+  return penalty;
+}
+
+function makeQR(text, opts) {
+  opts = opts || {};
+  const ecLevelName = opts.ecLevel || 'M';
+  const bytes = Array.from(new TextEncoder().encode(text));
+
+  let version = opts.version || null;
+  if (!version) {
+    for (let v=1; v<=10; v++){
+      const cap = totalDataCodewords(v, ecLevelName);
+      // rough capacity check accounting header bits (4 + charCountBits)
+      const headerBits = 4 + charCountBits(v);
+      const capBits = cap*8 - headerBits;
+      if (Math.floor(capBits/8) >= bytes.length) { version = v; break; }
+    }
+    if (!version) throw new Error('Data too long for supported versions (1-10)');
+  }
+
+  const data = createData(version, ecLevelName, bytes);
+  const model = new QRCodeModel(version, ecLevelName);
+
+  // try all masks, pick lowest penalty
+  let bestPattern=0, bestPenalty=Infinity, bestModules=null;
+  for (let pattern=0; pattern<8; pattern++){
+    const m = new QRCodeModel(version, ecLevelName);
+    for (let r=0;r<m.moduleCount;r++) for (let c=0;c<m.moduleCount;c++) m.modules[r][c]=null;
+    m.setupPositionProbePattern(0,0);
+    m.setupPositionProbePattern(m.moduleCount-7,0);
+    m.setupPositionProbePattern(0,m.moduleCount-7);
+    m.setupPositionAdjustPattern();
+    m.setupTimingPattern();
+    m.setupTypeInfo(false, pattern, EC_BITS[ecLevelName]);
+    if (version>=7) m.setupTypeNumber(false);
+    m.mapData(data, pattern);
+    const penalty = calcPenalty(m.modules);
+    if (penalty < bestPenalty){ bestPenalty=penalty; bestPattern=pattern; bestModules=m.modules; }
+  }
+  model.modules = bestModules;
+  return { size: model.moduleCount, isDark: (r,c)=>!!model.modules[r][c], version, ecLevel: ecLevelName };
+}
+
+if (typeof module !== 'undefined') module.exports = { makeQR };
+if (typeof window !== 'undefined') window.makeQR = makeQR;
+
+// ── Рендер в SVG (compact: соседние тёмные модули в строке объединены в один
+// прямоугольник, чтобы разметка не разрасталась на больших QR) ──
+window.floxQrSvg = function(text, sizePx, ecLevel) {
+  const qr = window.makeQR(text, { ecLevel: ecLevel || 'M' });
+  const quiet = 4;
+  const cell = sizePx / (qr.size + quiet * 2);
+  let path = '';
+  for (let y = 0; y < qr.size; y++) {
+    let x = 0;
+    while (x < qr.size) {
+      if (!qr.isDark(y, x)) { x++; continue; }
+      const runStart = x;
+      while (x < qr.size && qr.isDark(y, x)) x++;
+      const rx = ((runStart + quiet) * cell).toFixed(2);
+      const ry = ((y + quiet) * cell).toFixed(2);
+      const rw = ((x - runStart) * cell).toFixed(2);
+      path += `<rect x="${rx}" y="${ry}" width="${rw}" height="${cell.toFixed(2)}"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 ${sizePx} ${sizePx}" width="${sizePx}" height="${sizePx}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR-код">` +
+    `<rect width="${sizePx}" height="${sizePx}" fill="#fff" rx="8"/><g fill="#111118">${path}</g></svg>`;
+};
+
+</script>
 <style>
 :root {
   --bg:#0d0d18; --surface:#111118; --surface-2:#1a1a26; --surface-3:#222232;
@@ -912,6 +1353,40 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 /* ── UTILS ─── */
 .loader{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
 .empty-page{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;}
+
+/* ── AUTH SCREEN ───────────────────────────────────────────────────────────
+   21.07.26: раньше у этого блока не было ни одного CSS-правила вообще —
+   #authScreen существовал в DOM, но display:flex просто разворачивал его как
+   обычный блок в конце страницы, без position:fixed и без затемнения. Из-за
+   этого экран входа физически не перекрывал контент: снизу можно было
+   долистать до него, а всё, что выше, оставалось видимым и кликабельным —
+   именно это Илья описал как «анонимный доступ по умолчанию, минуя эту
+   страницу». Теперь это настоящий полноэкранный блокирующий оверлей. */
+.auth-screen{position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;}
+.auth-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:32px 28px 28px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.25);}
+.auth-logo{font-size:26px;font-weight:700;letter-spacing:-0.05em;color:var(--text);margin-bottom:14px;}
+.auth-logo-dot{width:7px;height:7px;border-radius:50%;background:#FF6B6B;display:inline-block;margin-left:2px;margin-bottom:11px;}
+.auth-emoji{font-size:34px;margin-bottom:10px;}
+.auth-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.auth-sub{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:22px;}
+.auth-status-box{text-align:center;padding:14px;border-radius:12px;font-size:13px;line-height:1.6;margin-bottom:10px;}
+.auth-status-box.pending{background:rgba(255,193,7,0.14);color:#c98a00;}
+.auth-status-box.rejected{background:var(--red-soft);color:#e05555;}
+.auth-btn{display:block;width:100%;padding:12px;border-radius:12px;border:none;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;box-sizing:border-box;}
+.auth-btn.secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--line-2);}
+
+/* ── PROFILE / AGENTS EDITOR ── (21.07.26, "дай доступ к редактуре информации агента") */
+.pe-field{margin-bottom:12px;}
+.pe-field label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+.pe-field input, .pe-field select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text);font-size:13.5px;font-family:inherit;}
+
+/* ── ПОДДЕРЖКА НА ЭКРАНЕ ВХОДА ── (21.07.26, по просьбе Ильи) */
+.auth-support{position:absolute;left:0;right:0;bottom:22px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 20px;}
+.auth-support-text{font-size:11.5px;color:var(--muted);}
+.auth-support-row{display:flex;align-items:center;gap:12px;}
+.auth-support-qr{width:52px;height:52px;flex-shrink:0;border-radius:8px;overflow:hidden;}
+.auth-support-cap{font-size:11.5px;color:var(--muted);line-height:1.5;text-align:left;}
+.auth-support-cap span{display:block;color:var(--muted);opacity:.75;}
 </style>
 </head>
 <body>
@@ -1275,6 +1750,10 @@ const COMPLETION_OPTIONS = [
 
 // ── STATE ─────────────────────────────────
 let AGENT = null;
+// 21.07.26: статус экрана входа, когда AGENT===null не просто потому что
+// человек ещё не логинился, а потому что его заявка на рассмотрении/отклонена
+// (см. initAgent/onTelegramAuth/setAuthScreenState) — 'pending'|'rejected'|null.
+let AGENT_AUTH_STATE = null;
 // 21.07.26, по просьбе Ильи: район/округ теперь МАССИВ (filters.locations),
 // а не одно значение — раньше выбор "Карон" после "Камала" гасил "Камала"
 // (взаимоисключение), хотя агент хотел увидеть варианты СРАЗУ в обоих
@@ -3975,6 +4454,24 @@ async function loadActivity() {
 }
 
 // ── AGENT ─────────────────────────────────
+// 21.07.26, по просьбе Ильи (шлюз одобрения регистрации + убрать анонимный
+// доступ): единая функция ниже теперь не просто восстанавливает агента из
+// кэша, а на каждом шаге сверяет его status с Supabase. Если status !==
+// 'approved' (агент на рассмотрении/отклонён) — или запись вообще пропала из
+// agents (доступ отозван) — локальный кэш очищается и AGENT_AUTH_STATE
+// выставляется так, чтобы showAuthIfNeeded() показал правильный экран, а не
+// молча продолжал считать человека залогиненным. Если поля status в записи
+// ещё нет вообще (миграция в Supabase ещё не накатана) — трактуем как
+// approved, чтобы никого не заблокировать раньше времени.
+function _agentRejected(state) {
+  localStorage.removeItem('flox-agent');
+  AGENT = null;
+  AGENT_AUTH_STATE = state;
+}
+function _agentApproved(a) {
+  return !a.status || a.status === 'approved';
+}
+
 async function initAgent() {
   const saved = localStorage.getItem('flox-agent');
   if (saved) {
@@ -3988,43 +4485,66 @@ async function initAgent() {
           if (agents.length) {
             AGENT = agents[0];
             localStorage.setItem('flox-agent', JSON.stringify(AGENT));
+          } else {
+            _agentRejected('not_registered');
+            return;
           }
         } catch(e) {}
       }
-      renderAgent();
-      renderAgentPopover();
       // 15.07.26: кэш агента в localStorage мог быть сохранён раньше, чем
       // в базе появилось/включилось поле is_admin (или любое другое) —
       // без этого агент, которому только что выдали права в Supabase, не
       // увидит инструмент "Расставить точки", пока сам не почистит
       // localStorage. Тихо обновляем в фоне и перерисовываем при изменениях.
+      // 21.07.26: этот же фоновый запрос теперь и точка проверки доступа —
+      // если Илья отклонил агента или поставил его на паузу уже ПОСЛЕ того,
+      // как тот вошёл, локальный кэш больше не продолжает пускать молча.
       if (AGENT.id) {
         try {
           const r = await h(`${SUPABASE_URL}/agents?id=eq.${AGENT.id}&select=*`);
           const agents = await r.json();
-          if (agents.length) {
-            AGENT = agents[0];
-            localStorage.setItem('flox-agent', JSON.stringify(AGENT));
-            renderAgent();
-            renderAgentPopover();
+          if (!agents.length) {
+            _agentRejected('not_registered');
+            return;
           }
-        } catch(e) {}
+          AGENT = agents[0];
+          if (!_agentApproved(AGENT)) {
+            _agentRejected(AGENT.status === 'rejected' ? 'rejected' : 'pending');
+            return;
+          }
+          localStorage.setItem('flox-agent', JSON.stringify(AGENT));
+          renderAgent();
+          renderAgentPopover();
+        } catch(e) {
+          // Сеть недоступна — работаем с тем, что уже закэшировано, не рискуя
+          // ни заблокировать, ни молча пустить агента без проверки.
+          renderAgent();
+          renderAgentPopover();
+        }
+      } else {
+        renderAgent();
+        renderAgentPopover();
       }
       return;
     } catch(e) {
       localStorage.removeItem('flox-agent');
+      AGENT = null;
     }
   }
   if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
     const tg = window.Telegram.WebApp.initDataUnsafe.user;
-    const r = await h(`${SUPABASE_URL}/agents?telegram_id=eq.${tg.id}&select=*`);
-    const agents = await r.json();
-    if (agents.length) {
-      AGENT = agents[0];
-      localStorage.setItem('flox-agent', JSON.stringify(AGENT));
-      renderAgent();
-      renderAgentPopover();
-    }
+    try {
+      const r = await h(`${SUPABASE_URL}/agents?telegram_id=eq.${tg.id}&select=*`);
+      const agents = await r.json();
+      if (agents.length && _agentApproved(agents[0])) {
+        AGENT = agents[0];
+        localStorage.setItem('flox-agent', JSON.stringify(AGENT));
+        renderAgent();
+        renderAgentPopover();
+      } else if (agents.length) {
+        AGENT_AUTH_STATE = agents[0].status === 'rejected' ? 'rejected' : 'pending';
+      }
+    } catch(e) {}
   }
 }
 function renderAgent() {
@@ -4115,18 +4635,12 @@ function openPage(name) {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllDropdowns(); });
 
-// ── AGENT POPOVER ────────────────────────
-function toggleAgentPopover() {
-  const pop = document.getElementById('agentPopover');
-  pop.classList.toggle('vis');
-}
-
-document.addEventListener('click', e => {
-  if (!e.target.closest('.avatar-wrap')) {
-    document.getElementById('agentPopover')?.classList.remove('vis');
-  }
-});
-
+// 21.07.26: toggleAgentPopover()/logout() (старые) и слушатель клика по
+// '.avatar-wrap'/'#agentPopover' удалены — это были мёртвые остатки ещё до
+// topbar.js, ссылались на несуществующие #agentAvatar/#agentPopover/.avatar-wrap
+// и никогда никем не вызывались (проверено — ни одного onclick в файле).
+// Реальный, рабочий поповер/аватар/выход живут в topbar.js (#ftb-avatar,
+// #ftb-popover, floxTopbar._logout()).
 function renderAgentPopover() {
   if (!AGENT) return;
   const name = AGENT.full_name || [AGENT.first_name, AGENT.last_name].filter(Boolean).join(' ') || 'Агент';
@@ -4138,12 +4652,39 @@ function renderAgentPopover() {
   if (ag) ag.textContent = agency;
 }
 
-function logout() {
-  localStorage.removeItem('flox-agent');
-  AGENT = null;
-  document.getElementById('agentAvatar').textContent = '?';
-  document.getElementById('agentPopover').classList.remove('vis');
-  document.getElementById('authScreen').style.display = 'flex';
+// 21.07.26: экран входа теперь умеет показывать 4 состояния — обычный вход,
+// "на рассмотрении", "отклонено" и "не зарегистрирован" — вместо того чтобы
+// либо молча пускать (как было с "Продолжить без входа", теперь удалено),
+// либо показывать один и тот же текст независимо от реальной причины.
+function setAuthScreenState(state) {
+  const emoji = document.getElementById('authEmoji');
+  const title = document.getElementById('authTitle');
+  const sub = document.getElementById('authSub');
+  const tgWrap = document.getElementById('tgLoginWrap');
+  if (state === 'pending') {
+    emoji.textContent = '⏳';
+    title.textContent = 'Заявка на рассмотрении';
+    sub.innerHTML = 'Ваша регистрация отправлена администратору Flox. Доступ откроется сразу после одобрения — мы напишем в Telegram.';
+    tgWrap.innerHTML = '';
+  } else if (state === 'rejected') {
+    emoji.textContent = '🚫';
+    title.textContent = 'Доступ отклонён';
+    sub.innerHTML = 'Администратор отклонил заявку на регистрацию. Если это ошибка — напишите <a href="https://t.me/IlyaKonygin" target="_blank" style="color:var(--accent)">@IlyaKonygin</a>.';
+    tgWrap.innerHTML = '';
+  } else if (state === 'not_registered') {
+    emoji.textContent = '👋';
+    title.textContent = 'Добро пожаловать!';
+    sub.innerHTML = 'Войдите через Telegram чтобы получить доступ к каталогу, предложениям и активности клиентов.';
+    tgWrap.innerHTML = `
+      <div style="text-align:center;padding:12px;background:var(--red-soft);border-radius:10px;font-size:13px;">
+        ⚠️ Вы не зарегистрированы.<br>
+        <a href="https://t.me/phuket_proptech_bot" target="_blank" style="color:var(--accent);font-weight:600;">
+          Пройдите регистрацию в боте →
+        </a>
+      </div>`;
+  }
+  // 'default' ничего не трогает — исходная разметка (Telegram Login Widget)
+  // уже в DOM и в перерисовке не нуждается.
 }
 
 async function onTelegramAuth(tgUser) {
@@ -4151,68 +4692,111 @@ async function onTelegramAuth(tgUser) {
   try {
     const r = await h(`${SUPABASE_URL}/agents?telegram_id=eq.${tgUser.id}&select=*`);
     const agents = await r.json();
-    if (agents.length) {
-      AGENT = agents[0];
-      localStorage.setItem('flox-agent', JSON.stringify(AGENT));
-      renderAgent();
-      renderAgentPopover();
-      document.getElementById('authScreen').style.display = 'none';
-    } else {
-      // Not registered — send to bot
-      document.getElementById('tgLoginWrap').innerHTML = `
-        <div style="text-align:center;padding:12px;background:var(--red-soft);border-radius:10px;font-size:13px;">
-          ⚠️ Вы не зарегистрированы.<br>
-          <a href="https://t.me/phuket_proptech_bot" target="_blank" style="color:var(--accent);font-weight:600;">
-            Пройдите регистрацию в боте →
-          </a>
-        </div>`;
+    if (!agents.length) {
+      setAuthScreenState('not_registered');
+      return;
     }
+    const agent = agents[0];
+    if (!_agentApproved(agent)) {
+      setAuthScreenState(agent.status === 'rejected' ? 'rejected' : 'pending');
+      return;
+    }
+    AGENT = agent;
+    AGENT_AUTH_STATE = null;
+    localStorage.setItem('flox-agent', JSON.stringify(AGENT));
+    renderAgent();
+    renderAgentPopover();
+    document.getElementById('authScreen').style.display = 'none';
   } catch(e) {
     console.error('Auth error:', e);
   }
 }
 
-function continueAsGuest() {
-  document.getElementById('authScreen').style.display = 'none';
-  const p = localStorage.getItem('flox-page');
-  if (p) { localStorage.removeItem('flox-page'); setPage(p); }
-}
+// 21.07.26, по прямой просьбе Ильи: анонимный/гостевой доступ убран полностью
+// — continueAsGuest() удалена вместе с кнопкой "Продолжить без входа" в
+// разметке #authScreen. Попасть на площадку теперь можно только через
+// Telegram-вход с записью agents, у которой status='approved'.
 
 // ── AUTH SCREEN ───────────────────────────
 function showAuthIfNeeded() {
   if (!AGENT) {
+    setAuthScreenState(AGENT_AUTH_STATE || 'default');
     document.getElementById('authScreen').style.display = 'flex';
   }
 }
 
-initAgent().then(() => {
-  showAuthIfNeeded();
-  // 17.07.26, по прямой и повторной просьбе Ильи: убрали восстановление
-  // фильтров/результатов через sessionStorage целиком (см. коммент у
-  // объявления filters выше). Любая перезагрузка flox-web.html — будь то
-  // обычный переход по ссылке "Поиск" из project.html/unit.html, F5 или
-  // Ctrl+Shift+R — теперь всегда показывает чистый экран: без проектов, без
-  // фильтров, с анимацией счётчика (loadUnitCount() ниже вызывается
-  // безусловно). Единственное, что показывает прежнее состояние — нативная
-  // кнопка "назад" в браузере (bfcache, этот код вообще не перезапускается).
-  const p = localStorage.getItem('flox-page');
-  if (p) { localStorage.removeItem('flox-page'); setPage(p); }
-});
-loadUnitCount();
-loadSoldTicker();
-loadProjectCoords();
-// 17.07.26, по найденному Ильёй багу (плашка карты показывала устаревшую
-// цену вместо реальной): грузим реальные цены/площади юнитов из Supabase
-// сразу при загрузке страницы, не дожидаясь, пока агент откроет вкладку
-// "За м²" — эти данные теперь нужны и обычной цене "за всё" тоже (см.
-// getMatchingUnitPrices/getMapMatchingUnits выше). Если агент успел
-// применить фильтр цены или открыть карту ДО того, как данные пришли —
-// пересчитываем список и карту сразу после загрузки, чтобы уже показанное
-// стало точным, а не только следующие действия агента.
-loadUnitAreaData().then(() => {
-  autoSearch();
-  syncMapWithFilters();
-});
+// 21.07.26: раньше, если initAgent() падал с ошибкой (например сеть моргнула
+// при фоновой сверке статуса), .then(...) просто никогда не срабатывал —
+// showAuthIfNeeded() не вызывался вообще, и человек молча оставался на той
+// странице, что уже была отрисована до этого (тот самый "анонимный доступ по
+// умолчанию, минуя эту страницу", о котором писал Илья). Теперь .catch(...)
+// гарантирует, что экран входа/статуса показывается в любом случае.
+// 21.07.26, найден критичный баг ("анонимный доступ по умолчанию, минуя эту
+// страницу"): весь блок ниже раньше выполнялся ПРЯМО ЗДЕСЬ, синхронно по мере
+// парсинга HTML — а #authScreen и #profileModal физически описаны в разметке
+// НИЖЕ этого <script> (ближе к концу body). Если у initAgent() не было ни
+// одного реального await (пустой localStorage + не Telegram Mini App — это
+// именно свежий браузер/новый Telegram-аккаунт/очищенные данные, ровно то,
+// что описал Илья), промис резолвился синхронно, и showAuthIfNeeded() внутри
+// .then() пыталась получить #authScreen ДО того, как парсер вообще до него
+// дошёл — document.getElementById возвращал null, .style бросал TypeError, и
+// ВЕСЬ коллбэк (включая показ экрана входа) молча падал необработанным
+// исключением. Итог — человек просто видел последнее содержимое страницы, как
+// будто уже вошёл, хотя AGENT оставался null. Оборачиваем в DOMContentLoaded,
+// чтобы весь boot-код гарантированно выполнялся только после того, как ВСЯ
+// разметка (включая #authScreen/#profileModal) уже в DOM.
+function _floxBoot() {
+  initAgent().catch(e => {
+    console.error('initAgent error:', e);
+    AGENT = null;
+  }).then(() => {
+    showAuthIfNeeded();
+    // 17.07.26, по прямой и повторной просьбе Ильи: убрали восстановление
+    // фильтров/результатов через sessionStorage целиком (см. коммент у
+    // объявления filters выше). Любая перезагрузка flox-web.html — будь то
+    // обычный переход по ссылке "Поиск" из project.html/unit.html, F5 или
+    // Ctrl+Shift+R — теперь всегда показывает чистый экран: без проектов, без
+    // фильтров, с анимацией счётчика (loadUnitCount() ниже вызывается
+    // безусловно). Единственное, что показывает прежнее состояние — нативная
+    // кнопка "назад" в браузере (bfcache, этот код вообще не перезапускается).
+    const p = localStorage.getItem('flox-page');
+    if (p) { localStorage.removeItem('flox-page'); setPage(p); }
+    // 21.07.26: клик "Агенты" в поповере (topbar.js, только для is_admin) на
+    // страницах project.html/unit.html/offer.html не может открыть модалку
+    // напрямую (она есть только тут) — ставит этот флаг и переходит сюда;
+    // если к этому моменту вход подтверждён, открываем редактор сразу.
+    if (localStorage.getItem('flox-profile-intent')) {
+      localStorage.removeItem('flox-profile-intent');
+      if (AGENT) openProfileEditor();
+    }
+  });
+  loadUnitCount();
+  loadSoldTicker();
+  loadProjectCoords();
+  // 17.07.26, по найденному Ильёй багу (плашка карты показывала устаревшую
+  // цену вместо реальной): грузим реальные цены/площади юнитов из Supabase
+  // сразу при загрузке страницы, не дожидаясь, пока агент откроет вкладку
+  // "За м²" — эти данные теперь нужны и обычной цене "за всё" тоже (см.
+  // getMatchingUnitPrices/getMapMatchingUnits выше). Если агент успел
+  // применить фильтр цены или открыть карту ДО того, как данные пришли —
+  // пересчитываем список и карту сразу после загрузки, чтобы уже показанное
+  // стало точным, а не только следующие действия агента.
+  loadUnitAreaData().then(() => {
+    autoSearch();
+    syncMapWithFilters();
+  });
+  // 21.07.26, по просьбе Ильи: рисуем QR поддержки на экране входа (см.
+  // .auth-support в CSS и разметку #authScreen ниже).
+  const supportQr = document.getElementById('authSupportQr');
+  if (supportQr && window.floxQrSvg) {
+    supportQr.innerHTML = window.floxQrSvg('https://t.me/flox_help', 52, 'M');
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _floxBoot);
+} else {
+  _floxBoot();
+}
 
 // ── Бегущая строка "недавно продано" (страница поиска) ──────────────────────
 const PROJ_VAR = { VIK: 'var(--vik)', KAT: 'var(--kat)', BAN: 'var(--ban)', OLN: 'var(--oln)' };
@@ -4640,16 +5224,119 @@ async function confirmPresentation() {
   _presDrawerUrl = url;
   await copyDrawerUrlToClipboard(url);
 }
+
+// ── СПИСОК АГЕНТОВ (только для is_admin) ────────────────────────────────────
+// 21.07.26, правка Ильи: агент НЕ может менять данные, введённые при
+// регистрации — механика такая: агент вводит данные в боте → созваниваются →
+// Илья подтверждает и даёт доступ. Поэтому редактировать информацию агента
+// (включая свою собственную) может ТОЛЬКО is_admin — самостоятельного
+// редактирования профиля агентом больше нет (пункт в поповере topbar.js
+// скрыт для всех, кроме is_admin, см. topbar.js _loadAgent()). Эта функция —
+// защита и на случай, если пункт меню где-то всё же вызовется не тем.
+window.floxOpenProfileEditor = openProfileEditor;
+
+function openProfileEditor() {
+  if (!AGENT || !AGENT.is_admin) return;
+  document.getElementById('profileModal').classList.add('vis');
+  renderAdminAgentsList();
+}
+function closeProfileEditor() {
+  document.getElementById('profileModal').classList.remove('vis');
+}
+
+function _peEsc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+let _allAgentsCache = [];
+
+async function renderAdminAgentsList() {
+  document.getElementById('profileModalTitle').textContent = 'Агенты';
+  const body = document.getElementById('profileModalBody');
+  body.innerHTML = `<div class="loader">Загрузка…</div>`;
+  try {
+    const r = await h(`${SUPABASE_URL}/agents?select=*&order=full_name.asc`);
+    _allAgentsCache = await r.json();
+  } catch(e) {
+    body.innerHTML = `<div class="loader">Не удалось загрузить список агентов</div>`;
+    return;
+  }
+  const statusLabel = s => (s === 'rejected') ? '<span style="color:#e05555">отклонён</span>'
+    : (s === 'pending') ? '<span style="color:#c98a00">на рассмотрении</span>'
+    : '<span style="color:#2e9e5b">одобрен</span>';
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto;">
+      ${_allAgentsCache.map(a => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;">
+          <div>
+            <div style="font-size:13.5px;font-weight:600;">${_peEsc(a.full_name) || '—'}${a.is_admin ? ' 👑' : ''}</div>
+            <div style="font-size:11.5px;color:var(--muted);">${_peEsc(a.agency) || '—'} · ${_peEsc(a.phone) || '—'} · ${statusLabel(a.status)}</div>
+          </div>
+          <button class="modal-clear" style="border:1px solid var(--line-2);border-radius:8px;padding:6px 12px;flex-shrink:0;" onclick="openAgentEditRow('${a.id}')">Изменить</button>
+        </div>`).join('')}
+    </div>
+    <div id="agentEditRowWrap"></div>`;
+}
+
+function openAgentEditRow(id) {
+  const a = _allAgentsCache.find(x => String(x.id) === String(id));
+  if (!a) return;
+  document.getElementById('agentEditRowWrap').innerHTML = `
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
+      <div class="pe-field"><label>Полное имя</label><input id="aeFullName" value="${_peEsc(a.full_name)}"></div>
+      <div class="pe-field"><label>Агентство</label><input id="aeAgency" value="${_peEsc(a.agency)}"></div>
+      <div class="pe-field"><label>Телефон</label><input id="aePhone" value="${_peEsc(a.phone)}"></div>
+      <div class="pe-field"><label>Комиссия, %</label><input id="aeCommission" type="number" step="0.1" value="${a.commission_rate_pct ?? ''}"></div>
+      <div class="pe-field">
+        <label>Статус</label>
+        <select id="aeStatus">
+          <option value="approved" ${(a.status==='approved'||!a.status)?'selected':''}>Одобрен</option>
+          <option value="pending" ${a.status==='pending'?'selected':''}>На рассмотрении</option>
+          <option value="rejected" ${a.status==='rejected'?'selected':''}>Отклонён</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-clear" onclick="document.getElementById('agentEditRowWrap').innerHTML=''">Отмена</button>
+        <button class="modal-apply" onclick="saveAgentEditRow('${a.id}')">Сохранить</button>
+      </div>
+      <div id="aeStatusMsg" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
+    </div>`;
+}
+
+async function saveAgentEditRow(id) {
+  const full_name = document.getElementById('aeFullName').value.trim();
+  const agency = document.getElementById('aeAgency').value.trim();
+  const phone = document.getElementById('aePhone').value.trim();
+  const commission_rate_pct = parseFloat(document.getElementById('aeCommission').value) || 0;
+  const status = document.getElementById('aeStatus').value;
+  const msg = document.getElementById('aeStatusMsg');
+  msg.textContent = 'Сохраняю…';
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/agents?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ full_name, agency, phone, commission_rate_pct, status }),
+    });
+    if (!resp.ok) throw new Error(resp.status);
+    msg.textContent = '✅ Сохранено';
+    setTimeout(() => renderAdminAgentsList(), 700);
+  } catch(e) {
+    console.error('Ошибка сохранения агента:', e);
+    msg.textContent = '⚠️ Не удалось сохранить';
+  }
+}
 </script>
 
 
 <!-- AUTH SCREEN -->
+<!-- 21.07.26: анонимный доступ ("Продолжить без входа") убран полностью по
+     прямой просьбе Ильи — раньше эта кнопка вызывала continueAsGuest(), теперь
+     функция и кнопка удалены, попасть на площадку можно только через
+     Telegram-вход с одобренной (status='approved') записью в agents. -->
 <div class="auth-screen" id="authScreen" style="display:none;">
-  <div class="auth-card">
+  <div class="auth-card" id="authCard">
     <div class="auth-logo">flox<span class="auth-logo-dot"></span></div>
-    <div class="auth-emoji">👋</div>
-    <div class="auth-title">Добро пожаловать!</div>
-    <div class="auth-sub">
+    <div class="auth-emoji" id="authEmoji">👋</div>
+    <div class="auth-title" id="authTitle">Добро пожаловать!</div>
+    <div class="auth-sub" id="authSub">
       Войдите через Telegram чтобы получить доступ к каталогу, предложениям и активности клиентов.
     </div>
     <div id="tgLoginWrap" style="display:flex;justify-content:center;margin-bottom:10px;">
@@ -4665,9 +5352,29 @@ async function confirmPresentation() {
     <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:12px;">
       Нет аккаунта? <a href="https://t.me/phuket_proptech_bot" target="_blank" style="color:var(--accent)">Зарегистрируйтесь в боте</a>
     </div>
-    <button class="auth-btn secondary" onclick="continueAsGuest()">
-      Продолжить без входа
-    </button>
+  </div>
+  <!-- 21.07.26, по просьбе Ильи: серая плашка поддержки внизу экрана входа —
+       если у человека что-то не получается (не пришёл куар, не одобрили,
+       ошибка) — он может отсканировать и сразу написать в поддержку в
+       Telegram, а не оставаться в тупике. Видна во всех состояниях экрана
+       входа (обычный вход/на рассмотрении/отклонено/не зарегистрирован). -->
+  <div class="auth-support">
+    <div class="auth-support-text">Что-то не работает? Мы поможем</div>
+    <div class="auth-support-row">
+      <div class="auth-support-qr" id="authSupportQr"></div>
+      <div class="auth-support-cap">Служба поддержки Flox<span>@flox_help в Telegram</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- AGENTS EDITOR (только для is_admin, см. renderAdminAgentsList) -->
+<div class="modal-overlay" id="profileModal" onclick="if(event.target===this)closeProfileEditor()">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">
+      <span id="profileModalTitle">Агенты</span>
+      <button class="modal-close" onclick="closeProfileEditor()">✕</button>
+    </div>
+    <div id="profileModalBody"></div>
   </div>
 </div>
 
