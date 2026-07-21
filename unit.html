@@ -499,8 +499,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    есть этот блок. QR-код в SVG уже сам рисует белый фон (см. floxQrSvg),
    поэтому .bf-qr-img остаётся просто рамкой скругления. В этом файле нет
    переменной --muted-2 (в отличие от flox-web.html/project.html) — вместо
-   неё используем var(--muted) с уменьшённой прозрачностью, тот же эффект. */
-.bugfix-footer-wrap{display:none;background:var(--surface-2);}
+   неё используем var(--muted) с уменьшённой прозрачностью, тот же эффект.
+   21.07.26 (2), найден Ильёй баг ("фон не стал серым"): в этом файле, в
+   отличие от flox-web.html/project.html, --surface-2 в светлой теме (см.
+   body.light выше) буквально равна --bg (обе #F5F5F7) — блок сливался с
+   фоном страницы. --surface-3 здесь отличается от --bg в обеих темах,
+   поэтому серый фон реально виден. */
+.bugfix-footer-wrap{display:none;background:var(--surface-3);}
 .bugfix-footer{max-width:1200px;margin:0 auto;padding:24px 20px 26px;}
 .bf-row{display:flex;align-items:center;gap:16px;}
 .bf-icon{
