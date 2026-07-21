@@ -480,6 +480,14 @@ body.light {
 *{box-sizing:border-box;margin:0;padding:0;}
 html{font-family:'Inter',system-ui,sans-serif;}
 body{min-height:100vh;background:var(--bg);color:var(--text);transition:background .3s,color .3s;-webkit-tap-highlight-color:transparent;}
+/* 21.07.26 (2), по просьбе Ильи: убрать лишний скролл справа на экране входа
+   и на чистой посадочной странице "Поиск" (без карты и без карточек) — в
+   обоих случаях видимого контента ровно на экран, вертикальная прокрутка не
+   нужна, но без явного overflow:hidden браузер иногда всё равно резервирует
+   полосу прокрутки на пару лишних пикселей. Класс переключается из JS (см.
+   updateScrollLock()) — как только появляется реальный контент (карта,
+   карточки, другая вкладка), скролл возвращается сам. */
+html.lock-scroll{overflow:hidden;}
 a{color:inherit;text-decoration:none;}
 input,button{font-family:inherit;}
 
@@ -1115,7 +1123,7 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 /* ── ПЛАШКА "МЫ ЗАБОТИМСЯ О КАЧЕСТВЕ ПЛАТФОРМЫ" ───────────────────────────
    21.07.26, по просьбе Ильи: тот же блок, что и в project.html (см.
    .bugfix-footer-wrap там же для полной истории правок) — здесь используется
-   в двух местах:
+   в трёх местах:
    1) внизу страницы "Поиск" (#searchPageFooter) — но только когда на
       странице реально есть что смотреть (открыта карта ИЛИ отрисованы
       карточки проектов), см. updateSearchFooterVisibility() в скрипте;
@@ -1124,9 +1132,18 @@ body.map-fake-fullscreen-active{overflow:hidden;}
       активность"/"Презентации" (см. #page-offers/#page-activity/#page-presentation).
    Цвета сразу через var(--surface-2)/var(--text)/var(--muted) — здесь, в
    отличие от project.html (round 3-4), тёмная тема сразу поддержана, без
-   отдельной правки. Иконка (.bf-icon) — белая всегда, как и в project.html. */
-.bugfix-footer-wrap{background:var(--surface-2);border-radius:14px;margin-top:24px;}
-.bugfix-footer{padding:24px 20px 26px;}
+   отдельной правки. Иконка (.bf-icon) — белая всегда, как и в project.html.
+   21.07.26 (round 2), по просьбе Ильи: блок должен идти от края до края
+   экрана (без скругления) и упираться в самый низ страницы — как и в
+   project.html, где это устроено тем, что .bugfix-footer-wrap лежит ПРЯМЫМ
+   потомком body, вне какого-либо padded-контейнера. Здесь то же самое: во
+   всех 4 местах (см. разметку .page-search/.page-offers/.page-activity/
+   .page-presentation) обёртка вынесена НАРУЖУ из .search-page/.offers-page/
+   .activity-page/.pres-page (у тех есть свой padding/max-width) — сама
+   обёртка теперь просто фон на всю ширину .page, а её внутренний контент
+   выровнен тем же max-width:1200px, что и в project.html. */
+.bugfix-footer-wrap{background:var(--surface-2);}
+.bugfix-footer{max-width:1200px;margin:0 auto;padding:24px 20px 26px;}
 .bf-row{display:flex;align-items:center;gap:16px;}
 .bf-icon{
   width:44px;height:44px;border-radius:12px;background:#fff;color:rgba(0,0,0,.55);
@@ -1134,8 +1151,14 @@ body.map-fake-fullscreen-active{overflow:hidden;}
   display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
 }
 .bf-text{flex:1;font-size:14px;font-weight:600;line-height:1.5;color:var(--text);}
-.bf-qr-row{display:flex;flex-wrap:wrap;gap:32px;margin-top:20px;}
-.bf-qr-item{display:flex;align-items:center;gap:14px;}
+/* 21.07.26 (round 2), по просьбе Ильи (скрин с двумя куарами друг над другом
+   на узкой "Мои предложения"): раньше был flex-wrap:wrap — на страницах с
+   узким контейнером (900-1000px) третий QR не помещался в строку и падал
+   вниз. Теперь строго nowrap — все 3 всегда в одну линию (это же было и
+   причиной проблемы, само наличие полного max-width:1200px её решает, но
+   nowrap ещё и подстраховывает на случай более узкого экрана). */
+.bf-qr-row{display:flex;flex-wrap:nowrap;gap:32px;margin-top:20px;}
+.bf-qr-item{display:flex;align-items:center;gap:14px;min-width:0;}
 .bf-qr-img{width:104px;height:104px;flex-shrink:0;border-radius:8px;overflow:hidden;}
 .bf-qr-cap{font-size:12px;color:var(--muted);line-height:1.5;max-width:180px;}
 .bf-qr-cap b{display:block;color:var(--text);font-weight:700;font-size:13.5px;margin-bottom:3px;}
@@ -1629,27 +1652,30 @@ body.map-fake-fullscreen-active{overflow:hidden;}
            и кладутся прямо в <body> (см. addCustomMapControls() в скрипте и
            большой комментарий у .map-ctrl-hidden в CSS, почему). -->
     </div>
+  </div>
 
-    <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
-    <div class="bugfix-footer-wrap" id="searchPageFooter" style="display:none;">
-      <div class="bugfix-footer">
-        <div class="bf-row">
-          <div class="bf-icon">💬</div>
-          <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+  <!-- см. большой коммент у .bugfix-footer-wrap в CSS: вынесена НАРУЖУ из
+       .search-page (с её padding/max-width), чтобы фон шёл от края до края
+       страницы, но всё ещё внутри #page-search, чтобы прятаться/появляться
+       вместе с этой вкладкой. -->
+  <div class="bugfix-footer-wrap" id="searchPageFooter" style="display:none;">
+    <div class="bugfix-footer">
+      <div class="bf-row">
+        <div class="bf-icon">💬</div>
+        <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+      </div>
+      <div class="bf-qr-row">
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="sfQr-tg-group"></div>
+          <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
         </div>
-        <div class="bf-qr-row">
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="sfQr-tg-group"></div>
-            <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
-          </div>
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="sfQr-tg-bot"></div>
-            <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
-          </div>
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="sfQr-tg-support"></div>
-            <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
-          </div>
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="sfQr-tg-bot"></div>
+          <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
+        </div>
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="sfQr-tg-support"></div>
+          <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
         </div>
       </div>
     </div>
@@ -1661,27 +1687,27 @@ body.map-fake-fullscreen-active{overflow:hidden;}
   <div class="offers-page">
     <div class="page-title">Мои предложения</div>
     <div class="offers-list" id="offersList"><div class="loader">Загрузка…</div></div>
+  </div>
 
-    <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
-    <div class="bugfix-footer-wrap">
-      <div class="bugfix-footer">
-        <div class="bf-row">
-          <div class="bf-icon">💬</div>
-          <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+  <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
+  <div class="bugfix-footer-wrap">
+    <div class="bugfix-footer">
+      <div class="bf-row">
+        <div class="bf-icon">💬</div>
+        <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+      </div>
+      <div class="bf-qr-row">
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="ofQr-tg-group"></div>
+          <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
         </div>
-        <div class="bf-qr-row">
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="ofQr-tg-group"></div>
-            <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
-          </div>
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="ofQr-tg-bot"></div>
-            <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
-          </div>
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="ofQr-tg-support"></div>
-            <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
-          </div>
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="ofQr-tg-bot"></div>
+          <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
+        </div>
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="ofQr-tg-support"></div>
+          <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
         </div>
       </div>
     </div>
@@ -1693,27 +1719,27 @@ body.map-fake-fullscreen-active{overflow:hidden;}
   <div class="activity-page">
     <div class="page-title">Последняя активность</div>
     <div class="activity-list" id="activityList"><div class="loader">Загрузка…</div></div>
+  </div>
 
-    <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
-    <div class="bugfix-footer-wrap">
-      <div class="bugfix-footer">
-        <div class="bf-row">
-          <div class="bf-icon">💬</div>
-          <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+  <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
+  <div class="bugfix-footer-wrap">
+    <div class="bugfix-footer">
+      <div class="bf-row">
+        <div class="bf-icon">💬</div>
+        <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+      </div>
+      <div class="bf-qr-row">
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="acQr-tg-group"></div>
+          <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
         </div>
-        <div class="bf-qr-row">
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="acQr-tg-group"></div>
-            <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
-          </div>
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="acQr-tg-bot"></div>
-            <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
-          </div>
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="acQr-tg-support"></div>
-            <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
-          </div>
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="acQr-tg-bot"></div>
+          <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
+        </div>
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="acQr-tg-support"></div>
+          <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
         </div>
       </div>
     </div>
@@ -1744,27 +1770,27 @@ body.map-fake-fullscreen-active{overflow:hidden;}
         <button onclick="copyPresLink()"><i class="ti ti-copy"></i></button>
       </div>
     </div>
+  </div>
 
-    <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
-    <div class="bugfix-footer-wrap">
-      <div class="bugfix-footer">
-        <div class="bf-row">
-          <div class="bf-icon">💬</div>
-          <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+  <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
+  <div class="bugfix-footer-wrap">
+    <div class="bugfix-footer">
+      <div class="bf-row">
+        <div class="bf-icon">💬</div>
+        <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+      </div>
+      <div class="bf-qr-row">
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="prQr-tg-group"></div>
+          <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
         </div>
-        <div class="bf-qr-row">
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="prQr-tg-group"></div>
-            <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
-          </div>
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="prQr-tg-bot"></div>
-            <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
-          </div>
-          <div class="bf-qr-item">
-            <div class="bf-qr-img" id="prQr-tg-support"></div>
-            <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
-          </div>
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="prQr-tg-bot"></div>
+          <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
+        </div>
+        <div class="bf-qr-item">
+          <div class="bf-qr-img" id="prQr-tg-support"></div>
+          <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
         </div>
       </div>
     </div>
@@ -2002,6 +2028,11 @@ function setPage(name) {
   if (name === 'activity') loadActivity();
   if (name === 'presentation') loadPresentation();
   if (enteringSearch) resetSearchPageToClean();
+  // 21.07.26 (2): пересчитываем блокировку скролла при любом переключении
+  // вкладок — уходя с "Поиска" в чистом состоянии, lock-scroll не должен
+  // "залипать" на других вкладках, где обычно есть что скроллить (см.
+  // updateScrollLock() — она смотрит, активна ли именно #page-search).
+  updateScrollLock();
 }
 
 // 17.07.26, по прямой и повторной просьбе Ильи: возврат на "Поиск" из
@@ -2056,6 +2087,7 @@ function resetSearchPageToClean() {
   // (см. updateSearchFooterVisibility). Без этого явного вызова он мог бы
   // остаться видимым до следующего showCards()/setResultsView().
   updateSearchFooterVisibility();
+  updateScrollLock();
   setTimeout(() => { _resettingSearchPage = false; }, 50);
 }
 
@@ -2804,6 +2836,7 @@ function showCards(projects, label) {
       </div>`;
     if (pillEl) pillEl.innerHTML = '';
     updateSearchFooterVisibility();
+    updateScrollLock();
     return;
   }
   if (pillEl) pillEl.innerHTML = `<span>${label}</span>`;
@@ -2814,6 +2847,7 @@ function showCards(projects, label) {
     setTimeout(() => card.classList.add('visible'), i * 80);
   });
   updateSearchFooterVisibility();
+  updateScrollLock();
 }
 
 // ── КАРТА ПРОЕКТОВ ("На карте") ───────────────────────────────────────────
@@ -2922,6 +2956,7 @@ function setResultsView(view) {
     }
   }
   updateSearchFooterVisibility();
+  updateScrollLock();
 }
 
 // 15.07.26 (10): позиционирует .accent-pill. История правок (чтобы больше не
@@ -4909,6 +4944,7 @@ async function onTelegramAuth(tgUser) {
     renderAgent();
     renderAgentPopover();
     document.getElementById('authScreen').style.display = 'none';
+    updateScrollLock();
     // 21.07.26, найден Ильёй баг ("при первом входе не запускается анимация"):
     // loadUnitCount() раньше вызывался безусловно в _floxBoot(), в момент
     // ЗАГРУЗКИ страницы — включая тот случай, когда экран входа ещё лежит
@@ -4942,6 +4978,7 @@ function showAuthIfNeeded() {
     // прямо здесь (см. общий комментарий у loadUnitCount() ниже в _floxBoot).
     loadUnitCount();
   }
+  updateScrollLock();
 }
 
 // 21.07.26: раньше, если initAgent() падал с ошибкой (например сеть моргнула
@@ -5039,6 +5076,21 @@ function updateSearchFooterVisibility() {
   if (!el) return;
   const hasCards = !!document.querySelector('#searchResults .project-cards');
   el.style.display = (mapViewActive || hasCards) ? '' : 'none';
+}
+
+// 21.07.26 (2), по просьбе Ильи: убираем ненужную полосу прокрутки справа —
+// на экране входа (он и так fixed/inset:0 поверх всего, странице за ним
+// скроллиться незачем) и на чистой посадочной странице "Поиск" (до первого
+// поиска/без карты — видимого контента ровно на экран). Как только
+// появляется реальный контент (карта, карточки, другая вкладка, успешный
+// вход) — скролл возвращается сам. См. html.lock-scroll в CSS. Вызывается
+// из тех же мест, что и updateSearchFooterVisibility(), плюс из
+// showAuthIfNeeded()/onTelegramAuth() (экран входа) и setPage() (смена вкладки).
+function updateScrollLock() {
+  const authVisible = document.getElementById('authScreen')?.style.display !== 'none';
+  const onSearch = document.getElementById('page-search')?.classList.contains('act');
+  const cleanLanding = onSearch && !mapViewActive && !document.querySelector('#searchResults .project-cards');
+  document.documentElement.classList.toggle('lock-scroll', authVisible || cleanLanding);
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', _floxBoot);
@@ -5648,7 +5700,7 @@ async function saveAgentEditRow(id) {
     <div class="auth-emoji" id="authEmoji">👋</div>
     <div class="auth-title" id="authTitle">Добро пожаловать!</div>
     <div class="auth-sub" id="authSub">
-      Войдите через Telegram чтобы получить доступ к каталогу, предложениям и активности клиентов.
+      Войдите через Telegram чтобы получить доступ к каталогу, личному кабинету и актуальным предложениям.
     </div>
     <!-- 21.07.26, по скринам Ильи ("какие-то углы" + "чёрный цвет" у кнопки
          входа): когда у человека уже есть сохранённая Telegram-сессия в
@@ -5717,7 +5769,7 @@ async function saveAgentEditRow(id) {
        Telegram, а не оставаться в тупике. Видна во всех состояниях экрана
        входа (обычный вход/на рассмотрении/отклонено/не зарегистрирован). -->
   <div class="auth-support">
-    <div class="auth-support-text">Что-то не работает? Мы поможем</div>
+    <div class="auth-support-text">Что-то не работает? Пишите - мы поможем</div>
     <div class="auth-support-row">
       <div class="auth-support-qr" id="authSupportQr"></div>
       <div class="auth-support-cap">Служба поддержки Flox<span>@flox_help в Telegram</span></div>
