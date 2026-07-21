@@ -24,10 +24,14 @@ const CSS = `
 .flox-tb-popover-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);transition:background .12s;}
 .flox-tb-popover-item:hover{background:var(--surface-2);}
 .flox-tb-popover-item.danger{color:#FF6B6B;}
-.flox-tb-meeting{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px solid var(--line-2);background:none;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit;}
-.flox-tb-meeting:hover{border-color:#5E17EB;color:#5E17EB;}
-.flox-tb-meeting.act{background:#5E17EB;border-color:#5E17EB;color:#fff;}
-.flox-tb-theme{width:30px;height:30px;border-radius:8px;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+/* 21.07.26 (2), по просьбе Ильи: выбран вариант 2 из meeting_button_variants.html
+   — заполненная плашка (без контура) вместо контурной кнопки: сразу залита
+   приглушённым фоном surface-3, при активной встрече — фиолетовый акцент.
+   Логика (floxTopbar.toggleMeeting()) не менялась, поменялся только вид. */
+.flox-tb-meeting{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:none;background:var(--surface-3);color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit;}
+.flox-tb-meeting:hover{color:var(--text);}
+.flox-tb-meeting.act{background:#5E17EB;color:#fff;}
+.flox-tb-theme{width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0;}
 .flox-tb-theme:hover{background:var(--surface-3);}
 .flox-tb-dd-wrap{position:relative;}
 .flox-tb-dd{position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.14);z-index:400;min-width:220px;padding:8px;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .18s,transform .18s;}
@@ -44,7 +48,6 @@ const SVG_PEOPLE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" 
 const SVG_SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`;
 const SVG_MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`;
 const SVG_OUT  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>`;
-const SVG_EDIT = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 
 function buildHTML(isSearch) {
   const searchEl = isSearch
@@ -87,7 +90,6 @@ function buildHTML(isSearch) {
             <div class="flox-tb-popover-name" id="ftb-name">—</div>
             <div class="flox-tb-popover-agency" id="ftb-agency">—</div>
           </div>
-          <div class="flox-tb-popover-item" id="ftb-agents-item" style="display:none;" onclick="floxTopbar._editProfile()">${SVG_EDIT} Агенты</div>
           <div class="flox-tb-popover-item danger" onclick="floxTopbar._logout()">${SVG_OUT} Выйти из аккаунта</div>
         </div>
       </div>
@@ -207,13 +209,6 @@ window.floxTopbar = {
         const agency = (a.agency || '').trim();
         ag.textContent = agency.toLowerCase() === 'независимый' ? 'Независимый агент' : (agency || '—');
       }
-      // 21.07.26, по прямой правке Ильи: агент НЕ может менять данные,
-      // введённые при регистрации — только Илья, после звонка и устного
-      // подтверждения. Пункт "Агенты" в поповере поэтому виден только
-      // is_admin (Илье), у обычного агента его нет вообще, чтобы не вводить
-      // в заблуждение несуществующей возможностью редактирования себя.
-      const agentsItem = document.getElementById('ftb-agents-item');
-      if (agentsItem) agentsItem.style.display = a.is_admin ? '' : 'none';
     } catch(e) {}
   },
   _logout() {
@@ -233,23 +228,6 @@ window.floxTopbar = {
     // JS-память страницы (переменная AGENT и т.п.) тоже сбрасывается, а не
     // только localStorage.
     window.location.href = 'flox-web.html';
-  },
-
-  // 21.07.26, по просьбе Ильи ("дай доступ к редактуре информации агента"):
-  // сама форма редактирования живёт только в flox-web.html (там же, где
-  // Supabase-хелперы этой страницы) — window.floxOpenProfileEditor задаётся
-  // именно там. На остальных страницах (project.html/unit.html/offer.html)
-  // такого хука нет — ставим флаг и переходим на flox-web.html, где боевая
-  // логика после успешного входа сама откроет редактор (см. flox-web.html,
-  // блок после initAgent()).
-  _editProfile() {
-    document.getElementById('ftb-popover')?.classList.remove('vis');
-    if (typeof window.floxOpenProfileEditor === 'function') {
-      window.floxOpenProfileEditor();
-    } else {
-      localStorage.setItem('flox-profile-intent', '1');
-      window.location.href = 'flox-web.html';
-    }
   },
 
   // ── Встреча ───────────────────────────────────────────────────────────────
