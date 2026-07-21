@@ -14,6 +14,446 @@
      каждой загрузке страницы, чтобы не тратить дневной лимit запросов
      впустую (как и в flox-web). -->
 <script src="https://api-maps.yandex.ru/2.1/?apikey=9f137a3a-c842-4d1b-9c5d-60e9ad353585&lang=ru_RU"></script>
+<!-- 21.07.26, по просьбе Ильи: минимальный самодостаточный QR-энкодер (без
+     внешних зависимостей/CDN — генерирует и рисует QR прямо в браузере),
+     нужен для плашки "нашли баг" внизу страницы (см. .bugfix-footer-wrap).
+     Библиотека не привязана к самой плашке — window.floxQrSvg(text, sizePx)
+     можно переиспользовать где угодно ещё. -->
+<script>
+// Minimal, self-contained QR Code Model 2 encoder (Byte mode), ported from the
+// public-domain "qrcode-generator" algorithm (kazuhikoarase). No dependencies.
+// Exposes: makeQR(text, {ecLevel}) -> { size, isDark(row,col) }
+
+const QRMode = { MODE_8BIT_BYTE: 4 };
+const QRErrorCorrectLevel = { L: 1, M: 0, Q: 3, H: 2 };
+// Note: bit patterns per spec: L=01, M=00, Q=11, H=10 -> using spec values below instead.
+const EC_BITS = { L: 0b01, M: 0b00, Q: 0b11, H: 0b10 };
+
+// ---- RS block table (data codewords count etc.) for versions 1-10, EC levels L/M/Q/H ----
+// Format: [totalCodewords, ecCodewordsPerBlock, blocks group1, dataCodewords group1, blocks group2, dataCodewords group2]
+const RS_BLOCK_TABLE = {
+  1: { L:[26,7,1,19,0,0], M:[26,10,1,16,0,0], Q:[26,13,1,13,0,0], H:[26,17,1,9,0,0] },
+  2: { L:[44,10,1,34,0,0], M:[44,16,1,28,0,0], Q:[44,22,1,22,0,0], H:[44,28,1,16,0,0] },
+  3: { L:[70,15,1,55,0,0], M:[70,26,1,44,0,0], Q:[70,36,2,17,0,0], H:[70,44,2,13,0,0] },
+  4: { L:[100,20,1,80,0,0], M:[100,36,2,32,0,0], Q:[100,52,2,24,0,0], H:[100,64,4,9,0,0] },
+  5: { L:[134,26,1,108,0,0], M:[134,48,2,43,0,0], Q:[134,72,2,15,2,16], H:[134,88,2,11,2,12] },
+  6: { L:[172,36,2,68,0,0], M:[172,64,4,27,0,0], Q:[172,96,4,19,0,0], H:[172,112,4,15,0,0] },
+  7: { L:[196,40,2,78,0,0], M:[196,72,4,31,0,0], Q:[196,108,2,14,4,15], H:[196,130,4,13,1,14] },
+  8: { L:[242,48,2,97,0,0], M:[242,88,2,38,2,39], Q:[242,132,4,18,2,19], H:[242,156,4,14,2,15] },
+  9: { L:[292,60,2,116,0,0], M:[292,110,3,36,2,37], Q:[292,160,4,16,4,17], H:[292,192,4,12,4,13] },
+  10:{ L:[346,72,2,68,2,69], M:[346,130,4,43,1,44], Q:[346,192,6,19,2,20], H:[346,224,6,15,2,16] },
+};
+
+// Character capacity (byte mode) per version/EC, used to pick smallest version
+function getRSBlocks(version, ecLevelName) {
+  const t = RS_BLOCK_TABLE[version][ecLevelName];
+  const [totalCw, ecCw, b1, d1, b2, d2] = t;
+  const blocks = [];
+  for (let i=0;i<b1;i++) blocks.push({ totalCount: d1+ecCw, dataCount: d1 });
+  for (let i=0;i<b2;i++) blocks.push({ totalCount: d2+ecCw, dataCount: d2 });
+  return blocks;
+}
+
+function totalDataCodewords(version, ecLevelName) {
+  return getRSBlocks(version, ecLevelName).reduce((a,b)=>a+b.dataCount,0);
+}
+
+// ---- GF(256) math for Reed-Solomon ----
+const GF_EXP = new Array(512);
+const GF_LOG = new Array(256);
+(function initGF(){
+  let x = 1;
+  for (let i=0;i<255;i++){
+    GF_EXP[i] = x;
+    GF_LOG[x] = i;
+    x <<= 1;
+    if (x & 0x100) x ^= 0x11D;
+  }
+  for (let i=255;i<512;i++) GF_EXP[i] = GF_EXP[i-255];
+})();
+function gfMul(a,b){
+  if (a===0||b===0) return 0;
+  return GF_EXP[GF_LOG[a]+GF_LOG[b]];
+}
+
+class Polynomial {
+  constructor(nums){
+    let offset=0;
+    while(offset<nums.length-1 && nums[offset]===0) offset++;
+    this.num = nums.slice(offset);
+  }
+  get(i){ return this.num[i]; }
+  get length(){ return this.num.length; }
+  multiply(e){
+    const num = new Array(this.length + e.length - 1).fill(0);
+    for (let i=0;i<this.length;i++)
+      for (let j=0;j<e.length;j++)
+        num[i+j] ^= gfMul(this.get(i), e.get(j));
+    return new Polynomial(num);
+  }
+}
+function properMod(dividend, divisor){
+  let num = dividend.num.slice();
+  while (num.length - 1 >= divisor.length - 1) {
+    // strip leading zeros
+    let lead=0;
+    while (lead<num.length && num[lead]===0) lead++;
+    num = num.slice(lead);
+    if (num.length - 1 < divisor.length - 1) break;
+    const ratio = GF_LOG[num[0]] - GF_LOG[divisor.get(0)];
+    const rmod = ((ratio % 255) + 255) % 255;
+    for (let i=0;i<divisor.length;i++){
+      num[i] ^= gfMul(divisor.get(i), GF_EXP[rmod]);
+    }
+  }
+  // strip leading zeros
+  let lead=0;
+  while (lead<num.length-1 && num[lead]===0) lead++;
+  return new Polynomial(num.slice(lead));
+}
+function rsGeneratorPoly(ecCount){
+  let g = new Polynomial([1]);
+  for (let i=0;i<ecCount;i++){
+    g = g.multiply(new Polynomial([1, GF_EXP[i]]));
+  }
+  return g;
+}
+
+// ---- Bit buffer ----
+class BitBuffer {
+  constructor(){ this.buffer=[]; this.length=0; }
+  get(index){ const bufIndex = Math.floor(index/8); return ((this.buffer[bufIndex] >>> (7-index%8)) & 1) === 1; }
+  put(num, length){ for (let i=0;i<length;i++) this.putBit(((num >>> (length-i-1)) & 1)===1); }
+  putBit(bit){
+    const bufIndex = Math.floor(this.length/8);
+    if (this.buffer.length <= bufIndex) this.buffer.push(0);
+    if (bit) this.buffer[bufIndex] |= (0x80 >>> (this.length % 8));
+    this.length++;
+  }
+}
+
+function charCountBits(version){
+  if (version <= 9) return 8; // byte mode, versions 1-9
+  return 16; // versions 10-26 use 16
+}
+
+function createData(version, ecLevelName, dataBytes){
+  const buffer = new BitBuffer();
+  buffer.put(QRMode.MODE_8BIT_BYTE, 4);
+  buffer.put(dataBytes.length, charCountBits(version));
+  for (let i=0;i<dataBytes.length;i++) buffer.put(dataBytes[i], 8);
+
+  const rsBlocks = getRSBlocks(version, ecLevelName);
+  const totalDataCount = rsBlocks.reduce((a,b)=>a+b.dataCount,0);
+
+  if (buffer.length + 4 <= totalDataCount * 8) buffer.put(0, 4);
+  while (buffer.length % 8 !== 0) buffer.putBit(false);
+
+  const PAD0 = 0xEC, PAD1 = 0x11;
+  while (true) {
+    if (buffer.length >= totalDataCount*8) break;
+    buffer.put(PAD0, 8);
+    if (buffer.length >= totalDataCount*8) break;
+    buffer.put(PAD1, 8);
+  }
+  return createBytes(buffer, rsBlocks);
+}
+
+function createBytes(buffer, rsBlocks){
+  let offset = 0;
+  const maxDcCount = Math.max(...rsBlocks.map(b=>b.dataCount));
+  const maxEcCount = Math.max(...rsBlocks.map(b=>b.totalCount - b.dataCount));
+  const dcdata = new Array(rsBlocks.length);
+  const ecdata = new Array(rsBlocks.length);
+
+  for (let r=0;r<rsBlocks.length;r++){
+    const dcCount = rsBlocks[r].dataCount;
+    const ecCount = rsBlocks[r].totalCount - dcCount;
+    dcdata[r] = new Array(dcCount);
+    for (let i=0;i<dcCount;i++) dcdata[r][i] = 0xff & buffer.buffer[i+offset];
+    offset += dcCount;
+
+    const rsPoly = rsGeneratorPoly(ecCount);
+    const rawPoly = new Polynomial(dcdata[r].concat(new Array(rsPoly.length-1).fill(0)));
+    const modPoly = properMod(rawPoly, rsPoly);
+    ecdata[r] = new Array(rsPoly.length-1);
+    for (let i=0;i<ecdata[r].length;i++){
+      const modIndex = i + modPoly.length - ecdata[r].length;
+      ecdata[r][i] = (modIndex>=0) ? modPoly.get(modIndex) : 0;
+    }
+  }
+
+  let totalCodeCount = 0;
+  for (const b of rsBlocks) totalCodeCount += b.totalCount;
+  const data = new Array(totalCodeCount);
+  let index = 0;
+  for (let i=0;i<maxDcCount;i++)
+    for (let r=0;r<rsBlocks.length;r++)
+      if (i < dcdata[r].length) data[index++] = dcdata[r][i];
+  for (let i=0;i<maxEcCount;i++)
+    for (let r=0;r<rsBlocks.length;r++)
+      if (i < ecdata[r].length) data[index++] = ecdata[r][i];
+  return data;
+}
+
+// ---- Module matrix building ----
+class QRCodeModel {
+  constructor(version, ecLevelName){
+    this.version = version;
+    this.ecLevelName = ecLevelName;
+    this.moduleCount = version*4 + 17;
+    this.modules = Array.from({length:this.moduleCount}, ()=> new Array(this.moduleCount).fill(null));
+  }
+  isDark(row,col){ return !!this.modules[row][col]; }
+
+  setupPositionProbePattern(row,col){
+    for (let r=-1;r<=7;r++){
+      if (row+r<=-1||this.moduleCount<=row+r) continue;
+      for (let c=-1;c<=7;c++){
+        if (col+c<=-1||this.moduleCount<=col+c) continue;
+        const dark = (0<=r&&r<=6&&(c===0||c===6)) || (0<=c&&c<=6&&(r===0||r===6)) || (2<=r&&r<=4&&2<=c&&c<=4);
+        this.modules[row+r][col+c] = dark;
+      }
+    }
+  }
+  setupTimingPattern(){
+    for (let r=8;r<this.moduleCount-8;r++){
+      if (this.modules[r][6]!=null) continue;
+      this.modules[r][6] = (r%2===0);
+    }
+    for (let c=8;c<this.moduleCount-8;c++){
+      if (this.modules[6][c]!=null) continue;
+      this.modules[6][c] = (c%2===0);
+    }
+  }
+  setupPositionAdjustPattern(){
+    const pos = getAlignmentPatternPositions(this.version);
+    for (let i=0;i<pos.length;i++){
+      for (let j=0;j<pos.length;j++){
+        const row = pos[i], col = pos[j];
+        if (this.modules[row][col]!=null) continue;
+        for (let r=-2;r<=2;r++){
+          for (let c=-2;c<=2;c++){
+            const dark = (r===-2||r===2||c===-2||c===2||(r===0&&c===0));
+            this.modules[row+r][col+c] = dark;
+          }
+        }
+      }
+    }
+  }
+  setupTypeNumber(test){
+    const bits = getBCHTypeNumber(this.version);
+    for (let i=0;i<18;i++){
+      const mod = (!test && ((bits>>i)&1)===1);
+      this.modules[Math.floor(i/3)][i%3 + this.moduleCount-8-3] = mod;
+    }
+    for (let i=0;i<18;i++){
+      const mod = (!test && ((bits>>i)&1)===1);
+      this.modules[i%3 + this.moduleCount-8-3][Math.floor(i/3)] = mod;
+    }
+  }
+  setupTypeInfo(test, maskPattern, ecBits){
+    const data = (ecBits<<3) | maskPattern;
+    const bits = getBCHTypeInfo(data);
+    for (let i=0;i<15;i++){
+      const mod = (!test && ((bits>>i)&1)===1);
+      if (i<6) this.modules[i][8]=mod;
+      else if (i<8) this.modules[i+1][8]=mod;
+      else this.modules[this.moduleCount-15+i][8]=mod;
+    }
+    for (let i=0;i<15;i++){
+      const mod = (!test && ((bits>>i)&1)===1);
+      if (i<8) this.modules[8][this.moduleCount-i-1]=mod;
+      else if (i<9) this.modules[8][15-i-1+1]=mod;
+      else this.modules[8][15-i-1]=mod;
+    }
+    this.modules[this.moduleCount-8][8] = (!test);
+  }
+  mapData(data, maskPattern){
+    let inc=-1, row=this.moduleCount-1, bitIndex=7, byteIndex=0;
+    for (let col=this.moduleCount-1; col>0; col-=2){
+      if (col===6) col--;
+      while (true){
+        for (let c=0;c<2;c++){
+          if (this.modules[row][col-c]==null){
+            let dark=false;
+            if (byteIndex<data.length){
+              dark = ((data[byteIndex]>>>bitIndex)&1)===1;
+            }
+            const m = maskFunc(maskPattern, row, col-c);
+            if (m) dark = !dark;
+            this.modules[row][col-c]=dark;
+            bitIndex--;
+            if (bitIndex===-1){ byteIndex++; bitIndex=7; }
+          }
+        }
+        row += inc;
+        if (row<0||this.moduleCount<=row){ row-=inc; inc=-inc; break; }
+      }
+    }
+  }
+}
+function maskFunc(pattern,row,col){
+  switch(pattern){
+    case 0: return (row+col)%2===0;
+    case 1: return row%2===0;
+    case 2: return col%3===0;
+    case 3: return (row+col)%3===0;
+    case 4: return (Math.floor(row/2)+Math.floor(col/3))%2===0;
+    case 5: return (row*col)%2 + (row*col)%3 === 0;
+    case 6: return ((row*col)%2 + (row*col)%3)%2===0;
+    case 7: return ((row*col)%3 + (row+col)%2)%2===0;
+  }
+  return false;
+}
+function getAlignmentPatternPositions(version){
+  if (version===1) return [];
+  const table = {
+    2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]
+  };
+  return table[version] || [];
+}
+function getBCHTypeInfo(data){
+  let d = data<<10;
+  while (getBCHDigit(d) - getBCHDigit(0x537) >= 0) d ^= (0x537 << (getBCHDigit(d)-getBCHDigit(0x537)));
+  return ((data<<10)|d) ^ 0x5412;
+}
+function getBCHTypeNumber(version){
+  let d = version<<12;
+  while (getBCHDigit(d) - getBCHDigit(0x1F25) >= 0) d ^= (0x1F25 << (getBCHDigit(d)-getBCHDigit(0x1F25)));
+  return (version<<12)|d;
+}
+function getBCHDigit(data){
+  let digit=0;
+  while (data!==0){ digit++; data >>>=1; }
+  return digit;
+}
+
+function calcPenalty(modules){
+  const n = modules.length;
+  let penalty=0;
+  // rule 1
+  for (let r=0;r<n;r++){
+    let count=1;
+    for (let c=1;c<n;c++){
+      if (modules[r][c]===modules[r][c-1]) count++;
+      else { if (count>=5) penalty += 3+(count-5); count=1; }
+    }
+    if (count>=5) penalty += 3+(count-5);
+  }
+  for (let c=0;c<n;c++){
+    let count=1;
+    for (let r=1;r<n;r++){
+      if (modules[r][c]===modules[r-1][c]) count++;
+      else { if (count>=5) penalty += 3+(count-5); count=1; }
+    }
+    if (count>=5) penalty += 3+(count-5);
+  }
+  // rule 2
+  for (let r=0;r<n-1;r++){
+    for (let c=0;c<n-1;c++){
+      const v = modules[r][c];
+      if (v===modules[r][c+1] && v===modules[r+1][c] && v===modules[r+1][c+1]) penalty += 3;
+    }
+  }
+  // rule 3 (simplified pattern search)
+  const pat1=[true,false,true,true,true,false,true,false,false,false,false];
+  const pat2=[false,false,false,false,true,false,true,true,true,false,true];
+  for (let r=0;r<n;r++){
+    for (let c=0;c<=n-11;c++){
+      let m1=true,m2=true;
+      for (let k=0;k<11;k++){
+        if (modules[r][c+k]!==pat1[k]) m1=false;
+        if (modules[r][c+k]!==pat2[k]) m2=false;
+      }
+      if (m1||m2) penalty += 40;
+    }
+  }
+  for (let c=0;c<n;c++){
+    for (let r=0;r<=n-11;r++){
+      let m1=true,m2=true;
+      for (let k=0;k<11;k++){
+        if (modules[r+k][c]!==pat1[k]) m1=false;
+        if (modules[r+k][c]!==pat2[k]) m2=false;
+      }
+      if (m1||m2) penalty += 40;
+    }
+  }
+  // rule 4
+  let dark=0;
+  for (let r=0;r<n;r++) for (let c=0;c<n;c++) if (modules[r][c]) dark++;
+  const ratio = Math.abs(100*dark/(n*n) - 50)/5;
+  penalty += Math.floor(ratio)*10;
+  return penalty;
+}
+
+function makeQR(text, opts) {
+  opts = opts || {};
+  const ecLevelName = opts.ecLevel || 'M';
+  const bytes = Array.from(new TextEncoder().encode(text));
+
+  let version = opts.version || null;
+  if (!version) {
+    for (let v=1; v<=10; v++){
+      const cap = totalDataCodewords(v, ecLevelName);
+      // rough capacity check accounting header bits (4 + charCountBits)
+      const headerBits = 4 + charCountBits(v);
+      const capBits = cap*8 - headerBits;
+      if (Math.floor(capBits/8) >= bytes.length) { version = v; break; }
+    }
+    if (!version) throw new Error('Data too long for supported versions (1-10)');
+  }
+
+  const data = createData(version, ecLevelName, bytes);
+  const model = new QRCodeModel(version, ecLevelName);
+
+  // try all masks, pick lowest penalty
+  let bestPattern=0, bestPenalty=Infinity, bestModules=null;
+  for (let pattern=0; pattern<8; pattern++){
+    const m = new QRCodeModel(version, ecLevelName);
+    for (let r=0;r<m.moduleCount;r++) for (let c=0;c<m.moduleCount;c++) m.modules[r][c]=null;
+    m.setupPositionProbePattern(0,0);
+    m.setupPositionProbePattern(m.moduleCount-7,0);
+    m.setupPositionProbePattern(0,m.moduleCount-7);
+    m.setupPositionAdjustPattern();
+    m.setupTimingPattern();
+    m.setupTypeInfo(false, pattern, EC_BITS[ecLevelName]);
+    if (version>=7) m.setupTypeNumber(false);
+    m.mapData(data, pattern);
+    const penalty = calcPenalty(m.modules);
+    if (penalty < bestPenalty){ bestPenalty=penalty; bestPattern=pattern; bestModules=m.modules; }
+  }
+  model.modules = bestModules;
+  return { size: model.moduleCount, isDark: (r,c)=>!!model.modules[r][c], version, ecLevel: ecLevelName };
+}
+
+if (typeof module !== 'undefined') module.exports = { makeQR };
+if (typeof window !== 'undefined') window.makeQR = makeQR;
+
+// ── Рендер в SVG (compact: соседние тёмные модули в строке объединены в один
+// прямоугольник, чтобы разметка не разрасталась на больших QR) ──
+window.floxQrSvg = function(text, sizePx, ecLevel) {
+  const qr = window.makeQR(text, { ecLevel: ecLevel || 'M' });
+  const quiet = 4;
+  const cell = sizePx / (qr.size + quiet * 2);
+  let path = '';
+  for (let y = 0; y < qr.size; y++) {
+    let x = 0;
+    while (x < qr.size) {
+      if (!qr.isDark(y, x)) { x++; continue; }
+      const runStart = x;
+      while (x < qr.size && qr.isDark(y, x)) x++;
+      const rx = ((runStart + quiet) * cell).toFixed(2);
+      const ry = ((y + quiet) * cell).toFixed(2);
+      const rw = ((x - runStart) * cell).toFixed(2);
+      path += `<rect x="${rx}" y="${ry}" width="${rw}" height="${cell.toFixed(2)}"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 ${sizePx} ${sizePx}" width="${sizePx}" height="${sizePx}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR-код">` +
+    `<rect width="${sizePx}" height="${sizePx}" fill="#fff" rx="8"/><g fill="#111118">${path}</g></svg>`;
+};
+
+</script>
 <style>
 :root {
   --meeting-logo-vis: visible;
@@ -167,6 +607,34 @@ a { color: inherit; text-decoration: none; }
   .body-wrap { grid-template-columns: 1fr; }
   .sidebar-col { order: -1; }
 }
+
+/* ── ПЛАШКА "НАШЛИ БАГ" ───────────────────────────────────────────────────
+   21.07.26, по просьбе Ильи, по образцу футера TrendAgent (прислал скрин):
+   светло-серая плашка ВСЕГДА (не зависит от тёмной/светлой темы сайта, как
+   и у них — поэтому цвета здесь захардкожены, а не через var(--surface)),
+   иконка+текст сверху, QR-коды — отдельной строкой ниже, крупнее (не
+   мелкой иконкой рядом с текстом), т.к. рядов несколько (группа/бот/
+   поддержка) и может стать больше. */
+.bugfix-footer-wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px 32px; }
+.bugfix-footer { background: #eef0f2; border-radius: 16px; padding: 20px 24px 24px; }
+.bf-row { display: flex; align-items: center; gap: 16px; }
+/* 21.07.26 (round 2), по просьбе Ильи: фон иконки нейтральный серый, а не
+   фиолетовый (акцентный цвет тут ни к чему — это просто иконка внутри и так
+   серой плашки). */
+.bf-icon {
+  width: 44px; height: 44px; border-radius: 12px; background: rgba(0,0,0,.06); color: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.bf-text { flex: 1; font-size: 14px; font-weight: 600; line-height: 1.5; color: #111118; }
+.bf-qr-row {
+  display: flex; flex-wrap: wrap; gap: 32px; margin-top: 20px;
+}
+.bf-qr-item { display: flex; align-items: center; gap: 14px; }
+.bf-qr-img { width: 104px; height: 104px; flex-shrink: 0; border-radius: 8px; overflow: hidden; }
+/* 21.07.26 (round 2): заголовок (жирный, крупнее) + подпись отдельной строкой
+   под ним — раньше было "жирный кусок текста" + "в Telegram" одной строкой. */
+.bf-qr-cap { font-size: 12px; color: rgba(0,0,0,.55); line-height: 1.5; max-width: 180px; }
+.bf-qr-cap b { display: block; color: #111118; font-weight: 700; font-size: 13.5px; margin-bottom: 3px; }
 
 /* ── PROJ HEADER ─── */
 .proj-header { margin-bottom: 20px; }
@@ -1106,6 +1574,39 @@ body.map-fake-fullscreen-active { overflow: hidden; }
   </div>
   <div class="sidebar-col" id="sidebarCol"></div>
 </div>
+
+<!-- ПЛАШКА "НАШЛИ БАГ" — 21.07.26, по просьбе Ильи (см. коммент у .bugfix-footer-wrap в CSS) -->
+<div class="bugfix-footer-wrap">
+  <div class="bugfix-footer">
+    <div class="bf-row">
+      <div class="bf-icon">🐛</div>
+      <div class="bf-text">Мы заботимся о качестве платформы. Если нашли баг — напишите нам, мы исправим</div>
+    </div>
+    <div class="bf-qr-row" id="bfQrRow">
+      <div class="bf-qr-item">
+        <div class="bf-qr-img" id="bfQr-tg-group"></div>
+        <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram</div>
+      </div>
+      <div class="bf-qr-item">
+        <div class="bf-qr-img" id="bfQr-tg-bot"></div>
+        <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram</div>
+      </div>
+      <div class="bf-qr-item">
+        <div class="bf-qr-img" id="bfQr-tg-support"></div>
+        <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // 21.07.26, по просьбе Ильи: ссылка на чат поддержки пока не прислана —
+  // временно веду на тот же бот регистрации как заглушку (см. также коммент
+  // в мокапе project-footer-fullpage-mockup.html). Поменять на реальную,
+  // как только Илья пришлёт ссылку.
+  document.getElementById('bfQr-tg-group').innerHTML = window.floxQrSvg('https://t.me/flox_phuket', 104, 'M');
+  document.getElementById('bfQr-tg-bot').innerHTML = window.floxQrSvg('https://t.me/phuket_proptech_bot', 104, 'M');
+  document.getElementById('bfQr-tg-support').innerHTML = window.floxQrSvg('https://t.me/phuket_proptech_bot', 104, 'M');
+</script>
 
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">

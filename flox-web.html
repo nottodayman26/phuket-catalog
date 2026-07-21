@@ -1275,7 +1275,13 @@ const COMPLETION_OPTIONS = [
 
 // ── STATE ─────────────────────────────────
 let AGENT = null;
-let filters = { propType: 'condo', unitTypes: null, price: null, completion: null, district: null, amphoe: null, developer: null };
+// 21.07.26, по просьбе Ильи: район/округ теперь МАССИВ (filters.locations),
+// а не одно значение — раньше выбор "Карон" после "Камала" гасил "Камала"
+// (взаимоисключение), хотя агент хотел увидеть варианты СРАЗУ в обоих
+// районах (см. filterByDistrict/filterByAmphoe/applyFilters ниже). Каждый
+// элемент — {type:'district'|'amphoe', value}, своя плашка-чип со своим
+// крестиком (см. updateChips).
+let filters = { propType: 'condo', unitTypes: null, price: null, completion: null, locations: [], developer: null };
 let tmpType = 'all';
 let tmpCompletion = null;
 
@@ -1381,7 +1387,7 @@ function resetSearchPageToClean() {
   syncAccentPill(true); // 16.07.26: без этого фиолетовая плашка оставалась над "На карте" — см. коммент выше
   document.getElementById('searchResults').style.display = '';
   // 17.07.26: полный сброс к дефолту — фильтры, тип, текст поиска, результаты.
-  filters = { propType: 'condo', unitTypes: null, price: null, completion: null, district: null, amphoe: null, developer: null };
+  filters = { propType: 'condo', unitTypes: null, price: null, completion: null, locations: [], developer: null };
   tmpUnitTypes = [];
   resetPriceState(); // 17.07.26: заякоренные дропдауны цены — сбрасываем committed/pending обеих вкладок и поля ввода
   closeAllFilterDropdowns();
@@ -1762,8 +1768,15 @@ function projectTypeSummary(p) {
 function applyFilters(list) {
   if (filters.propType && filters.propType !== 'condo') return [];
   return list.filter(p => {
-    if (filters.district && p.district !== filters.district) return false;
-    if (filters.amphoe && p.amphoe !== filters.amphoe) return false;
+    // 21.07.26, по просьбе Ильи: несколько районов/округов теперь работают
+    // как ИЛИ между собой (проект проходит, если совпал ЛЮБОЙ выбранный
+    // район/округ), а не как взаимоисключение — см. filters.locations выше.
+    if (filters.locations && filters.locations.length) {
+      const matchesLocation = filters.locations.some(loc =>
+        loc.type === 'district' ? p.district === loc.value : p.amphoe === loc.value
+      );
+      if (!matchesLocation) return false;
+    }
     if (filters.developer && p.developer !== filters.developer) return false;
     return matchingUnitEntries(p).length > 0;
   });
@@ -1877,15 +1890,22 @@ document.addEventListener('click', e => {
 // активного фильтра теперь виден отдельной плашкой под поиском (см.
 // updateChips), а не текстом в самом поле.
 //
-// 17.07.26 (round 2), по прямой просьбе Ильи: район/округ — это ОДНО и то же
-// измерение (округ просто крупнее района), поэтому они по-прежнему гасят
-// друг друга. А вот застройщик — измерение НЕЗАВИСИМОЕ (можно искать
-// конкретного застройщика В конкретном районе одновременно) — раньше выбор
-// застройщика ошибочно гасил район/округ и наоборот, теперь они спокойно
-// сочетаются.
+// 17.07.26 (round 2), по прямой просьбе Ильи: застройщик — измерение
+// НЕЗАВИСИМОЕ от района/округа (можно искать конкретного застройщика В
+// конкретном районе одновременно) — раньше выбор застройщика ошибочно гасил
+// район/округ и наоборот, теперь они спокойно сочетаются.
+//
+// 21.07.26, по прямой просьбе Ильи (найден баг): а вот НЕСКОЛЬКО районов
+// (или округов) между собой раньше ошибочно гасили друг друга, как будто
+// это один и тот же выбор — набрал "Камала", потом "Карон" — оставался
+// только Карон. На деле агент хочет видеть варианты СРАЗУ в обоих районах.
+// Теперь filters.locations — массив, и один и тот же район/округ дважды не
+// добавляется (клик по уже выбранному ничего не меняет).
 function filterByDistrict(district) {
   hideAC();
-  filters.district = district; filters.amphoe = null;
+  if (!filters.locations.some(l => l.type === 'district' && l.value === district)) {
+    filters.locations.push({ type: 'district', value: district });
+  }
   document.getElementById('searchInput').value = '';
   updateChips();
   doSearch();
@@ -1894,7 +1914,9 @@ function filterByDistrict(district) {
 
 function filterByAmphoe(amphoe) {
   hideAC();
-  filters.amphoe = amphoe; filters.district = null;
+  if (!filters.locations.some(l => l.type === 'amphoe' && l.value === amphoe)) {
+    filters.locations.push({ type: 'amphoe', value: amphoe });
+  }
   document.getElementById('searchInput').value = '';
   updateChips();
   doSearch();
@@ -3317,16 +3339,20 @@ function updateChips() {
   // выше) и теперь могут быть активны ОДНОВРЕМЕННО — значит, нужны ДВЕ
   // отдельные плашки одновременно, каждая со своим крестиком, а не одна общая
   // на троих, как было раньше.
+  //
+  // 21.07.26, по просьбе Ильи: район/округ теперь МАССИВ (filters.locations,
+  // см. коммент у объявления filters выше) — несколько районов работают как
+  // ИЛИ между собой, поэтому у каждого своя плашка со своим крестиком (индекс
+  // в массиве передаём в clearLocationFilter, чтобы снять именно этот один
+  // район/округ, не трогая остальные).
   let chips = '';
-  if (filters.district) {
+  filters.locations.forEach((loc, idx) => {
     hasActive = true;
-    const label = DISTRICTS[filters.district]?.ru || filters.district;
-    chips += `<span class="loc-chip">${label}<span class="fd-clear-x-inline" onclick="clearDistrictFilter(event)">✕</span></span>`;
-  } else if (filters.amphoe) {
-    hasActive = true;
-    const label = AMPHOE_RU[filters.amphoe] || filters.amphoe;
-    chips += `<span class="loc-chip">${label}<span class="fd-clear-x-inline" onclick="clearDistrictFilter(event)">✕</span></span>`;
-  }
+    const label = loc.type === 'district'
+      ? (DISTRICTS[loc.value]?.ru || loc.value)
+      : (AMPHOE_RU[loc.value] || loc.value);
+    chips += `<span class="loc-chip">${label}<span class="fd-clear-x-inline" onclick="clearLocationFilter(event,${idx})">✕</span></span>`;
+  });
   if (filters.developer) {
     hasActive = true;
     chips += `<span class="loc-chip">${filters.developer}<span class="fd-clear-x-inline" onclick="clearDeveloperFilter(event)">✕</span></span>`;
@@ -3336,13 +3362,18 @@ function updateChips() {
     chips + (hasActive ? `<button class="reset-all" onclick="resetAll()">Сбросить все</button>` : '');
 }
 
-// 17.07.26 (round 2): район/округ и застройщик теперь сбрасываются отдельными
+// 17.07.26 (round 2): район/округ и застройщик сбрасываются отдельными
 // крестиками (у каждой плашки свой) — раньше был один общий clearLocationFilter
 // на все три поля сразу, что не позволяло снять только одно из них, оставив
 // другое активным.
-function clearDistrictFilter(e) {
+//
+// 21.07.26, по просьбе Ильи: район/округ теперь массив — снимаем ОДИН
+// конкретный элемент по индексу (см. updateChips), а не весь массив целиком,
+// иначе крестик у одной плашки ("Камала") снимал бы заодно и вторую
+// ("Карон").
+function clearLocationFilter(e, idx) {
   if (e) e.stopPropagation();
-  filters.district = null; filters.amphoe = null;
+  filters.locations.splice(idx, 1);
   updateChips();
   autoSearch();
   syncMapWithFilters();
@@ -3365,7 +3396,7 @@ function resetPriceState(){
 }
 
 function resetAll() {
-  filters = {propType:'condo', unitTypes:null, price:null, completion:null, district:null, amphoe:null, developer:null};
+  filters = {propType:'condo', unitTypes:null, price:null, completion:null, locations:[], developer:null};
   tmpUnitTypes = [];
   resetPriceState();
   document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('act',i===0));
