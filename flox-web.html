@@ -169,7 +169,11 @@ input,button{font-family:inherit;}
 /* 17.07.26, по согласованному макету: "Сбросить все" сдвинута правее —
    начинается примерно под "П" в "Проект, застройщик, район" (см.
    .search-input-seg padding-left:18px + padding самой ленты 6px = 24px). */
-.active-filters{display:flex;align-items:center;width:100%;max-width:900px;margin-top:10px;min-height:0;gap:14px;padding-left:24px;}
+/* 20.07.26, по просьбе Ильи: строка .active-filters-row держит и чипы
+   фильтров/"Сбросить все" (слева), и таблетку "Найдено: X" (справа) на одном
+   уровне — раньше таблетка жила ниже, первой строкой внутри #searchResults. */
+.active-filters-row{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:900px;margin-top:10px;padding-left:24px;gap:14px;}
+.active-filters{display:flex;align-items:center;min-height:0;gap:14px;}
 /* 17.07.26, по согласованному макету: "Сбросить все" теперь таблетка с
    мягким красным фоном (accent-soft-приём, тот же, что у активных фильтров),
    а не голый текст без фона, как было раньше. */
@@ -316,7 +320,11 @@ input,button{font-family:inherit;}
 
 /* Results */
 .search-results{width:100%;max-width:900px;margin-top:24px;}
-.results-label{display:flex;justify-content:flex-end;margin-bottom:14px;}
+/* 20.07.26: раньше .results-label жила внутри #searchResults (первой строкой
+   над карточками) — теперь это отдельный блок в общей .active-filters-row
+   рядом с "Сбросить все" (см. HTML), поэтому justify-content/margin-bottom
+   под старую компоновку больше не нужны. */
+.results-label{display:flex;flex-shrink:0;}
 .results-label span{font-size:12px;color:var(--muted);background:var(--surface);padding:4px 12px;border-radius:20px;white-space:nowrap;}
 
 /* ── "На карте" — кнопка-переключатель в строке фильтров (слева от лупы)
@@ -1000,9 +1008,9 @@ body.map-fake-fullscreen-active{overflow:hidden;}
           <button class="fd-price-tab" id="tabM2" onclick="setPriceMode('m2')" type="button">За м²</button>
         </div>
         <div class="fd-price-inputs">
-          <div class="fd-price-input"><input type="text" id="priceFromInput" placeholder="Цена от" oninput="onPriceInput('from')"></div>
+          <div class="fd-price-input"><input type="text" id="priceFromInput" placeholder="от" oninput="onPriceInput('from')"></div>
           <span class="fd-price-dash">—</span>
-          <div class="fd-price-input"><input type="text" id="priceToInput" placeholder="Цена до" oninput="onPriceInput('to')"></div>
+          <div class="fd-price-input"><input type="text" id="priceToInput" placeholder="до" oninput="onPriceInput('to')"></div>
         </div>
         <div class="fd-price-cols">
           <div class="fd-price-col" id="priceColFrom"></div>
@@ -1015,7 +1023,15 @@ body.map-fake-fullscreen-active{overflow:hidden;}
       </div>
     </div>
 
-    <div class="active-filters" id="activeFilters"></div>
+    <!-- 20.07.26, по просьбе Ильи: таблетка "Найдено: X" поднята на уровень
+         "Сбросить все" — оба живут в общей строке .active-filters-row,
+         каждый в своём дочернем блоке (обновляются разными функциями:
+         updateChips() для #activeFilters, showCards() для #resultsLabelWrap),
+         чтобы не затирать друг друга при перерисовке. -->
+    <div class="active-filters-row" id="activeFiltersRow">
+      <div class="active-filters" id="activeFilters"></div>
+      <div class="results-label" id="resultsLabelWrap"></div>
+    </div>
 
     <div class="search-results" id="searchResults"></div>
 
@@ -2083,6 +2099,10 @@ function showCards(projects, label) {
   // 16.07.26, по просьбе Ильи: поиск/фильтр не должен двигать/зумить карту.
   if (mapViewActive) renderProjectPins(projects, { fitBounds: false });
   const el = document.getElementById('searchResults');
+  // 20.07.26, по просьбе Ильи: таблетка "Найдено: X" теперь отдельный блок в
+  // .active-filters-row (см. HTML/CSS), а не первая строка внутри
+  // #searchResults — обновляем её здесь же, рядом с карточками.
+  const pillEl = document.getElementById('resultsLabelWrap');
   if (!projects.length) {
     el.innerHTML = `
       <div class="no-results">
@@ -2090,10 +2110,11 @@ function showCards(projects, label) {
         <div style="font-weight:600;margin-bottom:6px;">Ничего не найдено</div>
         <div style="font-size:13px;">Под ваш запрос нет подходящих вариантов.<br>Попробуйте изменить фильтры или запрос.</div>
       </div>`;
+    if (pillEl) pillEl.innerHTML = '';
     return;
   }
+  if (pillEl) pillEl.innerHTML = `<span>${label}</span>`;
   el.innerHTML = `
-    <div class="results-label"><span>${label}</span></div>
     <div class="project-cards">${projects.map(cardHTML).join('')}</div>`;
   // Каскадное появление
   el.querySelectorAll('.project-card').forEach((card, i) => {
@@ -4266,6 +4287,10 @@ async function loadPresentation() {
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
   });
   const units = await r.json();
+  // 20.07.26, по просьбе Ильи: живой статус юнитов (свободен/продан) нужен не
+  // только для отрисовки карточек — он же используется в sharePresentation()
+  // ниже, чтобы проданные юниты не попадали в саму формируемую ссылку.
+  presState.unitsData = units;
 
   const projectIds = [...new Set(raw.map(u => u.project))];
   const projMap = {};
@@ -4429,9 +4454,18 @@ function clearPresentation() {
 function sharePresentation() {
   // Если есть выбранные карточки — берём только их, иначе все
   const selectedCards = [...document.querySelectorAll('.pres-card.selected')];
-  const unitsToSend = selectedCards.length
+  let unitsToSend = selectedCards.length
     ? presState.units.filter(u => selectedCards.some(c => c.id === `pc-${u.room_no}`))
     : presState.units;
+
+  // 20.07.26, по просьбе Ильи: проданный юнит не должен попадать в
+  // формируемую ссылку (оффер), даже если он остался выбранным в подборке —
+  // сверяем с живым статусом из Supabase (presState.unitsData, см.
+  // loadPresentation), а не с локальным кешем "flox-presentation".
+  const soldRoomNos = new Set(
+    (presState.unitsData || []).filter(u => u.status !== 'available').map(u => u.room_no)
+  );
+  unitsToSend = unitsToSend.filter(u => !soldRoomNos.has(u.room_no));
   presState.unitsToSend = unitsToSend;
 
   const projectIds = [...new Set(unitsToSend.map(u => u.project))];

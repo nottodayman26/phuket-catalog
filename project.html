@@ -1950,8 +1950,8 @@ function setUfPriceMode(mode) {
   document.getElementById('uf-price-tab-m2')?.classList.toggle('act', mode === 'm2');
   const fromEl = document.getElementById('uf-price-from'), toEl = document.getElementById('uf-price-to');
   if (mode === 'm2') {
-    if (fromEl) { fromEl.value = _filterPriceFromM2 || ''; fromEl.placeholder = '฿/м² от'; }
-    if (toEl) { toEl.value = _filterPriceToM2 !== Infinity ? _filterPriceToM2 : ''; toEl.placeholder = '฿/м² до'; }
+    if (fromEl) { fromEl.value = _filterPriceFromM2 || ''; fromEl.placeholder = 'от'; }
+    if (toEl) { toEl.value = _filterPriceToM2 !== Infinity ? _filterPriceToM2 : ''; toEl.placeholder = 'до'; }
   } else {
     if (fromEl) { fromEl.value = _filterPriceFrom || ''; fromEl.placeholder = 'от'; }
     if (toEl) { toEl.value = _filterPriceTo !== Infinity ? _filterPriceTo : ''; toEl.placeholder = 'до'; }

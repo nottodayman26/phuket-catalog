@@ -893,7 +893,16 @@ async function init() {
     const pricePerSqm = u.price_per_sqm ? Math.round(u.price_per_sqm).toLocaleString('ru') + ' ฿' : '—';
     const unitUrl = `unit.html?unit=${encodeURIComponent(u.room_no)}&project=${encodeURIComponent(meta.project || '')}&client=1${agentInitials ? '&agent=' + encodeURIComponent(agentInitials) : ''}${agentFullName ? '&agentName=' + encodeURIComponent(agentFullName) : ''}&pres=${encodeURIComponent(id)}`;
 
-    return `<a class="unit-card${isAvail ? '' : ' unit-sold-card'}" id="uc-${u.room_no}" href="${unitUrl}" target="_blank" rel="noopener">
+    // 20.07.26, по просьбе Ильи: если юнит продался ПОСЛЕ того, как подборка
+    // была сформирована — карточка должна не просто выглядеть блёклой
+    // (unit-sold-card уже было), а реально не пускать в клиентскую страницу
+    // юнита. Раньше href стоял всегда, независимо от статуса — блёклая
+    // карточка была кликабельной. isAvail здесь берётся из ЖИВОГО статуса
+    // (запрос к units чуть выше, а не из "units" внутри самой презентации),
+    // поэтому если юнит потом снова стал доступен — ссылка сама вернётся.
+    const linkAttrs = isAvail ? `href="${unitUrl}" target="_blank" rel="noopener"` : '';
+
+    return `<a class="unit-card${isAvail ? '' : ' unit-sold-card'}" id="uc-${u.room_no}" ${linkAttrs}>
       <div class="unit-plan">
         <div class="unit-plan-placeholder">
           <i class="ti ti-layout-2"></i>
