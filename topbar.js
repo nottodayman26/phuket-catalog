@@ -18,7 +18,7 @@ const CSS = `
 .flox-tb-avatar-wrap{position:relative;}
 .flox-tb-popover{position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.14);z-index:400;min-width:200px;padding:8px;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .18s,transform .18s;}
 .flox-tb-popover.vis{opacity:1;pointer-events:all;transform:translateY(0);}
-.flox-tb-popover-info{padding:10px 12px 8px;border-bottom:1px solid var(--line);margin-bottom:6px;}
+.flox-tb-popover-info{padding:10px 12px 8px;margin-bottom:6px;}
 .flox-tb-popover-name{font-size:13px;font-weight:600;}
 .flox-tb-popover-agency{font-size:11px;color:var(--muted);margin-top:2px;}
 .flox-tb-popover-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);transition:background .12s;}
