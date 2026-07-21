@@ -643,6 +643,9 @@ a { color: inherit; text-decoration: none; }
    под ним — раньше было "жирный кусок текста" + "в Telegram" одной строкой. */
 .bf-qr-cap { font-size: 12px; color: rgba(0,0,0,.55); line-height: 1.5; max-width: 180px; }
 .bf-qr-cap b { display: block; color: #111118; font-weight: 700; font-size: 13.5px; margin-bottom: 3px; }
+/* 21.07.26 (round 4), по просьбе Ильи: тег @username под подписью — тем же
+   приглушённым серым, но помельче, чтобы не спорить с заголовком. */
+.bf-qr-handle { display: block; color: rgba(0,0,0,.4); margin-top: 3px; }
 
 /* ── PROJ HEADER ─── */
 .proj-header { margin-bottom: 20px; }
@@ -1598,27 +1601,25 @@ body.map-fake-fullscreen-active { overflow: hidden; }
     <div class="bf-qr-row" id="bfQrRow">
       <div class="bf-qr-item">
         <div class="bf-qr-img" id="bfQr-tg-group"></div>
-        <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram</div>
+        <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
       </div>
       <div class="bf-qr-item">
         <div class="bf-qr-img" id="bfQr-tg-bot"></div>
-        <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram</div>
+        <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
       </div>
       <div class="bf-qr-item">
         <div class="bf-qr-img" id="bfQr-tg-support"></div>
-        <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram</div>
+        <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
       </div>
     </div>
   </div>
 </div>
 <script>
-  // 21.07.26, по просьбе Ильи: ссылка на чат поддержки пока не прислана —
-  // временно веду на тот же бот регистрации как заглушку (см. также коммент
-  // в мокапе project-footer-fullpage-mockup.html). Поменять на реальную,
-  // как только Илья пришлёт ссылку.
+  // 21.07.26 (round 4), по просьбе Ильи: реальный аккаунт техподдержки —
+  // @flox_help (была временная заглушка на бот регистрации).
   document.getElementById('bfQr-tg-group').innerHTML = window.floxQrSvg('https://t.me/flox_phuket', 104, 'M');
   document.getElementById('bfQr-tg-bot').innerHTML = window.floxQrSvg('https://t.me/phuket_proptech_bot', 104, 'M');
-  document.getElementById('bfQr-tg-support').innerHTML = window.floxQrSvg('https://t.me/phuket_proptech_bot', 104, 'M');
+  document.getElementById('bfQr-tg-support').innerHTML = window.floxQrSvg('https://t.me/flox_help', 104, 'M');
 </script>
 
 <!-- LIGHTBOX -->
