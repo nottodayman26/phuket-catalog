@@ -1112,6 +1112,35 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 }
 .no-results-icon{font-size:32px;margin-bottom:12px;}
 
+/* ── ПЛАШКА "МЫ ЗАБОТИМСЯ О КАЧЕСТВЕ ПЛАТФОРМЫ" ───────────────────────────
+   21.07.26, по просьбе Ильи: тот же блок, что и в project.html (см.
+   .bugfix-footer-wrap там же для полной истории правок) — здесь используется
+   в двух местах:
+   1) внизу страницы "Поиск" (#searchPageFooter) — но только когда на
+      странице реально есть что смотреть (открыта карта ИЛИ отрисованы
+      карточки проектов), см. updateSearchFooterVisibility() в скрипте;
+      по умолчанию, до первого поиска, скрыт.
+   2) статично, всегда, внизу страниц "Мои предложения"/"Последняя
+      активность"/"Презентации" (см. #page-offers/#page-activity/#page-presentation).
+   Цвета сразу через var(--surface-2)/var(--text)/var(--muted) — здесь, в
+   отличие от project.html (round 3-4), тёмная тема сразу поддержана, без
+   отдельной правки. Иконка (.bf-icon) — белая всегда, как и в project.html. */
+.bugfix-footer-wrap{background:var(--surface-2);border-radius:14px;margin-top:24px;}
+.bugfix-footer{padding:24px 20px 26px;}
+.bf-row{display:flex;align-items:center;gap:16px;}
+.bf-icon{
+  width:44px;height:44px;border-radius:12px;background:#fff;color:rgba(0,0,0,.55);
+  border:1px solid rgba(0,0,0,.06);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+}
+.bf-text{flex:1;font-size:14px;font-weight:600;line-height:1.5;color:var(--text);}
+.bf-qr-row{display:flex;flex-wrap:wrap;gap:32px;margin-top:20px;}
+.bf-qr-item{display:flex;align-items:center;gap:14px;}
+.bf-qr-img{width:104px;height:104px;flex-shrink:0;border-radius:8px;overflow:hidden;}
+.bf-qr-cap{font-size:12px;color:var(--muted);line-height:1.5;max-width:180px;}
+.bf-qr-cap b{display:block;color:var(--text);font-weight:700;font-size:13.5px;margin-bottom:3px;}
+.bf-qr-handle{display:block;color:var(--muted-2);margin-top:3px;}
+
 /* Project card */
 .project-cards{display:flex;flex-direction:column;gap:12px;}
 .project-card{
@@ -1379,8 +1408,27 @@ body.map-fake-fullscreen-active{overflow:hidden;}
    кнопки внутри него (у iframe свой прямоугольный документ с непрозрачным
    фоном), поэтому по углам скруглённой кнопки проступал прямоугольный тёмный
    край iframe. Обрезаем сам iframe скруглением — это надёжнее, чем полагаться
-   на то, что нарисует внутри сам виджет. */
-#tgLoginWrap iframe{border-radius:12px!important;overflow:hidden;}
+   на то, что нарисует внутри сам виджет.
+   21.07.26 (3), по новому скрину Ильи: этого всё равно недостаточно — "на
+   секунду" при загрузке виден целый чёрный прямоугольник РЯДОМ с кнопкой, а
+   не просто угловые огрызки. Причина: пока скрипт Телеграма не прислал сам
+   себе финальный размер через postMessage, браузер держит <iframe> в
+   дефолтном для тега размере (без явных width/height это 300×150) — то есть
+   секунду-другую на странице реально висит прямоугольник 300×150 (с уже
+   применённым border-radius:12px, но всё ещё того самого "дефолтного"
+   размера), и только потом Телеграм подгоняет его inline-стилем под
+   настоящую кнопку. Раньше это было не видно только потому, что мы вообще
+   не проверяли момент готовности.
+   Чиним не подбором волшебных пикселей (итоговая ширина кнопки "Войти как
+   Илья" не то же самое, что у общей "Войти через Telegram", а слово
+   "квадрат" намекает именно на этот лишний, ещё не подогнанный прямоугольник),
+   а прячем сам виджет (.tg-widget-fade, см. разметку ниже) прозрачностью,
+   пока не увидим, что Телеграм уже выставил ему реальный inline-размер (см.
+   IIFE сразу после разметки виджета) — тогда никакого чёрного блока в
+   принципе не успевает нарисоваться на экране. */
+.tg-widget-fade{overflow:hidden;border-radius:12px;opacity:0;transition:opacity .2s ease;}
+.tg-widget-fade.tg-ready{opacity:1;}
+.tg-widget-fade iframe{border-radius:12px!important;overflow:hidden;}
 
 /* ── PROFILE / AGENTS EDITOR ── (21.07.26, "дай доступ к редактуре информации агента") */
 .pe-field{margin-bottom:16px;}
@@ -1559,6 +1607,18 @@ body.map-fake-fullscreen-active{overflow:hidden;}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>
             Расставить локации
           </button>
+          <!-- 21.07.26, по просьбе Ильи: кнопка "Агенты" переехала сюда из
+               поповера topbar.js (была ниже ФИО агента) — так админ видит её
+               только в панели карты, вместе с остальными админ-инструментами,
+               и она пропадает вместе с ними при "Смотреть как агент"
+               (см. .map-placement-bar.admin-vis/updatePlacementBarVisibility) —
+               значит в режиме предпросмотра страница выглядит 1:1 как у
+               обычного агента. Отдельная видимость самой кнопке не нужна —
+               целиком наследует от родителя #adminTools. -->
+          <button class="map-placement-toggle" id="agentsToolBtn" onclick="openProfileEditor()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            Агенты
+          </button>
           <input class="map-placement-input" id="locPlacementInput" type="text" list="locNamesList" placeholder="Название локации (напр. Аэропорт) — как в проекте">
           <datalist id="locNamesList"></datalist>
           <span class="map-placement-hint" id="locPlacementHint">Кликни на карте, куда поставить локацию с введённым названием. Имя должно 1:1 совпадать с названием в блоке "Ближайшие локации" на странице проекта</span>
@@ -1569,6 +1629,30 @@ body.map-fake-fullscreen-active{overflow:hidden;}
            и кладутся прямо в <body> (см. addCustomMapControls() в скрипте и
            большой комментарий у .map-ctrl-hidden в CSS, почему). -->
     </div>
+
+    <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
+    <div class="bugfix-footer-wrap" id="searchPageFooter" style="display:none;">
+      <div class="bugfix-footer">
+        <div class="bf-row">
+          <div class="bf-icon">💬</div>
+          <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+        </div>
+        <div class="bf-qr-row">
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="sfQr-tg-group"></div>
+            <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
+          </div>
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="sfQr-tg-bot"></div>
+            <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
+          </div>
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="sfQr-tg-support"></div>
+            <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1577,6 +1661,30 @@ body.map-fake-fullscreen-active{overflow:hidden;}
   <div class="offers-page">
     <div class="page-title">Мои предложения</div>
     <div class="offers-list" id="offersList"><div class="loader">Загрузка…</div></div>
+
+    <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
+    <div class="bugfix-footer-wrap">
+      <div class="bugfix-footer">
+        <div class="bf-row">
+          <div class="bf-icon">💬</div>
+          <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+        </div>
+        <div class="bf-qr-row">
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="ofQr-tg-group"></div>
+            <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
+          </div>
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="ofQr-tg-bot"></div>
+            <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
+          </div>
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="ofQr-tg-support"></div>
+            <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1585,6 +1693,30 @@ body.map-fake-fullscreen-active{overflow:hidden;}
   <div class="activity-page">
     <div class="page-title">Последняя активность</div>
     <div class="activity-list" id="activityList"><div class="loader">Загрузка…</div></div>
+
+    <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
+    <div class="bugfix-footer-wrap">
+      <div class="bugfix-footer">
+        <div class="bf-row">
+          <div class="bf-icon">💬</div>
+          <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+        </div>
+        <div class="bf-qr-row">
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="acQr-tg-group"></div>
+            <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
+          </div>
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="acQr-tg-bot"></div>
+            <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
+          </div>
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="acQr-tg-support"></div>
+            <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1610,6 +1742,30 @@ body.map-fake-fullscreen-active{overflow:hidden;}
       <div class="pres-share-row">
         <input type="text" id="presShareUrl" readonly onclick="this.select()">
         <button onclick="copyPresLink()"><i class="ti ti-copy"></i></button>
+      </div>
+    </div>
+
+    <!-- см. большой коммент у .bugfix-footer-wrap в CSS -->
+    <div class="bugfix-footer-wrap">
+      <div class="bugfix-footer">
+        <div class="bf-row">
+          <div class="bf-icon">💬</div>
+          <div class="bf-text">Мы заботимся о качестве платформы. Если нашли ошибку — напишите нам, мы исправим</div>
+        </div>
+        <div class="bf-qr-row">
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="prQr-tg-group"></div>
+            <div class="bf-qr-cap"><b>Группа Flox</b>Новости застройщиков в Telegram<span class="bf-qr-handle">@flox_phuket</span></div>
+          </div>
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="prQr-tg-bot"></div>
+            <div class="bf-qr-cap"><b>Регистрация на Flox</b>Бот-приложение в Telegram<span class="bf-qr-handle">@phuket_proptech_bot</span></div>
+          </div>
+          <div class="bf-qr-item">
+            <div class="bf-qr-img" id="prQr-tg-support"></div>
+            <div class="bf-qr-cap"><b>Служба поддержки</b>Чат с поддержкой в Telegram<span class="bf-qr-handle">@flox_help</span></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1895,6 +2051,11 @@ function resetSearchPageToClean() {
   clearSearch(); // чистит текст поиска, крестик и #searchResults (см. функцию ниже)
   _searchDone = false;
   loadUnitCount(); // 17.07.26: заново проигрываем анимацию счётчика "Более NNN предложений"
+  // 21.07.26: карта закрыта и карточки очищены (см. выше) — блок "Мы
+  // заботимся о качестве платформы" внизу страницы прячем вместе с ними
+  // (см. updateSearchFooterVisibility). Без этого явного вызова он мог бы
+  // остаться видимым до следующего showCards()/setResultsView().
+  updateSearchFooterVisibility();
   setTimeout(() => { _resettingSearchPage = false; }, 50);
 }
 
@@ -2371,7 +2532,17 @@ function clearSearch() {
   // учтёт то, что текстового фильтра больше нет.
   syncMapWithFilters();
 }
-function clearResults() { document.getElementById('searchResults').innerHTML = ''; }
+// 21.07.26, найден Ильёй баг ("Найдено: N" остаётся видно при переходе на
+// Инструменты/Клиенты, если до этого хоть раз был реальный поиск через лупу):
+// эта функция чистила только сами карточки результатов, но никогда — плашку
+// "Найдено: N" (#resultsLabelWrap), которую отдельно заполняет showCards().
+// Из-за этого старая плашка от прошлого поиска переживала
+// resetSearchPageToClean() и молча висела даже там, где результатов уже нет.
+function clearResults() {
+  document.getElementById('searchResults').innerHTML = '';
+  const pillEl = document.getElementById('resultsLabelWrap');
+  if (pillEl) pillEl.innerHTML = '';
+}
 
 document.addEventListener('click', e => {
   if (!document.getElementById('searchWrap').contains(e.target)) hideAC();
@@ -2632,6 +2803,7 @@ function showCards(projects, label) {
         <div style="font-size:13px;">Под ваш запрос нет подходящих вариантов.<br>Попробуйте изменить фильтры или запрос.</div>
       </div>`;
     if (pillEl) pillEl.innerHTML = '';
+    updateSearchFooterVisibility();
     return;
   }
   if (pillEl) pillEl.innerHTML = `<span>${label}</span>`;
@@ -2641,6 +2813,7 @@ function showCards(projects, label) {
   el.querySelectorAll('.project-card').forEach((card, i) => {
     setTimeout(() => card.classList.add('visible'), i * 80);
   });
+  updateSearchFooterVisibility();
 }
 
 // ── КАРТА ПРОЕКТОВ ("На карте") ───────────────────────────────────────────
@@ -2748,6 +2921,7 @@ function setResultsView(view) {
       resizeProjectsMapHeight();
     }
   }
+  updateSearchFooterVisibility();
 }
 
 // 15.07.26 (10): позиционирует .accent-pill. История правок (чтобы больше не
@@ -4585,16 +4759,13 @@ function renderAgent() {
   // Сохраняем для других страниц
   try { localStorage.setItem('flox-agent', JSON.stringify(AGENT)); } catch(e) {}
   updatePlacementBarVisibility();
-  // 21.07.26, найден Ильёй баг ("при первой загрузке нет кнопки Агенты, при
-  // перезагрузке появляется"): пункт "Агенты" в поповере показывает/прячет
-  // topbar.js в своей _loadAgent() — но она вызывается только один раз, при
-  // floxTopbar.init(), ДО того как AGENT вообще известен (виджет входа ещё
-  // не отработал). При самом первом входе (без предыдущего кэша) renderAgent()
-  // выше обновляет аватар/имя вручную, но никогда не просит topbar.js заново
-  // проверить is_admin и показать пункт меню — только перезагрузка страницы
-  // (где init() снова читает уже свежий localStorage) чинила это задним
-  // числом. Явно перевызываем _loadAgent() отсюда же, чтобы пункт появлялся
-  // сразу, без перезагрузки.
+  // Кнопка "Агенты" переехала в панель карты (#adminTools) — её видимость
+  // целиком наследуется от updatePlacementBarVisibility() выше (кнопка живёт
+  // внутри #adminTools/.map-placement-bar), отдельный вызов topbar.js ей не
+  // нужен. А вот аватар/имя/агентство в поповере topbar.js по-прежнему
+  // обновляем явно отсюда же — иначе при самом первом входе (без предыдущего
+  // кэша) topbar.js так и остался бы со значениями по умолчанию до
+  // перезагрузки страницы (см. историю бага в git).
   if (window.floxTopbar?._loadAgent) floxTopbar._loadAgent();
 }
 
@@ -4808,14 +4979,6 @@ function _floxBoot() {
     // кнопка "назад" в браузере (bfcache, этот код вообще не перезапускается).
     const p = localStorage.getItem('flox-page');
     if (p) { localStorage.removeItem('flox-page'); setPage(p); }
-    // 21.07.26: клик "Агенты" в поповере (topbar.js, только для is_admin) на
-    // страницах project.html/unit.html/offer.html не может открыть модалку
-    // напрямую (она есть только тут) — ставит этот флаг и переходит сюда;
-    // если к этому моменту вход подтверждён, открываем редактор сразу.
-    if (localStorage.getItem('flox-profile-intent')) {
-      localStorage.removeItem('flox-profile-intent');
-      if (AGENT) openProfileEditor();
-    }
   });
   // 21.07.26: loadUnitCount() (анимация счётчика "Более NNN предложений")
   // сюда больше НЕ вызывается безусловно — теперь она вызывается ровно в тот
@@ -4845,6 +5008,37 @@ function _floxBoot() {
   if (supportQr && window.floxQrSvg) {
     supportQr.innerHTML = window.floxQrSvg('https://t.me/flox_help', 72, 'M');
   }
+  // 21.07.26, по просьбе Ильи: те же 3 QR-кода (группа/бот/поддержка), что и
+  // в блоке "Мы заботимся о качестве платформы" на project.html — здесь
+  // блок встречается 4 раза (Поиск, Мои предложения, Последняя активность,
+  // Презентации), у каждого свой набор id с префиксом (sf/of/ac/pr), но
+  // ссылки одни и те же — рисуем все разом один раз при загрузке.
+  if (window.floxQrSvg) {
+    ['sf', 'of', 'ac', 'pr'].forEach(prefix => {
+      const group = document.getElementById(prefix + 'Qr-tg-group');
+      const bot = document.getElementById(prefix + 'Qr-tg-bot');
+      const support = document.getElementById(prefix + 'Qr-tg-support');
+      if (group) group.innerHTML = window.floxQrSvg('https://t.me/flox_phuket', 104, 'M');
+      if (bot) bot.innerHTML = window.floxQrSvg('https://t.me/phuket_proptech_bot', 104, 'M');
+      if (support) support.innerHTML = window.floxQrSvg('https://t.me/flox_help', 104, 'M');
+    });
+  }
+}
+
+// 21.07.26, по просьбе Ильи: блок "Мы заботимся о качестве платформы" внизу
+// страницы "Поиск" должен появляться КАЖДЫЙ раз, когда открыта карта, и
+// КАЖДЫЙ раз, когда отрисованы реальные карточки проектов — а не быть просто
+// всегда видимым (в отличие от статичных футеров на Инструменты/Клиенты,
+// см. #page-offers/#page-activity/#page-presentation). На чистой посадочной
+// странице (до первого поиска) и сразу после resetSearchPageToClean()
+// (переход с Инструменты/Клиенты — там ни карты, ни карточек ещё нет) блок
+// скрыт. Вызывается из showCards() (после отрисовки/очистки карточек) и
+// setResultsView() (при переключении список/карта).
+function updateSearchFooterVisibility() {
+  const el = document.getElementById('searchPageFooter');
+  if (!el) return;
+  const hasCards = !!document.querySelector('#searchResults .project-cards');
+  el.style.display = (mapViewActive || hasCards) ? '' : 'none';
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', _floxBoot);
@@ -5465,16 +5659,54 @@ async function saveAgentEditRow(id) {
          кнопка остаётся одинаковой (просто "Войти через Telegram") в любом
          состоянии, без вставки чужеродного квадрата. -->
     <div id="tgLoginWrap" style="display:flex;justify-content:center;margin-bottom:10px;">
-      <!-- Telegram Login Widget -->
-      <script async src="https://telegram.org/js/telegram-widget.js?22"
-        data-telegram-login="phuket_proptech_bot"
-        data-size="large"
-        data-radius="12"
-        data-userpic="false"
-        data-onauth="onTelegramAuth(user)"
-        data-request-access="write">
-      </script>
+      <!-- Telegram Login Widget — .tg-widget-fade держит его прозрачным, пока
+           не убедимся, что виджет уже получил свой реальный размер (см.
+           комментарий у .tg-widget-fade в CSS и скрипт сразу под виджетом). -->
+      <div class="tg-widget-fade" id="tgWidgetFade">
+        <script async src="https://telegram.org/js/telegram-widget.js?22"
+          data-telegram-login="phuket_proptech_bot"
+          data-size="large"
+          data-radius="12"
+          data-userpic="false"
+          data-onauth="onTelegramAuth(user)"
+          data-request-access="write">
+        </script>
+      </div>
     </div>
+    <script>
+      // 21.07.26 (3): показываем виджет только когда его iframe уже получил
+      // от самого Телеграма реальный inline-размер (style="width:...;height:...")
+      // — до этого момента иначе секунду-другую виден дефолтный 300×150
+      // прямоугольник (см. коммент у .tg-widget-fade в CSS). Резервный
+      // таймаут — на случай, если по какой-то причине сигнал так и не придёт
+      // (например, сеть медленная) — виджет всё равно не должен остаться
+      // невидимым навсегда.
+      (function() {
+        const wrap = document.getElementById('tgWidgetFade');
+        if (!wrap) return;
+        let revealed = false;
+        function reveal() {
+          if (revealed) return;
+          revealed = true;
+          wrap.classList.add('tg-ready');
+        }
+        const fallback = setTimeout(reveal, 1200);
+        const outerObserver = new MutationObserver(() => {
+          const ifr = wrap.querySelector('iframe');
+          if (!ifr) return;
+          outerObserver.disconnect();
+          const innerObserver = new MutationObserver(() => {
+            innerObserver.disconnect();
+            clearTimeout(fallback);
+            // Небольшая пауза после смены style — даём кадру перерисоваться
+            // с уже правильным размером, прежде чем показывать.
+            setTimeout(reveal, 80);
+          });
+          innerObserver.observe(ifr, { attributes: true, attributeFilter: ['style'] });
+        });
+        outerObserver.observe(wrap, { childList: true });
+      })();
+    </script>
     <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:12px;">
       Нет аккаунта? <a href="https://t.me/phuket_proptech_bot" target="_blank" style="color:var(--accent)">Зарегистрируйтесь в боте</a>
     </div>
