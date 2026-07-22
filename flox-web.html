@@ -1143,12 +1143,26 @@ body.map-fake-fullscreen-active{overflow:hidden;}
    эталоне).
    22.07.26 (6), по прямой просьбе Ильи ("отступ слишком большой"): раньше
    тут стояло 120px "на глаз" по скриншоту — пересчитал по реальному CSS
-   project.html: воздух там образуют .page-section{padding-bottom:28px}
-   (после списка файлов) + .bugfix-footer{padding-top:28px} (внутри самой
-   плашки) = 56px суммарно. У нас .bugfix-footer{padding-top:28px} уже есть
-   (см. ниже) — значит margin-top обёртки должен быть ровно 28px, чтобы
-   в сумме получить те же 56px, а не 120+28=148px, как было. */
+   project.html: воздух там складывается из ТРЁХ слагаемых — .body-wrap
+   { padding: 24px 20px } (у него самого есть нижний паддинг, а плашка
+   лежит СНАРУЖИ него, значит этот паддинг тоже часть видимого воздуха),
+   .page-section{padding-bottom:28px} (у активной секции внутри) и
+   .bugfix-footer{padding-top:28px} (внутри самой плашки) — 24+28+28=80px
+   суммарно, а не 56, как я посчитал в прошлый раз (забыл про body-wrap).
+   22.07.26 (7), по прямой просьбе Ильи (отступ всё ещё не совпадал именно
+   на "Поиск"/карте): нашлась причина — .search-page уже сам по себе имеет
+   padding:60px 20px 60px (а не 24px, как .offers-page/.activity-page/
+   .pres-page) — то есть у него УЖЕ встроено больше воздуха, чем у
+   project.html целиком (60+28=88px даже без margin-top). Добавлять поверх
+   этого ещё 28px margin-top было явной ошибкой — двойной счёт. Поэтому
+   margin-top теперь РАЗНЫЙ: 28px по умолчанию (80 − 24px встроенного в
+   .offers-page/.activity-page/.pres-page − 28px самой плашки = 28px — для
+   них совпадает), и 0 отдельно для #searchPageFooter (там 60px встроенного
+   с запасом перекрывают всю разницу сами по себе). */
 .bugfix-footer-wrap{background:var(--surface-2);margin-top:28px;}
+/* см. комментарий (7) выше — у страницы "Поиск" уже 60px своего нижнего
+   паддинга в .search-page, добавлять сюда ещё 28px не нужно. */
+#searchPageFooter{margin-top:0;}
 .bugfix-footer{max-width:1200px;margin:0 auto;padding:28px 20px 32px;}
 .bf-row{display:flex;align-items:center;gap:16px;}
 .bf-icon{
