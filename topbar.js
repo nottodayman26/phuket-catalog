@@ -27,8 +27,11 @@ const CSS = `
 /* 21.07.26 (2), по просьбе Ильи: выбран вариант 2 из meeting_button_variants.html
    — заполненная плашка (без контура) вместо контурной кнопки: сразу залита
    приглушённым фоном surface-3, при активной встрече — фиолетовый акцент.
-   Логика (floxTopbar.toggleMeeting()) не менялась, поменялся только вид. */
-.flox-tb-meeting{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:none;background:var(--surface-3);color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit;}
+   Логика (floxTopbar.toggleMeeting()) не менялась, поменялся только вид.
+   22.07.26, по просьбе Ильи: серую плашку убрали совсем (background:none в
+   покое) — Илье не понравилась именно она. Переход цвета текста на hover и
+   заливка фиолетовым в активном состоянии (.act) оставлены как есть. */
+.flox-tb-meeting{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:none;background:none;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit;}
 .flox-tb-meeting:hover{color:var(--text);}
 .flox-tb-meeting.act{background:#5E17EB;color:#fff;}
 .flox-tb-theme{width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0;}

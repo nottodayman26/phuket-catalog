@@ -26,7 +26,16 @@
    (тёмная плашка-предупреждение), и этот белый отступ просто торчал под
    ней отдельной полосой. Убран — .footer-notice сама себе довольно
    отступа (padding) и является настоящим концом страницы. */
-html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
+html,body{background:#fff;height:100%;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
+/* 22.07.26, по просьбе Ильи: при малом числе юнитов страница короче экрана,
+   и под тёмной плашкой .footer-notice снизу оставалась белая полоса (тело
+   документа короче viewport, а .footer-notice — просто последний блок в
+   обычном потоке). Делаем body flex-колонкой на всю высоту экрана, а #main
+   (контейнер карточек/лоадера/ошибки) — растягивающимся (flex:1 0 auto): он
+   занимает всё свободное место, и .footer-notice в любом случае оказывается
+   прижатым к самому низу экрана, без белого зазора под собой. */
+body{display:flex;flex-direction:column;min-height:100vh;}
+#main{flex:1 0 auto;}
 :root{
   --night:#1C1C2E;--sand:#fff;--accent:#5E17EB;--red:#FF6B6B;
   /* Раньше --muted был приглушённым ФИОЛЕТОВЫМ (#6B5A9E) — из-за этого

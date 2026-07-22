@@ -809,46 +809,34 @@ input,button{font-family:inherit;}
 .map-view-wrap .map-placement-bar{margin-left:20px;margin-right:20px;}
 #projectsMap{width:100%;min-height:320px;overflow:hidden;border-top:0.5px solid var(--line-2);position:relative;}
 
-/* 15.07.26 (15)-(18), 16.07.26 (три захода): штатные кнопки Яндекс.Карт
-   визуально не похожи на кнопки конкурента — заменяем своими, см.
-   addCustomMapControls(). История правок (чтобы больше не наступать на те
-   же грабли — она правда долгая):
-   (16) position:absolute внутри #projectsMap на % от его высоты — сломано,
-        потому что #projectsMap специально в 2 раза выше видимой без
-        скролла области (см. resizeProjectsMapHeight), % от высоты не
-        совпадает с серединой видимого.
-   (17)/(18) position:fixed + пересчёт top через JS (getBoundingClientRect)
-        по событиям scroll/resize/fullscreenchange — кнопки то отрывались от
-        карты, то "катались".
-   16.07.26 (заход №2, sticky): пробовали держать кнопки "привязанными к
-   видимой части карты" через position:sticky — на видео от Ильи стало видно
-   первопричину ВСЕХ этих попыток: у админа над картой ещё показана панель
-   расстановки точек (см. .map-placement-bar), которой у обычного
-   агента/клиента нет — любой расчёт "от начала блока карты" у админа
-   съезжал ровно на высоту этой панели. Плюс сама идея "подстроиться под
-   видимую часть карты" усложняла всё без явной пользы.
-   16.07.26 (заход №3, по идее Ильи): кнопки вообще перестают зависеть от
-   того, где сейчас скролл и какая часть (2×-высокой) карты видна — у них
-   простое НЕЗАВИСИМОЕ фиксированное место в углу экрана, одно и то же и в
-   обычном виде, и в развёрнутом на весь экран (см. .map-fake-fullscreen
-   ниже). Оказалось неверно (см. видео Ильи): без пересчёта на скролл кнопки
-   просто застревали там, где были при входе на карту, и отрывались от неё —
-   вернули непрерывный пересчёт через requestAnimationFrame, см.
-   updateMapCtrlTopOffset() в скрипте.
-   16.07.26 (заход №4, по фидбеку Ильи после первого рабочего видео): кнопка
-   разворота — по-прежнему в верхнем правом углу ЭКРАНА (--map-ctrl-top,
-   считается от высоты topbar/бегущей строки либо от текущего верха карты —
-   какое из двух чисел больше), но в фуллскрине это не нужно: там карта и
-   есть весь экран, поэтому просто 16px от верха, без всякой формулы (иначе
-   реальная высота topbar "снизу экрана" по ошибке отодвигала кнопку от
-   истинного угла). Кнопки +/- Илья попросил перенести на середину карты по
-   вертикали (--map-ctrl-mid = верх карты + половина её высоты, тоже в
-   координатах экрана, тоже пересчитывается каждый кадр) — так как карта в
-   2 раза выше окна, при первом открытии эта середина может оказаться ниже
-   видимой области экрана, и кнопки будут не видны, пока не проскроллить —
-   по словам Ильи, это нормально. В фуллскрине карта = весь экран, поэтому
-   середина карты автоматически совпадает с серединой экрана — те же формулы
-   без дополнительных условий. */
+/* 15.07.26 (15)-(18), 16.07.26 (четыре захода), 22.07.26 (финальный заход,
+   по прямой просьбе Ильи после теста и сравнения со скринами конкурента):
+   штатные кнопки Яндекс.Карт визуально не похожи на кнопки конкурента —
+   заменяем своими, см. addCustomMapControls(). Долгая история промежуточных
+   попыток (fixed+пересчёт на каждый scroll/resize через requestAnimationFrame,
+   sticky, "независимое место в углу экрана" без пересчёта) — все они пытались
+   держать кнопки прибитыми к ЭКРАНУ (viewport), то есть буквально никогда не
+   уезжающими при скролле. Именно это и оказалось неверной идеей: у конкурента
+   (скрины от Ильи) кнопки прибиты к САМОЙ КАРТЕ — при скролле страницы они
+   едут вместе с картой как обычной частью страницы и могут уйти из виду, если
+   проскроллить достаточно далеко вниз. Теперь так же: кнопки — обычные дети
+   #mapViewWrap (position:relative, см. ниже), сами position:absolute с
+   постоянным отступом от верха/середины КАРТЫ, а не экрана. Это одновременно
+   проще (никакого requestAnimationFrame, никакого пересчёта на scroll) и
+   ведёт себя как надо в фуллскрине "бесплатно": .map-view-wrap.map-fake-
+   fullscreen сама растягивается на весь экран (см. ниже), а кнопки внутри неё
+   как раз и оказываются в её углах — то есть в углах экрана.
+   Единственное, что реально нужно пересчитывать (см. updateMapCtrlOffset() в
+   скрипте, вызывается при входе на карту/фуллскрин/resize — НЕ на каждый
+   кадр и НЕ на scroll): 1) отступ от верха #mapViewWrap до верха самой карты
+   (--map-ctrl-top-offset) — он не 0, когда у админа над картой ещё показана
+   панель расстановки точек (.map-placement-bar), которой у обычного
+   агента/клиента нет; 2) "середина первого экрана" карты для кнопок +/-
+   (--map-zoom-mid-offset) — карта специально в 2 раза выше того, что
+   помещается без скролла (см. resizeProjectsMapHeight), поэтому берём именно
+   четверть РЕАЛЬНОЙ высоты карты (что и есть середина первой её половины), а
+   не половину — иначе кнопки оказались бы за пределами того, что видно при
+   самом первом открытии. */
 .map-ctrl-btn{
   width:44px;height:44px;border-radius:16px;background:var(--surface);color:var(--text);
   display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -883,7 +871,7 @@ input,button{font-family:inherit;}
      уже переключает .map-fake-fullscreen (см. setFakeFullscreen в скрипте):
      без этого кнопки/инфо-блок совсем пропадали бы под самой картой в
      фуллскрине (.map-view-wrap.map-fake-fullscreen — z-index:999999999). */
-  position:fixed;top:var(--map-ctrl-top, 72px);right:16px;z-index:150;
+  position:absolute;top:calc(var(--map-ctrl-top-offset, 0px) + 16px);right:16px;z-index:150;
   border-radius:50%;
 }
 /* 16.07.26, по просьбе Ильи, 1:1 со скрином — +/- теперь одна цельная
@@ -895,12 +883,18 @@ input,button{font-family:inherit;}
    комментарий у .map-fullscreen-btn выше). Сама механика (клики, setZoom) не
    менялась. */
 .map-zoom-group{
-  position:fixed;top:var(--map-ctrl-mid, 50vh);right:16px;z-index:150; /* см. большой комментарий у .map-fullscreen-btn выше */
+  position:absolute;top:var(--map-zoom-mid-offset, 50%);right:16px;z-index:150; /* см. большой комментарий у .map-fullscreen-btn выше */
   transform:translateY(-50%);
   display:flex;flex-direction:column;
   /* 17.07.26, по просьбе Ильи: тоже теперь по теме, не всегда белый фон */
   background:var(--surface);border-radius:22px;overflow:hidden;
 }
+/* 22.07.26: в фуллскрине карта = ровно один экран (никакого 2×-трюка, см.
+   .map-fake-fullscreen #projectsMap{height:auto} ниже) — там реальная
+   середина карты и есть просто 50% её высоты, готовое значение из
+   updateMapCtrlOffset() не нужно (и было бы неверным, оно посчитано под
+   обычный, не-фуллскрин размер). */
+.map-view-wrap.map-fake-fullscreen .map-zoom-group{top:50% !important;}
 .map-zoom-group .map-ctrl-btn{background:none;border-radius:0;}
 .map-zoom-group .map-ctrl-btn:first-child{border-bottom:1px solid var(--line-2);}
 /* 17.07.26, по просьбе Ильи: у +/- ховер не темнел на практике — у
@@ -930,7 +924,7 @@ body.map-fake-fullscreen-active .map-pins-btn{
    большой комментарий там про z-index/позицию — те же соображения). Порядок
    слева направо: глаз, точка, разворот. */
 .map-eye-btn, .map-pins-btn{
-  position:fixed;top:var(--map-ctrl-top, 72px);z-index:150;
+  position:absolute;top:calc(var(--map-ctrl-top-offset, 0px) + 16px);z-index:150;
   border-radius:50%;
 }
 .map-pins-btn{right:70px;}
@@ -938,7 +932,7 @@ body.map-fake-fullscreen-active .map-pins-btn{
 /* Подсказка при наведении — нейтральная таблетка без обводки и тени (прямая
    просьба Ильи), текст меняется вместе с состоянием кнопки (см.
    updateEyeBtn/updatePinsBtn в addCustomMapControls) — всегда описывает
-   действие, которое произойдёт по клику. Кнопки — position:fixed, этого
+   действие, которое произойдёт по клику. Кнопки — position:absolute, этого
    достаточно, чтобы служить containing block для position:absolute у
    подсказки, отдельный position:relative не нужен. */
 .map-ctrl-tooltip{
@@ -952,19 +946,10 @@ body.map-fake-fullscreen-active .map-pins-btn{
   z-index:5;
 }
 .map-ctrl-btn:hover .map-ctrl-tooltip{opacity:1;transform:translateX(-50%) translateY(0);}
-/* 16.07.26, по просьбе Ильи: кнопки всё ещё "катались" вместе со скроллом,
-   хотя стоит position:fixed — значит что-то в разметке страницы (скорее
-   всего в topbar.js, который сюда не присылали) ломает position:fixed у
-   вложенных элементов: это происходит, если у какого-то родителя выше по
-   дереву задан transform/filter/perspective/will-change — тогда fixed
-   считает координаты не от окна браузера, а от этого родителя, и если сам
-   родитель обычный (скроллится) — "прибитый" по идее элемент едет вместе с
-   ним. Раньше кнопки лежали внутри карты/поисковой страницы — теперь их
-   создаём и кладём ПРЯМО В <body> (см. addCustomMapControls) в обход всей
-   остальной разметки, чтобы точно не попасть под такого "сломанного"
-   родителя. Раз кнопки больше не внутри #mapViewWrap, скрывать/показывать
-   их (когда вкладка "На карте" открыта/закрыта) приходится отдельным
-   классом, а не автоматически через display:none у обёртки. */
+/* 22.07.26: кнопки снова внутри #mapViewWrap (см. addCustomMapControls) —
+   вместе с ним они и появляются/прячутся (через .act у самой обёртки), этот
+   класс уже не обязателен для показа/скрытия, но оставлен как есть (вреда
+   не приносит, а лишний раз что-то ломать без причины незачем). */
 .map-ctrl-hidden{display:none !important;}
 
 /* 17.07.26, по просьбе Ильи: та же лёгкая "пружинка" при наведении, что и у
@@ -994,12 +979,13 @@ body.map-fake-fullscreen-active .map-pins-btn{
    дизайна — «как карточка в списке» (Илья выбрал вариант 1 из присланных
    макетов), но шириной как более крупный вариант 2, без тени, без обводки
    и без разделительной линии над ценой (тоже прямая просьба). Позиция —
-   тот же --map-ctrl-top, что и у кнопки разворота (см. .map-fullscreen-btn
-   выше), только у левого края экрана вместо правого — карта и так растянута
-   от края до края экрана (см. .map-view-wrap), поэтому left:16px без
-   дополнительных расчётов симметричен right:16px у кнопок. */
+   тот же отступ --map-ctrl-top-offset, что и у кнопки разворота (см.
+   .map-fullscreen-btn выше), только у левого края карты вместо правого —
+   карта и так растянута от края до края экрана (см. .map-view-wrap),
+   поэтому left:16px без дополнительных расчётов симметричен right:16px у
+   кнопок. */
 .map-info-card{
-  display:none;position:fixed;top:var(--map-ctrl-top, 72px);left:16px;z-index:150; /* см. большой комментарий у .map-fullscreen-btn выше про контексты наложения */
+  display:none;position:absolute;top:calc(var(--map-ctrl-top-offset, 0px) + 16px);left:16px;z-index:150;
   width:320px;max-width:calc(100vw - 32px);
   background:var(--surface);border-radius:14px;overflow:hidden;
   color:var(--text);cursor:pointer;
@@ -1115,7 +1101,11 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .map-placement-hint.vis{display:block;}
 .no-results{
   text-align:center;padding:40px 20px;
-  background:var(--surface);border:1px solid var(--line);
+  background:var(--surface);
+  /* 22.07.26, по просьбе Ильи: убрана обводка (border:1px solid var(--line))
+     — этот же блок используется и для "Ничего не найдено", и для "Скоро
+     появятся" (вилла/таунхаус, см. selectType()), поэтому одной правки
+     достаточно для обоих случаев. */
   border-radius:14px;color:var(--muted);font-size:14px;
 }
 .no-results-icon{font-size:32px;margin-bottom:12px;}
@@ -2067,7 +2057,7 @@ function resetSearchPageToClean() {
   document.getElementById('mapViewWrap').classList.remove('act');
   mapViewActive = false;
   mapCtrlRefs?.exitFakeFullscreen?.(); // 16.07.26: не уходить со страницы в развёрнутом виде карты (см. addCustomMapControls)
-  mapCtrlRefs?.setControlsVisible?.(false); // 16.07.26: кнопки теперь в body, не прячутся сами вместе с #mapViewWrap
+  mapCtrlRefs?.setControlsVisible?.(false); // 22.07.26: кнопки внутри #mapViewWrap и так спрячутся вместе с ним (см. строку выше), вызов оставлен как подстраховка
   document.getElementById('searchBtn').classList.remove('accent-off');
   document.getElementById('mapToggleBtn').classList.remove('accent');
   syncAccentPill(true); // 16.07.26: без этого фиолетовая плашка оставалась над "На карте" — см. коммент выше
@@ -2889,11 +2879,12 @@ let pinsHiddenOnMap = false;
 // ради которых агент вообще сюда вёл клиента.
 let mapInfoProjectUnfiltered = false;
 // 16.07.26: раньше здесь хранились ссылки на кнопки для ручного пересчёта их
-// позиции — теперь их позиция (--map-ctrl-top/--map-ctrl-mid, см. CSS у
-// .map-fullscreen-btn/.map-zoom-group) непрерывно пересчитывается в
-// updateMapCtrlTopOffset() через requestAnimationFrame, пока открыта вкладка
-// "На карте"; mapCtrlRefs тут остался только ради возможности принудительно
-// выйти из CSS-fullscreen извне (см. addCustomMapControls).
+// позиции — 22.07.26: кнопки снова обычные дети #mapViewWrap (position:
+// absolute внутри неё, см. CSS у .map-fullscreen-btn/.map-zoom-group и
+// addCustomMapControls), пересчёт их отступов — только по месту (см.
+// updateMapCtrlOffset()), никакого requestAnimationFrame больше не нужно;
+// mapCtrlRefs тут остался только ради возможности принудительно выйти из
+// CSS-fullscreen извне (см. addCustomMapControls).
 let mapCtrlRefs = null;
 let placementMode = false;
 // 19.07.26: состояние ВТОРОГО, отдельного инструмента расстановки —
@@ -2932,7 +2923,7 @@ function setResultsView(view) {
   mapViewActive = isMap;
   if (!isMap) mapCtrlRefs?.exitFakeFullscreen?.(); // 16.07.26: ушли со списком — выходим из развёрнутой карты, если была открыта
   if (!isMap) clearMapSelection(); // 17.07.26: ушли со вкладки "На карте" — открытый инфо-блок теряет смысл, сбрасываем его состояние
-  mapCtrlRefs?.setControlsVisible?.(isMap); // 16.07.26: кнопки в body — показываем/прячем вручную вместе со вкладкой "На карте"
+  mapCtrlRefs?.setControlsVisible?.(isMap); // 22.07.26: кнопки снова внутри #mapViewWrap и прячутся вместе с ним сами по себе — вызов оставлен как не мешающая подстраховка
   document.getElementById('searchBtn').classList.toggle('accent-off', isMap);
   document.getElementById('mapToggleBtn').classList.toggle('accent', isMap);
   syncAccentPill(true);
@@ -2940,7 +2931,7 @@ function setResultsView(view) {
   document.getElementById('mapViewWrap').classList.toggle('act', isMap);
   if (isMap) {
     updatePlacementBarVisibility(); // AGENT мог подгрузиться уже после первого рендера
-    updateMapCtrlTopOffset(); // 16.07.26: свежий замер высоты шапки прямо в момент входа на карту
+    updateMapCtrlOffset(); // 22.07.26: свежий замер отступов кнопок прямо в момент входа на карту
     if (window.ymaps) {
       ymaps.ready(() => {
         initProjectsMap();
@@ -3044,7 +3035,7 @@ function resizeProjectsMapHeight() {
   const wrap = document.getElementById('mapViewWrap');
   const mapEl = document.getElementById('projectsMap');
   if (!wrap || !mapEl || !wrap.classList.contains('act')) return;
-  if (wrap.classList.contains('map-fake-fullscreen')) return; // 16.07.26: в развёрнутом виде высоту держит CSS (flex:1), свою px-высоту не навязываем
+  if (wrap.classList.contains('map-fake-fullscreen')) { updateMapCtrlOffset(); return; } // 16.07.26: в развёрнутом виде высоту держит CSS (flex:1), свою px-высоту не навязываем; 22.07.26: но отступы кнопок (--map-ctrl-top-offset/--map-zoom-mid-offset) всё равно пересчитываем и в этом режиме
   // 16.07.26, по просьбе Ильи: карта "росла" при каждом возврате со списка —
   // нашли причину. getBoundingClientRect().top даёт позицию ОТНОСИТЕЛЬНО
   // ОКНА (зависит от текущей прокрутки страницы), а не от начала документа.
@@ -3063,85 +3054,46 @@ function resizeProjectsMapHeight() {
   const h = availableH * 2;
   mapEl.style.height = h + 'px';
   if (projectsMap?.container?.fitToViewport) projectsMap.container.fitToViewport();
+  updateMapCtrlOffset(); // 22.07.26: высота карты поменялась — отступы кнопок (--map-ctrl-top-offset/--map-zoom-mid-offset) пересчитываем следом
 }
 window.addEventListener('resize', resizeProjectsMapHeight);
 
-// 16.07.26, по идее Ильи: кнопки +/- и разворота на весь экран несколько раз
-// подряд "катались"/уезжали за пределы карты при попытках привязать их к
-// тому, какая часть (2×-высокой) карты сейчас видна — вся история этих
-// попыток см. в CSS у .map-ctrl-btn.
-//
-// 16.07.26 (повторный разбор по видео Ильи): предыдущая версия этого
-// комментария утверждала, что достаточно посчитать позицию кнопок ОДИН РАЗ
-// (при входе на карту + на resize) и это "убирает катание" — это оказалось
-// НЕВЕРНО. Формула позиции (Math.max(верх шапки, верх карты) + отступ) сама
-// по себе правильная — видно по видео, что сразу при входе на карту кнопки
-// встают ровно туда, куда нужно. Проблема в другом: карта специально
-// рендерится в 2 раза выше окна (см. resizeProjectsMapHeight выше), то есть
-// пользователь ОБЯЗАН скроллить, чтобы увидеть её целиком — а раз позиция
-// считалась только один раз при входе, при любом скролле после этого кнопки
-// просто оставались там, где были, и "отрывались" от карты (Илья: "катаются
-// вместе со скролом"). Значит пересчёт нужен НЕПРЕРЫВНО, пока открыта вкладка
-// "На карте" — это и делает цикл на requestAnimationFrame ниже.
-function updateMapCtrlTopOffset() {
+// 22.07.26, по прямой просьбе Ильи (после теста и сравнения со скринами
+// конкурента): кнопки +/- и разворота больше НЕ гоняются за экраном при
+// скролле — они прибиты к самой карте (position:absolute внутри
+// #mapViewWrap, см. CSS у .map-fullscreen-btn/.map-zoom-group), поэтому
+// пересчитывать их позицию на каждый кадр/скролл (как раньше, через
+// requestAnimationFrame) больше не нужно вообще — этим и объяснялось
+// "катание" кнопок при скролле, которое просил убрать Илья. Пересчёт нужен
+// только когда меняется реальная геометрия самой карты — вход на карту,
+// вход/выход из фуллскрина, resize окна (см. вызовы ниже и внутри
+// resizeProjectsMapHeight()/setFakeFullscreen() в addCustomMapControls).
+function updateMapCtrlOffset() {
   const wrap = document.getElementById('mapViewWrap');
   const mapEl = document.getElementById('projectsMap');
-  const isFakeFS = !!(wrap && wrap.classList.contains('map-fake-fullscreen'));
+  if (!wrap || !mapEl) return;
+  const isFakeFS = wrap.classList.contains('map-fake-fullscreen');
 
-  // Кнопка разворота — верхний правый угол ЭКРАНА. В обычном виде экран
-  // "делят" topbar сайта и текущий верх карты (берём то, что ниже). В
-  // фуллскрине карта и так растянута на весь экран (см. .map-fake-fullscreen
-  // в CSS) — formula с высотой topbar тут не нужна и только мешает (topbar
-  // остаётся в DOM со своей обычной высотой, хоть визуально и перекрыт), так
-  // что просто фиксируем 16px от истинного верха экрана.
-  if (isFakeFS) {
-    document.documentElement.style.setProperty('--map-ctrl-top', '16px');
-  } else {
-    const topbar = document.getElementById('flox-topbar');
-    const ticker = document.getElementById('soldTickerWrap');
-    let headerH = topbar ? Math.ceil(topbar.getBoundingClientRect().height) : 56;
-    if (ticker && getComputedStyle(ticker).display !== 'none') {
-      headerH += Math.ceil(ticker.getBoundingClientRect().height);
-    }
-    let top = headerH + 16;
-    if (mapEl && mapViewActive) {
-      const mapTop = Math.round(mapEl.getBoundingClientRect().top);
-      top = Math.max(top, mapTop + 16);
-    }
-    document.documentElement.style.setProperty('--map-ctrl-top', top + 'px');
-  }
+  // Отступ от верха #mapViewWrap до верха самой карты — обычно 0, но у
+  // админа над картой ещё показана панель расстановки точек
+  // (.map-placement-bar), которой у обычного агента/клиента нет; кнопки
+  // должны вставать под неё, а не поверх (та самая причина, по которой
+  // раньше не прижилась похожая попытка через position:sticky).
+  const topOffset = mapEl.offsetTop || 0;
+  document.documentElement.style.setProperty('--map-ctrl-top-offset', topOffset + 'px');
 
-  // Кнопки +/- — середина карты по вертикали, в координатах ЭКРАНА (не
-  // документа): верх карты на экране + половина её реальной высоты. Карта
-  // специально в 2 раза выше окна (см. resizeProjectsMapHeight), поэтому при
-  // первом входе эта точка может быть ниже видимой области — кнопки станут
-  // видны только после прокрутки вниз, и так и задумано (по просьбе Ильи).
-  // В фуллскрине карта = весь экран (flex:1, height:auto — см. CSS), поэтому
-  // middle автоматически совпадает с серединой экрана, без отдельного case.
-  if (mapEl && mapViewActive) {
-    const r = mapEl.getBoundingClientRect();
-    const mid = Math.round(r.top + r.height / 2);
-    document.documentElement.style.setProperty('--map-ctrl-mid', mid + 'px');
-  }
+  // Кнопки +/- — середина карты. В фуллскрине карта = ровно один экран
+  // (никакого 2×-трюка, см. .map-fake-fullscreen #projectsMap{height:auto}
+  // в CSS) — берём половину реальной высоты. В обычном виде карта специально
+  // в 2 раза выше того, что помещается без скролла (см.
+  // resizeProjectsMapHeight ниже) — значит нужная середина "первого экрана"
+  // карты это четверть, а не половина её полной (2×) высоты.
+  const factor = isFakeFS ? 2 : 4;
+  const zoomMid = topOffset + (mapEl.offsetHeight || 0) / factor;
+  document.documentElement.style.setProperty('--map-zoom-mid-offset', zoomMid + 'px');
 }
-window.addEventListener('resize', updateMapCtrlTopOffset);
-// не считаем сразу синхронно здесь: topbar.js подключается и заполняет
-// #flox-topbar ПОЗЖЕ этого скрипта (см. порядок <script> в конце файла) —
-// в этот момент высота topbar ещё 0. 'load' гарантированно срабатывает уже
-// после того, как всё на странице (включая topbar) отрисовалось; плюс
-// пересчитываем ещё раз прямо в момент входа на карту (см. setResultsView) —
-// на случай, если к тому моменту что-то в шапке успело измениться.
-window.addEventListener('load', updateMapCtrlTopOffset);
-// 16.07.26: непрерывный пересчёт кадр за кадром, пока открыта вкладка
-// "На карте" (mapViewActive) — именно этого не хватало в прошлой версии.
-// requestAnimationFrame сам ставится на паузу, если вкладка/окно свёрнуты
-// (браузер троттлит rAF в фоновых вкладках), а внутри всего одна простая
-// проверка + два getBoundingClientRect за кадр, так что лишней нагрузки на
-// страницу это не создаёт.
-(function mapCtrlTopLoop() {
-  if (mapViewActive) updateMapCtrlTopOffset();
-  requestAnimationFrame(mapCtrlTopLoop);
-})();
+window.addEventListener('resize', updateMapCtrlOffset);
+window.addEventListener('load', updateMapCtrlOffset);
 
 // 15.07.26 (5): цвет меток на карте — тот же красный/коралловый, что и точка
 // в логотипе Flox (var(--red) в CSS), а не фиолетовый акцент бренда — так
@@ -3260,6 +3212,7 @@ function addCustomMapControls() {
     // чтобы он переподогнал свою внутреннюю отрисовку под новый размер —
     // тот же приём уже используется при обычном изменении высоты карты.
     if (projectsMap?.container?.fitToViewport) requestAnimationFrame(() => projectsMap.container.fitToViewport());
+    requestAnimationFrame(updateMapCtrlOffset); // 22.07.26: в фуллскрине формула отступов другая (см. updateMapCtrlOffset) — пересчитываем сразу, не дожидаясь resize
   }
   const fsBtn = document.createElement('div');
   fsBtn.id = 'mapFullscreenBtn';
@@ -3269,7 +3222,7 @@ function addCustomMapControls() {
     e.stopPropagation();
     setFakeFullscreen(!isFakeFullscreen);
   });
-  document.body.appendChild(fsBtn); // 16.07.26: прямо в body, в обход всей остальной разметки — см. большой комментарий у .map-ctrl-hidden в CSS
+  wrapEl.appendChild(fsBtn); // 22.07.26: снова внутрь #mapViewWrap (position:absolute внутри неё — см. CSS), не в body — кнопка теперь прибита к карте, а не к экрану
   // Esc — привычный способ выйти из fullscreen на десктопе; на телефоне
   // клавиатуры нет, но и не мешает — просто не сработает.
   document.addEventListener('keydown', e => {
@@ -3296,7 +3249,7 @@ function addCustomMapControls() {
   });
   zoomGroup.appendChild(plusBtn);
   zoomGroup.appendChild(minusBtn);
-  document.body.appendChild(zoomGroup); // 16.07.26: тоже прямо в body, см. комментарий у fsBtn выше
+  wrapEl.appendChild(zoomGroup); // 22.07.26: тоже внутрь #mapViewWrap, см. комментарий у fsBtn выше
 
   // 18.07.26, по просьбе Ильи: две новые кнопки левее разворота — "глаз"
   // (показать/скрыть на карте проекты, не прошедшие текущий фильтр) и "точка"
@@ -3320,7 +3273,7 @@ function addCustomMapControls() {
     updateEyeBtn();
     renderProjectPins(lastFilteredProjects, { fitBounds: false });
   });
-  document.body.appendChild(eyeBtn);
+  wrapEl.appendChild(eyeBtn);
 
   const pinsBtn = document.createElement('div');
   pinsBtn.id = 'mapPinsBtn';
@@ -3340,20 +3293,20 @@ function addCustomMapControls() {
     updatePinsBtn();
     renderProjectPins(lastFilteredProjects, { fitBounds: false });
   });
-  document.body.appendChild(pinsBtn);
+  wrapEl.appendChild(pinsBtn);
 
-  // 16.07.26: кнопки больше не внутри #mapViewWrap, значит и не прячутся
-  // сами вместе с ним через display:none — прячем/показываем их вручную
-  // отдельным классом (.map-ctrl-hidden в CSS) синхронно с тем, открыта ли
-  // сейчас вкладка "На карте" (см. вызовы setControlsVisible в setResultsView).
+  // 22.07.26: кнопки снова внутри #mapViewWrap (position:absolute внутри
+  // неё — см. CSS) — прячутся/появляются сами вместе с ним через display:
+  // none у самой обёртки (.act), отдельный класс .map-ctrl-hidden уже не
+  // обязателен (оставлен нетронутым — просто больше не единственный способ
+  // скрыть кнопки).
   // 17.07.26, по просьбе Ильи: инфо-блок проекта (открывается по клику на
-  // плашку/точку — см. selectProject/showMapInfoCard ниже) — тоже кладём
-  // прямо в <body>, как и остальные элементы управления картой, по той же
-  // причине (см. большой комментарий у .map-ctrl-hidden в CSS про сломанный
-  // position:fixed внутри разметки страницы). Наведение мышью на весь блок
-  // листает фото — так же, как в карточках списка (см. pcStartSlide/pcNav);
-  // клик по самому блоку (кроме крестика и стрелок навигации) — переходит
-  // в проект с текущими фильтрами, как и раньше у плашки.
+  // плашку/точку — см. selectProject/showMapInfoCard ниже) — та же обёртка
+  // #mapViewWrap, что и у остальных элементов управления картой. Наведение
+  // мышью на весь блок листает фото — так же, как в карточках списка (см.
+  // pcStartSlide/pcNav); клик по самому блоку (кроме крестика и стрелок
+  // навигации) — переходит в проект с текущими фильтрами, как и раньше у
+  // плашки.
   const infoCard = document.createElement('div');
   infoCard.id = 'mapInfoCard';
   infoCard.className = 'map-info-card';
@@ -3362,7 +3315,7 @@ function addCustomMapControls() {
     if (mapInfoProject) pcStartSlide('mapInfoCard', (mapInfoProject.photos || ['1.avif']).length);
   });
   infoCard.addEventListener('mouseleave', () => pcStopSlide('mapInfoCard'));
-  document.body.appendChild(infoCard);
+  wrapEl.appendChild(infoCard);
 
   function setControlsVisible(on) {
     fsBtn.classList.toggle('map-ctrl-hidden', !on);
