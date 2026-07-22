@@ -1140,10 +1140,15 @@ body.map-fake-fullscreen-active{overflow:hidden;}
    которого здесь не было вовсе (контент шёл впритык). Добавляем этот же
    воздух явно, отдельным margin-top у обёртки (НЕ padding — тот красил бы
    отступ в серый цвет самого блока, а нужен именно фон страницы, как в
-   эталоне) — фиксированным, не зависящим от того, короткий контент или
-   длинный (список карточек, карта, список предложений/активности) — везде,
-   где встречается этот блок. */
-.bugfix-footer-wrap{background:var(--surface-2);margin-top:120px;}
+   эталоне).
+   22.07.26 (6), по прямой просьбе Ильи ("отступ слишком большой"): раньше
+   тут стояло 120px "на глаз" по скриншоту — пересчитал по реальному CSS
+   project.html: воздух там образуют .page-section{padding-bottom:28px}
+   (после списка файлов) + .bugfix-footer{padding-top:28px} (внутри самой
+   плашки) = 56px суммарно. У нас .bugfix-footer{padding-top:28px} уже есть
+   (см. ниже) — значит margin-top обёртки должен быть ровно 28px, чтобы
+   в сумме получить те же 56px, а не 120+28=148px, как было. */
+.bugfix-footer-wrap{background:var(--surface-2);margin-top:28px;}
 .bugfix-footer{max-width:1200px;margin:0 auto;padding:28px 20px 32px;}
 .bf-row{display:flex;align-items:center;gap:16px;}
 .bf-icon{
