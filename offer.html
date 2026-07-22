@@ -26,16 +26,7 @@
    (тёмная плашка-предупреждение), и этот белый отступ просто торчал под
    ней отдельной полосой. Убран — .footer-notice сама себе довольно
    отступа (padding) и является настоящим концом страницы. */
-html,body{background:#fff;height:100%;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
-/* 22.07.26, по просьбе Ильи: при малом числе юнитов страница короче экрана,
-   и под тёмной плашкой .footer-notice снизу оставалась белая полоса (тело
-   документа короче viewport, а .footer-notice — просто последний блок в
-   обычном потоке). Делаем body flex-колонкой на всю высоту экрана, а #main
-   (контейнер карточек/лоадера/ошибки) — растягивающимся (flex:1 0 auto): он
-   занимает всё свободное место, и .footer-notice в любом случае оказывается
-   прижатым к самому низу экрана, без белого зазора под собой. */
-body{display:flex;flex-direction:column;min-height:100vh;}
-#main{flex:1 0 auto;}
+html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
 :root{
   --night:#1C1C2E;--sand:#fff;--accent:#5E17EB;--red:#FF6B6B;
   /* Раньше --muted был приглушённым ФИОЛЕТОВЫМ (#6B5A9E) — из-за этого
@@ -492,6 +483,24 @@ window.addEventListener('resize', () => {
   clearTimeout(masonryResizeTimer);
   masonryResizeTimer = setTimeout(() => layoutMasonry(true), 150);
 });
+
+// 22.07.26, по просьбе Ильи: при малом числе юнитов страница короче экрана,
+// и под тёмной плашкой .footer-notice снизу оставалась белая полоса — тело
+// документа было короче видимой области, а .footer-notice просто последний
+// блок в обычном потоке. Пробовали чинить через body{display:flex}, но это
+// зачем-то ломало отображение заголовка "Подборка для Вас" (см. правку от
+// 22.07.26) — откатили. Вместо смены display у body/html просто досыпаем
+// #main padding-bottom ровно на недостающую высоту (разница между высотой
+// экрана и уже отрисованной высотой всей страницы) — ничего в display/потоке
+// документа не меняется, побочных эффектов на другие блоки быть не должно.
+function stickyFooterFix() {
+  const main = document.getElementById('main');
+  if (!main) return;
+  main.style.paddingBottom = '0px';
+  const shortBy = window.innerHeight - document.documentElement.scrollHeight;
+  main.style.paddingBottom = (shortBy > 0 ? shortBy : 0) + 'px';
+}
+window.addEventListener('resize', stickyFooterFix);
 
 // ── Раскрытие полной инфы по наведению (кроме наведения прямо на кнопку) ──
 // Триггер — планировка или сводка (проект/номер/цена), а не сама кнопка
@@ -958,6 +967,7 @@ async function init() {
   // до подгрузки картинок, чтобы страница не показывала карточки друг на
   // друге (позиции пересчитаются, но структура/размер карточек уже готовы).
   layoutMasonry(true);
+  stickyFooterFix();
 
   // Загружаем слайды для каждого юнита — параллельно (Promise.all), а не
   // по очереди (было: for...of с await внутри цикла, т.е. проверка картинок
@@ -986,6 +996,7 @@ async function init() {
   // Финальный пересчёт раскладки — на случай, если высота карточек чуть
   // изменилась после подгрузки слайдов (шрифты/иконки и т.п.).
   layoutMasonry(true);
+  stickyFooterFix();
 }
 
 function showError(msg) {
@@ -993,6 +1004,7 @@ function showError(msg) {
     <div class="error-title">Что-то пошло не так</div>
     <div class="error-sub">${msg}</div>
   </div>`;
+  stickyFooterFix();
 }
 
 // ── Фикс "залипшей" карточки после возврата на страницу ─────────

@@ -833,10 +833,12 @@ input,button{font-family:inherit;}
    панель расстановки точек (.map-placement-bar), которой у обычного
    агента/клиента нет; 2) "середина первого экрана" карты для кнопок +/-
    (--map-zoom-mid-offset) — карта специально в 2 раза выше того, что
-   помещается без скролла (см. resizeProjectsMapHeight), поэтому берём именно
-   четверть РЕАЛЬНОЙ высоты карты (что и есть середина первой её половины), а
-   не половину — иначе кнопки оказались бы за пределами того, что видно при
-   самом первом открытии. */
+   помещается без скролла (см. resizeProjectsMapHeight), поэтому середина
+   считается НЕ от конечной (2×) высоты карты формулой, а прямым измерением
+   того, сколько видно без прокрутки прямо сейчас (см. updateMapCtrlOffset())
+   — первая версия через offsetHeight/4 на практике вставала выше нужного,
+   похоже из-за раннего вызова до того, как resizeProjectsMapHeight() успевал
+   выставить настоящую высоту карты. */
 .map-ctrl-btn{
   width:44px;height:44px;border-radius:16px;background:var(--surface);color:var(--text);
   display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -1648,7 +1650,7 @@ body.map-fake-fullscreen-active{overflow:hidden;}
        .search-page (с её padding/max-width), чтобы фон шёл от края до края
        страницы, но всё ещё внутри #page-search, чтобы прятаться/появляться
        вместе с этой вкладкой. -->
-  <div class="bugfix-footer-wrap" id="searchPageFooter" style="display:none;">
+  <div class="bugfix-footer-wrap" id="searchPageFooter">
     <div class="bugfix-footer">
       <div class="bf-row">
         <div class="bf-icon">💬</div>
@@ -2018,6 +2020,7 @@ function setPage(name) {
   if (name === 'activity') loadActivity();
   if (name === 'presentation') loadPresentation();
   if (enteringSearch) resetSearchPageToClean();
+  stickyPageFooterFix(); // 22.07.26: сразу прижимаем футер к низу для текущего состояния (плейсхолдер "Загрузка…" и т.п.), MutationObserver довершит после реальных данных
   // 21.07.26 (2): пересчитываем блокировку скролла при любом переключении
   // вкладок — уходя с "Поиска" в чистом состоянии, lock-scroll не должен
   // "залипать" на других вкладках, где обычно есть что скроллить (см.
@@ -2137,6 +2140,7 @@ function selectType(type, btn) {
     clearResults();
   }
   syncMapWithFilters(); // 16.07.26: карта (если открыта) тоже должна знать про смену типа
+  updateSearchFooterVisibility(); // 22.07.26: раньше эта функция тут вообще не вызывалась — отсюда и баг с "залипающим" футером при переключении Кондо/Вилла/Таунхаус
 }
 
 // ── FUZZY ─────────────────────────────────
@@ -3068,6 +3072,16 @@ window.addEventListener('resize', resizeProjectsMapHeight);
 // только когда меняется реальная геометрия самой карты — вход на карту,
 // вход/выход из фуллскрина, resize окна (см. вызовы ниже и внутри
 // resizeProjectsMapHeight()/setFakeFullscreen() в addCustomMapControls).
+// 22.07.26 (2), по фидбеку Ильи: первая версия середины +/- (offsetHeight/4)
+// на практике вставала заметно ВЫШЕ реальной середины видимого экрана —
+// вероятная причина: она пересчитывалась ещё и синхронно ДО того, как
+// resizeProjectsMapHeight() успевал выставить настоящую (2×) высоту карты
+// (карта в этот момент ещё с CSS-заглушкой min-height:320px), и итоговое
+// число оказывалось завязано на эту крошечную временную высоту. Теперь
+// считаем не по конечной высоте карты формулой, а НАПРЯМУЮ измеряем, сколько
+// видно без прокрутки СЕЙЧАС (тот же приём, что и availableH в
+// resizeProjectsMapHeight) — надёжнее, не зависит от того, успела ли карта
+// уже вырасти на момент вызова.
 function updateMapCtrlOffset() {
   const wrap = document.getElementById('mapViewWrap');
   const mapEl = document.getElementById('projectsMap');
@@ -3082,14 +3096,18 @@ function updateMapCtrlOffset() {
   const topOffset = mapEl.offsetTop || 0;
   document.documentElement.style.setProperty('--map-ctrl-top-offset', topOffset + 'px');
 
-  // Кнопки +/- — середина карты. В фуллскрине карта = ровно один экран
-  // (никакого 2×-трюка, см. .map-fake-fullscreen #projectsMap{height:auto}
-  // в CSS) — берём половину реальной высоты. В обычном виде карта специально
-  // в 2 раза выше того, что помещается без скролла (см.
-  // resizeProjectsMapHeight ниже) — значит нужная середина "первого экрана"
-  // карты это четверть, а не половина её полной (2×) высоты.
-  const factor = isFakeFS ? 2 : 4;
-  const zoomMid = topOffset + (mapEl.offsetHeight || 0) / factor;
+  // Кнопки +/- — середина того, что видно БЕЗ прокрутки страницы прямо
+  // сейчас. В фуллскрине карта и так весь экран — видимая высота попросту
+  // равна высоте окна. В обычном виде — ровно та же формула, что и у
+  // availableH в resizeProjectsMapHeight (сколько остаётся от верха карты
+  // до низа окна).
+  const mapViewportTop = mapEl.getBoundingClientRect().top;
+  const visibleH = isFakeFS
+    ? window.innerHeight
+    : Math.max(320, Math.round(window.innerHeight - mapViewportTop - 16));
+  const zoomMidViewport = mapViewportTop + visibleH / 2; // в координатах экрана
+  const wrapViewportTop = wrap.getBoundingClientRect().top;
+  const zoomMid = zoomMidViewport - wrapViewportTop; // переводим в координаты внутри #mapViewWrap
   document.documentElement.style.setProperty('--map-zoom-mid-offset', zoomMid + 'px');
 }
 window.addEventListener('resize', updateMapCtrlOffset);
@@ -4980,6 +4998,10 @@ function _floxBoot() {
   // Илья ("при первом входе не запускается анимация").
   loadSoldTicker();
   loadProjectCoords();
+  // 22.07.26: плашка "Мы заботимся о качестве платформы" теперь всегда видна
+  // на странице "Поиск" с самого первого экрана (см. updateSearchFooterVisibility)
+  // — прижимаем её к низу сразу при загрузке, не дожидаясь первого поиска.
+  stickyPageFooterFix();
   // 17.07.26, по найденному Ильёй багу (плашка карты показывала устаревшую
   // цену вместо реальной): грузим реальные цены/площади юнитов из Supabase
   // сразу при загрузке страницы, не дожидаясь, пока агент откроет вкладку
@@ -5016,20 +5038,62 @@ function _floxBoot() {
 }
 
 // 21.07.26, по просьбе Ильи: блок "Мы заботимся о качестве платформы" внизу
-// страницы "Поиск" должен появляться КАЖДЫЙ раз, когда открыта карта, и
-// КАЖДЫЙ раз, когда отрисованы реальные карточки проектов — а не быть просто
-// всегда видимым (в отличие от статичных футеров на Инструменты/Клиенты,
-// см. #page-offers/#page-activity/#page-presentation). На чистой посадочной
-// странице (до первого поиска) и сразу после resetSearchPageToClean()
-// (переход с Инструменты/Клиенты — там ни карты, ни карточек ещё нет) блок
-// скрыт. Вызывается из showCards() (после отрисовки/очистки карточек) и
-// setResultsView() (при переключении список/карта).
+// страницы "Поиск" изначально появлялся только когда открыта карта или
+// отрисованы реальные карточки проектов. 22.07.26 (2), по просьбе Ильи —
+// нашёлся баг именно из-за этой условности: selectType() (переключение
+// Кондо/Вилла/Таунхаус) не вызывал эту функцию вовсе, поэтому видимость
+// блока "залипала" от предыдущего состояния при переключении вкладок типа —
+// то пропадал, то появлялся не там. Чтобы не гоняться за каждым местом,
+// которое меняет контент страницы "Поиск", убрали условность целиком: блок
+// теперь ВСЕГДА виден на странице "Поиск" (как и статичные футеры на
+// Инструменты/Клиенты/Презентациях, см. #page-offers/#page-activity/
+// #page-presentation) — и всегда прижат к низу экрана через
+// stickyPageFooterFix() (см. ниже), даже если карточек ещё нет (пустой
+// список, "Скоро появятся" у виллы/таунхауса и т.п.).
 function updateSearchFooterVisibility() {
   const el = document.getElementById('searchPageFooter');
   if (!el) return;
-  const hasCards = !!document.querySelector('#searchResults .project-cards');
-  el.style.display = (mapViewActive || hasCards) ? '' : 'none';
+  el.style.display = '';
+  stickyPageFooterFix();
 }
+
+// 22.07.26, по просьбе Ильи: та же плашка на Инструменты/Клиенты/
+// Презентациях должна всегда быть внизу экрана, а не повисать посередине с
+// белой полосой под собой, когда контента ещё нет или он короткий (например,
+// у нового агента без предложений/активности/юнитов в презентации). Вместо
+// того чтобы расставлять вызов в каждый return у loadOffers/loadActivity/
+// loadPresentation (их там несколько, и один легко забыть при следующей
+// правке) — просто досыпаем padding-bottom нужного контентного блока текущей
+// активной страницы ровно на недостающую высоту. Считаем НЕ через
+// document.scrollHeight (у .page уже есть свой min-height:calc(100vh-52px) —
+// он и так "раздувает" scrollHeight заранее, из-за чего нехватка места
+// маскируется и её не видно в этой разнице), а напрямую: берём реальный
+// min-height страницы (getComputedStyle — тот же calc, что в CSS, браузер
+// сам его посчитал в px) и вычитаем из него фактические высоты контента и
+// футера — именно так контент+футер вместе гарантированно дотянутся до низа
+// экрана, а не только до случайной величины.
+function stickyPageFooterFix() {
+  const page = document.querySelector('.page.act');
+  if (!page) return;
+  const footer = page.querySelector('.bugfix-footer-wrap');
+  const content = [...page.children].find(el => !el.classList.contains('bugfix-footer-wrap'));
+  if (!content) return;
+  content.style.paddingBottom = '0px';
+  const minH = parseFloat(getComputedStyle(page).minHeight) || 0;
+  const footerH = footer ? footer.offsetHeight : 0;
+  const shortBy = minH - footerH - content.offsetHeight;
+  content.style.paddingBottom = (shortBy > 0 ? shortBy : 0) + 'px';
+}
+window.addEventListener('resize', stickyPageFooterFix);
+// Следим за самими списками через MutationObserver вместо расстановки
+// вызовов по всем местам, которые их меняют — надёжнее (не забудется при
+// следующей правке loadOffers/loadActivity/loadPresentation) и пересчитывает
+// отступ, откуда бы контент ни поменялся.
+['offersList', 'activityList', 'presUnits', 'presEmpty'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  new MutationObserver(stickyPageFooterFix).observe(el, { childList: true, attributes: true });
+});
 
 // 21.07.26 (2), по просьбе Ильи: убираем ненужную полосу прокрутки справа —
 // на экране входа (он и так fixed/inset:0 поверх всего, странице за ним
