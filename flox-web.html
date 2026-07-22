@@ -5116,16 +5116,30 @@ function updateSearchFooterVisibility() {
 // середине экрана" и "нет скролла на посадочной", оба бага сейчас. Возвращаю
 // расчёт: берём реальный min-height страницы, вычитаем фактические высоты
 // футера (включая его margin-top — offsetHeight его не считает) и контента,
-// и досыпаем ровно недостающее в padding-bottom контента — тогда футер
-// гарантированно упирается в низ экрана (или ниже, если контента больше
-// экрана — тогда скролл появляется сам, естественно).
+// и досыпаем недостающее СВЕРХ родного нижнего паддинга страницы (см. ниже) —
+// тогда футер гарантированно упирается в низ экрана (или ниже, если контента
+// больше экрана — тогда скролл появляется сам, естественно).
 function stickyPageFooterFix() {
   const page = document.querySelector('.page.act');
   if (!page) return;
   const footer = page.querySelector('.bugfix-footer-wrap');
   const content = [...page.children].find(el => !el.classList.contains('bugfix-footer-wrap'));
   if (!content) return;
-  content.style.paddingBottom = '0px';
+  // 22.07.26 (9), по прямой просьбе Ильи ("отступ при раскрытии проектов —
+  // всё по старому"): нашлась причина — у .search-page/.offers-page/
+  // .activity-page/.pres-page УЖЕ есть свой родной нижний паддинг в CSS
+  // (60px/24px), а строка ниже раньше просто ЗАМЕНЯЛА его инлайн-стилем на
+  // 0px перед расчётом. Пока карточек мало (контент короче экрана) это не
+  // было заметно — JS всё равно досыпал МНОГО padding-bottom, с запасом
+  // перекрывая пропажу родного паддинга. Но как только карточек хватает,
+  // чтобы контент сам по себе стал выше экрана, shortBy уходит в минус,
+  // JS-паддинг обнуляется — и родной паддинг остаётся стёрт НИЧЕМ не
+  // замещённый. Фикс: сначала снимаем инлайн-override (пустая строка, а не
+  // '0px') — тогда getComputedStyle/offsetHeight ниже считают от РОДНОГО
+  // CSS-паддинга страницы, и мы досыпаем только то, чего не хватает СВЕРХ
+  // него, а не взамен него.
+  content.style.paddingBottom = '';
+  const naturalPB = parseFloat(getComputedStyle(content).paddingBottom) || 0;
   const minH = parseFloat(getComputedStyle(page).minHeight) || 0;
   const footerH = footer ? footer.offsetHeight + (parseFloat(getComputedStyle(footer).marginTop) || 0) : 0;
   // 22.07.26 (2), по просьбе Ильи: на чистой посадочной странице "Поиск" (ни
@@ -5137,8 +5151,11 @@ function stickyPageFooterFix() {
   // экрана, без лишнего скролла (как и на Инструменты/Клиенты/Презентациях).
   const isCleanSearchLanding = page.id === 'page-search' && !_searchDone && !mapViewActive;
   const extra = isCleanSearchLanding ? 260 : 0;
+  // content.offsetHeight здесь уже включает naturalPB (родной паддинг) — раз
+  // мы его не стёрли перед замером.
   const shortBy = minH + extra - footerH - content.offsetHeight;
-  content.style.paddingBottom = (shortBy > 0 ? shortBy : 0) + 'px';
+  const extraNeeded = shortBy > 0 ? shortBy : 0;
+  content.style.paddingBottom = (naturalPB + extraNeeded) + 'px';
 }
 window.addEventListener('resize', stickyPageFooterFix);
 // Следим за самими списками через MutationObserver вместо расстановки
