@@ -86,6 +86,8 @@ function buildHTML(isSearch) {
       </div>
     </nav>
     <div class="flox-tb-right">
+      <button class="flox-tb-meeting" id="ftb-meeting" onclick="floxTopbar.toggleMeeting()">${SVG_PEOPLE}<span id="ftb-meeting-lbl">Встреча с клиентом</span></button>
+      <button class="flox-tb-theme" id="ftb-theme" onclick="floxTopbar.toggleTheme()"></button>
       <div class="flox-tb-avatar-wrap">
         <div class="flox-tb-avatar" id="ftb-avatar" onclick="floxTopbar._togglePopover()">АГ</div>
         <div class="flox-tb-popover" id="ftb-popover">
@@ -96,8 +98,6 @@ function buildHTML(isSearch) {
           <div class="flox-tb-popover-item danger" onclick="floxTopbar._logout()">${SVG_OUT} Выйти из аккаунта</div>
         </div>
       </div>
-      <button class="flox-tb-meeting" id="ftb-meeting" onclick="floxTopbar.toggleMeeting()">${SVG_PEOPLE}<span id="ftb-meeting-lbl">Встреча с клиентом</span></button>
-      <button class="flox-tb-theme" id="ftb-theme" onclick="floxTopbar.toggleTheme()"></button>
     </div>`;
 }
 

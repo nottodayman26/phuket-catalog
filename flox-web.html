@@ -1214,7 +1214,15 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pc-track{position:absolute;inset:0;display:flex;width:100%;height:100%;transition:transform .7s cubic-bezier(.4,0,.2,1);}
 .pc-slide{position:relative;flex:0 0 100%;width:100%;height:100%;}
 .pc-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .4s ease;}
-.project-card:hover .pc-slide img{transform:scale(1.04);}
+/* 22.07.26, по прямой просьбе Ильи (баг "вторая картинка проступает справа
+   при наведении, ещё до перелистывания"): раньше это правило зумило ВСЕ
+   .pc-slide img сразу, включая соседний, ещё не показанный слайд — flex
+   кладёт слайды впритык друг к другу, поэтому scale(1.04) у соседа немного
+   "вылезал" за его собственную границу и был виден с края видимой рамки
+   (overflow:hidden обрезает только по границе всего трека, а не каждого
+   слайда отдельно). Теперь зумим только активный слайд (класс .act,
+   проставляется в pcSetSlide) — тот, что реально показан. */
+.project-card:hover .pc-slide.act img{transform:scale(1.04);}
 .pc-status{
   font-size:10px;font-weight:500;padding:3px 9px;border-radius:20px;
   background:var(--surface-3);color:var(--muted);
@@ -2725,8 +2733,8 @@ function cardHTML(p) {
 
   // 17.07.26: .pc-slide вместо плоского списка img — плёнка-трек, см.
   // комментарий у .pc-track в CSS и pcSetSlide в скрипте.
-  const imgs = photos.map(f =>
-    `<div class="pc-slide"><img src="${BASE_IMG + p.id + '/' + f}" alt="${p.name}"/></div>`
+  const imgs = photos.map((f, i) =>
+    `<div class="pc-slide${i === 0 ? ' act' : ''}"><img src="${BASE_IMG + p.id + '/' + f}" alt="${p.name}"/></div>`
   ).join('');
 
   const dots = photos.map((_, i) =>
@@ -2797,10 +2805,12 @@ function pcSetSlide(cardId, idx, total) {
   const wrap = document.getElementById(cardId + '-img');
   if (!wrap) return;
   const track = wrap.querySelector('.pc-track');
+  const slides = wrap.querySelectorAll('.pc-slide');
   const dots = wrap.querySelectorAll('.pc-dot');
   const i = ((idx % total) + total) % total;
   _pcSlideState[cardId] = i;
   if (track) track.style.transform = `translateX(-${i * 100}%)`;
+  slides.forEach((s, j) => s.classList.toggle('act', j === i));
   dots.forEach((d, j) => d.classList.toggle('act', j === i));
 }
 
@@ -3680,8 +3690,8 @@ function mapCardHTML(p) {
   const isCompleted = p.status === 'Completed' || p.status === 'Ready to Move';
   const photos = p.photos || ['1.avif'];
   // 17.07.26: .pc-slide/.pc-track — та же плёнка-трек, что и у карточек списка.
-  const imgs = photos.map(f =>
-    `<div class="pc-slide"><img src="${BASE_IMG + p.id + '/' + f}" alt="${p.name}"/></div>`
+  const imgs = photos.map((f, i) =>
+    `<div class="pc-slide${i === 0 ? ' act' : ''}"><img src="${BASE_IMG + p.id + '/' + f}" alt="${p.name}"/></div>`
   ).join('');
   const dots = photos.map((_, i) => `<div class="pc-dot ${i === 0 ? 'act' : ''}"></div>`).join('');
 
@@ -5099,6 +5109,10 @@ function updateSearchFooterVisibility() {
 // и досыпаем недостающее СВЕРХ родного нижнего паддинга страницы (см. ниже) —
 // тогда футер гарантированно упирается в низ экрана (или ниже, если контента
 // больше экрана — тогда скролл появляется сам, естественно).
+// 22.07.26 (11): фиксированный запас, гарантирующий полосу прокрутки всегда
+// (см. большой комментарий внутри stickyPageFooterFix ниже) — небольшой,
+// просто чтобы наверняка перекрыть округление в разных браузерах/масштабах.
+const SCROLL_GUARANTEE = 40;
 function stickyPageFooterFix() {
   const page = document.querySelector('.page.act');
   if (!page) return;
@@ -5122,18 +5136,19 @@ function stickyPageFooterFix() {
   const naturalPB = parseFloat(getComputedStyle(content).paddingBottom) || 0;
   const minH = parseFloat(getComputedStyle(page).minHeight) || 0;
   const footerH = footer ? footer.offsetHeight + (parseFloat(getComputedStyle(footer).marginTop) || 0) : 0;
-  // 22.07.26 (2), по просьбе Ильи: на чистой посадочной странице "Поиск" (ни
-  // разу не искали, карта не открыта) плашка не должна быть видна СРАЗУ, без
-  // прокрутки, — специально прячем её чуть ниже первого экрана (страница
-  // становится выше экрана, справа появляется скролл), а не показываем сразу
-  // же на самом видном месте пустой страницы. Как только есть результаты
-  // поиска или открыта карта — обычное поведение: плашка ровно у низа
-  // экрана, без лишнего скролла (как и на Инструменты/Клиенты/Презентациях).
-  const isCleanSearchLanding = page.id === 'page-search' && !_searchDone && !mapViewActive;
-  const extra = isCleanSearchLanding ? 260 : 0;
-  // content.offsetHeight здесь уже включает naturalPB (родной паддинг) — раз
-  // мы его не стёрли перед замером.
-  const shortBy = minH + extra - footerH - content.offsetHeight;
+  // 22.07.26 (11), по прямой просьбе Ильи ("скролл и QR-плашка должны быть
+  // ВСЕГДА"): раньше тут был отдельный случай "чистая посадочная — прячем
+  // плашку ниже экрана" (isCleanSearchLanding, +260px) — но вместе с ним
+  // работала ЕЩЁ и отдельная блокировка скролла (см. updateScrollLock()),
+  // из-за которой этот же самый лишний запас становился недостижим: скролл
+  // был заблокирован, а плашка пряталась именно за счёт него — плашку не
+  // было видно ВООБЩЕ, и полосы прокрутки, чтобы до неё долистать, тоже не
+  // было. Убрали оба искусственных случая разом: теперь всегда простой
+  // фиксированный запас (SCROLL_GUARANTEE), гарантирующий, что страница
+  // хоть немного, но выше экрана — полоса прокрутки и видимость плашки
+  // после долистывания гарантированы в любом состоянии (пусто, мало
+  // карточек, Вилла/Таунхаус), без всякой условности.
+  const shortBy = minH + SCROLL_GUARANTEE - footerH - content.offsetHeight;
   const extraNeeded = shortBy > 0 ? shortBy : 0;
   content.style.paddingBottom = (naturalPB + extraNeeded) + 'px';
 }
@@ -5148,19 +5163,18 @@ window.addEventListener('resize', stickyPageFooterFix);
   new MutationObserver(stickyPageFooterFix).observe(el, { childList: true, attributes: true });
 });
 
-// 21.07.26 (2), по просьбе Ильи: убираем ненужную полосу прокрутки справа —
+// 21.07.26 (2), по просьбе Ильи: убирали ненужную полосу прокрутки справа —
 // на экране входа (он и так fixed/inset:0 поверх всего, странице за ним
-// скроллиться незачем) и на чистой посадочной странице "Поиск" (до первого
-// поиска/без карты — видимого контента ровно на экран). Как только
-// появляется реальный контент (карта, карточки, другая вкладка, успешный
-// вход) — скролл возвращается сам. См. html.lock-scroll в CSS. Вызывается
-// из тех же мест, что и updateSearchFooterVisibility(), плюс из
-// showAuthIfNeeded()/onTelegramAuth() (экран входа) и setPage() (смена вкладки).
+// скроллиться незачем) и на чистой посадочной странице "Поиск".
+// 22.07.26 (11), по прямой просьбе Ильи ("скролл и QR-плашка должны быть
+// ВСЕГДА, даже когда вариантов нет или их мало, и на Вилла/Таунхаус тоже"):
+// блокировка на "чистой" странице поиска убрана — она мешала ровно тому,
+// что теперь нужно (стабильному скроллу и видимости плашки внизу, см.
+// stickyPageFooterFix()). Экран входа — исключение, остаётся: он и так
+// fixed/inset:0 поверх всего, скроллить за ним действительно нечего.
 function updateScrollLock() {
   const authVisible = document.getElementById('authScreen')?.style.display !== 'none';
-  const onSearch = document.getElementById('page-search')?.classList.contains('act');
-  const cleanLanding = onSearch && !mapViewActive && !document.querySelector('#searchResults .project-cards');
-  document.documentElement.classList.toggle('lock-scroll', authVisible || cleanLanding);
+  document.documentElement.classList.toggle('lock-scroll', authVisible);
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', _floxBoot);
