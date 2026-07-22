@@ -1135,7 +1135,7 @@ body.map-fake-fullscreen-active{overflow:hidden;}
    обёртка теперь просто фон на всю ширину .page, а её внутренний контент
    выровнен тем же max-width:1200px, что и в project.html. */
 .bugfix-footer-wrap{background:var(--surface-2);}
-.bugfix-footer{max-width:1200px;margin:0 auto;padding:24px 20px 26px;}
+.bugfix-footer{max-width:1200px;margin:0 auto;padding:28px 20px 32px;}
 .bf-row{display:flex;align-items:center;gap:16px;}
 .bf-icon{
   width:44px;height:44px;border-radius:12px;background:#fff;color:rgba(0,0,0,.55);
@@ -5081,7 +5081,16 @@ function stickyPageFooterFix() {
   content.style.paddingBottom = '0px';
   const minH = parseFloat(getComputedStyle(page).minHeight) || 0;
   const footerH = footer ? footer.offsetHeight : 0;
-  const shortBy = minH - footerH - content.offsetHeight;
+  // 22.07.26 (2), по просьбе Ильи: на чистой посадочной странице "Поиск" (ни
+  // разу не искали, карта не открыта) плашка не должна быть видна СРАЗУ, без
+  // прокрутки, — специально прячем её чуть ниже первого экрана (страница
+  // становится выше экрана, справа появляется скролл), а не показываем сразу
+  // же на самом видном месте пустой страницы. Как только есть результаты
+  // поиска или открыта карта — обычное поведение: плашка ровно у низа
+  // экрана, без лишнего скролла (как и на Инструменты/Клиенты/Презентациях).
+  const isCleanSearchLanding = page.id === 'page-search' && !_searchDone && !mapViewActive;
+  const extra = isCleanSearchLanding ? 260 : 0;
+  const shortBy = minH + extra - footerH - content.offsetHeight;
   content.style.paddingBottom = (shortBy > 0 ? shortBy : 0) + 'px';
 }
 window.addEventListener('resize', stickyPageFooterFix);

@@ -27,6 +27,20 @@
    ней отдельной полосой. Убран — .footer-notice сама себе довольно
    отступа (padding) и является настоящим концом страницы. */
 html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
+/* 22.07.26 (2), по просьбе Ильи: JS-снимок высоты (разово досыпанный
+   padding-bottom) оказался ненадёжным — если высота контента чуть менялась
+   ПОСЛЕ момента вызова (например из-за того, что шрифт Inter догружался и
+   слегка сдвигал перенос строк), белая полоса под плашкой возвращалась,
+   потому что отступ уже был посчитан под старую, чуть меньшую высоту.
+   Вместо разового снимка — узкая flex-обёртка .sticky-footer-wrap ТОЛЬКО
+   вокруг #main и .footer-notice (специально не вокруг всего body — там же
+   .top-bar/.ticker-wrap/.intro, трогать которые не нужно вообще). JS всего
+   раз (и на resize) выставляет ей min-height = "сколько места остаётся от
+   её начала до низа экрана" — а дальше #main{flex:1 0 auto} сам живо
+   растягивается/уступает место ровно под актуальную высоту контента, каким
+   бы он ни стал ПОСЛЕ этого вызова, без необходимости пересчитывать снова. */
+.sticky-footer-wrap{display:flex;flex-direction:column;}
+#main{flex:1 0 auto;}
 :root{
   --night:#1C1C2E;--sand:#fff;--accent:#5E17EB;--red:#FF6B6B;
   /* Раньше --muted был приглушённым ФИОЛЕТОВЫМ (#6B5A9E) — из-за этого
@@ -264,13 +278,15 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
   <div class="intro-sub" id="introSub"></div>
 </div>
 
-<div id="main">
-  <div class="loader-wrap">Загружаем подборку…</div>
-</div>
+<div class="sticky-footer-wrap" id="stickyFooterWrap">
+  <div id="main">
+    <div class="loader-wrap">Загружаем подборку…</div>
+  </div>
 
-<div class="footer-notice">
-  <div class="footer-notice-text">
-    Наличие юнитов может измениться в любой момент — актуальный статус лучше уточнять у вашего агента
+  <div class="footer-notice">
+    <div class="footer-notice-text">
+      Наличие юнитов может измениться в любой момент — актуальный статус лучше уточнять у вашего агента
+    </div>
   </div>
 </div>
 
@@ -493,14 +509,19 @@ window.addEventListener('resize', () => {
 // #main padding-bottom ровно на недостающую высоту (разница между высотой
 // экрана и уже отрисованной высотой всей страницы) — ничего в display/потоке
 // документа не меняется, побочных эффектов на другие блоки быть не должно.
+// 22.07.26 (2), по просьбе Ильи: см. большой комментарий у .sticky-footer-wrap
+// в CSS — вместо разового padding-снимка просто выставляем обёртке
+// min-height ("сколько места остаётся до низа экрана от её начала"), а
+// #main{flex:1 0 auto} внутри нее сам живо доращивает/уступает место под
+// актуальную высоту контента, в любой момент после этого вызова.
 function stickyFooterFix() {
-  const main = document.getElementById('main');
-  if (!main) return;
-  main.style.paddingBottom = '0px';
-  const shortBy = window.innerHeight - document.documentElement.scrollHeight;
-  main.style.paddingBottom = (shortBy > 0 ? shortBy : 0) + 'px';
+  const wrap = document.getElementById('stickyFooterWrap');
+  if (!wrap) return;
+  const offsetTop = wrap.getBoundingClientRect().top + window.scrollY;
+  wrap.style.minHeight = Math.max(0, window.innerHeight - offsetTop) + 'px';
 }
 window.addEventListener('resize', stickyFooterFix);
+window.addEventListener('load', stickyFooterFix); // 22.07.26 (2): подстраховка на случай, если шрифты/что-то ещё доедет позже остальных вызовов
 
 // ── Раскрытие полной инфы по наведению (кроме наведения прямо на кнопку) ──
 // Триггер — планировка или сводка (проект/номер/цена), а не сама кнопка
