@@ -828,18 +828,27 @@ body.light .bugfix-footer-wrap{background:#f0f0f4;}
    самый отступ даёт margin-top у .sec-title — кроме самого первого
    заголовка блока (там отступ и так уже даёт .proj-block). Один и тот же
    зазор везде, из одного места. */
-.proj-block{padding-top:24px}
-.proj-block:first-child{padding-top:0}
-.proj-block .sec-title{margin-top:24px}
-.proj-block .sec-title:first-child{margin-top:0}
+/* 22.07.26 (2), по прямой просьбе Ильи ("не применилось, сделай как в
+   project.html"): там отступ между секциями держится не через обёртку, а
+   через margin-bottom у САМОГО ПОСЛЕДНЕГО элемента каждой секции — просто
+   у всех одно и то же значение. Возвращаемся к этому же способу: убрали
+   .proj-block{padding-top}/.sec-title{margin-top} (JS switchVisualTab()
+   всё ещё использует .closest('.proj-block') для переключения вкладок,
+   поэтому сам класс в разметке остаётся — трогаем только его CSS). Теперь
+   единственный отступ между ЛЮБыми двумя соседними мини-секциями (что
+   между блоками, что внутри одного блока — Описание→Инфраструктура,
+   Карта→Ближайшие локации) — margin-bottom:24px у последнего элемента:
+   .desc-text/.facilities-grid/.map-wrap/.info-box/.nearby-list/
+   .maint-list/.files-list/.ps-list/.visual-slider (см. все ниже по файлу). */
+.proj-block{padding-top:0}
 .sec-title{font-size:13px;font-weight:600;margin-bottom:18px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 
-.desc-text{font-size:14px;line-height:1.8;color:var(--text)}
-.facilities-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px}
+.desc-text{font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px}
+.facilities-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:24px}
 .fac-item{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;display:flex;align-items:center;gap:8px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default}
 .fac-item:hover{transform:scale(1.04);border-color:var(--project-color);box-shadow:0 4px 16px rgba(94,23,235,0.12)}
 .fac-icon{font-size:18px}
-.info-box{background:var(--surface);border-radius:12px;padding:16px}
+.info-box{background:var(--surface);border-radius:12px;padding:16px;margin-bottom:24px}
 .info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px;transition:transform .2s cubic-bezier(.34,1.56,.64,1);cursor:default}
 .info-row:hover{transform:translateX(4px)}
 .info-label{color:var(--muted)}
@@ -850,7 +859,7 @@ body.light .bugfix-footer-wrap{background:#f0f0f4;}
    addCustomProjMapControls в скрипте ниже. Высота — тот же aspect-ratio
    16/9, что и у слайдера "Рендеры и фото", вместо фиксированных 320px у
    старого Google Maps iframe. */
-.map-wrap{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:16/9;background:var(--surface-2)}
+.map-wrap{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:16/9;background:var(--surface-2);margin-bottom:24px}
 .map-wrap.map-fake-fullscreen{position:fixed;inset:0;z-index:99999;border-radius:0;aspect-ratio:unset;margin-bottom:0}
 body.map-fake-fullscreen-active{overflow:hidden}
 #projMap{width:100%;height:100%}
@@ -876,7 +885,7 @@ body.map-fake-fullscreen-active{overflow:hidden}
 .map-nearby-panel-item{padding:9px 12px;border-radius:9px;font-size:12.5px;font-weight:500;color:var(--muted);cursor:pointer;transition:color .15s}
 .map-nearby-panel-item:hover{color:var(--text)}
 .map-error{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;text-align:center;padding:20px}
-.nearby-list{display:flex;flex-direction:column;gap:8px}
+.nearby-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
 .nearby-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid transparent;border-radius:10px;padding:11px 14px;cursor:pointer;transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
 .nearby-item:hover{border-color:var(--project-color);background:var(--surface-2);transform:scale(1.02)}
 .nearby-icon{font-size:20px;width:30px;text-align:center}
@@ -897,7 +906,7 @@ body.map-fake-fullscreen-active{overflow:hidden}
 .visual-tab.visual-tab-ghost.act:hover{background:var(--project-color);color:#fff}
 .visual-panel{display:none}
 .visual-panel.act{display:block}
-.visual-slider{position:relative;overflow:hidden;border-radius:12px;background:var(--surface-2);user-select:none;aspect-ratio:16/9}
+.visual-slider{position:relative;overflow:hidden;border-radius:12px;background:var(--surface-2);user-select:none;aspect-ratio:16/9;margin-bottom:24px}
 .visual-slides{display:flex;transition:transform .35s cubic-bezier(.4,0,.2,1);height:100%}
 .visual-slide{min-width:100%;height:100%;flex-shrink:0}
 .visual-slide img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;transition:transform .4s cubic-bezier(.4,0,.2,1)}
@@ -918,7 +927,7 @@ body.map-fake-fullscreen-active{overflow:hidden}
 .ps-circle-track{stroke:var(--line-2);fill:none;stroke-width:3}
 .ps-circle-fill{fill:none;stroke-width:3;stroke-linecap:round;stroke:var(--project-color);stroke-dasharray:145;stroke-dashoffset:145;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)}
 .ps-circle-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--project-color)}
-.ps-list{display:flex;flex-direction:column;gap:8px}
+.ps-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
 .ps-item{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid transparent;border-radius:12px;padding:10px 16px 10px 10px;transition:border-color .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
 .ps-item:hover{border-color:var(--project-color);transform:scale(1.02)}
 .ps-item-info{flex:1;min-width:0}
@@ -926,7 +935,7 @@ body.map-fake-fullscreen-active{overflow:hidden}
 .ps-item-note{font-size:11.5px;color:var(--muted);margin-top:2px}
 .ps-pct{font-weight:700;color:var(--text);font-size:17px;flex-shrink:0}
 
-.maint-list{display:flex;flex-direction:column;gap:8px}
+.maint-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
 .maint-row{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid transparent;border-radius:12px;padding:12px 16px;transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
 .maint-row:hover{border-color:var(--project-color);background:var(--surface-2);transform:scale(1.02)}
 .maint-icon{font-size:18px;width:26px;text-align:center;flex-shrink:0}
@@ -934,7 +943,7 @@ body.map-fake-fullscreen-active{overflow:hidden}
 .maint-val{font-weight:700;font-size:13.5px;flex-shrink:0;text-align:right}
 .maint-note{margin-top:4px;padding:12px 14px;background:var(--project-soft);border-radius:10px;font-size:12px;color:var(--text);line-height:1.6}
 
-.files-list{display:flex;flex-direction:column;gap:8px}
+.files-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
 .file-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid transparent;border-radius:10px;padding:13px 16px;text-decoration:none;color:var(--text);transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1)}
 .file-item:hover{border-color:var(--project-color);background:var(--surface-2);transform:scale(1.02)}
 .file-icon{font-size:22px}
