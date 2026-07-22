@@ -828,17 +828,19 @@ input,button{font-family:inherit;}
    как раз и оказываются в её углах — то есть в углах экрана.
    Единственное, что реально нужно пересчитывать (см. updateMapCtrlOffset() в
    скрипте, вызывается при входе на карту/фуллскрин/resize — НЕ на каждый
-   кадр и НЕ на scroll): 1) отступ от верха #mapViewWrap до верха самой карты
+   кадр и НЕ на scroll): отступ от верха #mapViewWrap до верха самой карты
    (--map-ctrl-top-offset) — он не 0, когда у админа над картой ещё показана
    панель расстановки точек (.map-placement-bar), которой у обычного
-   агента/клиента нет; 2) "середина первого экрана" карты для кнопок +/-
-   (--map-zoom-mid-offset) — карта специально в 2 раза выше того, что
-   помещается без скролла (см. resizeProjectsMapHeight), поэтому середина
-   считается НЕ от конечной (2×) высоты карты формулой, а прямым измерением
-   того, сколько видно без прокрутки прямо сейчас (см. updateMapCtrlOffset())
-   — первая версия через offsetHeight/4 на практике вставала выше нужного,
-   похоже из-за раннего вызова до того, как resizeProjectsMapHeight() успевал
-   выставить настоящую высоту карты. */
+   агента/клиента нет.
+   22.07.26 (10), по прямой просьбе Ильи (проверено цифрами через консоль —
+   расчёт "середина ВИДИМОГО без скролла куска карты" оказался математически
+   верным, но не тем, что нужно): Илья подтвердил — кнопкам +/- нужна
+   середина САМОЙ КАРТЫ целиком (её полной, 2×-высоты), а не обязательно
+   видимой без скролла области. Это проще: буквально top:50% (см.
+   .map-zoom-group ниже) — никакой JS-формулы тут больше не нужно, обычный
+   CSS-приём "top:50%+transform:translateY(-50%)" уже даёт ровно это, и
+   работает одинаково что в обычном виде, что в фуллскрине без отдельного
+   правила (см. там же). */
 .map-ctrl-btn{
   width:44px;height:44px;border-radius:16px;background:var(--surface);color:var(--text);
   display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -885,18 +887,12 @@ input,button{font-family:inherit;}
    комментарий у .map-fullscreen-btn выше). Сама механика (клики, setZoom) не
    менялась. */
 .map-zoom-group{
-  position:absolute;top:var(--map-zoom-mid-offset, 50%);right:16px;z-index:150; /* см. большой комментарий у .map-fullscreen-btn выше */
+  position:absolute;top:50%;right:16px;z-index:150; /* см. большой комментарий у .map-fullscreen-btn выше */
   transform:translateY(-50%);
   display:flex;flex-direction:column;
   /* 17.07.26, по просьбе Ильи: тоже теперь по теме, не всегда белый фон */
   background:var(--surface);border-radius:22px;overflow:hidden;
 }
-/* 22.07.26: в фуллскрине карта = ровно один экран (никакого 2×-трюка, см.
-   .map-fake-fullscreen #projectsMap{height:auto} ниже) — там реальная
-   середина карты и есть просто 50% её высоты, готовое значение из
-   updateMapCtrlOffset() не нужно (и было бы неверным, оно посчитано под
-   обычный, не-фуллскрин размер). */
-.map-view-wrap.map-fake-fullscreen .map-zoom-group{top:50% !important;}
 .map-zoom-group .map-ctrl-btn{background:none;border-radius:0;}
 .map-zoom-group .map-ctrl-btn:first-child{border-bottom:1px solid var(--line-2);}
 /* 17.07.26, по просьбе Ильи: у +/- ховер не темнел на практике — у
@@ -3080,7 +3076,7 @@ function resizeProjectsMapHeight() {
   const wrap = document.getElementById('mapViewWrap');
   const mapEl = document.getElementById('projectsMap');
   if (!wrap || !mapEl || !wrap.classList.contains('act')) return;
-  if (wrap.classList.contains('map-fake-fullscreen')) { updateMapCtrlOffset(); return; } // 16.07.26: в развёрнутом виде высоту держит CSS (flex:1), свою px-высоту не навязываем; 22.07.26: но отступы кнопок (--map-ctrl-top-offset/--map-zoom-mid-offset) всё равно пересчитываем и в этом режиме
+  if (wrap.classList.contains('map-fake-fullscreen')) { updateMapCtrlOffset(); return; } // 16.07.26: в развёрнутом виде высоту держит CSS (flex:1), свою px-высоту не навязываем; 22.07.26: но отступ верхнего ряда кнопок (--map-ctrl-top-offset) всё равно пересчитываем и в этом режиме
   // (фуллскрин не влияет на отступ футера — карта там position:fixed, вне обычного потока страницы)
   // 16.07.26, по просьбе Ильи: карта "росла" при каждом возврате со списка —
   // нашли причину. getBoundingClientRect().top даёт позицию ОТНОСИТЕЛЬНО
@@ -3100,7 +3096,7 @@ function resizeProjectsMapHeight() {
   const h = availableH * 2;
   mapEl.style.height = h + 'px';
   if (projectsMap?.container?.fitToViewport) projectsMap.container.fitToViewport();
-  updateMapCtrlOffset(); // 22.07.26: высота карты поменялась — отступы кнопок (--map-ctrl-top-offset/--map-zoom-mid-offset) пересчитываем следом
+  updateMapCtrlOffset(); // 22.07.26: высота карты поменялась — отступ верхнего ряда кнопок (--map-ctrl-top-offset) пересчитываем следом
   // 22.07.26 (8), по прямой просьбе Ильи (баг "нет отступа в карте"): карта на
   // момент входа ещё маленькая (CSS-заглушка min-height:320px, реальная 2×-
   // высота выставляется только тут, зачастую позже первого вызова
@@ -3122,21 +3118,19 @@ window.addEventListener('resize', resizeProjectsMapHeight);
 // только когда меняется реальная геометрия самой карты — вход на карту,
 // вход/выход из фуллскрина, resize окна (см. вызовы ниже и внутри
 // resizeProjectsMapHeight()/setFakeFullscreen() в addCustomMapControls).
-// 22.07.26 (2), по фидбеку Ильи: первая версия середины +/- (offsetHeight/4)
-// на практике вставала заметно ВЫШЕ реальной середины видимого экрана —
-// вероятная причина: она пересчитывалась ещё и синхронно ДО того, как
-// resizeProjectsMapHeight() успевал выставить настоящую (2×) высоту карты
-// (карта в этот момент ещё с CSS-заглушкой min-height:320px), и итоговое
-// число оказывалось завязано на эту крошечную временную высоту. Теперь
-// считаем не по конечной высоте карты формулой, а НАПРЯМУЮ измеряем, сколько
-// видно без прокрутки СЕЙЧАС (тот же приём, что и availableH в
-// resizeProjectsMapHeight) — надёжнее, не зависит от того, успела ли карта
-// уже вырасти на момент вызова.
+// 22.07.26 (10), по прямой просьбе Ильи: середина +/- (--map-zoom-mid-offset)
+// отсюда убрана целиком — несколько версий формулы (offsetHeight/4, потом
+// прямое измерение видимой без скролла области) считали центр ВИДИМОГО
+// куска карты, что оказалось математически верным, но не тем, что нужно.
+// Илья подтвердил цифрами через консоль: нужна середина самой карты целиком
+// (2×-высоты), видимость не обязательна — а это просто top:50% в CSS, без
+// какого-либо JS (см. .map-zoom-group). Единственное, что тут действительно
+// нужно пересчитывать — отступ верхнего ряда кнопок от панели расстановки
+// точек у админа (--map-ctrl-top-offset), см. ниже.
 function updateMapCtrlOffset() {
   const wrap = document.getElementById('mapViewWrap');
   const mapEl = document.getElementById('projectsMap');
   if (!wrap || !mapEl) return;
-  const isFakeFS = wrap.classList.contains('map-fake-fullscreen');
 
   // Отступ от верха #mapViewWrap до верха самой карты — обычно 0, но у
   // админа над картой ещё показана панель расстановки точек
@@ -3145,20 +3139,6 @@ function updateMapCtrlOffset() {
   // раньше не прижилась похожая попытка через position:sticky).
   const topOffset = mapEl.offsetTop || 0;
   document.documentElement.style.setProperty('--map-ctrl-top-offset', topOffset + 'px');
-
-  // Кнопки +/- — середина того, что видно БЕЗ прокрутки страницы прямо
-  // сейчас. В фуллскрине карта и так весь экран — видимая высота попросту
-  // равна высоте окна. В обычном виде — ровно та же формула, что и у
-  // availableH в resizeProjectsMapHeight (сколько остаётся от верха карты
-  // до низа окна).
-  const mapViewportTop = mapEl.getBoundingClientRect().top;
-  const visibleH = isFakeFS
-    ? window.innerHeight
-    : Math.max(320, Math.round(window.innerHeight - mapViewportTop - 16));
-  const zoomMidViewport = mapViewportTop + visibleH / 2; // в координатах экрана
-  const wrapViewportTop = wrap.getBoundingClientRect().top;
-  const zoomMid = zoomMidViewport - wrapViewportTop; // переводим в координаты внутри #mapViewWrap
-  document.documentElement.style.setProperty('--map-zoom-mid-offset', zoomMid + 'px');
 }
 window.addEventListener('resize', updateMapCtrlOffset);
 window.addEventListener('load', updateMapCtrlOffset);
