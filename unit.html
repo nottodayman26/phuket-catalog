@@ -503,15 +503,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    21.07.26 (2), найден Ильёй баг ("фон не стал серым"): в этом файле, в
    отличие от flox-web.html/project.html, --surface-2 в светлой теме (см.
    body.light выше) буквально равна --bg (обе #F5F5F7) — блок сливался с
-   фоном страницы. --surface-3 здесь отличается от --bg в обеих темах,
-   поэтому серый фон реально виден.
+   фоном страницы, поэтому тогда переключили на --surface-3.
    22.07.26 (2), по прямой просьбе Ильи ("отступ слишком большой"): раньше
    тут стояло 120px "на глаз" по скриншоту — пересчитал по реальному CSS
    project.html: воздух там образуют .page-section{padding-bottom:28px}
    (после контента секции) + .bugfix-footer{padding-top:28px} (внутри самой
    плашки) = 56px суммарно. У нас .bugfix-footer{padding-top:28px} уже есть
-   (см. ниже) — значит margin-top обёртки должен быть ровно 28px, а не 120px. */
-.bugfix-footer-wrap{display:none;background:var(--surface-3);margin-top:28px;}
+   (см. ниже) — значит margin-top обёртки должен быть ровно 28px, а не 120px.
+   22.07.26 (3), по прямой просьбе Ильи ("другой цвет блока"): --surface-3
+   решала задачу "не слиться с фоном", но у неё СВОЁ значение (#EBEBED),
+   отличное от --surface-2 в flox-web.html/project.html (#f0f0f4) — поэтому
+   цвет плашки здесь и не совпадал с остальными страницами, хоть и был
+   серым. В тёмной теме --surface-2 в этом файле совпадает с flox-web.html
+   (#1a1a26) — возвращаем именно её как базовое правило, а несовпадение
+   исключительно в светлой теме чиним точечным переопределением ниже тем же
+   оттенком, что и везде (#f0f0f4), а не другой переменной с другим числом. */
+.bugfix-footer-wrap{display:none;background:var(--surface-2);margin-top:28px;}
+/* см. пункт (3) выше — только светлая тема: --surface-2 тут равна --bg,
+   переопределяем на тот же оттенок, что в flox-web.html/project.html. */
+body.light .bugfix-footer-wrap{background:#f0f0f4;}
 .bugfix-footer{max-width:1200px;margin:0 auto;padding:28px 20px 32px;}
 .bf-row{display:flex;align-items:center;gap:16px;}
 .bf-icon{
