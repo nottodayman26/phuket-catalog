@@ -348,12 +348,7 @@
   .gate-card{max-width:340px;}
   .gate-icon{font-size:40px;margin-bottom:16px;}
   .gate-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px;}
-  .gate-text{font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:20px;}
-  .gate-btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:8px;
-    padding:12px 20px;border-radius:12px;background:var(--accent);color:#fff;
-    font-size:14px;font-weight:600;text-decoration:none;border:none;cursor:pointer;
-  }
+  .gate-text{font-size:14px;line-height:1.6;color:var(--muted);}
 </style>
 </head>
 <body>
@@ -366,7 +361,6 @@
       <div class="gate-icon" id="gateIcon">🔒</div>
       <div class="gate-title" id="gateTitle">Нужна регистрация</div>
       <div class="gate-text" id="gateText">Открой каталог через бота, чтобы получить доступ.</div>
-      <a class="gate-btn" id="gateBtn" href="https://t.me/phuket_proptech_bot" target="_blank" rel="noopener">Открыть бота</a>
     </div>
   </div>
 
@@ -1012,6 +1006,11 @@ document.getElementById('themeToggle').onclick = ()=>{
   document.getElementById('themeIconLight').style.display = isLight ? 'block' : 'none';
 };
 
+// 22.07.26 (3), по прямой просьбе Ильи ("убери кнопку, меньше кнопок —
+// меньше багов"): кнопку "Открыть бота" убрали совсем — весь текст экрана
+// уже сам объясняет, что делать (см. showGateScreen ниже), без кнопки,
+// которая иногда не срабатывала внутри Mini App.
+
 // 22.07.26, по прямой просьбе Ильи (п.1 списка правок): раньше каталог
 // рендерился ВСЕГДА, а identifyAgent() лишь пыталась определить, КТО
 // смотрит — теперь наоборот: если агент не approved, каталог вообще не
@@ -1020,27 +1019,22 @@ function showGateScreen(result){
   const icon = document.getElementById('gateIcon');
   const title = document.getElementById('gateTitle');
   const text = document.getElementById('gateText');
-  const btn = document.getElementById('gateBtn');
   if(result.status === 'pending'){
     icon.textContent = '⏳';
     title.textContent = 'Заявка на рассмотрении';
     text.textContent = `${result.agent?.full_name || 'Привет'}, твоя регистрация ещё на рассмотрении у администратора — как только он её одобрит, каталог откроется автоматически.`;
-    btn.style.display = 'none';
   } else if(result.status === 'rejected'){
     icon.textContent = '❌';
     title.textContent = 'Доступ не предоставлен';
     text.textContent = 'К сожалению, доступ к Flox не был предоставлен. Если это ошибка — напиши администратору @IlyaKonygin напрямую.';
-    btn.style.display = 'none';
   } else if(result.status === 'no_telegram'){
     icon.textContent = '📱';
     title.textContent = 'Открой через Telegram';
     text.textContent = 'Этот каталог — Telegram Mini App для агентов. Открой его через бота, а не напрямую в браузере.';
-    btn.style.display = 'inline-flex';
   } else { // not_registered
     icon.textContent = '🔒';
     title.textContent = 'Нужна регистрация';
-    text.textContent = 'Похоже, ты ещё не зарегистрирован как агент Flox. Нажми кнопку ниже, чтобы открыть бота и пройти быструю регистрацию.';
-    btn.style.display = 'inline-flex';
+    text.textContent = 'Похоже, ты ещё не зарегистрирован как агент Flox. Откройте бота и пройдите быструю регистрацию.';
   }
   document.getElementById('gateScreen').classList.add('act');
 }
