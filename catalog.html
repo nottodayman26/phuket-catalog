@@ -336,9 +336,39 @@
   .map-pin .mp-name{font-weight:700;font-size:13px;}
   .map-pin .mp-loc{font-size:11.5px;color:var(--muted);margin-top:1px;}
   .map-pin .mp-cnt{font-size:11.5px;color:var(--muted-2);flex-shrink:0;}
+  /* 22.07.26, по прямой просьбе Ильи (п.1 списка правок): экран-заглушка —
+     показывается вместо каталога, пока агент не approved (см. showGateScreen()
+     в скрипте ниже). Тот же принцип, что и authScreen в flox-web.html. */
+  .gate-screen{
+    position:fixed; inset:0; z-index:5000; background:var(--bg);
+    display:none; align-items:center; justify-content:center; padding:24px;
+    text-align:center;
+  }
+  .gate-screen.act{display:flex;}
+  .gate-card{max-width:340px;}
+  .gate-icon{font-size:40px;margin-bottom:16px;}
+  .gate-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px;}
+  .gate-text{font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:20px;}
+  .gate-btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 20px;border-radius:12px;background:var(--accent);color:#fff;
+    font-size:14px;font-weight:600;text-decoration:none;border:none;cursor:pointer;
+  }
 </style>
 </head>
 <body>
+
+  <!-- 22.07.26, по прямой просьбе Ильи (п.1): экран-заглушка на случай
+       "не зарегистрирован / на рассмотрении / отклонён / открыто не через
+       Telegram" — см. showGateScreen() в скрипте внизу файла. -->
+  <div class="gate-screen" id="gateScreen">
+    <div class="gate-card">
+      <div class="gate-icon" id="gateIcon">🔒</div>
+      <div class="gate-title" id="gateTitle">Нужна регистрация</div>
+      <div class="gate-text" id="gateText">Открой каталог через бота, чтобы получить доступ.</div>
+      <a class="gate-btn" id="gateBtn" href="https://t.me/phuket_proptech_bot" target="_blank" rel="noopener">Открыть бота</a>
+    </div>
+  </div>
 
   <div class="topbar">
     <div class="avatar" id="avatarBox">…</div>
@@ -514,6 +544,19 @@ async function fetchArray(url){
 // Узнаём агента по его Telegram-аккаунту автоматически — без анкеты.
 // Если такого агента ещё нет в базе, регистрируем его на лету
 // (это и есть та самая самостоятельная регистрация без бумажной волокиты).
+// 22.07.26, по прямой просьбе Ильи (п.1 списка правок): каталог был
+// доступен ДО регистрации и ДО одобрения — причина в этой функции:
+// 1) если открыто не через Telegram (tgUser нет) — раньше просто возвращала
+//    null и каталог всё равно рендерился ("гостевой режим");
+// 2) если telegram_id не найден в agents — раньше ТИХО СОЗДАВАЛА новую
+//    запись агента прямо отсюда, в обход всей регистрации через бота
+//    (@phuket_proptech_bot — имя/фамилия/телефон/агентство/решение
+//    администратора) — человек получал доступ мгновенно, никто не успевал
+//    даже увидеть заявку;
+// 3) даже если запись находилась — статус (pending/approved/rejected) НЕ
+//    проверялся вообще, только флаг regarding created_at.
+// Теперь функция ничего не создаёт и возвращает объект с полем status —
+// решение "пускать/не пускать" принимает init() ниже (см. showGateScreen).
 async function identifyAgent(){
   const tg = window.Telegram?.WebApp;
   tg?.ready();
@@ -524,27 +567,21 @@ async function identifyAgent(){
   // отключаем вертикальные свайпы закрытия (Bot API 7.7+)
   try{ tg?.disableVerticalSwipes?.(); }catch(e){}
   const tgUser = tg?.initDataUnsafe?.user;
-  if(!tgUser) return null; // открыто не через Telegram-бота — гостевой режим
+  if(!tgUser) return { status: 'no_telegram' }; // открыто не через Telegram-бота
 
   const found = await fetch(`${SUPABASE_URL}/agents?telegram_id=eq.${tgUser.id}&select=*`, {headers: SB_HEADERS});
   const foundRows = await found.json();
-  if(foundRows.length) return foundRows[0];
+  if(!foundRows.length) return { status: 'not_registered' };
 
-  const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || 'Агент';
-  const created = await fetch(`${SUPABASE_URL}/agents`, {
-    method: 'POST',
-    headers: {...SB_HEADERS, Prefer: 'return=representation'},
-    body: JSON.stringify({
-      telegram_id: tgUser.id,
-      full_name: fullName,
-      avatar_url: tgUser.photo_url || null,
-      is_founding_agent: true,
-      commission_rate_pct: 7,
-    }),
-  });
-  if(!created.ok) return null;
-  const rows = await created.json();
-  return rows[0] || null;
+  const row = foundRows[0];
+  // 21.07.26, по просьбе Ильи (шлюз одобрения регистрации, см. тот же
+  // принцип в telegram_listener.py/flox-web.html): если колонки status ещё
+  // нет в Supabase (миграция не накатана) — считаем такую старую запись
+  // approved, чтобы никого из уже работающих агентов не заблокировать
+  // задним числом.
+  const status = row.status || 'approved';
+  if(status !== 'approved') return { status, agent: row };
+  return { status: 'approved', agent: row };
 }
 
 function renderTopbar(){
@@ -975,12 +1012,49 @@ document.getElementById('themeToggle').onclick = ()=>{
   document.getElementById('themeIconLight').style.display = isLight ? 'block' : 'none';
 };
 
+// 22.07.26, по прямой просьбе Ильи (п.1 списка правок): раньше каталог
+// рендерился ВСЕГДА, а identifyAgent() лишь пыталась определить, КТО
+// смотрит — теперь наоборот: если агент не approved, каталог вообще не
+// грузится, показывается экран-заглушка (см. CSS/разметку выше).
+function showGateScreen(result){
+  const icon = document.getElementById('gateIcon');
+  const title = document.getElementById('gateTitle');
+  const text = document.getElementById('gateText');
+  const btn = document.getElementById('gateBtn');
+  if(result.status === 'pending'){
+    icon.textContent = '⏳';
+    title.textContent = 'Заявка на рассмотрении';
+    text.textContent = `${result.agent?.full_name || 'Привет'}, твоя регистрация ещё на рассмотрении у администратора — как только он её одобрит, каталог откроется автоматически.`;
+    btn.style.display = 'none';
+  } else if(result.status === 'rejected'){
+    icon.textContent = '❌';
+    title.textContent = 'Доступ не предоставлен';
+    text.textContent = 'К сожалению, доступ к Flox не был предоставлен. Если это ошибка — напиши администратору @IlyaKonygin напрямую.';
+    btn.style.display = 'none';
+  } else if(result.status === 'no_telegram'){
+    icon.textContent = '📱';
+    title.textContent = 'Открой через Telegram';
+    text.textContent = 'Этот каталог — Telegram Mini App для агентов. Открой его через бота, а не напрямую в браузере.';
+    btn.style.display = 'inline-flex';
+  } else { // not_registered
+    icon.textContent = '🔒';
+    title.textContent = 'Нужна регистрация';
+    text.textContent = 'Похоже, ты ещё не зарегистрирован как агент Flox. Нажми кнопку ниже, чтобы открыть бота и пройти быструю регистрацию.';
+    btn.style.display = 'inline-flex';
+  }
+  document.getElementById('gateScreen').classList.add('act');
+}
+
 async function init(){
   document.getElementById('list').innerHTML = '<div class="empty">Загружаем актуальный каталог…</div>';
   document.getElementById('ticker').innerHTML = '';
 
-  // Агент грузится независимо — даже если каталог не загрузится
-  CURRENT_AGENT = await identifyAgent().catch(() => null);
+  const result = await identifyAgent().catch(() => ({ status: 'not_registered' }));
+  if(result.status !== 'approved'){
+    showGateScreen(result);
+    return; // каталог не грузим вообще, пока агент не approved
+  }
+  CURRENT_AGENT = result.agent;
   renderTopbar();
 
   // Каталог грузится отдельно
