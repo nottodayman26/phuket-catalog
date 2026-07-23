@@ -296,6 +296,17 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const HDR = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 const BASE = location.pathname.replace(/\/[^\/]*$/, '/');
 
+// 23.07.26, по просьбе Ильи: клиентская ссылка на юнит (кнопка "Подробнее",
+// открывается в новой вкладке — см. unitUrl/linkAttrs ниже) раньше строилась
+// относительным путём ("unit.html?..."), поэтому всегда открывала
+// flox.website — даже когда сам offer.html показан клиенту через белую
+// обёртку varianty-nedvizhimosti.tech (эта страница физически как была на
+// flox.website, так и осталась; меняется только адрес, куда ведёт кнопка
+// "Подробнее"). Теперь ссылка абсолютная, на белый домен — там лежит своя
+// обёртка unit.html (репозиторий phuket-offer-wrapper), которая так же
+// через iframe прозрачно показывает flox.website/unit.html.
+const WHITE_LABEL_ORIGIN = 'https://varianty-nedvizhimosti.tech';
+
 function fmtMln(n) {
   if (!n) return '—';
   return n >= 1000000 ? (n/1e6).toFixed(2).replace(/\.?0+$/, '') + ' млн ฿' : Math.round(n).toLocaleString('ru') + ' ฿';
@@ -930,7 +941,7 @@ async function init() {
     const projName = proj?.name || meta.project || '';
     const exactPrice = u.selling_price ? Math.round(u.selling_price).toLocaleString('ru') + ' ฿' : '—';
     const pricePerSqm = u.price_per_sqm ? Math.round(u.price_per_sqm).toLocaleString('ru') + ' ฿' : '—';
-    const unitUrl = `unit.html?unit=${encodeURIComponent(u.room_no)}&project=${encodeURIComponent(meta.project || '')}&client=1${agentInitials ? '&agent=' + encodeURIComponent(agentInitials) : ''}${agentFullName ? '&agentName=' + encodeURIComponent(agentFullName) : ''}&pres=${encodeURIComponent(id)}`;
+    const unitUrl = `${WHITE_LABEL_ORIGIN}/unit.html?unit=${encodeURIComponent(u.room_no)}&project=${encodeURIComponent(meta.project || '')}&client=1${agentInitials ? '&agent=' + encodeURIComponent(agentInitials) : ''}${agentFullName ? '&agentName=' + encodeURIComponent(agentFullName) : ''}&pres=${encodeURIComponent(id)}`;
 
     // 20.07.26, по просьбе Ильи: если юнит продался ПОСЛЕ того, как подборка
     // была сформирована — карточка должна не просто выглядеть блёклой

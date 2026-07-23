@@ -2692,6 +2692,16 @@ function autoSearch() {
 const STATUS_LABELS = {'Under Construction':'Строится','Ready to Move':'Сдан','Completed':'Сдан','Pre-Launch':'Предпродажа'};
 const BASE_IMG = 'https://flox.website/img/';
 
+// 23.07.26, по просьбе Ильи: white-label домен для ссылки на оффер, которую
+// агент показывает/копирует клиенту в "Мои предложения" (и сразу после
+// создания подборки, см. confirmPresentation) — чтобы клиент не видел слово
+// "flox" в адресе. Сам flox-web.html как был на flox.website, так и остаётся —
+// меняется только домен в СГЕНЕРИРОВАННОЙ ссылке на оффер. Технически
+// varianty-nedvizhimosti.tech — отдельный лёгкий репозиторий-обёртка
+// (phuket-offer-wrapper), который через iframe прозрачно показывает
+// содержимое flox.website/offer.html.
+const OFFER_LINK_ORIGIN = 'https://varianty-nedvizhimosti.tech';
+
 // 16.07.26, по просьбе Ильи: переход в проект должен сохранять выбранные
 // фильтры (тип юнита/цена/срок сдачи) — раньше это умела только карточка в
 // списке (cardHTML), а переход из карты (клик по точке/плашке, ссылка
@@ -4431,7 +4441,7 @@ async function loadOffers() {
 
   if (Array.isArray(presentations)) presentations.forEach(p => {
     const units = Array.isArray(p.units) ? p.units.length : 0;
-    const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${p.id}`;
+    const url = `${OFFER_LINK_ORIGIN}/offer.html?id=${p.id}`;
     items.push({ ts: p.created_at, html: `<div class="offer-card">
         <div class="offer-card-top">
           <div class="offer-client">${p.client_name || 'Клиент'}</div>
@@ -4447,7 +4457,7 @@ async function loadOffers() {
 
   if (Array.isArray(offers)) offers.forEach(o => {
     const units = (o.unit_ids||[]).length;
-    const url = `https://flox.website/offer.html?slug=${o.slug}`;
+    const url = `${OFFER_LINK_ORIGIN}/offer.html?slug=${o.slug}`;
     items.push({ ts: o.created_at, html: `<div class="offer-card">
         <div class="offer-card-top">
           <div class="offer-client">${o.client_name||'Клиент'}</div>
@@ -5604,7 +5614,7 @@ async function confirmPresentation() {
     return;
   }
   const [data] = await r.json();
-  const url = `${location.origin}${location.pathname.replace('flox-web.html', '')}offer.html?id=${data.id}`;
+  const url = `${OFFER_LINK_ORIGIN}/offer.html?id=${data.id}`;
   _presDrawerUrl = url;
   await copyDrawerUrlToClipboard(url);
 }
