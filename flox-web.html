@@ -2035,45 +2035,43 @@ const h = url => fetch(url, { headers: SB });
 
 // ── PROJECTS ─────────────────────────────
 // 23.07.26, по просьбе Ильи: добавили 3 новых поля уровня проекта под "Все
-// фильтры" — floors (этажность дома, целое число, как в projects/VIK.json),
+// фильтры" — floors (этажность дома, целое число, как в projects/{id}.json),
 // facilities (массив названий инфраструктуры — те же строки, что и в
 // project.html/projects/{id}.json, см. FACILITIES_ICONS ниже), seaTier
 // (индекс уровня "До моря" из SEA_TIERS ниже, null = ещё не размечено).
-// ВАЖНО: у VIK взял реальные значения из твоего projects/VIK.json. Для
-// KAT/BAN/OLN этих данных у меня нет (не guess'ю — см. правило "не гадать")
-// — пока floors:null/facilities:[]/seaTier:null, поставь, пожалуйста, сюда
-// реальные значения по этим 3 проектам, иначе они молча не будут проходить
-// фильтры "Этажей в доме"/"Инфраструктура"/"До моря", когда те активны (см.
-// applyFilters — если данных нет, а фильтр включён, проект считается не
-// подходящим, а не наоборот).
+// Все 4 проекта теперь заполнены реальными данными: floors/facilities — из
+// присланных Ильей projects/{VIK,KAT,BAN,OLN}.json; seaTier — из сообщения
+// Ильи 23.07.26 ("тайтл вивана - до 10 минут транспортом", "олив - до 10
+// минут пешком", "балкони - до 5 минут пешком", "катабелло - до 20 минут
+// пешком"), сопоставлено с индексами SEA_TIERS выше.
 const PROJECTS = [
   { id:'VIK', name:'The Title Vivana', nameEn:'The Title Vivana', developer:'Rhom Bho Property PLC', district:'Kamala', amphoe:'Amphoe Kathu', districtRu:'Камала', color:'#C9A84C', type:'condo', priceFrom:4200000, priceTo:19200000, completion:'Q4 2027', completionYear:2027, completionQ:4, status:'Under Construction', commission:10,
     unitTypes:[{name:'1 спальня',price:4200000},{name:'1 спальня+',price:6600000},{name:'2 спальни',price:8000000},{name:'Пентхаус',price:11900000}],
     photos:['1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','6.jpg'],
     floors:8,
     facilities:['Бассейн','Детский бассейн','Джакузи','Фитнес-центр','Лобби с консьерж-сервисом','Лаундж','Парковка','Зоны отдыха у воды','Сад','Зона барбекю','Коворкинг','Парк для животных','Фонтан','Детская зона','Прачечная'],
-    seaTier:null, // TODO Илья: впиши реальный уровень "До моря" (см. SEA_TIERS ниже)
+    seaTier:'t10', // до 10 минут транспортом
     url:'project.html?id=VIK' },
   { id:'KAT', name:'KataBello', nameEn:'KataBello', developer:'Rhom Bho Property PLC', district:'Kata', amphoe:'Amphoe Mueang', districtRu:'Ката', color:'#7BAF6E', type:'condo', priceFrom:4600000, priceTo:21000000, completion:'Q2 2027', completionYear:2027, completionQ:2, status:'Under Construction', commission:10,
     unitTypes:[{name:'1 спальня',price:4600000},{name:'1 спальня+',price:8500000},{name:'Пентхаус',price:13400000}],
     photos:['1.avif','2.avif','3.avif','4.avif'],
-    floors:null, // TODO Илья: впиши реальную этажность дома
-    facilities:[], // TODO Илья: впиши реальный список инфраструктуры (как в projects/KAT.json)
-    seaTier:null, // TODO Илья: впиши реальный уровень "До моря"
+    floors:7,
+    facilities:['Бассейн','Фитнес-центр','Парковка','Охрана','Лобби','Сад'],
+    seaTier:'w20', // до 20 минут пешком
     url:'project.html?id=KAT' },
   { id:'BAN', name:'Balcony Naiyang', nameEn:'Balcony Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#6B9BC2', type:'condo', priceFrom:5800000, priceTo:12000000, completion:'Q4 2026', completionYear:2026, completionQ:4, status:'Under Construction', commission:10,
     unitTypes:[{name:'1 спальня',price:5800000},{name:'1 спальня+',price:7400000},{name:'2 спальни',price:8400000}],
     photos:['1.avif','2.avif','3.avif','4.avif'],
-    floors:null, // TODO Илья: впиши реальную этажность дома
-    facilities:[], // TODO Илья: впиши реальный список инфраструктуры (как в projects/BAN.json)
-    seaTier:null, // TODO Илья: впиши реальный уровень "До моря"
+    floors:5,
+    facilities:['Бассейн','Фитнес-центр','Парковка','Охрана','Лобби'],
+    seaTier:'w5', // до 5 минут пешком
     url:'project.html?id=BAN' },
   { id:'OLN', name:'The Olive Naiyang', nameEn:'The Olive Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#8FAB5F', type:'condo', priceFrom:3900000, priceTo:9300000, completion:'Q2 2028', completionYear:2028, completionQ:2, status:'Under Construction', commission:10,
     unitTypes:[{name:'1 спальня',price:3900000},{name:'1 спальня+',price:5900000},{name:'2 спальни',price:7200000}],
     photos:['1.avif','2.avif','3.avif','4.avif'],
-    floors:null, // TODO Илья: впиши реальную этажность дома
-    facilities:[], // TODO Илья: впиши реальный список инфраструктуры (как в projects/OLN.json)
-    seaTier:null, // TODO Илья: впиши реальный уровень "До моря"
+    floors:8,
+    facilities:['Бассейн','Фитнес-центр','Парковка','Охрана','Лобби'],
+    seaTier:'w10', // до 10 минут пешком
     url:'project.html?id=OLN' },
 ];
 
@@ -2186,6 +2184,8 @@ const FACILITIES_ICONS = {
   'Джакузи': '♨️',
   'Фитнес-центр': '💪',
   'Лобби с консьерж-сервисом': '🏨',
+  'Лобби': '🛎️',
+  'Охрана': '🛡️',
   'Лаундж': '🛋️',
   'Парковка': '🅿️',
   'Зоны отдыха у воды': '🌅',
