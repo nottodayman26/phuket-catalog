@@ -736,6 +736,71 @@ input,button{font-family:inherit;}
 .fd-list-item:hover{color:var(--text);}
 .fd-list-item.act{background:var(--accent-soft);color:var(--accent);}
 
+/* 23.07.26, по просьбе Ильи: "Все фильтры" — попап согласован по мокапу
+   (allfilters_mockup.html), см. итоговые правки: фон белый/без серых линий,
+   без заголовка и крестика (закрывается кликом мимо/другим фильтром — как и
+   остальные, через closeAllFilterDropdowns), три группы в ряд, До
+   моря/Этажей в доме/Этаж — плавающие панели поверх низа (не двигают
+   Инфраструктуру), один общий скролл, Инфраструктура — 3 в ряд, одинаковые
+   по размеру, фиолетовая обводка на ховере остаётся при выборе. */
+.fd-allfilters{width:680px;}
+.fd-group-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 4px 8px;}
+.fd-group-title:first-child{margin-top:2px;}
+.fd-groups-row{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;}
+.fd-group-col{flex:1;min-width:0;}
+.fd-group-col .fd-group-title{margin-top:2px;}
+
+.fd-collapsible{position:relative;}
+.fd-collapsible-trigger{
+  display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;
+  background:var(--surface);border:1px solid transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);
+  transition:border-color .2s,box-shadow .2s;
+}
+.fd-collapsible-trigger:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(94,23,235,.12);}
+.fd-collapsible.open .fd-collapsible-trigger,
+.fd-collapsible.selected .fd-collapsible-trigger{
+  border-color:var(--accent);box-shadow:0 4px 16px rgba(94,23,235,.12);
+}
+.fd-emoji{font-size:15px;flex-shrink:0;}
+.fd-clabel{flex:1;}
+
+.fd-collapsible-body{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;
+  background:var(--surface);border-radius:12px;
+  box-shadow:0 10px 28px rgba(0,0,0,.16);
+  max-height:0;overflow:hidden;opacity:0;pointer-events:none;
+  transition:max-height .22s ease,opacity .15s ease;z-index:30;
+}
+.fd-collapsible.open .fd-collapsible-body{max-height:340px;opacity:1;pointer-events:auto;overflow:hidden;}
+.fd-collapsible-body-inner{padding:10px 10px 10px;}
+#colSea .fd-collapsible-body{right:auto;width:260px;}
+#seaList .fd-list-item{white-space:nowrap;}
+
+.fd-allfilters-scroll{height:400px;overflow-y:scroll;overflow-x:hidden;padding:0 2px;margin-bottom:8px;
+  scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;}
+.fd-allfilters-scroll::-webkit-scrollbar{width:6px;}
+.fd-allfilters-scroll::-webkit-scrollbar-track{background:transparent;}
+.fd-allfilters-scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;}
+
+.fd-infra-head{display:flex;align-items:center;justify-content:space-between;margin:16px 4px 4px;}
+.fd-infra-caption{font-size:11px;color:var(--muted);margin:0 4px 10px;line-height:1.5;}
+.fd-infra-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 2px;}
+.fd-infra-card{
+  display:flex;align-items:center;gap:8px;height:54px;padding:8px 14px;border-radius:10px;
+  background:var(--surface);border:1px solid transparent;font-size:12.5px;font-weight:500;color:var(--text);
+  cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;
+}
+.fd-infra-card:hover{transform:scale(1.04);border-color:var(--accent);box-shadow:0 4px 16px rgba(94,23,235,.12);}
+.fd-infra-card.act{border-color:var(--accent);box-shadow:0 4px 16px rgba(94,23,235,.12);}
+.fd-infra-card span:last-child{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;
+}
+
+.fd-allfilters-foot{display:flex;align-items:center;gap:10px;padding:0 2px;}
+.fd-allfilters-foot .fd-apply-btn{margin-top:0;flex:1;}
+.fd-collapse-btn{font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;padding:6px 12px;background:var(--surface-2);border:none;border-radius:20px;transition:background .15s ease,color .15s ease;flex-shrink:0;}
+.fd-collapse-btn:hover{background:var(--surface-3);color:var(--text);}
+
 /* Autocomplete */
 .autocomplete{
   position:absolute;top:calc(100% + 6px);left:0;right:0;
@@ -1563,8 +1628,9 @@ body.map-fake-fullscreen-active{overflow:hidden;}
         <span id="filterCompLabel">Срок сдачи</span>
         <span class="fd-clear-x" onclick="clearCompFilter(event)">✕</span>
       </button>
-      <button class="filter-btn" onclick="alert('Скоро!')">
+      <button class="filter-btn" id="filterAllBtn" onclick="toggleDropdown('all', this)">
         Все фильтры
+        <span class="fd-clear-x" onclick="clearAllFiltersDD(event)">✕</span>
       </button>
       <div class="filter-sep"></div>
       <!-- Фиолетовая "таблетка"-подложка одного фиксированного размера,
@@ -1610,6 +1676,90 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 
       <div class="filter-dropdown" id="ddComp">
         <div class="fd-list" id="compList"></div>
+      </div>
+
+      <!-- 23.07.26, по просьбе Ильи: "Все фильтры" — До моря/Этажей в
+           доме/Инфраструктура (уровень проекта — решают, показывается ли
+           проект) + Этаж (уровень юнита — не фильтрует список, только
+           передаётся в проект при переходе, см. projectUrlWithFilters). -->
+      <div class="filter-dropdown fd-allfilters" id="ddAllFilters">
+        <div class="fd-allfilters-scroll">
+          <div class="fd-groups-row">
+            <div class="fd-group-col">
+              <div class="fd-group-title">Расположение</div>
+              <div class="fd-collapsible" id="colSea">
+                <div class="fd-collapsible-trigger" onclick="toggleCollapsible('colSea')">
+                  <span class="fd-emoji">🌊</span><span class="fd-clabel">До моря</span>
+                </div>
+                <div class="fd-collapsible-body">
+                  <div class="fd-collapsible-body-inner">
+                    <div class="fd-list" id="seaList"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="fd-group-col">
+              <div class="fd-group-title">Проект</div>
+              <div class="fd-collapsible" id="colFloors">
+                <div class="fd-collapsible-trigger" onclick="toggleCollapsible('colFloors')">
+                  <span class="fd-emoji">🏢</span><span class="fd-clabel">Этажей в доме</span>
+                </div>
+                <div class="fd-collapsible-body">
+                  <div class="fd-collapsible-body-inner">
+                    <div class="fd-price-inputs">
+                      <div class="fd-price-input"><input type="text" id="floorsFromInput" placeholder="от" oninput="onRangeInput('floors','from',this.value)"></div>
+                      <span class="fd-price-dash">—</span>
+                      <div class="fd-price-input"><input type="text" id="floorsToInput" placeholder="до" oninput="onRangeInput('floors','to',this.value)"></div>
+                    </div>
+                    <div class="fd-price-cols">
+                      <div class="fd-price-col" id="floorsColFrom"></div>
+                      <div class="fd-price-col" id="floorsColTo"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="fd-group-col">
+              <div class="fd-group-title">Юнит</div>
+              <div class="fd-collapsible" id="colUnitFloor">
+                <div class="fd-collapsible-trigger" onclick="toggleCollapsible('colUnitFloor')">
+                  <span class="fd-emoji">🛗</span><span class="fd-clabel">Этаж</span>
+                </div>
+                <div class="fd-collapsible-body">
+                  <div class="fd-collapsible-body-inner">
+                    <div class="fd-price-inputs">
+                      <div class="fd-price-input"><input type="text" id="unitFromInput" placeholder="от" oninput="onRangeInput('unit','from',this.value)"></div>
+                      <span class="fd-price-dash">—</span>
+                      <div class="fd-price-input"><input type="text" id="unitToInput" placeholder="до" oninput="onRangeInput('unit','to',this.value)"></div>
+                    </div>
+                    <div class="fd-price-cols">
+                      <div class="fd-price-col" id="unitColFrom"></div>
+                      <div class="fd-price-col" id="unitColTo"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fd-infra-head">
+            <div class="fd-group-title" style="margin:0;">Инфраструктура</div>
+            <div class="fd-price-tabs" id="infraModeToggle">
+              <button class="fd-price-tab act" data-mode="AND" type="button" onclick="setInfraMode('AND')">И</button>
+              <button class="fd-price-tab" data-mode="OR" type="button" onclick="setInfraMode('OR')">ИЛИ</button>
+            </div>
+          </div>
+          <div class="fd-infra-caption" id="infraCaption">В проекте должны присутствовать вся выбранная инфраструктура.</div>
+          <div class="fd-infra-grid" id="infraGrid"></div>
+        </div>
+
+        <div class="fd-allfilters-foot">
+          <button class="reset-all" onclick="clearAllFiltersDD(event)">Сбросить всё</button>
+          <button class="fd-collapse-btn" type="button" onclick="closeAllFilterDropdowns()">Свернуть</button>
+          <button class="fd-apply-btn" type="button" onclick="closeAllFilterDropdowns()">Найти</button>
+        </div>
       </div>
     </div>
 
@@ -1884,22 +2034,46 @@ const SB = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_K
 const h = url => fetch(url, { headers: SB });
 
 // ── PROJECTS ─────────────────────────────
+// 23.07.26, по просьбе Ильи: добавили 3 новых поля уровня проекта под "Все
+// фильтры" — floors (этажность дома, целое число, как в projects/VIK.json),
+// facilities (массив названий инфраструктуры — те же строки, что и в
+// project.html/projects/{id}.json, см. FACILITIES_ICONS ниже), seaTier
+// (индекс уровня "До моря" из SEA_TIERS ниже, null = ещё не размечено).
+// ВАЖНО: у VIK взял реальные значения из твоего projects/VIK.json. Для
+// KAT/BAN/OLN этих данных у меня нет (не guess'ю — см. правило "не гадать")
+// — пока floors:null/facilities:[]/seaTier:null, поставь, пожалуйста, сюда
+// реальные значения по этим 3 проектам, иначе они молча не будут проходить
+// фильтры "Этажей в доме"/"Инфраструктура"/"До моря", когда те активны (см.
+// applyFilters — если данных нет, а фильтр включён, проект считается не
+// подходящим, а не наоборот).
 const PROJECTS = [
   { id:'VIK', name:'The Title Vivana', nameEn:'The Title Vivana', developer:'Rhom Bho Property PLC', district:'Kamala', amphoe:'Amphoe Kathu', districtRu:'Камала', color:'#C9A84C', type:'condo', priceFrom:4200000, priceTo:19200000, completion:'Q4 2027', completionYear:2027, completionQ:4, status:'Under Construction', commission:10,
     unitTypes:[{name:'1 спальня',price:4200000},{name:'1 спальня+',price:6600000},{name:'2 спальни',price:8000000},{name:'Пентхаус',price:11900000}],
     photos:['1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','6.jpg'],
+    floors:8,
+    facilities:['Бассейн','Детский бассейн','Джакузи','Фитнес-центр','Лобби с консьерж-сервисом','Лаундж','Парковка','Зоны отдыха у воды','Сад','Зона барбекю','Коворкинг','Парк для животных','Фонтан','Детская зона','Прачечная'],
+    seaTier:null, // TODO Илья: впиши реальный уровень "До моря" (см. SEA_TIERS ниже)
     url:'project.html?id=VIK' },
   { id:'KAT', name:'KataBello', nameEn:'KataBello', developer:'Rhom Bho Property PLC', district:'Kata', amphoe:'Amphoe Mueang', districtRu:'Ката', color:'#7BAF6E', type:'condo', priceFrom:4600000, priceTo:21000000, completion:'Q2 2027', completionYear:2027, completionQ:2, status:'Under Construction', commission:10,
     unitTypes:[{name:'1 спальня',price:4600000},{name:'1 спальня+',price:8500000},{name:'Пентхаус',price:13400000}],
     photos:['1.avif','2.avif','3.avif','4.avif'],
+    floors:null, // TODO Илья: впиши реальную этажность дома
+    facilities:[], // TODO Илья: впиши реальный список инфраструктуры (как в projects/KAT.json)
+    seaTier:null, // TODO Илья: впиши реальный уровень "До моря"
     url:'project.html?id=KAT' },
   { id:'BAN', name:'Balcony Naiyang', nameEn:'Balcony Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#6B9BC2', type:'condo', priceFrom:5800000, priceTo:12000000, completion:'Q4 2026', completionYear:2026, completionQ:4, status:'Under Construction', commission:10,
     unitTypes:[{name:'1 спальня',price:5800000},{name:'1 спальня+',price:7400000},{name:'2 спальни',price:8400000}],
     photos:['1.avif','2.avif','3.avif','4.avif'],
+    floors:null, // TODO Илья: впиши реальную этажность дома
+    facilities:[], // TODO Илья: впиши реальный список инфраструктуры (как в projects/BAN.json)
+    seaTier:null, // TODO Илья: впиши реальный уровень "До моря"
     url:'project.html?id=BAN' },
   { id:'OLN', name:'The Olive Naiyang', nameEn:'The Olive Naiyang', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#8FAB5F', type:'condo', priceFrom:3900000, priceTo:9300000, completion:'Q2 2028', completionYear:2028, completionQ:2, status:'Under Construction', commission:10,
     unitTypes:[{name:'1 спальня',price:3900000},{name:'1 спальня+',price:5900000},{name:'2 спальни',price:7200000}],
     photos:['1.avif','2.avif','3.avif','4.avif'],
+    floors:null, // TODO Илья: впиши реальную этажность дома
+    facilities:[], // TODO Илья: впиши реальный список инфраструктуры (как в projects/OLN.json)
+    seaTier:null, // TODO Илья: впиши реальный уровень "До моря"
     url:'project.html?id=OLN' },
 ];
 
@@ -1974,6 +2148,56 @@ const COMPLETION_OPTIONS = [
   {label:'Q3 2028', year:2028, q:3},{label:'Q4 2028', year:2028, q:4},
 ];
 
+// 23.07.26, по просьбе Ильи: "До моря" в "Все фильтры" — 7 уровней, строго по
+// порядку (индекс = ранг). Выбор уровня N означает "подходят все уровни от 0
+// до N включительно" (см. seaTierMatches ниже) — например, если агент выбрал
+// "до 10 минут транспортом" (индекс 4), подходят проекты с seaTier
+// 0,1,2,3,4 (все уровни пешком + до 10 минут транспортом), но не 5/6.
+const SEA_TIERS = [
+  {id:'w5',  label:'До 5 минут пешком'},
+  {id:'w10', label:'До 10 минут пешком'},
+  {id:'w15', label:'До 15 минут пешком'},
+  {id:'w20', label:'До 20 минут пешком'},
+  {id:'t10', label:'До 10 минут транспортом'},
+  {id:'t20', label:'До 20 минут транспортом'},
+  {id:'t30', label:'До 30 минут транспортом'},
+];
+// p.seaTier может быть числом (индекс в SEA_TIERS) или строкой-id ('w5' и т.п.)
+// — принимаем оба варианта, чтобы разметка руками (в PROJECTS) была удобной.
+function seaTierIndex(v){
+  if (v == null) return null;
+  if (typeof v === 'number') return v;
+  const i = SEA_TIERS.findIndex(t => t.id === v);
+  return i >= 0 ? i : null;
+}
+function seaTierMatches(projectTier, selectedTierIndex){
+  const pIdx = seaTierIndex(projectTier);
+  if (pIdx == null) return false; // у проекта не размечено — не можем подтвердить, что подходит
+  return pIdx <= selectedTierIndex;
+}
+
+// 23.07.26, по просьбе Ильи: "Инфраструктура" в "Все фильтры" — эталонный
+// список названий и эмодзи 1:1 из project.html (FACILITIES_ICONS там же,
+// отмечен как ЭТАЛОН) — так что галочки в поиске и блок "Инфраструктура" на
+// самой странице проекта всегда говорят на одном языке.
+const FACILITIES_ICONS = {
+  'Бассейн': '🏊',
+  'Детский бассейн': '🐬',
+  'Джакузи': '♨️',
+  'Фитнес-центр': '💪',
+  'Лобби с консьерж-сервисом': '🏨',
+  'Лаундж': '🛋️',
+  'Парковка': '🅿️',
+  'Зоны отдыха у воды': '🌅',
+  'Сад': '🌿',
+  'Зона барбекю': '🔥',
+  'Коворкинг': '💻',
+  'Парк для животных': '🐾',
+  'Фонтан': '⛲',
+  'Детская зона': '👶',
+  'Прачечная': '🧺',
+};
+
 // ── STATE ─────────────────────────────────
 let AGENT = null;
 // 21.07.26: статус экрана входа, когда AGENT===null не просто потому что
@@ -1986,7 +2210,13 @@ let AGENT_AUTH_STATE = null;
 // районах (см. filterByDistrict/filterByAmphoe/applyFilters ниже). Каждый
 // элемент — {type:'district'|'amphoe', value}, своя плашка-чип со своим
 // крестиком (см. updateChips).
-let filters = { propType: 'condo', unitTypes: null, price: null, completion: null, locations: [], developer: null };
+// 23.07.26, по просьбе Ильи: добавили "Все фильтры" — floors (этажность
+// дома, {from,to}), seaTier (индекс выбранного уровня "До моря" в
+// SEA_TIERS, см. ниже — null значит фильтр не выбран), facilities
+// ({selected:[], mode:'AND'|'OR'} — выбранная инфраструктура и режим
+// совпадения). Все три — фильтры уровня ПРОЕКТА (как locations/developer),
+// не юнита — учитываются в applyFilters(), не в matchingUnitEntries().
+let filters = { propType: 'condo', unitTypes: null, price: null, completion: null, locations: [], developer: null, floors: null, seaTier: null, facilities: null, unitFloor: null };
 let tmpType = 'all';
 let tmpCompletion = null;
 
@@ -2098,8 +2328,9 @@ function resetSearchPageToClean() {
   syncAccentPill(true); // 16.07.26: без этого фиолетовая плашка оставалась над "На карте" — см. коммент выше
   document.getElementById('searchResults').style.display = '';
   // 17.07.26: полный сброс к дефолту — фильтры, тип, текст поиска, результаты.
-  filters = { propType: 'condo', unitTypes: null, price: null, completion: null, locations: [], developer: null };
+  filters = { propType: 'condo', unitTypes: null, price: null, completion: null, locations: [], developer: null, floors: null, seaTier: null, facilities: null, unitFloor: null };
   tmpUnitTypes = [];
+  resetAllFiltersDDState(); // 23.07.26: сбрасывает До моря/Этажей в доме/Инфраструктура и их поля/подсказки — см. функцию ниже
   resetPriceState(); // 17.07.26: заякоренные дропдауны цены — сбрасываем committed/pending обеих вкладок и поля ввода
   closeAllFilterDropdowns();
   document.querySelectorAll('.type-btn').forEach((b, i) => b.classList.toggle('act', i === 0));
@@ -2496,6 +2727,29 @@ function applyFilters(list) {
       if (!matchesLocation) return false;
     }
     if (filters.developer && p.developer !== filters.developer) return false;
+    // 23.07.26, по просьбе Ильи: "Этажей в доме"/"До моря"/"Инфраструктура" —
+    // тоже фильтры уровня ПРОЕКТА (не юнита), решают, показывается ли проект
+    // вообще, точно как локация/застройщик выше. Если у проекта нет данных
+    // (floors/seaTier/facilities не размечены — см. TODO у PROJECTS), при
+    // активном фильтре проект считается НЕ подходящим, а не наоборот — иначе
+    // непроверенные проекты молча просачивались бы во все выдачи.
+    if (filters.floors) {
+      const { from, to } = filters.floors;
+      if (p.floors == null) return false;
+      if (from != null && p.floors < from) return false;
+      if (to != null && p.floors > to) return false;
+    }
+    if (filters.seaTier != null) {
+      if (!seaTierMatches(p.seaTier, filters.seaTier)) return false;
+    }
+    if (filters.facilities && filters.facilities.selected && filters.facilities.selected.length) {
+      const have = new Set((p.facilities || []).map(f => f.toLowerCase()));
+      const sel = filters.facilities.selected;
+      const ok = filters.facilities.mode === 'OR'
+        ? sel.some(f => have.has(f.toLowerCase()))
+        : sel.every(f => have.has(f.toLowerCase()));
+      if (!ok) return false;
+    }
     return matchingUnitEntries(p).length > 0;
   });
 }
@@ -2729,6 +2983,15 @@ function projectUrlWithFilters(p) {
     }
   }
   if (filters.completion) params.set('completion', `${filters.completion.year}Q${filters.completion.q}`);
+  // 23.07.26, по просьбе Ильи: "Этаж" в "Все фильтры" — фильтр уровня ЮНИТА
+  // (не решает, показывается ли сам проект), поэтому в applyFilters() его
+  // нет — но раз агент уже указал этаж юнита в поиске, при переходе в
+  // проект та же этажность должна быть уже применена там (project.html
+  // читает floorFrom/floorTo в applyURLFilters(), см. правку в project.html).
+  if (filters.unitFloor) {
+    if (filters.unitFloor.from != null) params.set('floorFrom', filters.unitFloor.from);
+    if (filters.unitFloor.to != null) params.set('floorTo', filters.unitFloor.to);
+  }
   const query = params.toString();
   return query ? `${p.url}&${query}` : p.url;
 }
@@ -4052,6 +4315,17 @@ function updateChips() {
     document.getElementById('filterCompBtn').classList.remove('act');
   }
 
+  // 23.07.26, по просьбе Ильи: "Все фильтры" объединяет 4 разных фильтра —
+  // подписи на самой кнопке не меняем ("Все фильтры" — не единичное
+  // значение, как у остальных), просто подсвечиваем кнопку, если активен
+  // хоть один из них (как и .act у остальных фильтров-кнопок).
+  if (filters.floors || filters.seaTier != null || filters.facilities || filters.unitFloor) {
+    hasActive = true;
+    document.getElementById('filterAllBtn')?.classList.add('act');
+  } else {
+    document.getElementById('filterAllBtn')?.classList.remove('act');
+  }
+
   // Раньше здесь ещё рисовался ряд отдельных плашек-фильтров с крестиками —
   // убрали (см. комментарий у .active-filters в CSS), оставили только кнопку
   // сброса, и только когда реально есть что сбрасывать.
@@ -4125,8 +4399,9 @@ function resetPriceState(){
 }
 
 function resetAll() {
-  filters = {propType:'condo', unitTypes:null, price:null, completion:null, locations:[], developer:null};
+  filters = {propType:'condo', unitTypes:null, price:null, completion:null, locations:[], developer:null, floors:null, seaTier:null, facilities:null, unitFloor:null};
   tmpUnitTypes = [];
+  resetAllFiltersDDState(); // 23.07.26: сбрасывает До моря/Этажей в доме/Инфраструктура и их поля/подсказки
   resetPriceState();
   document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('act',i===0));
   updateChips();
@@ -4181,19 +4456,42 @@ function closeAllFilterDropdowns(){
     autoSearch();
     syncMapWithFilters();
   }
+  // 23.07.26, по просьбе Ильи: "Все фильтры" — то же самое правило, что и у
+  // "Тип" выше: закрытие ЛЮБЫМ способом (клик мимо, открытие другого
+  // фильтра, "Свернуть"/"Найти" — обе эти кнопки просто зовут
+  // closeAllFilterDropdowns()) коммитит то, что уже выбрано в попапе.
+  const allDD = document.getElementById('ddAllFilters');
+  if (allDD && allDD.classList.contains('vis')) {
+    applyAllFiltersDD();
+    updateChips();
+    autoSearch();
+    syncMapWithFilters();
+  }
   document.querySelectorAll('.filter-dropdown').forEach(d => d.classList.remove('vis'));
+  closeAllCollapsibles(null); // закрыть внутренние До моря/Этажей в доме/Этаж вместе с общим попапом
 }
 function toggleDropdown(name, btn){
-  const map = { type:'ddType', price:'ddPrice', comp:'ddComp' };
+  const map = { type:'ddType', price:'ddPrice', comp:'ddComp', all:'ddAllFilters' };
   const el = document.getElementById(map[name]);
   const wasOpen = el.classList.contains('vis');
   closeAllFilterDropdowns();
   if (!wasOpen){
-    el.style.left = btn.offsetLeft + 'px';
+    // 23.07.26: "Все фильтры" — попап шире (680px) остальных и стоит почти
+    // крайним справа в ленте — если ставить left:btn.offsetLeft, как у
+    // остальных трёх, он бы упирался в правый край строки поиска (max-width
+    // 900px) или вовсе вылезал за него. Якорим его к ПРАВОМУ краю строки
+    // поиска вместо левого края кнопки.
+    if (name === 'all') {
+      el.style.left = 'auto';
+      el.style.right = '0px';
+    } else {
+      el.style.left = btn.offsetLeft + 'px';
+    }
     el.classList.add('vis');
     if (name === 'price') openPriceDropdown();
     if (name === 'type') openTypeDropdown();
     if (name === 'comp') renderCompList();
+    if (name === 'all') openAllFiltersDropdown();
   }
 }
 document.addEventListener('click', e => {
@@ -4202,6 +4500,177 @@ document.addEventListener('click', e => {
   const insideDropdown = path.some(el => el.classList && el.classList.contains('filter-dropdown'));
   if (!insideBtn && !insideDropdown) closeAllFilterDropdowns();
 });
+
+// ── ВСЕ ФИЛЬТРЫ (До моря / Этажей в доме / Этаж / Инфраструктура) ─────────
+// 23.07.26, по просьбе Ильи: черновой (не закоммиченный в `filters`) выбор —
+// как tmpUnitTypes у "Тип" выше. Коммитится в filters.* функцией
+// applyAllFiltersDD(), которую зовёт closeAllFilterDropdowns() при закрытии
+// попапа ЛЮБЫМ способом (клик мимо/другой фильтр/"Свернуть"/"Найти" — та же
+// логика, что и у "Тип"), а не отдельной обязательной кнопкой подтверждения.
+let seaSelected = null;
+let range = { floors:{from:'',to:''}, unit:{from:'',to:''} };
+let infraSelected = new Set();
+let infraMode = 'AND';
+
+function renderSeaList(){
+  document.getElementById('seaList').innerHTML = SEA_TIERS.map((t,i) =>
+    `<div class="fd-list-item ${seaSelected===i?'act':''}" onclick="selectSeaTier(${i})">${t.label}</div>`).join('');
+}
+function selectSeaTier(i){ seaSelected = (seaSelected===i) ? null : i; renderSeaList(); updateSelectionMarks(); }
+
+function getNumAF(v){ return (v !== '' && v != null) ? Number(v) : null; }
+
+// Тускнение невалидных вариантов (от>до) — 1:1 как в fd-price-opt (см.
+// renderPriceCols выше) + корреляция МЕЖДУ "Этажей в доме" и "Этаж": юнит не
+// может быть выше максимально допустимой этажности дома, и наоборот —
+// верхняя граница этажности дома не может быть ниже уже выбранного этажа
+// юнита. Работает в обе стороны независимо от порядка выбора.
+function renderRangeCols(key){
+  const opts = Array.from({length:10}, (_,i)=>i+1);
+  const curFrom = getNumAF(range[key].from);
+  const curTo   = getNumAF(range[key].to);
+
+  document.getElementById(key+'ColFrom').innerHTML = opts.map(n => {
+    let disabled = curTo != null && n > curTo;
+    if(key === 'unit'){
+      const floorsTo = getNumAF(range.floors.to);
+      if(floorsTo != null && n > floorsTo) disabled = true;
+    }
+    return `<button class="fd-price-opt ${String(range[key].from)===String(n)?'act':''}" ${disabled?'disabled':''} onclick="setRangeVal('${key}','from',${n})" type="button">${n}</button>`;
+  }).join('');
+
+  document.getElementById(key+'ColTo').innerHTML = opts.map(n => {
+    let disabled = curFrom != null && n < curFrom;
+    if(key === 'unit'){
+      const floorsTo = getNumAF(range.floors.to);
+      if(floorsTo != null && n > floorsTo) disabled = true;
+    }
+    if(key === 'floors'){
+      const unitVals = [getNumAF(range.unit.from), getNumAF(range.unit.to)].filter(v => v != null);
+      if(unitVals.length){
+        const unitMax = Math.max(...unitVals);
+        if(n < unitMax) disabled = true;
+      }
+    }
+    return `<button class="fd-price-opt ${String(range[key].to)===String(n)?'act':''}" ${disabled?'disabled':''} onclick="setRangeVal('${key}','to',${n})" type="button">${n}</button>`;
+  }).join('');
+}
+function renderCorrelatedRangeCols(){
+  renderRangeCols('floors');
+  renderRangeCols('unit');
+}
+function setRangeVal(key, side, val){
+  // повторный клик по уже выбранной подсказке снимает выбор
+  const isSame = String(range[key][side]) === String(val);
+  const next = isSame ? '' : val;
+  range[key][side] = next;
+  document.getElementById(key + (side==='from'?'FromInput':'ToInput')).value = next;
+  renderCorrelatedRangeCols();
+  updateSelectionMarks();
+}
+function onRangeInput(key, side, val){
+  // ручной ввод — только целое число, максимум 30
+  let n = val.replace(/[^\d]/g,'');
+  if(n !== ''){ n = String(Math.min(parseInt(n,10), 30)); }
+  range[key][side] = n;
+  document.getElementById(key + (side==='from'?'FromInput':'ToInput')).value = n;
+  renderCorrelatedRangeCols();
+  updateSelectionMarks();
+}
+
+function renderInfraGrid(){
+  document.getElementById('infraGrid').innerHTML = Object.entries(FACILITIES_ICONS).map(([label,emoji]) =>
+    `<div class="fd-infra-card ${infraSelected.has(label)?'act':''}" onclick="toggleInfra('${label}')">
+       <span class="fac-icon">${emoji}</span><span>${label}</span>
+     </div>`).join('');
+}
+function toggleInfra(label){
+  if(infraSelected.has(label)) infraSelected.delete(label); else infraSelected.add(label);
+  renderInfraGrid();
+  updateSelectionMarks();
+}
+function setInfraMode(mode){
+  infraMode = mode;
+  document.querySelectorAll('#infraModeToggle .fd-price-tab').forEach(b=>b.classList.toggle('act', b.dataset.mode===mode));
+  document.getElementById('infraCaption').textContent = mode === 'AND'
+    ? 'В проекте должны присутствовать вся выбранная инфраструктура.'
+    : 'В проекте должны присутствовать хотя бы одна из выбранных инфраструктур.';
+}
+
+function updateSelectionMarks(){
+  document.getElementById('colSea')?.classList.toggle('selected', seaSelected !== null);
+  document.getElementById('colFloors')?.classList.toggle('selected', !!(range.floors.from || range.floors.to));
+  document.getElementById('colUnitFloor')?.classList.toggle('selected', !!(range.unit.from || range.unit.to));
+}
+
+const ALLFILTERS_COLLAPSIBLE_IDS = ['colSea','colFloors','colUnitFloor'];
+function closeAllCollapsibles(exceptId){
+  ALLFILTERS_COLLAPSIBLE_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && id !== exceptId) el.classList.remove('open');
+  });
+}
+function toggleCollapsible(id){
+  const el = document.getElementById(id);
+  const wasOpen = el.classList.contains('open');
+  closeAllCollapsibles(id);
+  el.classList.toggle('open', !wasOpen);
+}
+document.addEventListener('click', e => {
+  const path = e.composedPath();
+  const insideCollapsible = path.some(el => el.classList && el.classList.contains('fd-collapsible'));
+  if(!insideCollapsible) closeAllCollapsibles(null);
+});
+
+// Открытие попапа — подхватываем то, что уже реально применено в filters
+// (например, если агент открыл "Все фильтры" повторно после "Найти").
+function openAllFiltersDropdown(){
+  seaSelected = seaTierIndex(filters.seaTier);
+  range.floors = { from: filters.floors?.from ?? '', to: filters.floors?.to ?? '' };
+  range.unit = { from: filters.unitFloor?.from ?? '', to: filters.unitFloor?.to ?? '' };
+  infraSelected = new Set(filters.facilities?.selected || []);
+  infraMode = filters.facilities?.mode || 'AND';
+  document.getElementById('floorsFromInput').value = range.floors.from || '';
+  document.getElementById('floorsToInput').value = range.floors.to || '';
+  document.getElementById('unitFromInput').value = range.unit.from || '';
+  document.getElementById('unitToInput').value = range.unit.to || '';
+  renderSeaList(); renderCorrelatedRangeCols(); renderInfraGrid(); setInfraMode(infraMode);
+  closeAllCollapsibles(null);
+  updateSelectionMarks();
+}
+// Коммит черновых значений в реальные filters.* — зовётся из
+// closeAllFilterDropdowns() при закрытии попапа любым способом.
+function applyAllFiltersDD(){
+  filters.seaTier = seaSelected;
+  filters.floors = (range.floors.from || range.floors.to) ? { from: range.floors.from || null, to: range.floors.to || null } : null;
+  filters.unitFloor = (range.unit.from || range.unit.to) ? { from: range.unit.from || null, to: range.unit.to || null } : null;
+  filters.facilities = infraSelected.size ? { selected: [...infraSelected], mode: infraMode } : null;
+}
+// Полный сброс чернового состояния попапа (вызывается и из "Сбросить всё"
+// внутри попапа, и из общего resetAll()/resetSearchPageToClean()).
+function resetAllFiltersDDState(){
+  seaSelected = null;
+  range = { floors:{from:'',to:''}, unit:{from:'',to:''} };
+  infraSelected = new Set();
+  infraMode = 'AND';
+  const ff = document.getElementById('floorsFromInput'); if (ff) ff.value = '';
+  const ft = document.getElementById('floorsToInput'); if (ft) ft.value = '';
+  const uf = document.getElementById('unitFromInput'); if (uf) uf.value = '';
+  const ut = document.getElementById('unitToInput'); if (ut) ut.value = '';
+  renderSeaList(); renderCorrelatedRangeCols(); renderInfraGrid(); setInfraMode('AND');
+  closeAllCollapsibles(null);
+  updateSelectionMarks();
+}
+// Крестик/«Сбросить всё» внутри попапа — сбрасывает и черновик, и то, что уже
+// реально применено (как clearTypeFilter/clearPriceFilter/clearCompFilter).
+function clearAllFiltersDD(e){
+  e?.stopPropagation();
+  filters.floors = null; filters.seaTier = null; filters.facilities = null; filters.unitFloor = null;
+  resetAllFiltersDDState();
+  updateChips();
+  autoSearch();
+  syncMapWithFilters();
+}
 
 // ── ТИП ────────────────────────────────────
 // 17.07.26, по просьбе Ильи: кнопка "Применить" внизу — можно отметить

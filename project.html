@@ -907,6 +907,34 @@ a { color: inherit; text-decoration: none; }
 /* Гасим пресеты, которые дали бы невозможный диапазон (от 4, до 3) */
 .uf-price-opt:disabled{opacity:.3;cursor:default;pointer-events:none;}
 
+/* 23.07.26, по просьбе Ильи: "Все фильтры" → "Этаж" — та же плавающая
+   плашка-триггер с обводкой, что согласована в flox-web.html
+   (allfilters_mockup.html), акцент — var(--project-color) вместо
+   var(--accent), т.к. на странице проекта акцент = цвет проекта. */
+.uf-allfilters-dd{width:280px;}
+.fd-collapsible{position:relative;}
+.fd-collapsible-trigger{
+  display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;
+  background:var(--surface);border:1px solid transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);
+  transition:border-color .2s,box-shadow .2s;
+}
+.fd-collapsible-trigger:hover{border-color:var(--project-color);box-shadow:0 4px 16px rgba(94,23,235,.12);}
+.fd-collapsible.open .fd-collapsible-trigger,
+.fd-collapsible.selected .fd-collapsible-trigger{
+  border-color:var(--project-color);box-shadow:0 4px 16px rgba(94,23,235,.12);
+}
+.fd-emoji{font-size:15px;flex-shrink:0;}
+.fd-clabel{flex:1;}
+.fd-collapsible-body{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;
+  background:var(--surface);border-radius:12px;
+  box-shadow:0 10px 28px rgba(0,0,0,.16);
+  max-height:0;overflow:hidden;opacity:0;pointer-events:none;
+  transition:max-height .22s ease,opacity .15s ease;z-index:30;
+}
+.fd-collapsible.open .fd-collapsible-body{max-height:260px;opacity:1;pointer-events:auto;overflow:hidden;}
+.fd-collapsible-body-inner{padding:10px 10px 10px;}
+
 .units-count { font-size: 12px; color: var(--muted); background: var(--surface); padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
 
 .uf-overlay { display: none; position: fixed; inset: 0; z-index: 199; }
@@ -2106,6 +2134,36 @@ function renderUnits(d) {
           </div>
         </div>
 
+        <!-- 23.07.26, по просьбе Ильи: "Все фильтры" — правее "Статус". Пока
+             только "Этаж" (единственный фильтр уровня юнита из "Все
+             фильтры" в flox-web.html, который имеет смысл здесь — этажность
+             дома/До моря/Инфраструктура уже решили, показывать ли сам этот
+             проект, ещё до перехода сюда). Потолок подсказок/ручного ввода —
+             реальная этажность ИМЕННО этого проекта, см. buildFloorHints. -->
+        <div onmouseenter="openUfDropdown('uf-allfilters-dd','uf-allfilters-btn')" onmouseleave="scheduleUfClose('uf-allfilters-dd','uf-allfilters-btn')" style="position:relative">
+          <button class="usf-btn" id="uf-allfilters-btn">
+            <span>Все фильтры</span>
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          <div class="uf-dropdown uf-allfilters-dd" id="uf-allfilters-dd" onmouseenter="cancelUfClose('uf-allfilters-dd')" onmouseleave="scheduleUfClose('uf-allfilters-dd','uf-allfilters-btn')">
+            <div class="fd-collapsible" id="uf-floor-collapsible">
+              <div class="fd-collapsible-trigger" onclick="toggleFloorCollapsible()">
+                <span class="fd-emoji">🛗</span><span class="fd-clabel">Этаж</span>
+              </div>
+              <div class="fd-collapsible-body">
+                <div class="fd-collapsible-body-inner">
+                  <div class="uf-price-inputs">
+                    <div class="uf-price-input-wrap"><input type="text" id="uf-floor-from" placeholder="от" oninput="onFloorInput()"></div>
+                    <span class="uf-price-dash">—</span>
+                    <div class="uf-price-input-wrap"><input type="text" id="uf-floor-to" placeholder="до" oninput="onFloorInput()"></div>
+                  </div>
+                  <div class="uf-price-cols" id="uf-floor-hints"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="usf-sep"></div>
 
         <!-- Группировка -->
@@ -2149,6 +2207,7 @@ async function loadUnits(d) {
 
     document.getElementById('units-filters-wrap').style.display = 'block';
     buildPriceHints(_allUnits);
+    buildFloorHints(); // 23.07.26: подсказки "Этаж" уже ограничены реальной этажностью d.floors
     renderUnitsTree(d, _allUnits);
 
     // Читаем фильтры из URL (переданные из поисковика)
@@ -2368,6 +2427,11 @@ function openUfDropdown(ddId, btnId) {
       d.classList.add('no-anim');
       d.classList.remove('open');
       requestAnimationFrame(() => requestAnimationFrame(() => d.classList.remove('no-anim')));
+      // 23.07.26, по просьбе Ильи: если закрывается именно "Все фильтры"
+      // (в т.ч. переключением на другой фильтр наведением), внутренний
+      // раскрытый блок "Этаж" тоже должен схлопнуться — иначе при
+      // следующем открытии попап снова показывался бы уже раскрытым.
+      if (d.id === 'uf-allfilters-dd') document.getElementById('uf-floor-collapsible')?.classList.remove('open');
     }
   });
   document.querySelectorAll('.usf-btn.open').forEach(b => {
@@ -2389,6 +2453,8 @@ function scheduleUfClose(ddId, btnId) {
     const btn = document.getElementById(btnId);
     if (dd) dd.classList.remove('open');
     if (btn) btn.classList.remove('open');
+    // см. комментарий выше — то же самое для закрытия просто уводом мыши
+    if (ddId === 'uf-allfilters-dd') document.getElementById('uf-floor-collapsible')?.classList.remove('open');
   }, 200);
 }
 function cancelUfClose(ddId) { clearTimeout(_ufTimers[ddId]); }
@@ -2409,6 +2475,17 @@ let _filterStatus = 'available';
 // первого клика по любой строке этого фильтра (см. selectStatus ниже) —
 // после сброса/перезагрузки страницы гасим этот флаг обратно.
 let _statusTouched = false;
+
+// 23.07.26, по просьбе Ильи: "Все фильтры" на странице проекта — пока
+// только "Этаж" (в отличие от flox-web.html, где "Все фильтры" решает,
+// показывается ли ПРОЕКТ вообще, здесь это фильтр уровня ЮНИТА — какие
+// юниты показать внутри уже открытого проекта). Диапазон ограничен реальной
+// этажностью ЭТОГО проекта (см. buildFloorHints ниже) — то есть если у дома
+// 8 этажей, выбрать 9 нельзя. Значение может прийти уже готовым из поиска
+// (см. applyURLFilters — floorFrom/floorTo, переданные из "Все фильтры" в
+// flox-web.html).
+let _filterFloorFrom = 0;
+let _filterFloorTo = Infinity;
 
 // ── Дропдауны ─────────────────────────────────────────────────────────────
 function toggleDropdown(id) {
@@ -2613,6 +2690,88 @@ function buildPriceHints(units) {
   container.innerHTML = `<div class="uf-price-col">${fromCol}</div><div class="uf-price-col">${toCol}</div>`;
 }
 
+// 23.07.26, по просьбе Ильи: "Этаж" — потолок подсказок и ручного ввода это
+// РЕАЛЬНАЯ этажность ИМЕННО этого проекта (window._currentProjectData.floors,
+// то же поле, что и в "Детали проекта"/"Этажей" на этой же странице), а не
+// фиксированное число — нельзя выбрать этаж выше, чем есть в доме. Если
+// вдруг у проекта не размечено floors (старые данные) — подстраховка:
+// берём максимальный этаж среди реально загруженных юнитов, а если и этого
+// нет — 10, как было раньше по умолчанию.
+function getMaxProjectFloor() {
+  const d = window._currentProjectData;
+  if (d && d.floors) return d.floors;
+  const unitFloors = (_allUnits || []).map(u => u.floor).filter(f => f != null && isFinite(f));
+  if (unitFloors.length) return Math.max(...unitFloors);
+  return 10;
+}
+function buildFloorHints() {
+  const container = document.getElementById('uf-floor-hints');
+  if (!container) return;
+  const maxFloor = getMaxProjectFloor();
+  const curFrom = _filterFloorFrom || null;
+  const curTo = _filterFloorTo !== Infinity ? _filterFloorTo : null;
+  const opts = Array.from({ length: maxFloor }, (_, i) => i + 1);
+  const fromCol = opts.map(n => {
+    const disabled = curTo != null && n > curTo;
+    return `<button class="uf-price-opt ${curFrom===n?'act':''}" ${disabled?'disabled':''} onclick="pickFloorHint('from',${n})" type="button">${n}</button>`;
+  }).join('');
+  const toCol = opts.map(n => {
+    const disabled = curFrom != null && n < curFrom;
+    return `<button class="uf-price-opt ${curTo===n?'act':''}" ${disabled?'disabled':''} onclick="pickFloorHint('to',${n})" type="button">${n}</button>`;
+  }).join('');
+  container.innerHTML = `<div class="uf-price-col">${fromCol}</div><div class="uf-price-col">${toCol}</div>`;
+}
+// Повторный клик по уже выбранной подсказке снимает фильтр по этой стороне —
+// 1:1 с pickPriceHint выше.
+function pickFloorHint(type, val) {
+  const curFrom = _filterFloorFrom || null;
+  const curTo = _filterFloorTo !== Infinity ? _filterFloorTo : null;
+  const curVal = type === 'from' ? curFrom : curTo;
+  if (curVal === val) {
+    if (type === 'from') _filterFloorFrom = 0; else _filterFloorTo = Infinity;
+  } else {
+    if (type === 'from') _filterFloorFrom = val; else _filterFloorTo = val;
+  }
+  const fromEl = document.getElementById('uf-floor-from'), toEl = document.getElementById('uf-floor-to');
+  if (fromEl) fromEl.value = _filterFloorFrom || '';
+  if (toEl) toEl.value = _filterFloorTo !== Infinity ? _filterFloorTo : '';
+  buildFloorHints();
+  updateFloorLabel();
+  applyUnitFilters();
+}
+// Ручной ввод — только целое число, максимум = реальная этажность проекта
+// (не фиксированные 30, как в мокапе флокс веба — там это была не
+// привязанная к конкретному проекту заглушка).
+function onFloorInput() {
+  const maxFloor = getMaxProjectFloor();
+  const parse = raw => {
+    const digits = String(raw ?? '').replace(/[^\d]/g, '');
+    if (!digits) return null;
+    return Math.min(parseInt(digits, 10), maxFloor);
+  };
+  const fromEl = document.getElementById('uf-floor-from'), toEl = document.getElementById('uf-floor-to');
+  const fromVal = parse(fromEl?.value);
+  const toVal = parse(toEl?.value);
+  _filterFloorFrom = fromVal || 0;
+  _filterFloorTo = toVal || Infinity;
+  if (fromEl && fromVal != null) fromEl.value = fromVal;
+  if (toEl && toVal != null) toEl.value = toVal;
+  buildFloorHints();
+  updateFloorLabel();
+  applyUnitFilters();
+}
+function updateFloorLabel() {
+  const btn = document.getElementById('uf-allfilters-btn');
+  const hasValue = !!(_filterFloorFrom || _filterFloorTo !== Infinity);
+  btn?.classList.toggle('has-value', hasValue);
+  // обводка триггера "Этаж" остаётся и после закрытия, если значение реально выбрано
+  document.getElementById('uf-floor-collapsible')?.classList.toggle('selected', hasValue);
+  updateResetVisibility();
+}
+function toggleFloorCollapsible() {
+  document.getElementById('uf-floor-collapsible')?.classList.toggle('open');
+}
+
 // "Сбросить все" — видна только когда реально есть что сбрасывать (как
 // reset-all в flox-web.html); "Доступные" по умолчанию в это не считается,
 // пока статус не тронут (см. _statusTouched в selectStatus).
@@ -2622,7 +2781,8 @@ function updateResetVisibility() {
   const hasPrice = document.getElementById('uf-price-btn')?.classList.contains('has-value');
   const hasStatus = document.getElementById('uf-status-btn')?.classList.contains('has-value');
   const hasGroup = document.getElementById('uf-group-btn')?.classList.contains('has-value');
-  const hasAny = hasSearch || hasType || hasPrice || hasStatus || hasGroup;
+  const hasFloor = document.getElementById('uf-allfilters-btn')?.classList.contains('has-value');
+  const hasAny = hasSearch || hasType || hasPrice || hasStatus || hasGroup || hasFloor;
   document.getElementById('uf-active-filters')?.classList.toggle('vis', !!hasAny);
 }
 
@@ -2645,6 +2805,13 @@ function applyUnitFilters() {
       if (_filterPriceTo !== Infinity && u.selling_price > _filterPriceTo) return false;
     }
     if (_filterStatus && u.status !== _filterStatus) return false;
+    // 23.07.26, по просьбе Ильи: "Этаж" — фильтр по конкретному этажу юнита
+    // (u.floor, уже приходит из Supabase — см. select в loadUnits ниже).
+    if (_filterFloorFrom || _filterFloorTo !== Infinity) {
+      if (u.floor == null) return false; // нет данных об этаже — не можем подтвердить, что подходит
+      if (_filterFloorFrom && u.floor < _filterFloorFrom) return false;
+      if (_filterFloorTo !== Infinity && u.floor > _filterFloorTo) return false;
+    }
     return true;
   });
 
@@ -2681,6 +2848,15 @@ function resetUnitFilters() {
   document.querySelectorAll('#uf-status-dd .fd-list-item').forEach(o => o.classList.remove('act'));
   document.querySelector('#uf-status-dd .fd-list-item[data-val="available"]')?.classList.add('act');
   if (_groupByBuilding === false) { setGrouping(true); }
+  // 23.07.26, по просьбе Ильи: сброс "Этаж"
+  _filterFloorFrom = 0; _filterFloorTo = Infinity;
+  const floorFromEl = document.getElementById('uf-floor-from');
+  const floorToEl = document.getElementById('uf-floor-to');
+  if (floorFromEl) floorFromEl.value = '';
+  if (floorToEl) floorToEl.value = '';
+  document.getElementById('uf-allfilters-btn')?.classList.remove('has-value');
+  document.getElementById('uf-floor-collapsible')?.classList.remove('open');
+  buildFloorHints();
   buildPriceHints(_allUnits);
   updateResetVisibility();
   applyUnitFilters();
@@ -3685,6 +3861,25 @@ function applyURLFilters() {
   }
 
   if (priceFrom || priceTo || priceFromM2 || priceToM2) { buildPriceHints(_allUnits); updatePriceLabel(); }
+
+  // 23.07.26, по просьбе Ильи: "Этаж", переданный из "Все фильтры" в
+  // flox-web.html (см. projectUrlWithFilters/filters.unitFloor там) — та же
+  // этажность юнита, что агент уже указал в поиске, должна быть здесь уже
+  // применена, без повторного ввода.
+  const floorFrom = params.get('floorFrom');
+  const floorTo = params.get('floorTo');
+  if (floorFrom) {
+    _filterFloorFrom = parseInt(floorFrom);
+    const el = document.getElementById('uf-floor-from');
+    if (el) el.value = _filterFloorFrom;
+  }
+  if (floorTo) {
+    _filterFloorTo = parseInt(floorTo);
+    const el = document.getElementById('uf-floor-to');
+    if (el) el.value = _filterFloorTo;
+  }
+  if (floorFrom || floorTo) { buildFloorHints(); updateFloorLabel(); }
+
   updateResetVisibility();
 }
 
