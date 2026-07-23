@@ -2690,7 +2690,7 @@ function autoSearch() {
 
 // ── RENDER ────────────────────────────────
 const STATUS_LABELS = {'Under Construction':'Строится','Ready to Move':'Сдан','Completed':'Сдан','Pre-Launch':'Предпродажа'};
-const BASE_IMG = 'https://nottodayman26.github.io/phuket-catalog/img/';
+const BASE_IMG = 'https://flox.website/img/';
 
 // 16.07.26, по просьбе Ильи: переход в проект должен сохранять выбранные
 // фильтры (тип юнита/цена/срок сдачи) — раньше это умела только карточка в
@@ -4447,7 +4447,7 @@ async function loadOffers() {
 
   if (Array.isArray(offers)) offers.forEach(o => {
     const units = (o.unit_ids||[]).length;
-    const url = `https://nottodayman26.github.io/phuket-catalog/offer.html?slug=${o.slug}`;
+    const url = `https://flox.website/offer.html?slug=${o.slug}`;
     items.push({ ts: o.created_at, html: `<div class="offer-card">
         <div class="offer-card-top">
           <div class="offer-client">${o.client_name||'Клиент'}</div>
