@@ -199,6 +199,24 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-lightbox.vis{display:flex;}
 .fc-lightbox img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
 
+/* 24.07.26: своё окно подтверждения удаления вместо стандартного браузерного
+   confirm(). */
+.fc-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2147483300;display:none;align-items:center;justify-content:center;}
+.fc-confirm-overlay.vis{display:flex;}
+.fc-confirm-box{background:var(--surface);border-radius:16px;padding:22px;width:280px;max-width:calc(100vw - 40px);box-shadow:0 10px 40px rgba(0,0,0,.3);}
+.fc-confirm-text{font-size:14px;color:var(--text);margin-bottom:18px;line-height:1.4;}
+.fc-confirm-actions{display:flex;gap:10px;justify-content:flex-end;}
+.fc-confirm-actions button{border:none;border-radius:9px;padding:8px 16px;font-size:13px;font-family:inherit;cursor:pointer;}
+.fc-confirm-cancel{background:var(--surface-2);color:var(--text);}
+.fc-confirm-cancel:hover{background:var(--surface-3);}
+.fc-confirm-ok{background:#FF6B6B;color:#fff;font-weight:600;}
+.fc-confirm-ok:hover{opacity:.9;}
+
+/* 24.07.26: кнопка саппорта не нужна поверх собственного лайтбокса
+   страницы (просмотр "Рендеры и фото"/"Поэтажный план" в project.html и
+   unit.html) — прячем её на время просмотра, см. синхронизацию в _buildDOM. */
+.fc-fab.fc-hidden-by-page{display:none !important;}
+
 /* Подсветка зоны переписки при перетаскивании файла */
 .fc-chat-col.fc-dragover::after{
   content:'Отпустите, чтобы отправить файл'; position:absolute; inset:8px; border:2px dashed var(--accent);
@@ -593,6 +611,45 @@ window.floxSupportChat = {
     lightbox.onclick = () => lightbox.classList.remove('vis');
     document.body.appendChild(lightbox);
 
+    // 24.07.26: своё окно подтверждения удаления вместо window.confirm()
+    const confirmOverlay = document.createElement('div');
+    confirmOverlay.className = 'fc-confirm-overlay'; confirmOverlay.id = 'fcConfirmOverlay';
+    confirmOverlay.innerHTML = `
+      <div class="fc-confirm-box">
+        <div class="fc-confirm-text">Удалить сообщение? Это действие нельзя отменить.</div>
+        <div class="fc-confirm-actions">
+          <button type="button" class="fc-confirm-cancel" id="fcConfirmCancel">Отмена</button>
+          <button type="button" class="fc-confirm-ok" id="fcConfirmOk">Удалить</button>
+        </div>
+      </div>`;
+    document.body.appendChild(confirmOverlay);
+    let pendingDelete = null;
+    confirmOverlay.addEventListener('click', (e) => { if (e.target === confirmOverlay) { confirmOverlay.classList.remove('vis'); pendingDelete = null; } });
+    document.getElementById('fcConfirmCancel').onclick = () => { confirmOverlay.classList.remove('vis'); pendingDelete = null; };
+    document.getElementById('fcConfirmOk').onclick = () => {
+      confirmOverlay.classList.remove('vis');
+      if (pendingDelete) this._deleteMessage(pendingDelete.msgId, pendingDelete.url);
+      pendingDelete = null;
+    };
+    this._askDeleteConfirm = (msgId, url) => { pendingDelete = { msgId, url }; confirmOverlay.classList.add('vis'); };
+
+    // 24.07.26, по правке Ильи: пока открыт СВОЙ лайтбокс страницы (просмотр
+    // "Рендеры и фото"/"Поэтажный план" — элемент #lightbox в project.html и
+    // unit.html, не путать с нашим #fcLightbox для картинок из чата), кнопка
+    // саппорта не нужна и мешает — прячем её (и закрываем своё окно, если
+    // было открыто), пока их лайтбокс открыт. На floxweb.html такого
+    // элемента нет — просто ничего не делаем.
+    const pageLightbox = document.getElementById('lightbox');
+    if (pageLightbox) {
+      const syncWithPageLightbox = () => {
+        const hide = pageLightbox.classList.contains('open');
+        fab.classList.toggle('fc-hidden-by-page', hide);
+        if (hide && this._panelOpen) this._togglePanel(false);
+      };
+      new MutationObserver(syncWithPageLightbox).observe(pageLightbox, { attributes: true, attributeFilter: ['class'] });
+      syncWithPageLightbox();
+    }
+
     document.getElementById('fcCloseBtn').onclick = () => this._togglePanel(false);
     document.getElementById('fcTabAll').onclick = () => this._setTab('all');
     document.getElementById('fcTabUnread').onclick = () => this._setTab('unread');
@@ -650,7 +707,7 @@ window.floxSupportChat = {
     // точно живой и внутри панели.
     document.addEventListener('mousedown', (e) => {
       if (!this._panelOpen) return;
-      if (e.target.closest('#fcPanel') || e.target.closest('#fcFab') || e.target.closest('#fcLightbox')) return;
+      if (e.target.closest('#fcPanel') || e.target.closest('#fcFab') || e.target.closest('#fcLightbox') || e.target.closest('#fcConfirmOverlay')) return;
       this._togglePanel(false);
     });
 
@@ -658,8 +715,7 @@ window.floxSupportChat = {
     document.getElementById('fcMsgs').addEventListener('click', (e) => {
       const delBtn = e.target.closest('.fc-bubble-del');
       if (delBtn) {
-        if (!confirm('Удалить сообщение?')) return;
-        this._deleteMessage(delBtn.dataset.msgid, delBtn.dataset.url || null);
+        this._askDeleteConfirm(delBtn.dataset.msgid, delBtn.dataset.url || null);
         return;
       }
       const img = e.target.closest('.fc-bubble-img');
@@ -769,6 +825,14 @@ window.floxSupportChat = {
   _renderList() {
     const q = (document.getElementById('fcSearchInput')?.value || '').trim().toLowerCase();
     let list = this._threads.slice();
+    // 24.07.26, по правке Ильи: личный чат с агентом (не техподдержка)
+    // показывается слева, только если в нём реально есть хоть одно
+    // сообщение — иначе просто открыть чей-то профиль через поиск (или
+    // случайно кликнуть) навсегда оставляло пустую "плашку" в списке; если
+    // все сообщения потом удалить, чат таким же образом пропадёт из списка
+    // сам. Тред с техподдержкой закреплён и виден всегда, даже пустой —
+    // это осознанно (подсказка новым агентам, куда писать).
+    list = list.filter(c => c.kind === 'support' || !!c.last_at);
     if (this._tab === 'unread') list = list.filter(c => c.unread > 0);
     if (q) list = list.filter(c => c.name.toLowerCase().includes(q));
 
