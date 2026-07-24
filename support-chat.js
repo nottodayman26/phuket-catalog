@@ -48,6 +48,31 @@ const TABLES = {
   dm:      { conv: 'agent_conversations',    msg: 'agent_messages' },
 };
 
+// 24.07.26, по правке Ильи ("все что сейчас черное будет прозрачным"):
+// значок на розовой кнопке раньше рисовался тёмным контуром (#1a1330)
+// ПОВЕРХ розового круга. Теперь вместо этого форма значка (тот же контур
+// чат-пузыря + три точки) вырезана как настоящая прозрачная дырка в CSS-маске,
+// применённой к отдельному слою с розовой заливкой.
+//
+// Важный нюанс (столкнулись на практике): CSS mask-image по умолчанию в
+// части браузеров использует АЛЬФА-канал источника, а не яркость цвета —
+// если просто нарисовать белый фон и чёрные линии поверх (оба варианта
+// полностью непрозрачны, alpha=1), с точки зрения альфа-маскирования разницы
+// между ними нет вообще, и вырез не появляется. Поэтому дырки для контура и
+// точек вырезаются ВНУТРИ самой SVG через <mask>, создавая настоящую
+// прозрачность (alpha=0) в этих местах — тогда результат работает
+// одинаково что при alpha-, что при luminance-маскировании снаружи.
+// 24.07.26: первая версия маски (viewBox 24×24, mask-size:28×28) оставляла
+// розовым только маленький квадратный патч в центре кнопки — за пределами
+// этой мелкой области у CSS-маски "нет данных", а значит там всё прозрачно,
+// а не розово, из-за чего пропадал сам круглый корпус кнопки ("иконка стала
+// квадратной"). Правильно: маска должна занимать ВЕСЬ круг целиком (58×58,
+// как сама кнопка), с белой заливкой на всю площадь — а контур/точки, тоже
+// смещённые и увеличенные под тот же масштаб, вырезаны уже ВНУТРИ этого
+// полного круга, как и было в исходном инлайн-значке (26px внутри 58px
+// кнопки).
+const FAB_MASK_SVG = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 58 58'><mask id='m'><rect width='58' height='58' fill='white'/><g transform='translate(16,16) scale(1.0833)'><path d='M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/><circle cx='8.5' cy='11.5' r='1' fill='black'/><circle cx='12' cy='11.5' r='1' fill='black'/><circle cx='15.5' cy='11.5' r='1' fill='black'/></g></mask><rect width='58' height='58' fill='white' mask='url(#m)'/></svg>`;
+
 // ── CSS ────────────────────────────────────────────────────────────────
 const CSS = `
 :root{ --chat-pill-bg: var(--surface-2); }
@@ -59,8 +84,9 @@ body.light{ --chat-pill-bg: #ffffff; }
      полноэкрана" карты (см. .map-fake-fullscreen в floxweb.html/project.html/
      unit.html — это не настоящий Fullscreen API, а свой CSS-приём с
      z-index:999999999/99999), иначе кнопка пряталась под развёрнутой картой.
-     Тень убрана совсем (была 0 2px 8px). */
-  background:#FF6B6B; border:none; cursor:pointer; z-index:2147483000;
+     Тень убрана совсем (была 0 2px 8px). Заливку теперь несёт внутренний
+     .fc-fab-bg (см. ниже), сама кнопка — просто позиционирующий контейнер. */
+  background:none; border:none; cursor:pointer; z-index:2147483000;
   display:flex; align-items:center; justify-content:center;
   box-shadow:none;
   transition:transform .2s cubic-bezier(.34,1.56,.64,1);
@@ -68,11 +94,27 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-fab{display:none;}
 .fc-fab.vis{display:flex;}
 .fc-fab:hover{transform:scale(1.08);}
-.fc-fab svg{width:26px;height:26px;}
+/* 24.07.26, по правке Ильи ("всё что сейчас черное будет прозрачным"):
+   значок больше не рисуется тёмными линиями поверх розового круга — вместо
+   этого его форма (контур чат-пузыря + три точки) вырезана из розовой
+   заливки как CSS-маска: там, где раньше был тёмный контур, теперь настоящая
+   прозрачность (см. FAB_MASK_SVG). Отдельный слой .fc-badge (счётчик
+   непрочитанных) не задет маской — это соседний элемент, не часть этого
+   слоя. */
+.fc-fab-bg{
+  position:absolute; inset:0; border-radius:50%; background:#FF6B6B;
+  -webkit-mask-image:url("data:image/svg+xml,${encodeURIComponent(FAB_MASK_SVG)}");
+  mask-image:url("data:image/svg+xml,${encodeURIComponent(FAB_MASK_SVG)}");
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-position:center; mask-position:center;
+  /* маска покрывает ВЕСЬ слой (сам круг), а не только значок — см. комментарий у FAB_MASK_SVG */
+  -webkit-mask-size:100% 100%; mask-size:100% 100%;
+}
 .fc-fab .fc-badge{
   position:absolute; top:-2px; right:-2px; min-width:20px; height:20px; padding:0 5px;
   background:var(--accent,#5E17EB); color:#fff; border-radius:10px; font-size:11px; font-weight:700;
   display:none; align-items:center; justify-content:center; border:2px solid var(--bg,#0d0d18);
+  z-index:1;
 }
 .fc-fab .fc-badge.vis{display:flex;}
 
@@ -143,19 +185,12 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-bubble-img{display:block;max-width:220px;max-height:220px;border-radius:10px;margin-top:2px;cursor:pointer;object-fit:cover;}
 .fc-hint{color:var(--muted);font-size:12.5px;text-align:center;padding:20px;}
 
-/* Кнопка удаления сообщения — только у своих сообщений, показывается по
-   наведению, чтобы не загромождать переписку. */
-.fc-bubble{padding-right:28px;}
-.fc-bubble-del{
-  position:absolute; top:6px; right:6px; width:20px; height:20px; border-radius:50%;
-  border:none; background:rgba(0,0,0,.18); color:inherit; cursor:pointer; display:none;
-  align-items:center; justify-content:center; opacity:.75; transition:opacity .15s,background .15s;
-}
-.fc-bubble.out .fc-bubble-del{background:rgba(255,255,255,.22);}
-.fc-bubble:hover .fc-bubble-del{display:flex;}
-.fc-bubble-del:hover{opacity:1;background:rgba(0,0,0,.32);}
-.fc-bubble.out .fc-bubble-del:hover{background:rgba(255,255,255,.35);}
-.fc-bubble-del svg{width:11px;height:11px;}
+/* 24.07.26, по правке Ильи: удаление теперь не через иконку-корзину на
+   сообщении, а через выделение правой кнопкой мыши (клик или зажать и
+   провести по нескольким) — выделенное сообщение подсвечивается рамкой в
+   акцентном розовом, кнопка "отправить" при этом сама превращается в
+   корзину (см. _updateSendButtonMode). */
+.fc-bubble.sel{box-shadow:0 0 0 2px #FF6B6B inset;}
 
 .fc-input-row{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line);position:relative;}
 .fc-icon-btn{width:28px;height:28px;border-radius:50%;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,color .15s;}
@@ -163,10 +198,11 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-icon-btn svg{width:16px;height:16px;}
 .fc-input{flex:1;background:var(--chat-pill-bg);border:1px solid var(--line-2);border-radius:20px;padding:10px 16px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
 .fc-input::placeholder{color:var(--muted);}
-.fc-send{width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s;}
+.fc-send{width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s,background .15s;}
 .fc-send:hover{transform:scale(1.06);}
 .fc-send svg{width:14px;height:14px;}
 .fc-send:disabled{opacity:.5;cursor:default;transform:none;}
+.fc-send.fc-send-delete{background:#FF6B6B;}
 
 /* 25.07.26, по правке Ильи: без обводки, тень меньше, свой скролл внутри
    (набор эмодзи вырос — иначе попап рос бы бесконечно вниз/вверх и вылезал
@@ -199,19 +235,6 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-lightbox.vis{display:flex;}
 .fc-lightbox img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
 
-/* 24.07.26: своё окно подтверждения удаления вместо стандартного браузерного
-   confirm(). */
-.fc-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2147483300;display:none;align-items:center;justify-content:center;}
-.fc-confirm-overlay.vis{display:flex;}
-.fc-confirm-box{background:var(--surface);border-radius:16px;padding:22px;width:280px;max-width:calc(100vw - 40px);box-shadow:0 10px 40px rgba(0,0,0,.3);}
-.fc-confirm-text{font-size:14px;color:var(--text);margin-bottom:18px;line-height:1.4;}
-.fc-confirm-actions{display:flex;gap:10px;justify-content:flex-end;}
-.fc-confirm-actions button{border:none;border-radius:9px;padding:8px 16px;font-size:13px;font-family:inherit;cursor:pointer;}
-.fc-confirm-cancel{background:var(--surface-2);color:var(--text);}
-.fc-confirm-cancel:hover{background:var(--surface-3);}
-.fc-confirm-ok{background:#FF6B6B;color:#fff;font-weight:600;}
-.fc-confirm-ok:hover{opacity:.9;}
-
 /* 24.07.26: кнопка саппорта не нужна поверх собственного лайтбокса
    страницы (просмотр "Рендеры и фото"/"Поэтажный план" в project.html и
    unit.html) — прячем её на время просмотра, см. синхронизацию в _buildDOM. */
@@ -230,7 +253,6 @@ body.light{ --chat-pill-bg: #ffffff; }
 }
 `;
 
-const SVG_FAB = `<svg viewBox="0 0 24 24" fill="none" stroke="#1a1330" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/><circle cx="8.5" cy="11.5" r="1" fill="#1a1330" stroke="none"/><circle cx="12" cy="11.5" r="1" fill="#1a1330" stroke="none"/><circle cx="15.5" cy="11.5" r="1" fill="#1a1330" stroke="none"/></svg>`;
 const SVG_SEARCH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`;
 const SVG_CLOSE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
 const SVG_CLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`;
@@ -300,6 +322,8 @@ window.floxSupportChat = {
   _panelOpen: false,
   _built: false,
   _bootstrapping: false,
+  _selectedMsgIds: new Set(),  // выбранные для удаления сообщения (правый клик)
+  _lastRenderedMsgs: [],       // последний отрисованный список сообщений открытого чата
 
   init() {
     if (!document.getElementById('sc-css')) {
@@ -536,7 +560,17 @@ window.floxSupportChat = {
       // 24.07.26: поиск всегда идёт напрямую в agents.full_name — то самое
       // ФИО, которое меняет Илья как СЕО, тут никогда не кэшируется, так что
       // переименованный агент сразу находится по новому имени/фамилии.
-      const r = await fetch(`${SUPABASE_URL}/agents?full_name=ilike.*${encodeURIComponent(q)}*&id=neq.${this._agent.id}&select=id,full_name,agency&limit=8`, {headers: SB});
+      //
+      // 24.07.26, фикс "поиск не находит": раньше вся введённая фраза
+      // проверялась одним ilike-паттерном на весь full_name целиком — если
+      // ФИО в базе хранится в другом порядке слов, чем ввёл человек (напр.
+      // человек печатает "Дмитрий Сергеев", а в базе "Сергеев Дмитрий"),
+      // такой поиск ничего не находил, хотя оба слова там есть. Теперь
+      // каждое слово запроса — отдельное ilike-условие, и все они должны
+      // совпасть (через and=(...), без привязки к порядку слов).
+      const terms = q.trim().split(/\s+/).filter(Boolean);
+      const andExpr = terms.map(t => `full_name.ilike.*${encodeURIComponent(t)}*`).join(',');
+      const r = await fetch(`${SUPABASE_URL}/agents?and=(${andExpr})&id=neq.${this._agent.id}&select=id,full_name,agency&limit=8`, {headers: SB});
       const rows = await r.json();
       this._searchAgentsRaw = Array.isArray(rows) ? rows : [];
     } catch(e) { this._searchAgentsRaw = []; }
@@ -565,7 +599,7 @@ window.floxSupportChat = {
   _buildDOM() {
     const fab = document.createElement('button');
     fab.className = 'fc-fab'; fab.id = 'fcFab';
-    fab.innerHTML = `<span class="fc-badge" id="fcBadge"></span>${SVG_FAB}`;
+    fab.innerHTML = `<span class="fc-fab-bg"></span><span class="fc-badge" id="fcBadge"></span>`;
     fab.onclick = () => this._togglePanel();
     document.body.appendChild(fab);
 
@@ -611,28 +645,6 @@ window.floxSupportChat = {
     lightbox.onclick = () => lightbox.classList.remove('vis');
     document.body.appendChild(lightbox);
 
-    // 24.07.26: своё окно подтверждения удаления вместо window.confirm()
-    const confirmOverlay = document.createElement('div');
-    confirmOverlay.className = 'fc-confirm-overlay'; confirmOverlay.id = 'fcConfirmOverlay';
-    confirmOverlay.innerHTML = `
-      <div class="fc-confirm-box">
-        <div class="fc-confirm-text">Удалить сообщение? Это действие нельзя отменить.</div>
-        <div class="fc-confirm-actions">
-          <button type="button" class="fc-confirm-cancel" id="fcConfirmCancel">Отмена</button>
-          <button type="button" class="fc-confirm-ok" id="fcConfirmOk">Удалить</button>
-        </div>
-      </div>`;
-    document.body.appendChild(confirmOverlay);
-    let pendingDelete = null;
-    confirmOverlay.addEventListener('click', (e) => { if (e.target === confirmOverlay) { confirmOverlay.classList.remove('vis'); pendingDelete = null; } });
-    document.getElementById('fcConfirmCancel').onclick = () => { confirmOverlay.classList.remove('vis'); pendingDelete = null; };
-    document.getElementById('fcConfirmOk').onclick = () => {
-      confirmOverlay.classList.remove('vis');
-      if (pendingDelete) this._deleteMessage(pendingDelete.msgId, pendingDelete.url);
-      pendingDelete = null;
-    };
-    this._askDeleteConfirm = (msgId, url) => { pendingDelete = { msgId, url }; confirmOverlay.classList.add('vis'); };
-
     // 24.07.26, по правке Ильи: пока открыт СВОЙ лайтбокс страницы (просмотр
     // "Рендеры и фото"/"Поэтажный план" — элемент #lightbox в project.html и
     // unit.html, не путать с нашим #fcLightbox для картинок из чата), кнопка
@@ -659,9 +671,16 @@ window.floxSupportChat = {
     searchInput.oninput = () => { this._renderList(); doSearch(); };
 
     const input = document.getElementById('fcInput');
-    const send = () => this._handleSend();
-    document.getElementById('fcSendBtn').onclick = send;
-    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+    // 24.07.26, по правке Ильи: пока выбраны сообщения (см. _bindMessageSelection
+    // ниже), клик по этой кнопке удаляет их вместо отправки текста — сама
+    // иконка при этом меняется на корзину (см. _updateSendButtonMode). Enter
+    // в поле ввода всегда означает "отправить" — это про сам текст, не про
+    // выделение.
+    document.getElementById('fcSendBtn').onclick = () => {
+      if (this._selectedMsgIds.size > 0) this._deleteSelectedMessages();
+      else this._handleSend();
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._handleSend(); } });
 
     document.getElementById('fcAttachBtn').onclick = () => document.getElementById('fcFileInput').click();
     document.getElementById('fcFileInput').addEventListener('change', async (e) => {
@@ -706,18 +725,14 @@ window.floxSupportChat = {
     // раньше любых таких перерисовок, поэтому e.target на этот момент ещё
     // точно живой и внутри панели.
     document.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return; // правая кнопка обрабатывается отдельно, см. _bindMessageSelection
       if (!this._panelOpen) return;
-      if (e.target.closest('#fcPanel') || e.target.closest('#fcFab') || e.target.closest('#fcLightbox') || e.target.closest('#fcConfirmOverlay')) return;
+      if (e.target.closest('#fcPanel') || e.target.closest('#fcFab') || e.target.closest('#fcLightbox')) return;
       this._togglePanel(false);
     });
 
-    // Клики внутри переписки: удалить / картинка → лайтбокс / файл → скачивание
+    // Клики внутри переписки (левая кнопка): картинка → лайтбокс, файл → скачивание
     document.getElementById('fcMsgs').addEventListener('click', (e) => {
-      const delBtn = e.target.closest('.fc-bubble-del');
-      if (delBtn) {
-        this._askDeleteConfirm(delBtn.dataset.msgid, delBtn.dataset.url || null);
-        return;
-      }
       const img = e.target.closest('.fc-bubble-img');
       if (img) {
         document.getElementById('fcLightboxImg').src = img.src;
@@ -732,6 +747,94 @@ window.floxSupportChat = {
         document.body.appendChild(a); a.click(); a.remove();
       }
     });
+
+    this._bindMessageSelection(document.getElementById('fcMsgs'));
+  },
+
+  // 24.07.26, по правке Ильи: удаление сообщений теперь через выделение
+  // правой кнопкой мыши — щёлкнуть по своему сообщению (выделяет/снимает
+  // выделение), либо зажать правую кнопку и провести по нескольким подряд.
+  // Пока выделено хотя бы одно — кнопка "отправить" превращается в корзину
+  // (см. _updateSendButtonMode); повторный правый клик по уже выделенному
+  // сообщению снимает с него выделение. Своё подтверждение убрано по явной
+  // просьбе Ильи — клик по кнопке-корзине удаляет сразу.
+  _bindMessageSelection(msgsEl) {
+    let dragging = false;
+    let touched = new Set();
+
+    msgsEl.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+
+    msgsEl.addEventListener('mousedown', (e) => {
+      if (e.button !== 2) return;
+      const bubble = e.target.closest('.fc-bubble.out');
+      if (!bubble || !bubble.dataset.msgid) return;
+      dragging = true;
+      touched = new Set([bubble.dataset.msgid]);
+      this._toggleMsgSelected(bubble.dataset.msgid);
+    });
+
+    msgsEl.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      const bubble = under && under.closest('.fc-bubble.out');
+      if (!bubble || !bubble.dataset.msgid) return;
+      const id = bubble.dataset.msgid;
+      if (touched.has(id)) return;
+      touched.add(id);
+      this._toggleMsgSelected(id);
+    });
+
+    const endDrag = () => { dragging = false; touched = new Set(); };
+    document.addEventListener('mouseup', (e) => { if (e.button === 2) endDrag(); });
+    document.addEventListener('mouseleave', endDrag);
+  },
+
+  _toggleMsgSelected(msgId) {
+    if (this._selectedMsgIds.has(msgId)) this._selectedMsgIds.delete(msgId);
+    else this._selectedMsgIds.add(msgId);
+    document.querySelectorAll('#fcMsgs .fc-bubble').forEach(el => {
+      el.classList.toggle('sel', this._selectedMsgIds.has(el.dataset.msgid));
+    });
+    this._updateSendButtonMode();
+  },
+
+  _updateSendButtonMode() {
+    const btn = document.getElementById('fcSendBtn');
+    if (!btn) return;
+    const hasSel = this._selectedMsgIds.size > 0;
+    btn.classList.toggle('fc-send-delete', hasSel);
+    btn.innerHTML = hasSel ? SVG_TRASH : SVG_SEND;
+    btn.setAttribute('aria-label', hasSel ? 'Удалить выбранные сообщения' : 'Отправить');
+  },
+
+  // Удаляет все выбранные сообщения (и их вложения из Storage, best-effort)
+  // одним разом — без модального подтверждения, по прямой просьбе Ильи.
+  async _deleteSelectedMessages() {
+    const ids = Array.from(this._selectedMsgIds);
+    if (!ids.length) return;
+    const kind = this._activeThreadKind;
+    const t = TABLES[kind];
+    const urls = (this._lastRenderedMsgs || [])
+      .filter(m => ids.includes(m.id) && m.attachment_url)
+      .map(m => m.attachment_url);
+    try {
+      await fetch(`${SUPABASE_URL}/${t.msg}?id=in.(${ids.join(',')})`, { method: 'DELETE', headers: SB });
+    } catch(e) { console.error('[floxSupportChat] bulk delete error', e); }
+    for (const url of urls) {
+      try {
+        const marker = '/storage/v1/object/public/';
+        const idx = url.indexOf(marker);
+        if (idx !== -1) {
+          const objectPath = url.slice(idx + marker.length);
+          await fetch(`${SUPABASE_BASE}/storage/v1/object/${objectPath}`, { method: 'DELETE', headers: SB });
+        }
+      } catch(e) { /* тихо */ }
+    }
+    this._selectedMsgIds.clear();
+    this._updateSendButtonMode();
+    await this._loadMessages(this._activeThreadId, this._activeThreadKind, {silent:true});
+    await this._loadAllThreads();
+    this._renderList();
   },
 
   // 24.07.26: поле поиска по эмодзи убрано по просьбе Ильи — рендерим сразу
@@ -742,30 +845,6 @@ window.floxSupportChat = {
       <div class="fc-emoji-cat">${cat.name}</div>
       <div class="fc-emoji-grid">${cat.items.map(e => `<button type="button">${e}</button>`).join('')}</div>
     `).join('');
-  },
-
-  // 24.07.26: удаление своего сообщения (и вложения из Storage, best-effort —
-  // если объект уже отсутствует, ошибку просто глушим, само сообщение к тому
-  // моменту уже удалено).
-  async _deleteMessage(msgId, attachmentUrl) {
-    const kind = this._activeThreadKind;
-    const t = TABLES[kind];
-    try {
-      await fetch(`${SUPABASE_URL}/${t.msg}?id=eq.${msgId}`, { method: 'DELETE', headers: SB });
-    } catch(e) { console.error('[floxSupportChat] delete message error', e); return; }
-    if (attachmentUrl) {
-      try {
-        const marker = '/storage/v1/object/public/';
-        const idx = attachmentUrl.indexOf(marker);
-        if (idx !== -1) {
-          const objectPath = attachmentUrl.slice(idx + marker.length); // "<bucket>/<путь>"
-          await fetch(`${SUPABASE_BASE}/storage/v1/object/${objectPath}`, { method: 'DELETE', headers: SB });
-        }
-      } catch(e) { /* тихо — само сообщение уже удалено */ }
-    }
-    await this._loadMessages(this._activeThreadId, this._activeThreadKind, {silent:true});
-    await this._loadAllThreads();
-    this._renderList();
   },
 
   async _handleFileSend(file) {
@@ -794,6 +873,10 @@ window.floxSupportChat = {
   _selectThread(id, kind) {
     this._activeThreadId = id;
     this._activeThreadKind = kind;
+    // 24.07.26: выделение для удаления — только в рамках одного открытого
+    // чата, при переключении на другой сбрасываем.
+    this._selectedMsgIds.clear();
+    this._updateSendButtonMode();
     this._updateActiveHeader();
     this._renderList();
     this._loadMessages(id, kind);
@@ -884,6 +967,9 @@ window.floxSupportChat = {
 
   _renderMessages(msgs) {
     const el = document.getElementById('fcMsgs');
+    // 24.07.26: нужно для _deleteSelectedMessages (искать вложения выбранных
+    // сообщений) и для сохранения подсветки выделения между опросами.
+    this._lastRenderedMsgs = msgs;
     if (!msgs.length) {
       el.innerHTML = `<div class="fc-hint">👋 Напишите, если возникнут вопросы — мы обязательно ответим.</div>`;
       return;
@@ -894,8 +980,8 @@ window.floxSupportChat = {
       const day = fmtDayLabel(m.created_at);
       if (day !== lastDay) { html += `<div class="fc-day">${day}</div>`; lastDay = day; }
       const out = m.sender_agent_id === this._agent.id;
-      html += `<div class="fc-bubble ${out ? 'out' : 'in'}">`;
-      if (out) html += `<button type="button" class="fc-bubble-del" data-msgid="${esc(m.id)}" data-url="${esc(m.attachment_url || '')}" aria-label="Удалить сообщение" title="Удалить">${SVG_TRASH}</button>`;
+      const sel = this._selectedMsgIds.has(m.id) ? ' sel' : '';
+      html += `<div class="fc-bubble ${out ? 'out' : 'in'}${sel}" data-msgid="${esc(m.id)}">`;
       if (m.body) html += esc(m.body);
       if (m.attachment_url) {
         if (isImageFile(m.attachment_name)) {
