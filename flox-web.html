@@ -5313,6 +5313,10 @@ function renderAgent() {
   // кэша) topbar.js так и остался бы со значениями по умолчанию до
   // перезагрузки страницы (см. историю бага в git).
   if (window.floxTopbar?._loadAgent) floxTopbar._loadAgent();
+  // 25.07.26: то же самое для кнопки поддержки (support-chat.js) — при
+  // первом входе (без перезагрузки страницы) она иначе так и осталась бы
+  // скрытой до ручного обновления, ровно по той же причине, что и выше.
+  if (window.floxSupportChat?._onAgentReady) floxSupportChat._onAgentReady();
 }
 
 // 14.07.26: показывает панель "Расставить точки" только агенту с is_admin=true
@@ -6374,5 +6378,10 @@ async function saveAgentEditRow(id) {
 
 <script src="topbar.js"></script>
 <script>floxTopbar.init({activePage:'search'});</script>
+<!-- 25.07.26, по просьбе Ильи: плавающая кнопка чата с поддержкой — везде,
+     кроме экрана входа (см. support-chat.js — сама прячется, пока агент не
+     залогинен). -->
+<script src="support-chat.js"></script>
+<script>floxSupportChat.init();</script>
 </body>
 </html>

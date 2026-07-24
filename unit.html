@@ -2684,5 +2684,9 @@ loadSoldTicker();
 </script>
 <script src="topbar.js"></script>
 <script>if (!isClientMode) floxTopbar.init({activePage:'unit'});</script>
+<!-- 25.07.26, по просьбе Ильи: кнопка поддержки только агенту, не клиенту
+     (тот же флаг isClientMode, что и у topbar.js выше). -->
+<script src="support-chat.js"></script>
+<script>if (!isClientMode) floxSupportChat.init();</script>
 </body>
 </html>
