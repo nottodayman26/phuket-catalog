@@ -50,6 +50,30 @@
 //   6. Сетка эмодзи: серый фон при наведении убран (тоже scale), сами эмодзи
 //      увеличены.
 //
+// Версия 4 (26.07.26, по новой правке Ильи — поиск всё ещё не работал):
+//   1. Поиск по ФИО так и не заработал в бою даже после версии 3 (хотя все
+//      мои тесты на мок-бэкенде проходили) — раз уже ВТОРАЯ по счёту версия
+//      логики фильтра не помогла, дело, вероятно, не в синтаксисе запроса, а
+//      в чём-то, чего мок-бэкенд просто не может воспроизвести (ошибка
+//      самого запроса на реальном Supabase — RLS, HTTP-статус и т.п.). Раньше
+//      такая ошибка тихо проглатывалась в catch. Теперь подробно логируется
+//      в консоль браузера (URL запроса, HTTP-статус, тело ответа при ошибке)
+//      — см. _searchAgentsDirectory. Нужно открыть консоль (F12 → Console),
+//      повторить неудачный поиск и прислать то, что выведется строкой
+//      "[floxSupportChat] search" — по этому будет видно точную причину.
+//   2. Цвет анимации выделения сообщения (#FF6B6B) показался слишком ярким —
+//      заменён на приглушённый --sel-pink (#C97F80), тот же цвет теперь и у
+//      кнопки-корзины в режиме удаления.
+//   3. Всплывающее окно эмодзи: убран нежелательный горизонтальный скролл
+//      (был из-за отсутствия явного overflow-x:hidden — CSS сам переводит
+//      "visible" по одной оси в "auto", если у другой оси overflow не
+//      visible), добавлено пространство между эмодзи (gap/padding). Плюс
+//      исправлено "зависание" эмодзи в верхних рядах при наведении — при
+//      тесной сетке увеличенный (scale) эмодзи из верхнего ряда визуально
+//      подрезался следующим рядом снизу (тот идёт позже в разметке и
+//      рисуется поверх) — добавлен z-index при наведении, поднимающий
+//      наведённый эмодзи над соседями независимо от порядка в разметке.
+//
 // Подключать:  <script src="support-chat.js"></script>
 // Вызвать:     floxSupportChat.init()
 //              — flox-web.html и project.html: всегда;
@@ -101,7 +125,7 @@ const FAB_MASK_SVG = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 58 58
 
 // ── CSS ────────────────────────────────────────────────────────────────
 const CSS = `
-:root{ --chat-pill-bg: var(--surface-2); }
+:root{ --chat-pill-bg: var(--surface-2); --sel-pink: #C97F80; }
 body.light{ --chat-pill-bg: #ffffff; }
 
 .fc-fab{
@@ -221,9 +245,14 @@ body.light{ --chat-pill-bg: #ffffff; }
    26.07.26, по новой правке: вместо статичной рамки — анимация: сообщение
    слегка увеличивается и меняет цвет из фиолетового в розовый, плавно в обе
    стороны (выделение/снятие выделения, transition — на самом .fc-bubble
-   выше). */
+   выше).
+   26.07.26 (2): чистый брендовый #FF6B6B (тот же, что у круглой кнопки
+   саппорта) показался слишком ярким для подсветки выделения — заменили на
+   приглушённый вариант --sel-pink (используется тут и для кнопки-корзины
+   ниже, см. .fc-send.fc-send-delete, чтобы оба состояния выделения были
+   визуально согласованы). */
 .fc-bubble.sel{transform:scale(1.045);}
-.fc-bubble.out.sel{background:#FF6B6B;}
+.fc-bubble.out.sel{background:var(--sel-pink);}
 
 /* 26.07.26, по просьбе Ильи: анимация появления новых сообщений (текст,
    файлы, картинки) — независимо от того, кто пишет. Класс fc-appear
@@ -250,14 +279,14 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-send:hover{transform:scale(1.06);}
 .fc-send svg{width:14px;height:14px;}
 .fc-send:disabled{opacity:.5;cursor:default;transform:none;}
-.fc-send.fc-send-delete{background:#FF6B6B;}
+.fc-send.fc-send-delete{background:var(--sel-pink);}
 
 /* 25.07.26, по правке Ильи: без обводки, тень меньше, свой скролл внутри
    (набор эмодзи вырос — иначе попап рос бы бесконечно вниз/вверх и вылезал
    за рамки окна, что и было "вышли за рамку"). Ширина/позиция подобраны
    так, чтобы гарантированно не вылезать за правый край панели. */
 .fc-emoji-pop{
-  position:absolute; bottom:calc(100% + 8px); right:8px; width:300px; max-width:calc(100vw - 40px);
+  position:absolute; bottom:calc(100% + 8px); right:8px; width:320px; max-width:calc(100vw - 40px);
   max-height:min(360px, calc(100vh - 160px));
   background:var(--surface); border:none; border-radius:14px; box-shadow:0 4px 16px rgba(0,0,0,.16);
   padding:10px; display:none; flex-direction:column; z-index:10;
@@ -268,8 +297,14 @@ body.light{ --chat-pill-bg: #ffffff; }
    при нескольких категориях подряд их суммарная высота всё равно вылезала
    за рамки попапа и даже окна (это и была правка "эмодзи вышли за рамку").
    Теперь скроллится весь #fcEmojiBody целиком одним разом, а сам попап
-   ограничен по высоте (см. .fc-emoji-pop выше) — вылезти уже не может. */
-#fcEmojiBody{flex:1;min-height:0;overflow-y:auto;
+   ограничен по высоте (см. .fc-emoji-pop выше) — вылезти уже не может.
+   26.07.26, по новой правке ("убери горизонтальный скролл"): раньше тут был
+   задан только overflow-y:auto — по спеке CSS, если для одной оси overflow
+   не visible, а для другой (overflow-x) явно не задан, браузер сам переводит
+   её в auto, из-за чего при малейшем переполнении по ширине (например,
+   некоторые составные эмодзи чуть шире обычных) вылезала ненужная
+   горизонтальная полоса прокрутки. Явный overflow-x:hidden убирает её. */
+#fcEmojiBody{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
   scrollbar-width:thin; scrollbar-color:var(--line-2) transparent;}
 #fcEmojiBody::-webkit-scrollbar{width:6px;}
 #fcEmojiBody::-webkit-scrollbar-track{background:transparent;}
@@ -277,10 +312,22 @@ body.light{ --chat-pill-bg: #ffffff; }
 /* 26.07.26, по правке Ильи: серый фон при наведении убран (тоже scale),
    сами эмодзи увеличены (было font-size:18px) — колонок в сетке стало
    меньше (6 вместо 7), чтобы бОльшим эмодзи не было тесно в той же ширине
-   попапа. */
-.fc-emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;}
-.fc-emoji-grid button{border:none;background:none;font-size:24px;padding:6px;border-radius:8px;cursor:pointer;line-height:1;transition:transform .12s cubic-bezier(.34,1.56,.64,1);}
-.fc-emoji-grid button:hover{background:none;transform:scale(1.25);}
+   попапа.
+   26.07.26, по новой правке ("добавь пространство" + "наверху виснут"): gap
+   и внутренние отступы кнопок увеличены — было тесно, особенно заметно в
+   первой категории "Смайлы" (там эмодзи больше всего, ~70 штук). Из-за
+   тесноты увеличение по наведению (scale) у эмодзи в верхних рядах визуально
+   "подрезалось" следующим рядом снизу — тот идёт позже в разметке и поэтому
+   рисуется поверх (стандартный порядок наложения элементов без z-index),
+   перекрывая нижнюю часть увеличенного эмодзи. У последних категорий (там
+   эмодзи меньше, "Еда" — всего 8 штук) рядов под текущим меньше или нет
+   вовсе, перекрывать нечем — поэтому там и казалось, что реакция "быстрее".
+   Добавленный z-index при наведении поднимает конкретно наведённый эмодзи
+   НАД всеми соседями независимо от порядка в разметке — теперь увеличение
+   всегда видно целиком, в любом ряду. */
+.fc-emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+.fc-emoji-grid button{position:relative;z-index:1;border:none;background:none;font-size:24px;padding:8px;border-radius:8px;cursor:pointer;line-height:1;transition:transform .12s cubic-bezier(.34,1.56,.64,1);}
+.fc-emoji-grid button:hover{background:none;transform:scale(1.25);z-index:2;}
 
 /* Лайтбокс для картинок из чата */
 .fc-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2147483200;display:none;align-items:center;justify-content:center;cursor:pointer;padding:40px;}
@@ -610,28 +657,42 @@ window.floxSupportChat = {
   },
 
   async _searchAgentsDirectory(q) {
-    // 26.07.26, по новой правке Ильи ("до сих пор не работает"): прошлый
-    // вариант (группировка нескольких ilike-условий через and=(...)) прошёл
-    // мои тесты на мок-бэкенде, но не сработал в бою на реальном Supabase —
-    // из песочницы нет сетевого доступа к настоящему PostgREST, поэтому я не
-    // могу проверить, в чём именно там дело (кодирование URL, сам ли
-    // and=(...) синтаксис — что угодно). Раз это непроверяемо отсюда,
-    // безопаснее не полагаться на непроверенный серверный синтаксис вовсе:
-    // просим у сервера только ОДИН простой ilike-фильтр (по первому слову
-    // запроса — уже проверенный, надёжный вид фильтра, тот же, что и раньше
-    // прекрасно работал для одиночных слов) с запасом по limit, а дальше
-    // ВСЮ логику "каждое слово запроса должно быть подстрокой ФИО, в любом
-    // порядке слов, без учёта регистра" считаем прямо здесь, в обычном JS —
-    // это можно гарантированно проверить в этой же песочнице.
-    // Заодно снижен порог: раньше нужно было минимум 2 символа, теперь
-    // подсказки показываются уже с первого введённого символа (в любом
-    // регистре — ilike и так регистронезависим, а сравнение оставшихся слов
-    // на клиенте тоже идёт через toLowerCase()).
+    // 26.07.26, по новой правке Ильи ("так и не решился, нужно диагностировать
+    // по-другому"): предыдущий вариант (упрощённый одиночный ilike + фильтр
+    // всех слов на клиенте) прошёл все мои тесты на мок-бэкенде, но по факту
+    // всё равно не заработал в бою. Раз уже ВТОРОЙ по счёту вариант логики
+    // фильтра не помогает, это явный сигнал, что дело, скорее всего, вообще
+    // не в синтаксисе фильтра — а в чём-то, чего мок-бэкенд просто не может
+    // воспроизвести (ошибка самого запроса — например RLS на таблице agents
+    // не пускает анонимный ключ читать чужие строки; реальный HTTP-статус
+    // с ошибкой; сетевая проблема и т.п.). Раньше любая такая ошибка тихо
+    // проглатывалась в catch и превращалась в "результатов нет" — то есть ни
+    // я, ни Илья не могли увидеть, что именно происходит на самом деле.
+    // Поэтому вместо третьей слепой догадки — подробное логирование в
+    // консоль на каждом шаге (сам URL запроса, HTTP-статус, тело ответа
+    // сервера при ошибке). В следующий раз, когда поиск не найдёт агента,
+    // нужно открыть консоль браузера (F12 → Console) и прислать мне то, что
+    // там выведется строкой "[floxSupportChat] search" — по этому будет
+    // видно точную причину, а не гадать вслепую в четвёртый раз.
     const terms = (q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (!terms.length) { this._searchAgentsRaw = []; this._renderList(); return; }
+    const url = `${SUPABASE_URL}/agents?full_name=ilike.*${encodeURIComponent(terms[0])}*&id=neq.${this._agent.id}&select=id,full_name,agency&limit=30`;
     try {
-      const r = await fetch(`${SUPABASE_URL}/agents?full_name=ilike.*${encodeURIComponent(terms[0])}*&id=neq.${this._agent.id}&select=id,full_name,agency&limit=30`, {headers: SB});
-      const rows = await r.json();
+      const r = await fetch(url, {headers: SB});
+      const text = await r.text();
+      if (!r.ok) {
+        console.error('[floxSupportChat] search: сервер вернул ошибку', {url, status: r.status, statusText: r.statusText, body: text});
+        this._searchAgentsRaw = [];
+        this._renderList();
+        return;
+      }
+      let rows;
+      try { rows = JSON.parse(text); } catch(parseErr) {
+        console.error('[floxSupportChat] search: ответ сервера — не JSON', {url, status: r.status, body: text});
+        this._searchAgentsRaw = [];
+        this._renderList();
+        return;
+      }
       const candidates = Array.isArray(rows) ? rows : [];
       this._searchAgentsRaw = candidates
         .filter(a => {
@@ -639,7 +700,16 @@ window.floxSupportChat = {
           return terms.every(t => name.includes(t));
         })
         .slice(0, 8);
-    } catch(e) { this._searchAgentsRaw = []; }
+      console.log('[floxSupportChat] search debug', {
+        url, term: terms[0], allTerms: terms,
+        agentIdUsedInFilter: this._agent && this._agent.id,
+        serverReturnedRows: candidates.length,
+        afterClientFilter: this._searchAgentsRaw.length,
+      });
+    } catch(e) {
+      console.error('[floxSupportChat] search: сетевая ошибка (fetch упал)', {url, error: e && e.message});
+      this._searchAgentsRaw = [];
+    }
     this._renderList();
   },
 
