@@ -5,6 +5,15 @@
 
 (function() {
 
+// 27.07.26, по просьбе Ильи: добавлена загрузка фото/лого агента в топбар
+// (кружок с инициалами). Те же константы и тот же способ обращения к
+// Supabase (голый fetch + анонимный ключ), что и в support-chat.js —
+// см. там же _uploadAttachment для образца хранилища.
+const SUPABASE_URL = 'https://lqhuegdwglzkfzjcfxdx.supabase.co/rest/v1';
+const SUPABASE_BASE = 'https://lqhuegdwglzkfzjcfxdx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxaHVlZ2R3Z2x6a2Z6amNmeGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjA5NjIsImV4cCI6MjA5NzM5Njk2Mn0.egEtZ5Av8tAD_Y6tKtWowxpbHoCiDezWEG5gWpEYNpo';
+const SB = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+
 const CSS = `
 .flox-topbar{position:sticky;top:0;z-index:200;background:var(--surface);border-bottom:0.5px solid var(--line);display:flex;align-items:center;padding:0 24px;height:52px;gap:0;font-family:'Inter',system-ui,sans-serif;}
 .flox-tb-logo{font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);text-decoration:none;margin-right:32px;display:flex;align-items:center;overflow:hidden;max-width:120px;transition:opacity .25s ease,max-width .25s ease,margin-right .25s ease;}
@@ -30,12 +39,23 @@ const CSS = `
    Логика (floxTopbar.toggleMeeting()) не менялась, поменялся только вид.
    22.07.26, по просьбе Ильи: серую плашку убрали совсем (background:none в
    покое) — Илье не понравилась именно она. Переход цвета текста на hover и
-   заливка фиолетовым в активном состоянии (.act) оставлены как есть. */
+   заливка фиолетовым в активном состоянии (.act) оставлены как есть.
+   27.07.26, по новой просьбе Ильи: серую плашку всё-таки вернули — но
+   только на hover (в покое по-прежнему background:none, как просили
+   22.07.26 — постоянного серого фона нет). */
 .flox-tb-meeting{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:none;background:none;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit;}
-.flox-tb-meeting:hover{color:var(--text);}
+.flox-tb-meeting:hover{background:var(--surface-2);color:var(--text);}
 .flox-tb-meeting.act{background:#5E17EB;color:#fff;}
+.flox-tb-meeting.act:hover{background:#5E17EB;}
+/* 27.07.26: .flox-tb-theme:hover уже темнеет/светлеет в зависимости от темы
+   без дополнительных правок — в тёмной теме --surface-3 (#222232) светлее
+   --surface-2 (#1a1a26), в светлой --surface-3 (#EBEBED) темнее --surface-2
+   (#F5F5F7) (см. project.html/unit.html/floxweb.html), то есть иконка и
+   темнеет, и светлеет — как раз то, что просили. */
 .flox-tb-theme{width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0;}
 .flox-tb-theme:hover{background:var(--surface-3);}
+.flox-tb-avatar{overflow:hidden;background-size:cover;background-position:center;}
+.flox-tb-popover-item input[type=file]{display:none;}
 .flox-tb-dd-wrap{position:relative;}
 .flox-tb-dd{position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.14);z-index:400;min-width:220px;padding:8px;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .18s,transform .18s;}
 .flox-tb-dd.vis{opacity:1;pointer-events:all;transform:translateY(0);}
@@ -51,6 +71,7 @@ const SVG_PEOPLE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" 
 const SVG_SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`;
 const SVG_MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`;
 const SVG_OUT  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>`;
+const SVG_UPLOAD = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
 
 function buildHTML(isSearch) {
   const searchEl = isSearch
@@ -87,7 +108,6 @@ function buildHTML(isSearch) {
     </nav>
     <div class="flox-tb-right">
       <button class="flox-tb-meeting" id="ftb-meeting" onclick="floxTopbar.toggleMeeting()">${SVG_PEOPLE}<span id="ftb-meeting-lbl">Встреча с клиентом</span></button>
-      <button class="flox-tb-theme" id="ftb-theme" onclick="floxTopbar.toggleTheme()"></button>
       <div class="flox-tb-avatar-wrap">
         <div class="flox-tb-avatar" id="ftb-avatar" onclick="floxTopbar._togglePopover()">АГ</div>
         <div class="flox-tb-popover" id="ftb-popover">
@@ -95,9 +115,13 @@ function buildHTML(isSearch) {
             <div class="flox-tb-popover-name" id="ftb-name">—</div>
             <div class="flox-tb-popover-agency" id="ftb-agency">—</div>
           </div>
+          <div class="flox-tb-popover-item" onclick="floxTopbar._triggerPhotoUpload()">${SVG_UPLOAD} Загрузить фото
+            <input type="file" id="ftb-photo-input" accept="image/*" onchange="floxTopbar._onPhotoSelected(this.files[0])">
+          </div>
           <div class="flox-tb-popover-item danger" onclick="floxTopbar._logout()">${SVG_OUT} Выйти из аккаунта</div>
         </div>
       </div>
+      <button class="flox-tb-theme" id="ftb-theme" onclick="floxTopbar.toggleTheme()"></button>
     </div>`;
 }
 
@@ -206,13 +230,93 @@ window.floxTopbar = {
       const av = document.getElementById('ftb-avatar');
       const nm = document.getElementById('ftb-name');
       const ag = document.getElementById('ftb-agency');
-      if (av && initials) av.textContent = initials;
+      if (av) this._renderAvatarPhoto(av, a.avatar_url, initials);
       if (nm) nm.textContent = a.full_name || '—';
       if (ag) {
         const agency = (a.agency || '').trim();
         ag.textContent = agency.toLowerCase() === 'независимый' ? 'Независимый агент' : (agency || '—');
       }
+      // 27.07.26: если фото ещё не закешировано в localStorage (например,
+      // залито с другого устройства/вкладки), подтягиваем его из базы —
+      // отдельным запросом, чтобы не трогать остальную загрузку агента,
+      // если колонки agents.avatar_url вдруг ещё нет (см. комментарий у
+      // _uploadPhotoAndPersist ниже).
+      if (a.avatar_url === undefined && a.id) {
+        fetch(`${SUPABASE_URL}/agents?id=eq.${a.id}&select=avatar_url`, {headers: SB})
+          .then(r => r.ok ? r.json() : [])
+          .then(rows => {
+            const url = rows[0] && rows[0].avatar_url;
+            if (!url) return;
+            a.avatar_url = url;
+            localStorage.setItem('flox-agent', JSON.stringify(a));
+            if (av) this._renderAvatarPhoto(av, url, initials);
+          })
+          .catch(() => {});
+      }
     } catch(e) {}
+  },
+
+  // 27.07.26: общий рендер кружка-аватара — либо фото (background-image),
+  // либо буквы-инициалы, как было раньше.
+  _renderAvatarPhoto(el, photoUrl, initials) {
+    if (photoUrl) {
+      el.style.backgroundImage = `url('${photoUrl}')`;
+      el.textContent = '';
+    } else {
+      // Важно: НЕ ставить сюда backgroundImage='none' — инлайновый стиль
+      // перебивает CSS-градиент кружка (.flox-tb-avatar{background:
+      // linear-gradient(...)}) даже когда фото нет. Просто убираем
+      // инлайн-стиль, чтобы вернуться к градиенту из CSS.
+      el.style.backgroundImage = '';
+      el.textContent = initials || 'АГ';
+    }
+  },
+
+  // ── Загрузка фото/лого ───────────────────────────────────────────────────
+  _triggerPhotoUpload() {
+    document.getElementById('ftb-photo-input')?.click();
+  },
+  async _onPhotoSelected(file) {
+    if (!file) return;
+    try {
+      const a = JSON.parse(localStorage.getItem('flox-agent') || 'null');
+      if (!a || !a.id) return;
+      const av = document.getElementById('ftb-avatar');
+      // Загрузка в тот же способ хранения (Supabase Storage, анонимный
+      // ключ), что и вложения в support-chat.js (_uploadAttachment) — тот
+      // же паттерн: POST файла напрямую как body, публичный URL по
+      // предсказуемому пути.
+      const path = `${a.id}/${Date.now()}_${file.name}`.replace(/\s+/g, '_');
+      await fetch(`${SUPABASE_BASE}/storage/v1/object/agent-photos/${encodeURIComponent(path)}`, {
+        method: 'POST',
+        headers: {...SB, 'Content-Type': file.type || 'application/octet-stream'},
+        body: file,
+      });
+      const url = `${SUPABASE_BASE}/storage/v1/object/public/agent-photos/${encodeURIComponent(path)}`;
+
+      // 27.07.26, ВАЖНО: это предполагает, что в Supabase уже существуют
+      // (1) публичный Storage-бакет "agent-photos" и (2) текстовая колонка
+      // agents.avatar_url — у меня нет доступа к схеме базы, чтобы это
+      // проверить самому, поэтому если бакета/колонки ещё нет, эта команда
+      // ниже вернёт ошибку и просто ничего не сохранится (кружок останется
+      // с инициалами) — в таком случае нужно завести бакет/колонку с этими
+      // именами (или сказать мне другие названия — поправлю код под них).
+      const resp = await fetch(`${SUPABASE_URL}/agents?id=eq.${a.id}`, {
+        method: 'PATCH',
+        headers: {...SB, 'Content-Type': 'application/json', Prefer: 'return=minimal'},
+        body: JSON.stringify({avatar_url: url}),
+      });
+      if (!resp.ok) {
+        console.error('[floxTopbar] не удалось сохранить avatar_url — проверь, что в таблице agents есть такая колонка', await resp.text().catch(()=>''));
+        return;
+      }
+
+      a.avatar_url = url;
+      localStorage.setItem('flox-agent', JSON.stringify(a));
+      if (av) this._renderAvatarPhoto(av, url, '');
+    } catch (e) {
+      console.error('[floxTopbar] ошибка загрузки фото', e);
+    }
   },
   _logout() {
     // 21.07.26, найден Ильёй баг ("выйти из аккаунта не могу"): раньше эта

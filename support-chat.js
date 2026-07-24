@@ -231,7 +231,7 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-list::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;}
 .fc-item{display:flex; gap:10px; padding:11px 16px; cursor:pointer;}
 .fc-item:hover,.fc-item.act{background:var(--surface-2);}
-.fc-avatar{width:40px;height:40px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--muted);flex-shrink:0;}
+.fc-avatar{width:40px;height:40px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--muted);flex-shrink:0;overflow:hidden;background-size:cover;background-position:center;}
 .fc-avatar.fc-avatar-support{background:var(--accent-soft);color:var(--accent);}
 .fc-item-body{flex:1;min-width:0;}
 .fc-item-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
@@ -322,7 +322,14 @@ body.light{ --chat-pill-bg: #ffffff; }
    текста, вплоть до max-height, а дальше — свой внутренний скролл (текст
    просто уходит вверх, сама область ввода дальше не растёт). resize:none —
    чтобы нельзя было вручную растянуть за уголок, как в обычном textarea. */
-.fc-input{flex:1;background:var(--chat-pill-bg);border:1px solid var(--line-2);border-radius:20px;padding:10px 16px;color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:none;overflow-y:auto;line-height:1.4;max-height:120px;}
+/* 27.07.26, по правке Ильи: скролл-бар убирали во всех трёх областях
+   саппорта (список тредов, сообщения, эмодзи) — оказалось, что нужно было
+   убрать только тут, в самом поле ввода (там, где печатается текст) —
+   поэтому выше список/сообщения/эмодзи вернули обратно с обычным тонким
+   скроллом, а скрыт скролл теперь только у .fc-input. */
+.fc-input{flex:1;background:var(--chat-pill-bg);border:1px solid var(--line-2);border-radius:20px;padding:10px 16px;color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:none;overflow-y:auto;line-height:1.4;max-height:120px;
+  scrollbar-width:none; -ms-overflow-style:none;}
+.fc-input::-webkit-scrollbar{display:none;}
 .fc-input::placeholder{color:var(--muted);}
 .fc-send{width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s,background .15s;}
 .fc-send:hover{transform:scale(1.06);}
@@ -1197,6 +1204,34 @@ window.floxSupportChat = {
     av.classList.toggle('fc-avatar-support', !!t.isSupportIcon);
     document.getElementById('fcChatTitle').textContent = t.name;
     document.getElementById('fcChatSub').textContent = t.sub;
+    // 27.07.26, по просьбе Ильи: если у собеседника загружено своё фото
+    // (через topbar.js), показываем его в кружке шапки чата вместо
+    // инициалов. Не для isSupportIcon (там нет одного конкретного
+    // собеседника — со стороны агента это тред техподдержки в целом).
+    if (t.agent_id && !t.isSupportIcon) this._applyAvatarPhoto(av, t.agent_id);
+  },
+
+  // 27.07.26: фото собеседника — отдельным best-effort запросом (не трогаем
+  // основные select'ы threads/списка), с маленьким кешем в памяти. Если в
+  // agents ещё нет колонки avatar_url или у агента нет фото — просто тихо
+  // ничего не делаем, кружок остаётся с инициалами как раньше.
+  _photoCache: {},
+  async _applyAvatarPhoto(el, agentId) {
+    if (this._photoCache[agentId] !== undefined) {
+      if (this._photoCache[agentId]) { el.style.backgroundImage = `url('${this._photoCache[agentId]}')`; el.textContent=''; }
+      return;
+    }
+    try {
+      const r = await fetch(`${SUPABASE_URL}/agents?id=eq.${agentId}&select=avatar_url`, {headers: SB});
+      if (!r.ok) { this._photoCache[agentId] = null; return; }
+      const rows = await r.json();
+      const url = (rows[0] && rows[0].avatar_url) || null;
+      this._photoCache[agentId] = url;
+      if (url && this._activeThreadId) {
+        const stillActive = document.getElementById('fcChatAvatar');
+        if (stillActive) { stillActive.style.backgroundImage = `url('${url}')`; stillActive.textContent = ''; }
+      }
+    } catch(e) { this._photoCache[agentId] = null; }
   },
 
   _handleSend() {
@@ -1256,8 +1291,20 @@ window.floxSupportChat = {
     this._searchAgents = (this._searchAgentsRaw || []).filter(a => !knownIds.has(String(a.id)));
 
     if (q) {
+      // 26.07.26, по новой правке Ильи ("отправляю консоль с багом
+      // задвоения"): предыдущая версия этого лога показывала только счётчики
+      // (threadsTotal/matchedInThreadList), а не то, ЧТО именно совпало —
+      // из одних счётчиков было не видно, два совпадения это два РАЗНЫХ
+      // agent_id (например, реальный тред поддержки + отдельная личная
+      // переписка с каким-то агентом, у которого в справочнике почему-то
+      // тоже стоит имя "Техподдержка Агентов"), или же это буквально два
+      // одинаковых support-треда с одним и тем же agent_id, которые должен
+      // был отсеять фикс в _loadSupportThreads. Теперь лог показывает id,
+      // kind и agent_id каждого совпадения — по нему сразу будет видно,
+      // какая из двух гипотез верна.
       console.log('[floxSupportChat] renderList debug', {
         q, threadsTotal: this._threads.length, matchedInThreadList: list.length,
+        matched: list.map(c => ({id: c.id, kind: c.kind, agent_id: c.agent_id, name: c.name, last_at: c.last_at})),
         searchAgentsRawCount: (this._searchAgentsRaw || []).length,
         searchAgentsAfterKnownFilter: this._searchAgents.length,
       });
