@@ -24,6 +24,32 @@
 //      немым 404 на кнопке эмодзи не стал; сказал об этом Илье отдельно).
 //   7. Перетаскивание файла в область переписки — тоже отправляет вложение.
 //
+// Версия 3 (26.07.26, по новой правке Ильи):
+//   1. Поиск по агентам почему-то не находил даже полное ФИО в бою, хотя
+//      мои тесты на мок-бэкенде проходили — грамматика PostgREST-фильтра
+//      and=(...) не проверяема из песочницы (нет сетевого доступа к
+//      реальному Supabase), поэтому решили не рисковать её и дальше:
+//      теперь у сервера просим только простой одиночный ilike по ПЕРВОМУ
+//      слову (уже проверенный, надёжный синтаксис) с запасом по limit, а
+//      всю логику "каждое слово запроса должно быть подстрокой ФИО,
+//      независимо от порядка" считаем на клиенте, в обычном JS — это можно
+//      гарантированно проверить прямо тут. Заодно снижен порог минимальной
+//      длины запроса (был 2 символа) — подсказки теперь показываются уже с
+//      первого введённого символа.
+//   2. Анимация выделения сообщения (правый клик): вместо рамки — плавное
+//      увеличение (scale) и смена цвета из фиолетового (--accent) в
+//      розовый (#FF6B6B, тот же акцентный розовый, что у круглой кнопки),
+//      анимированное в обе стороны (выделение/снятие).
+//   3. Анимация появления новых сообщений (текст/файл/картинка), от кого
+//      угодно — см. _seenMsgIds и fc-appear ниже.
+//   4. Клик по общему топбару (#flox-topbar — переключатель темы и всё
+//      остальное там же, см. topbar.js) больше не закрывает открытое окно
+//      саппорта как "клик снаружи".
+//   5. Анимация наведения на "прикрепить файл"/эмодзи — вместо серого круга
+//      теперь лёгкое увеличение (scale), цвет по наведению остался как был.
+//   6. Сетка эмодзи: серый фон при наведении убран (тоже scale), сами эмодзи
+//      увеличены.
+//
 // Подключать:  <script src="support-chat.js"></script>
 // Вызвать:     floxSupportChat.init()
 //              — flox-web.html и project.html: всегда;
@@ -172,7 +198,10 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-msgs::-webkit-scrollbar-track{background:transparent;}
 .fc-msgs::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;}
 .fc-day{align-self:center;font-size:11px;color:var(--muted);background:var(--surface-2);padding:4px 12px;border-radius:20px;margin:6px 0;}
-.fc-bubble{max-width:68%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.45;position:relative;white-space:pre-wrap;word-break:break-word;}
+/* 26.07.26: transition тут общий — используется и для анимации
+   появления (fc-appear ниже), и для анимации выделения (.sel). */
+.fc-bubble{max-width:68%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.45;position:relative;white-space:pre-wrap;word-break:break-word;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background-color .18s ease;}
 .fc-bubble.in{align-self:flex-start;background:var(--surface-2);border-bottom-left-radius:4px;}
 .fc-bubble.out{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px;}
 .fc-bubble-time{display:block;font-size:10px;color:var(--muted);margin-top:4px;text-align:right;}
@@ -187,14 +216,33 @@ body.light{ --chat-pill-bg: #ffffff; }
 
 /* 24.07.26, по правке Ильи: удаление теперь не через иконку-корзину на
    сообщении, а через выделение правой кнопкой мыши (клик или зажать и
-   провести по нескольким) — выделенное сообщение подсвечивается рамкой в
-   акцентном розовом, кнопка "отправить" при этом сама превращается в
-   корзину (см. _updateSendButtonMode). */
-.fc-bubble.sel{box-shadow:0 0 0 2px #FF6B6B inset;}
+   провести по нескольким) — кнопка "отправить" при этом сама превращается в
+   корзину (см. _updateSendButtonMode).
+   26.07.26, по новой правке: вместо статичной рамки — анимация: сообщение
+   слегка увеличивается и меняет цвет из фиолетового в розовый, плавно в обе
+   стороны (выделение/снятие выделения, transition — на самом .fc-bubble
+   выше). */
+.fc-bubble.sel{transform:scale(1.045);}
+.fc-bubble.out.sel{background:#FF6B6B;}
+
+/* 26.07.26, по просьбе Ильи: анимация появления новых сообщений (текст,
+   файлы, картинки) — независимо от того, кто пишет. Класс fc-appear
+   навешивается только на ДЕЙСТВИТЕЛЬНО новые сообщения (см. _seenMsgIds в
+   _renderMessages) — иначе анимация проигрывалась бы заново на всех старых
+   сообщениях при каждом опросе (POLL_MS), где весь #fcMsgs перерисовывается
+   целиком. */
+@keyframes fc-msg-appear{
+  from{opacity:0; transform:translateY(8px) scale(.96);}
+  to{opacity:1; transform:translateY(0) scale(1);}
+}
+.fc-bubble.fc-appear{animation:fc-msg-appear .28s cubic-bezier(.34,1.4,.64,1);}
 
 .fc-input-row{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line);position:relative;}
-.fc-icon-btn{width:28px;height:28px;border-radius:50%;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,color .15s;}
-.fc-icon-btn:hover{background:var(--surface-2);color:var(--text);}
+/* 26.07.26, по правке Ильи: серый круг при наведении убран — вместо него
+   лёгкое увеличение (scale); смена цвета по наведению осталась как была
+   ("Изменение цвета оставь как есть"). */
+.fc-icon-btn{width:28px;height:28px;border-radius:50%;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s cubic-bezier(.34,1.56,.64,1),color .15s;}
+.fc-icon-btn:hover{background:none;color:var(--text);transform:scale(1.18);}
 .fc-icon-btn svg{width:16px;height:16px;}
 .fc-input{flex:1;background:var(--chat-pill-bg);border:1px solid var(--line-2);border-radius:20px;padding:10px 16px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
 .fc-input::placeholder{color:var(--muted);}
@@ -226,9 +274,13 @@ body.light{ --chat-pill-bg: #ffffff; }
 #fcEmojiBody::-webkit-scrollbar{width:6px;}
 #fcEmojiBody::-webkit-scrollbar-track{background:transparent;}
 #fcEmojiBody::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;}
-.fc-emoji-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-.fc-emoji-grid button{border:none;background:none;font-size:18px;padding:5px;border-radius:8px;cursor:pointer;line-height:1;}
-.fc-emoji-grid button:hover{background:var(--surface-2);}
+/* 26.07.26, по правке Ильи: серый фон при наведении убран (тоже scale),
+   сами эмодзи увеличены (было font-size:18px) — колонок в сетке стало
+   меньше (6 вместо 7), чтобы бОльшим эмодзи не было тесно в той же ширине
+   попапа. */
+.fc-emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;}
+.fc-emoji-grid button{border:none;background:none;font-size:24px;padding:6px;border-radius:8px;cursor:pointer;line-height:1;transition:transform .12s cubic-bezier(.34,1.56,.64,1);}
+.fc-emoji-grid button:hover{background:none;transform:scale(1.25);}
 
 /* Лайтбокс для картинок из чата */
 .fc-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2147483200;display:none;align-items:center;justify-content:center;cursor:pointer;padding:40px;}
@@ -324,6 +376,9 @@ window.floxSupportChat = {
   _bootstrapping: false,
   _selectedMsgIds: new Set(),  // выбранные для удаления сообщения (правый клик)
   _lastRenderedMsgs: [],       // последний отрисованный список сообщений открытого чата
+  _seenMsgIds: new Set(),      // 26.07.26: id сообщений, которые уже проигрывали анимацию
+                                // появления (fc-appear) — сбрасывается при смене чата, см.
+                                // _selectThread/_renderMessages
 
   init() {
     if (!document.getElementById('sc-css')) {
@@ -555,24 +610,35 @@ window.floxSupportChat = {
   },
 
   async _searchAgentsDirectory(q) {
-    if (!q || q.length < 2) { this._searchAgentsRaw = []; this._renderList(); return; }
+    // 26.07.26, по новой правке Ильи ("до сих пор не работает"): прошлый
+    // вариант (группировка нескольких ilike-условий через and=(...)) прошёл
+    // мои тесты на мок-бэкенде, но не сработал в бою на реальном Supabase —
+    // из песочницы нет сетевого доступа к настоящему PostgREST, поэтому я не
+    // могу проверить, в чём именно там дело (кодирование URL, сам ли
+    // and=(...) синтаксис — что угодно). Раз это непроверяемо отсюда,
+    // безопаснее не полагаться на непроверенный серверный синтаксис вовсе:
+    // просим у сервера только ОДИН простой ilike-фильтр (по первому слову
+    // запроса — уже проверенный, надёжный вид фильтра, тот же, что и раньше
+    // прекрасно работал для одиночных слов) с запасом по limit, а дальше
+    // ВСЮ логику "каждое слово запроса должно быть подстрокой ФИО, в любом
+    // порядке слов, без учёта регистра" считаем прямо здесь, в обычном JS —
+    // это можно гарантированно проверить в этой же песочнице.
+    // Заодно снижен порог: раньше нужно было минимум 2 символа, теперь
+    // подсказки показываются уже с первого введённого символа (в любом
+    // регистре — ilike и так регистронезависим, а сравнение оставшихся слов
+    // на клиенте тоже идёт через toLowerCase()).
+    const terms = (q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) { this._searchAgentsRaw = []; this._renderList(); return; }
     try {
-      // 24.07.26: поиск всегда идёт напрямую в agents.full_name — то самое
-      // ФИО, которое меняет Илья как СЕО, тут никогда не кэшируется, так что
-      // переименованный агент сразу находится по новому имени/фамилии.
-      //
-      // 24.07.26, фикс "поиск не находит": раньше вся введённая фраза
-      // проверялась одним ilike-паттерном на весь full_name целиком — если
-      // ФИО в базе хранится в другом порядке слов, чем ввёл человек (напр.
-      // человек печатает "Дмитрий Сергеев", а в базе "Сергеев Дмитрий"),
-      // такой поиск ничего не находил, хотя оба слова там есть. Теперь
-      // каждое слово запроса — отдельное ilike-условие, и все они должны
-      // совпасть (через and=(...), без привязки к порядку слов).
-      const terms = q.trim().split(/\s+/).filter(Boolean);
-      const andExpr = terms.map(t => `full_name.ilike.*${encodeURIComponent(t)}*`).join(',');
-      const r = await fetch(`${SUPABASE_URL}/agents?and=(${andExpr})&id=neq.${this._agent.id}&select=id,full_name,agency&limit=8`, {headers: SB});
+      const r = await fetch(`${SUPABASE_URL}/agents?full_name=ilike.*${encodeURIComponent(terms[0])}*&id=neq.${this._agent.id}&select=id,full_name,agency&limit=30`, {headers: SB});
       const rows = await r.json();
-      this._searchAgentsRaw = Array.isArray(rows) ? rows : [];
+      const candidates = Array.isArray(rows) ? rows : [];
+      this._searchAgentsRaw = candidates
+        .filter(a => {
+          const name = (a.full_name || '').toLowerCase();
+          return terms.every(t => name.includes(t));
+        })
+        .slice(0, 8);
     } catch(e) { this._searchAgentsRaw = []; }
     this._renderList();
   },
@@ -724,10 +790,23 @@ window.floxSupportChat = {
     // списку внутри окна ошибочно закрывал бы его. mousedown происходит
     // раньше любых таких перерисовок, поэтому e.target на этот момент ещё
     // точно живой и внутри панели.
+    // 26.07.26, по правке Ильи: переключение темы (тёмная/светлая) больше не
+    // должно закрывать открытое окно саппорта. Сам переключатель темы живёт
+    // внутри общего топбара — контейнер #flox-topbar, куда его рендерит
+    // topbar.js (проверено напрямую в floxweb.html/project.html/unit.html —
+    // везде один и тот же <div id="flox-topbar">...</div>, см. комментарии
+    // рядом с ним про topbar.js). Само переключение темы — это просто
+    // document.body.classList.toggle('light') без перезагрузки страницы, так
+    // что наше окно и так пережило бы его; закрывалось оно только потому,
+    // что клик по любой кнопке топбара (в т.ч. по переключателю темы)
+    // технически происходит вне #fcPanel/#fcFab/#fcLightbox и раньше
+    // засчитывался как "клик снаружи". Добавили #flox-topbar в исключения
+    // целиком — так это работает независимо от того, как именно устроена
+    // кнопка темы внутри topbar.js.
     document.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return; // правая кнопка обрабатывается отдельно, см. _bindMessageSelection
       if (!this._panelOpen) return;
-      if (e.target.closest('#fcPanel') || e.target.closest('#fcFab') || e.target.closest('#fcLightbox')) return;
+      if (e.target.closest('#fcPanel') || e.target.closest('#fcFab') || e.target.closest('#fcLightbox') || e.target.closest('#flox-topbar')) return;
       this._togglePanel(false);
     });
 
@@ -876,6 +955,10 @@ window.floxSupportChat = {
     // 24.07.26: выделение для удаления — только в рамках одного открытого
     // чата, при переключении на другой сбрасываем.
     this._selectedMsgIds.clear();
+    // 26.07.26: тоже сбрасываем при смене чата — иначе анимация появления
+    // (fc-appear) не проигралась бы для сообщений уже открытого раньше чата,
+    // если открыть его снова.
+    this._seenMsgIds = new Set();
     this._updateSendButtonMode();
     this._updateActiveHeader();
     this._renderList();
@@ -981,7 +1064,12 @@ window.floxSupportChat = {
       if (day !== lastDay) { html += `<div class="fc-day">${day}</div>`; lastDay = day; }
       const out = m.sender_agent_id === this._agent.id;
       const sel = this._selectedMsgIds.has(m.id) ? ' sel' : '';
-      html += `<div class="fc-bubble ${out ? 'out' : 'in'}${sel}" data-msgid="${esc(m.id)}">`;
+      // 26.07.26, по просьбе Ильи: анимация появления — только для
+      // ДЕЙСТВИТЕЛЬНО новых сообщений (ещё не было в _seenMsgIds), иначе
+      // при каждом опросе (POLL_MS) весь #fcMsgs перерисовывается целиком и
+      // анимация проигрывалась бы заново на всех старых сообщениях тоже.
+      const appear = this._seenMsgIds.has(m.id) ? '' : ' fc-appear';
+      html += `<div class="fc-bubble ${out ? 'out' : 'in'}${sel}${appear}" data-msgid="${esc(m.id)}">`;
       if (m.body) html += esc(m.body);
       if (m.attachment_url) {
         if (isImageFile(m.attachment_name)) {
@@ -993,6 +1081,7 @@ window.floxSupportChat = {
       html += `<span class="fc-bubble-time">${fmtTime(m.created_at)}</span></div>`;
     }
     el.innerHTML = html;
+    msgs.forEach(m => this._seenMsgIds.add(m.id));
     this._scrollMsgsBottom();
   },
 
