@@ -1216,9 +1216,20 @@ window.floxSupportChat = {
   // agents ещё нет колонки avatar_url или у агента нет фото — просто тихо
   // ничего не делаем, кружок остаётся с инициалами как раньше.
   _photoCache: {},
+  // 27.07.26 (2), по факту бага у Ильи (кружок в топбаре опустел от битой
+  // ссылки): applyPhotoIfLoads НЕ ставит фото по одному факту непустого
+  // URL — сперва реально пробует загрузить картинку (new Image()), и только
+  // при успехе стирает инициалы и подставляет фон. При ошибке — молча
+  // остаётся с тем, что уже было в кружке (инициалы), вместо пустого места.
+  _applyPhotoIfLoads(el, url) {
+    if (!el || !url) return;
+    const probe = new Image();
+    probe.onload = () => { el.style.backgroundImage = `url('${url}')`; el.textContent = ''; };
+    probe.src = url;
+  },
   async _applyAvatarPhoto(el, agentId) {
     if (this._photoCache[agentId] !== undefined) {
-      if (this._photoCache[agentId]) { el.style.backgroundImage = `url('${this._photoCache[agentId]}')`; el.textContent=''; }
+      this._applyPhotoIfLoads(el, this._photoCache[agentId]);
       return;
     }
     try {
@@ -1229,7 +1240,7 @@ window.floxSupportChat = {
       this._photoCache[agentId] = url;
       if (url && this._activeThreadId) {
         const stillActive = document.getElementById('fcChatAvatar');
-        if (stillActive) { stillActive.style.backgroundImage = `url('${url}')`; stillActive.textContent = ''; }
+        this._applyPhotoIfLoads(stillActive, url);
       }
     } catch(e) { this._photoCache[agentId] = null; }
   },

@@ -546,7 +546,10 @@ body.light .bugfix-footer-wrap{background:#f0f0f4;}
 .client-topbar{background:#1C1C2E;padding:14px 20px;display:none;align-items:center;gap:11px}
 .client-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 .client-agent-name{color:#fff;font-size:13px;font-weight:500}
-.client-agent-phone{color:rgba(255,255,255,.65);font-size:11.5px;margin-top:1px}
+/* 27.07.26, по просьбе Ильи: телефон вернули на правый край шапки, отдельно
+   от имени, с иконкой перед номером (см. то же в offer.html). */
+.client-agent-phone{color:rgba(255,255,255,.8);font-size:12.5px;margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.client-agent-phone svg{width:13px;height:13px;flex-shrink:0}
 
 /* ── бегущая строка "недавно продано" (только клиентский режим) ── */
 /* Клиентский режим всегда светлая тема (см. isClientMode ниже), поэтому
@@ -966,11 +969,12 @@ body.map-fake-fullscreen-active{overflow:hidden}
 <div id="flox-topbar" data-page="unit"></div>
 <div class="client-topbar" id="clientTopbar">
   <div class="client-avatar" id="clientAvatar"></div>
-  <div>
-    <div class="client-agent-name" id="clientAgentName"></div>
-    <!-- 26.07.26, по просьбе Ильи: телефон агента (agents.phone, передан из
-         offer.html через ?agentPhone=) в верхней строке рядом с именем. -->
-    <div class="client-agent-phone" id="clientAgentPhone"></div>
+  <div class="client-agent-name" id="clientAgentName"></div>
+  <!-- 27.07.26, по просьбе Ильи: телефон агента (agents.phone, передан из
+       offer.html через ?agentPhone=) — справа, ближе к краю, с иконкой. -->
+  <div class="client-agent-phone" id="clientAgentPhone" style="display:none">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+    <span id="clientAgentPhoneNum"></span>
   </div>
 </div>
 
@@ -1103,18 +1107,27 @@ if (isClientMode) {
   const ct = document.getElementById('clientTopbar');
   if (clientAgentInitials) {
     const clientAvatarEl = document.getElementById('clientAvatar');
+    // 27.07.26 (2): фото применяем только после того, как оно реально
+    // загрузилось (new Image()) — иначе при битой ссылке кружок оставался бы
+    // пустым вместо инициалов (см. тот же фикс в offer.html/topbar.js).
+    clientAvatarEl.textContent = clientAgentInitials;
     if (clientAgentPhoto) {
-      clientAvatarEl.style.backgroundImage = `url('${clientAgentPhoto}')`;
-      clientAvatarEl.style.backgroundSize = 'cover';
-      clientAvatarEl.style.backgroundPosition = 'center';
-      clientAvatarEl.textContent = '';
-    } else {
-      clientAvatarEl.textContent = clientAgentInitials;
+      const probe = new Image();
+      probe.onload = () => {
+        clientAvatarEl.style.backgroundImage = `url('${clientAgentPhoto}')`;
+        clientAvatarEl.style.backgroundSize = 'cover';
+        clientAvatarEl.style.backgroundPosition = 'center';
+        clientAvatarEl.textContent = '';
+      };
+      probe.src = clientAgentPhoto;
     }
     if (clientAgentName) {
       document.getElementById('clientAgentName').textContent = `${clientAgentName} — ваш личный агент по недвижимости`;
     }
-    document.getElementById('clientAgentPhone').textContent = clientAgentPhone;
+    if (clientAgentPhone) {
+      document.getElementById('clientAgentPhoneNum').textContent = clientAgentPhone;
+      document.getElementById('clientAgentPhone').style.display = 'flex';
+    }
     ct.style.display = 'flex';
   }
   // То же предупреждение, что и в оффере (offer.html) — то же в двух

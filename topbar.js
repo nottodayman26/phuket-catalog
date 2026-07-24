@@ -258,18 +258,32 @@ window.floxTopbar = {
 
   // 27.07.26: общий рендер кружка-аватара — либо фото (background-image),
   // либо буквы-инициалы, как было раньше.
+  // 27.07.26 (2), по факту бага у Ильи: раньше URL применялся "вслепую",
+  // просто потому что он был непустой строкой — если ссылка на самом деле
+  // битая (например, файл не залился в Storage, а сам URL всё равно был
+  // сохранён), кружок становился ПУСТЫМ (текст уже стёрт, картинка не
+  // грузится) — и терялись даже старые добрые инициалы. Теперь URL сначала
+  // ПРОВЕРЯЕТСЯ реальной загрузкой (new Image()) — инициалы стираются и
+  // фото ставится только если картинка правда загрузилась; при ошибке —
+  // тихий откат на инициалы. Это же самолечит уже испорченные значения
+  // (старый битый avatar_url в базе/кеше), без ручной чистки.
   _renderAvatarPhoto(el, photoUrl, initials) {
-    if (photoUrl) {
-      el.style.backgroundImage = `url('${photoUrl}')`;
-      el.textContent = '';
-    } else {
-      // Важно: НЕ ставить сюда backgroundImage='none' — инлайновый стиль
-      // перебивает CSS-градиент кружка (.flox-tb-avatar{background:
-      // linear-gradient(...)}) даже когда фото нет. Просто убираем
-      // инлайн-стиль, чтобы вернуться к градиенту из CSS.
+    if (!photoUrl) {
       el.style.backgroundImage = '';
       el.textContent = initials || 'АГ';
+      return;
     }
+    const probe = new Image();
+    probe.onload = () => {
+      el.style.backgroundImage = `url('${photoUrl}')`;
+      el.textContent = '';
+    };
+    probe.onerror = () => {
+      console.error('[floxTopbar] фото по ссылке не загрузилось, оставляем инициалы:', photoUrl);
+      el.style.backgroundImage = '';
+      el.textContent = initials || 'АГ';
+    };
+    probe.src = photoUrl;
   },
 
   // ── Загрузка фото/лого ───────────────────────────────────────────────────
@@ -282,25 +296,35 @@ window.floxTopbar = {
       const a = JSON.parse(localStorage.getItem('flox-agent') || 'null');
       if (!a || !a.id) return;
       const av = document.getElementById('ftb-avatar');
+      const initials = (a.full_name || '').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
       // Загрузка в тот же способ хранения (Supabase Storage, анонимный
       // ключ), что и вложения в support-chat.js (_uploadAttachment) — тот
       // же паттерн: POST файла напрямую как body, публичный URL по
       // предсказуемому пути.
       const path = `${a.id}/${Date.now()}_${file.name}`.replace(/\s+/g, '_');
-      await fetch(`${SUPABASE_BASE}/storage/v1/object/agent-photos/${encodeURIComponent(path)}`, {
+      const uploadResp = await fetch(`${SUPABASE_BASE}/storage/v1/object/agent-photos/${encodeURIComponent(path)}`, {
         method: 'POST',
         headers: {...SB, 'Content-Type': file.type || 'application/octet-stream'},
         body: file,
       });
+      // 27.07.26 (2), ИСПРАВЛЕНО: раньше статус этого запроса вообще не
+      // проверялся — если бакета "agent-photos" не существует (или другая
+      // ошибка Storage), код всё равно шёл дальше, как будто файл реально
+      // залился, и сохранял в базу ссылку на несуществующий файл. Теперь при
+      // неуспехе сразу останавливаемся и НЕ трогаем ни базу, ни кружок —
+      // он остаётся с инициалами, как было.
+      if (!uploadResp.ok) {
+        console.error('[floxTopbar] не удалось загрузить файл в Storage (бакет "agent-photos" существует? см. текст ошибки ниже):', await uploadResp.text().catch(()=>''));
+        return;
+      }
       const url = `${SUPABASE_BASE}/storage/v1/object/public/agent-photos/${encodeURIComponent(path)}`;
 
-      // 27.07.26, ВАЖНО: это предполагает, что в Supabase уже существуют
-      // (1) публичный Storage-бакет "agent-photos" и (2) текстовая колонка
-      // agents.avatar_url — у меня нет доступа к схеме базы, чтобы это
-      // проверить самому, поэтому если бакета/колонки ещё нет, эта команда
-      // ниже вернёт ошибку и просто ничего не сохранится (кружок останется
-      // с инициалами) — в таком случае нужно завести бакет/колонку с этими
-      // именами (или сказать мне другие названия — поправлю код под них).
+      // 27.07.26, ВАЖНО: это предполагает, что в Supabase уже существует
+      // текстовая колонка agents.avatar_url — у меня нет доступа к схеме
+      // базы, чтобы это проверить самому, поэтому если колонки ещё нет, эта
+      // команда ниже вернёт ошибку и просто ничего не сохранится (кружок
+      // останется с инициалами) — в таком случае нужно завести колонку с
+      // этим именем (или сказать мне другое — поправлю код под него).
       const resp = await fetch(`${SUPABASE_URL}/agents?id=eq.${a.id}`, {
         method: 'PATCH',
         headers: {...SB, 'Content-Type': 'application/json', Prefer: 'return=minimal'},
@@ -313,7 +337,7 @@ window.floxTopbar = {
 
       a.avatar_url = url;
       localStorage.setItem('flox-agent', JSON.stringify(a));
-      if (av) this._renderAvatarPhoto(av, url, '');
+      if (av) this._renderAvatarPhoto(av, url, initials);
     } catch (e) {
       console.error('[floxTopbar] ошибка загрузки фото', e);
     }
