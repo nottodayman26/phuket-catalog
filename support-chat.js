@@ -55,9 +55,14 @@ body.light{ --chat-pill-bg: #ffffff; }
 
 .fc-fab{
   position:fixed; right:28px; bottom:28px; width:58px; height:58px; border-radius:50%;
-  background:#FF6B6B; border:none; cursor:pointer; z-index:4000;
+  /* 24.07.26, по правке Ильи: z-index поднят намного выше "фейкового
+     полноэкрана" карты (см. .map-fake-fullscreen в floxweb.html/project.html/
+     unit.html — это не настоящий Fullscreen API, а свой CSS-приём с
+     z-index:999999999/99999), иначе кнопка пряталась под развёрнутой картой.
+     Тень убрана совсем (была 0 2px 8px). */
+  background:#FF6B6B; border:none; cursor:pointer; z-index:2147483000;
   display:flex; align-items:center; justify-content:center;
-  box-shadow:0 2px 8px rgba(0,0,0,.2);
+  box-shadow:none;
   transition:transform .2s cubic-bezier(.34,1.56,.64,1);
 }
 .fc-fab{display:none;}
@@ -76,7 +81,7 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-panel{
   position:fixed; right:28px; bottom:100px; width:860px; height:600px; max-width:calc(100vw - 56px);
   max-height:calc(100vh - 130px); background:var(--surface); border:none;
-  border-radius:20px; box-shadow:0 4px 20px rgba(0,0,0,.18); z-index:4001;
+  border-radius:20px; box-shadow:0 4px 20px rgba(0,0,0,.18); z-index:2147483001;
   display:flex; overflow:hidden; opacity:0; transform:translateY(16px) scale(.98); pointer-events:none;
   transition:opacity .18s ease, transform .18s cubic-bezier(.34,1.2,.64,1);
 }
@@ -133,8 +138,24 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-bubble-file{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px;font-size:12.5px;margin-top:2px;cursor:pointer;border:none;color:inherit;font-family:inherit;text-align:left;width:100%;}
 .fc-bubble.out .fc-bubble-file{background:rgba(255,255,255,.15);}
 .fc-bubble-file svg{width:16px;height:16px;flex-shrink:0;}
-.fc-bubble-img{display:block;max-width:220px;max-height:220px;border-radius:10px;margin-top:2px;cursor:zoom-in;object-fit:cover;}
+/* 24.07.26, по правке Ильи: убрана лупа-курсор (была cursor:zoom-in) —
+   обычный указатель, картинка по клику всё так же открывается лайтбоксом. */
+.fc-bubble-img{display:block;max-width:220px;max-height:220px;border-radius:10px;margin-top:2px;cursor:pointer;object-fit:cover;}
 .fc-hint{color:var(--muted);font-size:12.5px;text-align:center;padding:20px;}
+
+/* Кнопка удаления сообщения — только у своих сообщений, показывается по
+   наведению, чтобы не загромождать переписку. */
+.fc-bubble{padding-right:28px;}
+.fc-bubble-del{
+  position:absolute; top:6px; right:6px; width:20px; height:20px; border-radius:50%;
+  border:none; background:rgba(0,0,0,.18); color:inherit; cursor:pointer; display:none;
+  align-items:center; justify-content:center; opacity:.75; transition:opacity .15s,background .15s;
+}
+.fc-bubble.out .fc-bubble-del{background:rgba(255,255,255,.22);}
+.fc-bubble:hover .fc-bubble-del{display:flex;}
+.fc-bubble-del:hover{opacity:1;background:rgba(0,0,0,.32);}
+.fc-bubble.out .fc-bubble-del:hover{background:rgba(255,255,255,.35);}
+.fc-bubble-del svg{width:11px;height:11px;}
 
 .fc-input-row{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line);position:relative;}
 .fc-icon-btn{width:28px;height:28px;border-radius:50%;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,color .15s;}
@@ -158,8 +179,6 @@ body.light{ --chat-pill-bg: #ffffff; }
   padding:10px; display:none; flex-direction:column; z-index:10;
 }
 .fc-emoji-pop.vis{display:flex;}
-.fc-emoji-search{width:100%;flex-shrink:0;background:var(--chat-pill-bg);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;color:var(--text);font-size:12px;outline:none;font-family:inherit;margin-bottom:8px;}
-.fc-emoji-search::placeholder{color:var(--muted);}
 .fc-emoji-cat{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:4px 2px;}
 /* 25.07.26: раньше свой скролл был у КАЖДОЙ категории (max-height:220px) —
    при нескольких категориях подряд их суммарная высота всё равно вылезала
@@ -176,7 +195,7 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-emoji-grid button:hover{background:var(--surface-2);}
 
 /* Лайтбокс для картинок из чата */
-.fc-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5000;display:none;align-items:center;justify-content:center;cursor:zoom-out;padding:40px;}
+.fc-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2147483200;display:none;align-items:center;justify-content:center;cursor:pointer;padding:40px;}
 .fc-lightbox.vis{display:flex;}
 .fc-lightbox img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
 
@@ -200,9 +219,11 @@ const SVG_CLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const SVG_EMOJI = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
 const SVG_SEND = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>`;
 const SVG_FILE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
+const SVG_TRASH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
 
 // ── Расширенный набор эмодзи (без внешних библиотек — см. комментарий в
-// шапке файла), с категориями + фильтром по названию-ключевому слову. ──
+// шапке файла), с категориями. 24.07.26: поле поиска по эмодзи убрано по
+// просьбе Ильи — просто категоризированная сетка. ──
 const EMOJI_CATS = [
   { name: 'Смайлы', items: ['😀','😁','😂','🤣','😊','😉','😍','😘','😎','🤩','🙂','🙃','😇','🥳','🤔','🤨','😐','😑','😶','🙄','😏','😣','😥','😮','😯','😪','😫','😴','😌','😛','😜','😝','🤤','😒','😓','😔','😕','🙁','☹️','😖','😞','😟','😤','😢','😭','😦','😧','😨','😩','🤯','😬','😰','😱','🥵','🥶','😳','🤪','😵','🥴','😠','😡','🤬','😷','🤒','🤕','🤢','🤮','🥱'] },
   { name: 'Жесты', items: ['👍','👎','👏','🙌','🙏','🤝','👋','🤙','💪','✌️','🤞','🤟','👌','🤌','🖐️','✋','👊','✊','🤛','🤜','☝️','👉','👈','👆','👇','🫡','🫶'] },
@@ -211,8 +232,6 @@ const EMOJI_CATS = [
   { name: 'Природа и путешествия', items: ['🏖️','🌊','☀️','🌤️','☁️','🌧️','🌈','🌴','🌿','🌸','🚗','✈️','🏨','🗺️'] },
   { name: 'Еда', items: ['☕','🍵','🍕','🍔','🍎','🍉','🍰','🥂'] },
 ];
-function allEmoji() { return EMOJI_CATS.flatMap(c => c.items); }
-
 function initials(name){
   return (name || '').trim().split(/\s+/).map(w => w[0]).filter(Boolean).slice(0,2).join('').toUpperCase() || '?';
 }
@@ -252,7 +271,10 @@ window.floxSupportChat = {
   _agent: null,
   _isStaff: false,
   _threads: [],          // объединённый список: support + dm
-  _searchAgents: [],      // результаты поиска по справочнику (для новых чатов)
+  _searchAgentsRaw: [],   // сырые результаты поиска по справочнику (агенты)
+  _searchAgents: [],      // те же результаты, но без уже существующих чатов —
+                          // пересчитывается в _renderList() при каждом рендере
+                          // (24.07.26, см. комментарий в _renderList)
   _activeThreadId: null,
   _activeThreadKind: null,
   _tab: 'all',
@@ -309,6 +331,8 @@ window.floxSupportChat = {
       this._renderList();
       if (!this._activeThreadId && this._threads.length) {
         this._selectThread(this._threads[0].id, this._threads[0].kind);
+      } else {
+        this._updateActiveHeader();
       }
       this._updateBadge();
     } catch(e) {
@@ -323,6 +347,12 @@ window.floxSupportChat = {
     try {
       await this._loadAllThreads();
       this._renderList();
+      // 24.07.26, по просьбе Ильи: если СЕО поменял ФИО собеседника, пока
+      // открыт чат с ним — заголовок над перепиской должен обновиться сам,
+      // без переоткрытия чата (имя и так всегда читается свежим при каждой
+      // подгрузке списка тредов, тут просто применяем это к уже открытому
+      // заголовку, который раньше выставлялся только один раз при выборе).
+      this._updateActiveHeader();
       this._updateBadge();
       if (this._activeThreadId && this._panelOpen) {
         await this._loadMessages(this._activeThreadId, this._activeThreadKind, {silent:true});
@@ -483,21 +513,31 @@ window.floxSupportChat = {
   },
 
   async _searchAgentsDirectory(q) {
-    if (!q || q.length < 2) { this._searchAgents = []; this._renderList(); return; }
+    if (!q || q.length < 2) { this._searchAgentsRaw = []; this._renderList(); return; }
     try {
+      // 24.07.26: поиск всегда идёт напрямую в agents.full_name — то самое
+      // ФИО, которое меняет Илья как СЕО, тут никогда не кэшируется, так что
+      // переименованный агент сразу находится по новому имени/фамилии.
       const r = await fetch(`${SUPABASE_URL}/agents?full_name=ilike.*${encodeURIComponent(q)}*&id=neq.${this._agent.id}&select=id,full_name,agency&limit=8`, {headers: SB});
       const rows = await r.json();
-      const knownIds = new Set(this._threads.map(t => t.agent_id));
-      this._searchAgents = (Array.isArray(rows) ? rows : []).filter(a => !knownIds.has(a.id));
-    } catch(e) { this._searchAgents = []; }
+      this._searchAgentsRaw = Array.isArray(rows) ? rows : [];
+    } catch(e) { this._searchAgentsRaw = []; }
     this._renderList();
   },
 
   async _startDM(agentId, name, agency) {
-    const convId = await this._ensureDMConversation(agentId);
-    if (!convId) return;
     document.getElementById('fcSearchInput').value = '';
-    this._searchAgents = [];
+    this._searchAgentsRaw = [];
+    // 24.07.26, фикс бага "чат задваивается": если чат с этим агентом уже
+    // есть в списке, просто открываем его напрямую, без похода на сервер —
+    // раньше в редком случае (гонка: поиск отработал раньше, чем успел
+    // прогрузиться список тредов) уже существующий собеседник мог мелькнуть
+    // в разделе "Начать новый чат", и клик по нему создавал вторую видимую
+    // строку с тем же чатом.
+    const existing = this._threads.find(t => t.kind === 'dm' && String(t.agent_id) === String(agentId));
+    if (existing) { this._renderList(); this._selectThread(existing.id, 'dm'); return; }
+    const convId = await this._ensureDMConversation(agentId);
+    if (!convId) { this._renderList(); return; }
     await this._loadAllThreads();
     this._renderList();
     this._selectThread(convId, 'dm');
@@ -540,7 +580,6 @@ window.floxSupportChat = {
           <input class="fc-input" id="fcInput" type="text" placeholder="Напишите сообщение…">
           <button class="fc-icon-btn" id="fcEmojiBtn" aria-label="Эмодзи">${SVG_EMOJI}</button>
           <div class="fc-emoji-pop" id="fcEmojiPop">
-            <input class="fc-emoji-search" id="fcEmojiSearch" placeholder="Найти эмодзи…">
             <div id="fcEmojiBody"></div>
           </div>
           <button class="fc-send" id="fcSendBtn" aria-label="Отправить">${SVG_SEND}</button>
@@ -586,13 +625,11 @@ window.floxSupportChat = {
       if (file) await this._handleFileSend(file);
     });
 
-    // ── Эмодзи ──
+    // ── Эмодзи (24.07.26: поле поиска убрано — просто сетка по категориям) ──
     const emojiBtn = document.getElementById('fcEmojiBtn');
     const emojiPop = document.getElementById('fcEmojiPop');
-    const emojiSearch = document.getElementById('fcEmojiSearch');
-    this._renderEmojiBody('');
-    emojiBtn.onclick = (e) => { e.stopPropagation(); emojiPop.classList.toggle('vis'); if (emojiPop.classList.contains('vis')) emojiSearch.focus(); };
-    emojiSearch.oninput = () => this._renderEmojiBody(emojiSearch.value.trim());
+    this._renderEmojiBody();
+    emojiBtn.onclick = (e) => { e.stopPropagation(); emojiPop.classList.toggle('vis'); };
     document.getElementById('fcEmojiBody').addEventListener('click', (e) => {
       if (e.target.tagName === 'BUTTON') { input.value += e.target.textContent; input.focus(); }
     });
@@ -600,8 +637,31 @@ window.floxSupportChat = {
       if (!e.target.closest('.fc-emoji-pop') && e.target !== emojiBtn) emojiPop.classList.remove('vis');
     });
 
-    // Клики внутри переписки: картинка → лайтбокс, файл → скачивание
+    // 24.07.26, по просьбе Ильи: клик вне всплывающего окна — закрывает его
+    // (сам fcFab и лайтбокс исключены, чтобы не конфликтовать с их
+    // собственными обработчиками клика). Нарочно слушаем mousedown, а не
+    // click: клик по пункту списка (например, выбор другого чата) сам
+    // синхронно перерисовывает #fcList (см. _selectThread → _renderList),
+    // из-за чего исходный e.target у события click успевает отсоединиться от
+    // документа ещё до того, как всплытие дойдёт до document — closest()
+    // на отсоединённом узле не находит '#fcPanel', и клик по своему же
+    // списку внутри окна ошибочно закрывал бы его. mousedown происходит
+    // раньше любых таких перерисовок, поэтому e.target на этот момент ещё
+    // точно живой и внутри панели.
+    document.addEventListener('mousedown', (e) => {
+      if (!this._panelOpen) return;
+      if (e.target.closest('#fcPanel') || e.target.closest('#fcFab') || e.target.closest('#fcLightbox')) return;
+      this._togglePanel(false);
+    });
+
+    // Клики внутри переписки: удалить / картинка → лайтбокс / файл → скачивание
     document.getElementById('fcMsgs').addEventListener('click', (e) => {
+      const delBtn = e.target.closest('.fc-bubble-del');
+      if (delBtn) {
+        if (!confirm('Удалить сообщение?')) return;
+        this._deleteMessage(delBtn.dataset.msgid, delBtn.dataset.url || null);
+        return;
+      }
       const img = e.target.closest('.fc-bubble-img');
       if (img) {
         document.getElementById('fcLightboxImg').src = img.src;
@@ -618,23 +678,38 @@ window.floxSupportChat = {
     });
   },
 
-  _renderEmojiBody(query) {
+  // 24.07.26: поле поиска по эмодзи убрано по просьбе Ильи — рендерим сразу
+  // всю категоризированную сетку целиком, без фильтра.
+  _renderEmojiBody() {
     const el = document.getElementById('fcEmojiBody');
-    const q = query.toLowerCase();
-    if (!q) {
-      el.innerHTML = EMOJI_CATS.map(cat => `
-        <div class="fc-emoji-cat">${cat.name}</div>
-        <div class="fc-emoji-grid">${cat.items.map(e => `<button type="button">${e}</button>`).join('')}</div>
-      `).join('');
-    } else {
-      // простой фильтр: показываем все эмодзи одним списком (без деления на
-      // категории), пользователь ищет визуально — полноценного текстового
-      // описания у каждого эмодзи в этом наборе нет, поэтому фильтруем по
-      // названию категории, куда он входит.
-      const matched = EMOJI_CATS.filter(c => c.name.toLowerCase().includes(q)).flatMap(c => c.items);
-      const list = matched.length ? matched : allEmoji();
-      el.innerHTML = `<div class="fc-emoji-grid">${list.map(e => `<button type="button">${e}</button>`).join('')}</div>`;
+    el.innerHTML = EMOJI_CATS.map(cat => `
+      <div class="fc-emoji-cat">${cat.name}</div>
+      <div class="fc-emoji-grid">${cat.items.map(e => `<button type="button">${e}</button>`).join('')}</div>
+    `).join('');
+  },
+
+  // 24.07.26: удаление своего сообщения (и вложения из Storage, best-effort —
+  // если объект уже отсутствует, ошибку просто глушим, само сообщение к тому
+  // моменту уже удалено).
+  async _deleteMessage(msgId, attachmentUrl) {
+    const kind = this._activeThreadKind;
+    const t = TABLES[kind];
+    try {
+      await fetch(`${SUPABASE_URL}/${t.msg}?id=eq.${msgId}`, { method: 'DELETE', headers: SB });
+    } catch(e) { console.error('[floxSupportChat] delete message error', e); return; }
+    if (attachmentUrl) {
+      try {
+        const marker = '/storage/v1/object/public/';
+        const idx = attachmentUrl.indexOf(marker);
+        if (idx !== -1) {
+          const objectPath = attachmentUrl.slice(idx + marker.length); // "<bucket>/<путь>"
+          await fetch(`${SUPABASE_BASE}/storage/v1/object/${objectPath}`, { method: 'DELETE', headers: SB });
+        }
+      } catch(e) { /* тихо — само сообщение уже удалено */ }
     }
+    await this._loadMessages(this._activeThreadId, this._activeThreadKind, {silent:true});
+    await this._loadAllThreads();
+    this._renderList();
   },
 
   async _handleFileSend(file) {
@@ -663,16 +738,23 @@ window.floxSupportChat = {
   _selectThread(id, kind) {
     this._activeThreadId = id;
     this._activeThreadKind = kind;
-    const t = this._threads.find(x => x.id === id && x.kind === kind);
-    if (t) {
-      const av = document.getElementById('fcChatAvatar');
-      av.textContent = initials(t.name);
-      av.classList.toggle('fc-avatar-support', !!t.isSupportIcon);
-      document.getElementById('fcChatTitle').textContent = t.name;
-      document.getElementById('fcChatSub').textContent = t.sub;
-    }
+    this._updateActiveHeader();
     this._renderList();
     this._loadMessages(id, kind);
+  },
+
+  // 24.07.26: вынесено из _selectThread отдельно, чтобы можно было обновлять
+  // заголовок открытого чата и без повторного выбора — например, когда СЕО
+  // поменял ФИО собеседнику, пока чат с ним уже открыт (см. вызов в _poll).
+  _updateActiveHeader() {
+    if (!this._activeThreadId) return;
+    const t = this._threads.find(x => x.id === this._activeThreadId && x.kind === this._activeThreadKind);
+    if (!t) return;
+    const av = document.getElementById('fcChatAvatar');
+    av.textContent = initials(t.name);
+    av.classList.toggle('fc-avatar-support', !!t.isSupportIcon);
+    document.getElementById('fcChatTitle').textContent = t.name;
+    document.getElementById('fcChatSub').textContent = t.sub;
   },
 
   _handleSend() {
@@ -689,6 +771,14 @@ window.floxSupportChat = {
     let list = this._threads.slice();
     if (this._tab === 'unread') list = list.filter(c => c.unread > 0);
     if (q) list = list.filter(c => c.name.toLowerCase().includes(q));
+
+    // 24.07.26, фикс "чат задваивается": исключаем из результатов поиска по
+    // справочнику тех, с кем чат уже есть — пересчитываем здесь, при каждом
+    // рендере (а не один раз в момент запроса к серверу), чтобы не зависеть
+    // от того, что успело подгрузиться раньше — список тредов или ответ
+    // поиска.
+    const knownIds = new Set(this._threads.map(t => String(t.agent_id)));
+    this._searchAgents = (this._searchAgentsRaw || []).filter(a => !knownIds.has(String(a.id)));
 
     const el = document.getElementById('fcList');
     let html = '';
@@ -741,6 +831,7 @@ window.floxSupportChat = {
       if (day !== lastDay) { html += `<div class="fc-day">${day}</div>`; lastDay = day; }
       const out = m.sender_agent_id === this._agent.id;
       html += `<div class="fc-bubble ${out ? 'out' : 'in'}">`;
+      if (out) html += `<button type="button" class="fc-bubble-del" data-msgid="${esc(m.id)}" data-url="${esc(m.attachment_url || '')}" aria-label="Удалить сообщение" title="Удалить">${SVG_TRASH}</button>`;
       if (m.body) html += esc(m.body);
       if (m.attachment_url) {
         if (isImageFile(m.attachment_name)) {
