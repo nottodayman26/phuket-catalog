@@ -3623,9 +3623,16 @@ function renderConstruction(d) {
   ).join('');
 
   const hasStages = stages && stages.length;
+  // 26.07.26, по правке Ильи: раньше у плейсхолдера "нет этапов" не было
+  // onclick вообще — он просто ничего не делал по клику, в отличие от
+  // реальных фото стройки (там клик открывает общий #lightbox через
+  // sliderClick, см. makeSlider выше). Теперь плейсхолдер тоже открывается
+  // в этом же лайтбоксе (просто с одной картинкой) — кнопка саппорта уже и
+  // так скрывается, пока лайтбокс открыт (см. синхронизацию с #lightbox в
+  // support-chat.js — она общая для всех, кто открывает через openLightbox).
   if (!hasStages) return `
     <div class="sec-title">Этапы строительства</div>
-    <div class="visual-slider" style="cursor:default">
+    <div class="visual-slider" style="cursor:pointer" onclick="openLightbox(['${base}img/common/netetapov.png'],0)">
       <img src="${base}img/common/netetapov.png" alt="Застройщик не публиковал этапы строительства этого проекта" style="width:100%;height:100%;object-fit:cover;display:block"/>
     </div>`;
 

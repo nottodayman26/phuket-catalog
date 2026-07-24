@@ -671,8 +671,8 @@ body.light .bugfix-footer-wrap{background:#f0f0f4;}
 
 /* ── PARAMS ── */
 .params-card{background:var(--surface);border:0.5px solid var(--line-2);border-radius:12px;overflow:hidden}
-.p-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:0.5px solid var(--line);font-size:13px}
-.p-row:last-child{border-bottom:none}
+/* 26.07.26, по правке Ильи: серые линии-разделители между строками убраны. */
+.p-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;font-size:13px}
 .p-label{color:var(--muted)}
 .p-val{font-weight:500}
 
@@ -682,8 +682,8 @@ body.light .bugfix-footer-wrap{background:#f0f0f4;}
 .sc-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
 .sc-price{font-size:26px;font-weight:700;margin-bottom:2px}
 .sc-price-exact{font-size:12px;color:var(--muted);margin-bottom:11px}
-.sc-row{display:flex;justify-content:space-between;font-size:12px;padding:9px 0;border-bottom:0.5px solid var(--line)}
-.sc-row:last-child{border-bottom:none}
+/* 26.07.26, по правке Ильи: серые линии-разделители между строками убраны. */
+.sc-row{display:flex;justify-content:space-between;font-size:12px;padding:9px 0}
 .sc-row span{color:var(--muted)}
 .sc-row b{font-weight:600;color:var(--text)}
 .sc-row .green{color:var(--green)}
@@ -839,8 +839,9 @@ body.light .bugfix-footer-wrap{background:#f0f0f4;}
 
 .desc-text{font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px}
 .facilities-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px}
-.fac-item{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;display:flex;align-items:center;gap:8px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;cursor:default}
-.fac-item:hover{transform:scale(1.04);border-color:var(--project-color);box-shadow:0 4px 16px rgba(94,23,235,0.12)}
+/* 26.07.26, по правке Ильи: обводка у прямоугольников с инфраструктурой убрана совсем. */
+.fac-item{background:var(--surface);border-radius:10px;padding:12px 14px;font-size:13px;display:flex;align-items:center;gap:8px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;cursor:default}
+.fac-item:hover{transform:scale(1.04);box-shadow:0 4px 16px rgba(94,23,235,0.12)}
 .fac-icon{font-size:18px}
 .info-box{background:var(--surface);border-radius:12px;padding:16px}
 .info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px;transition:transform .2s cubic-bezier(.34,1.56,.64,1);cursor:default}
@@ -1834,9 +1835,12 @@ function renderConstructionBlock(d) {
   ).join('');
 
   const hasStages = stages && stages.length;
+  // 26.07.26, по правке Ильи: см. тот же комментарий в project.html
+  // (renderConstruction) — плейсхолдер "нет этапов" теперь тоже открывается
+  // в общем #lightbox по клику, той же логикой, что и реальные фото стройки.
   if (!hasStages) return `
     <div class="sec-title">Этапы строительства</div>
-    <div class="visual-slider" style="cursor:default">
+    <div class="visual-slider" style="cursor:pointer" onclick="openLightbox(['${base}img/common/netetapov.png'],0)">
       <img src="${base}img/common/netetapov.png" alt="Застройщик не публиковал этапы строительства этого проекта" style="width:100%;height:100%;object-fit:cover;display:block"/>
     </div>`;
 

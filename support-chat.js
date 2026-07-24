@@ -250,7 +250,12 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-close{margin-left:auto;width:30px;height:30px;border-radius:50%;border:none;background:var(--surface-2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}
 .fc-close:hover{background:var(--surface-3);color:var(--text);}
 
-.fc-msgs{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:10px;
+/* 26.07.26, по правке Ильи: position:relative тут нужен, чтобы подсветка
+   при перетаскивании файла (.fc-dragover::after, см. ниже) рисовалась
+   именно в границах области сообщений, а не всего .fc-chat-col целиком
+   (раньше контур перетаскивания растягивался и на шапку чата — см. правку
+   ниже). */
+.fc-msgs{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:10px;position:relative;
   scrollbar-width:thin; scrollbar-color:var(--line-2) transparent;}
 .fc-msgs::-webkit-scrollbar{width:6px;}
 .fc-msgs::-webkit-scrollbar-track{background:transparent;}
@@ -299,14 +304,25 @@ body.light{ --chat-pill-bg: #ffffff; }
 }
 .fc-bubble.fc-appear{animation:fc-msg-appear .28s cubic-bezier(.34,1.4,.64,1);}
 
-.fc-input-row{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line);position:relative;}
+/* 26.07.26, по правке Ильи: align-items был center — при растущем поле
+   ввода (см. .fc-input ниже) это держало бы иконки/кнопку по центру уже
+   выросшей высокой области, а не у её низа, как это выглядит в обычных
+   мессенджерах. flex-end держит их у нижнего края независимо от того,
+   сколько строк сейчас в поле ввода. */
+.fc-input-row{display:flex;align-items:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--line);position:relative;}
 /* 26.07.26, по правке Ильи: серый круг при наведении убран — вместо него
    лёгкое увеличение (scale); смена цвета по наведению осталась как была
    ("Изменение цвета оставь как есть"). */
 .fc-icon-btn{width:28px;height:28px;border-radius:50%;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s cubic-bezier(.34,1.56,.64,1),color .15s;}
 .fc-icon-btn:hover{background:none;color:var(--text);transform:scale(1.18);}
 .fc-icon-btn svg{width:16px;height:16px;}
-.fc-input{flex:1;background:var(--chat-pill-bg);border:1px solid var(--line-2);border-radius:20px;padding:10px 16px;color:var(--text);font-size:13px;outline:none;font-family:inherit;}
+/* 26.07.26, по правке Ильи: раньше это был однострочный <input>, теперь —
+   растущий <textarea> (см. разметку в _buildDOM и autoResizeInput в
+   привязке событий): поле плавно увеличивается по высоте по мере набора
+   текста, вплоть до max-height, а дальше — свой внутренний скролл (текст
+   просто уходит вверх, сама область ввода дальше не растёт). resize:none —
+   чтобы нельзя было вручную растянуть за уголок, как в обычном textarea. */
+.fc-input{flex:1;background:var(--chat-pill-bg);border:1px solid var(--line-2);border-radius:20px;padding:10px 16px;color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:none;overflow-y:auto;line-height:1.4;max-height:120px;}
 .fc-input::placeholder{color:var(--muted);}
 .fc-send{width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s,background .15s;}
 .fc-send:hover{transform:scale(1.06);}
@@ -382,8 +398,16 @@ body.light{ --chat-pill-bg: #ffffff; }
    unit.html) — прячем её на время просмотра, см. синхронизацию в _buildDOM. */
 .fc-fab.fc-hidden-by-page{display:none !important;}
 
-/* Подсветка зоны переписки при перетаскивании файла */
-.fc-chat-col.fc-dragover::after{
+/* Подсветка зоны переписки при перетаскивании файла.
+   26.07.26, по правке Ильи: раньше подсветка растягивалась на весь
+   .fc-chat-col (шапка чата + сообщения + строка ввода сразу все вместе,
+   поскольку именно на этот общий контейнер вешался класс fc-dragover) —
+   получался контур сильно больше, чем сама область переписки. Слушатели
+   drag-событий остались на всём .fc-chat-col (так удобнее — файл можно
+   бросить в любом месте чата), а вот САМА подсветка теперь ограничена
+   только областью сообщений (#fcMsgs) — класс fc-dragover при перетаскивании
+   переключается именно на ней, см. _buildDOM. */
+.fc-msgs.fc-dragover::after{
   content:'Отпустите, чтобы отправить файл'; position:absolute; inset:8px; border:2px dashed var(--accent);
   border-radius:14px; background:var(--accent-soft); color:var(--accent); font-size:13px; font-weight:600;
   display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:5;
@@ -549,8 +573,20 @@ window.floxSupportChat = {
 
   // ── Данные: тред с поддержкой ─────────────────────────────────────────
   async _ensureOwnConversation() {
-    const r = await fetch(`${SUPABASE_URL}/support_conversations?agent_id=eq.${this._agent.id}&project_code=is.null&select=id`, {headers: SB});
+    const r = await fetch(`${SUPABASE_URL}/support_conversations?agent_id=eq.${this._agent.id}&project_code=is.null&select=id,created_at`, {headers: SB});
     const rows = await r.json();
+    // 26.07.26, диагностика по правке Ильи ("техподдержка все ещё
+    // задваивается"): если тут уже больше одного треда — это симптом того,
+    // что где-то создание всё-таки проскочило мимо частичного уникального
+    // индекса support_conversations_general_uniq (или дубль появился ещё до
+    // того, как индекс был применён). Логируем сразу здесь, при загрузке —
+    // это самое раннее место, где можно поймать факт задвоения.
+    if (Array.isArray(rows) && rows.length > 1) {
+      console.warn('[floxSupportChat] задвоение треда поддержки — уже больше одного треда у агента', {
+        agentId: this._agent.id,
+        conversations: rows.map(x => ({id: x.id, created_at: x.created_at})),
+      });
+    }
     if (Array.isArray(rows) && rows.length) return;
     try {
       await fetch(`${SUPABASE_URL}/support_conversations`, {
@@ -558,7 +594,9 @@ window.floxSupportChat = {
         headers: {...SB, 'Content-Type':'application/json', 'Prefer':'return=minimal'},
         body: JSON.stringify({agent_id: this._agent.id, project_code: null}),
       });
-    } catch(e) { /* частичный уникальный индекс в базе не даст создать дубль при гонке — не страшно */ }
+    } catch(e) {
+      console.warn('[floxSupportChat] _ensureOwnConversation: ошибка создания (возможно, гонка — партиционный индекс не даст дубль)', e && e.message);
+    }
   },
 
   async _loadSupportThreads() {
@@ -571,6 +609,40 @@ window.floxSupportChat = {
       convRows = await r.json();
     }
     if (!Array.isArray(convRows)) convRows = [];
+
+    // 26.07.26, по правке Ильи ("техподдержка всё ещё задваивается, нужна
+    // диагностика"): у обычного (не staff) агента тут по определению должен
+    // быть максимум ОДИН тред поддержки (project_code IS NULL) — если их
+    // почему-то несколько (баг, который частичный уникальный индекс должен
+    // был исключить на уровне базы, но по факту всё ещё воспроизводится),
+    // без этой защиты в списке показывались бы ОБА как отдельные "плашки"
+    // с одинаковым именем "Техподдержка Агентов" — ровно то, что видно на
+    // скриншоте Ильи. Показываем только ОДИН — тот, где реально есть хоть
+    // одно сообщение (если сообщения есть в нескольких — самый недавно
+    // активный; если ни в одном нет — самый старый по created_at), а про
+    // остальные явно предупреждаем в консоли с их id и датой создания, чтобы
+    // можно было найти и вручную объединить/удалить в самой базе.
+    if (!this._isStaff && convRows.length > 1) {
+      const withMeta = await Promise.all(convRows.map(async c => ({c, meta: await this._loadThreadMeta('support', c.id)})));
+      const withMsgs = withMeta.filter(x => !!x.meta.last_at);
+      let chosen;
+      if (withMsgs.length) {
+        withMsgs.sort((a, b) => new Date(b.meta.last_at) - new Date(a.meta.last_at));
+        chosen = withMsgs[0];
+      } else {
+        withMeta.sort((a, b) => new Date(a.c.created_at) - new Date(b.c.created_at));
+        chosen = withMeta[0];
+      }
+      console.warn('[floxSupportChat] показываем только один тред поддержки, остальные — задвоение (нужно почистить в базе вручную):', {
+        shown: chosen.c.id,
+        hidden: withMeta.filter(x => x.c.id !== chosen.c.id).map(x => x.c.id),
+      });
+      return [{
+        id: chosen.c.id, kind: 'support', agent_id: chosen.c.agent_id,
+        name: 'Техподдержка Агентов', sub: 'Ответим как можно скорее', isSupportIcon: true,
+        ...chosen.meta,
+      }];
+    }
 
     return Promise.all(convRows.map(async c => {
       const meta = await this._loadThreadMeta('support', c.id);
@@ -808,7 +880,7 @@ window.floxSupportChat = {
         <div class="fc-input-row">
           <button class="fc-icon-btn" id="fcAttachBtn" aria-label="Прикрепить файл">${SVG_CLIP}</button>
           <input type="file" id="fcFileInput" style="display:none">
-          <input class="fc-input" id="fcInput" type="text" placeholder="Напишите сообщение…">
+          <textarea class="fc-input" id="fcInput" rows="1" placeholder="Напишите сообщение…"></textarea>
           <button class="fc-icon-btn" id="fcEmojiBtn" aria-label="Эмодзи">${SVG_EMOJI}</button>
           <div class="fc-emoji-pop" id="fcEmojiPop">
             <div id="fcEmojiBody"></div>
@@ -859,7 +931,29 @@ window.floxSupportChat = {
       if (this._selectedMsgIds.size > 0) this._deleteSelectedMessages();
       else this._handleSend();
     };
-    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._handleSend(); } });
+    // 26.07.26, по правке Ильи: поле ввода стало растущим <textarea> —
+    // обычный Enter по-прежнему отправляет сообщение, а Shift+Enter (и
+    // любая другая модифицирующая клавиша — Ctrl/Alt/Meta+Enter, "и
+    // аналоги") теперь переносит на новую строку. Для Shift+Enter это и
+    // так стандартное поведение textarea — здесь просто не мешаем ему
+    // (preventDefault только для голого Enter).
+    input.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+      e.preventDefault();
+      this._handleSend();
+    });
+    // Автоувеличение высоты по мере набора текста — растёт до max-height
+    // (см. .fc-input в CSS), дальше просто свой внутренний скролл. Сохраняем
+    // на this, чтобы можно было дозвать и после программной вставки текста
+    // (эмодзи — см. ниже), для которой браузер сам событие input не шлёт.
+    const autoResizeInput = () => {
+      input.style.height = 'auto';
+      input.style.height = input.scrollHeight + 'px';
+    };
+    input.addEventListener('input', autoResizeInput);
+    this._autoResizeInput = autoResizeInput;
+    this._resetInputHeight = () => { input.style.height = 'auto'; };
 
     document.getElementById('fcAttachBtn').onclick = () => document.getElementById('fcFileInput').click();
     document.getElementById('fcFileInput').addEventListener('change', async (e) => {
@@ -869,13 +963,19 @@ window.floxSupportChat = {
     });
 
     // ── Перетаскивание файла в область переписки ──
+    // 26.07.26, по правке Ильи: слушатели остаются на всём .fc-chat-col
+    // (файл можно бросить в любом месте чата, включая шапку и строку ввода
+    // — так удобнее), но сама ВИЗУАЛЬНАЯ подсветка (.fc-dragover) теперь
+    // включается только на #fcMsgs — раньше контур растягивался на весь
+    // .fc-chat-col целиком, включая шапку, что и выглядело слишком крупно.
     const chatCol = document.getElementById('fcChatCol');
+    const msgsForDrag = document.getElementById('fcMsgs');
     let dragDepth = 0;
-    chatCol.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; chatCol.classList.add('fc-dragover'); });
+    chatCol.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; msgsForDrag.classList.add('fc-dragover'); });
     chatCol.addEventListener('dragover', (e) => e.preventDefault());
-    chatCol.addEventListener('dragleave', (e) => { e.preventDefault(); dragDepth = Math.max(0, dragDepth-1); if (!dragDepth) chatCol.classList.remove('fc-dragover'); });
+    chatCol.addEventListener('dragleave', (e) => { e.preventDefault(); dragDepth = Math.max(0, dragDepth-1); if (!dragDepth) msgsForDrag.classList.remove('fc-dragover'); });
     chatCol.addEventListener('drop', async (e) => {
-      e.preventDefault(); dragDepth = 0; chatCol.classList.remove('fc-dragover');
+      e.preventDefault(); dragDepth = 0; msgsForDrag.classList.remove('fc-dragover');
       const file = e.dataTransfer.files && e.dataTransfer.files[0];
       if (file) await this._handleFileSend(file);
     });
@@ -886,7 +986,14 @@ window.floxSupportChat = {
     this._renderEmojiBody();
     emojiBtn.onclick = (e) => { e.stopPropagation(); emojiPop.classList.toggle('vis'); };
     document.getElementById('fcEmojiBody').addEventListener('click', (e) => {
-      if (e.target.tagName === 'BUTTON') { input.value += e.target.textContent; input.focus(); }
+      if (e.target.tagName === 'BUTTON') {
+        input.value += e.target.textContent;
+        input.focus();
+        // программная вставка не шлёт настоящее событие input — дозываем
+        // автоувеличение высоты вручную (иначе несколько эмодзи подряд
+        // могли бы перенестись на новую строку без подгонки высоты поля).
+        this._autoResizeInput();
+      }
     });
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.fc-emoji-pop') && e.target !== emojiBtn) emojiPop.classList.remove('vis');
@@ -1098,6 +1205,10 @@ window.floxSupportChat = {
     const thread = this._threads.find(t => t.id === this._activeThreadId);
     if (!body || !thread) return;
     input.value = '';
+    // 26.07.26: поле ввода теперь растущий textarea — после отправки
+    // возвращаем его к однострочной высоте (иначе оставалось бы растянутым
+    // на высоту последнего многострочного сообщения).
+    if (this._resetInputHeight) this._resetInputHeight();
     this._sendMessage(thread.id, thread.kind, body);
   },
 
