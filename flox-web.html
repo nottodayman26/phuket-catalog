@@ -776,7 +776,7 @@ input,button{font-family:inherit;}
 #colSea .fd-collapsible-body{right:auto;width:260px;}
 #seaList .fd-list-item{white-space:nowrap;}
 
-.fd-allfilters-scroll{height:400px;overflow-y:scroll;overflow-x:hidden;padding:0 2px;margin-bottom:8px;
+.fd-allfilters-scroll{height:400px;overflow-y:scroll;overflow-x:hidden;padding:0 2px 16px;margin-bottom:8px;
   scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;}
 .fd-allfilters-scroll::-webkit-scrollbar{width:6px;}
 .fd-allfilters-scroll::-webkit-scrollbar-track{background:transparent;}
@@ -4571,7 +4571,28 @@ function setRangeVal(key, side, val){
 function onRangeInput(key, side, val){
   // ручной ввод — только целое число, максимум 30
   let n = val.replace(/[^\d]/g,'');
-  if(n !== ''){ n = String(Math.min(parseInt(n,10), 30)); }
+  if(n !== ''){
+    let num = Math.min(parseInt(n,10), 30);
+    // 24.07.26, по просьбе Ильи: presets (кнопки) уже не давали выбрать
+    // невалидную комбинацию между "Этаж" и "Этажей в доме" (см. disabled-
+    // логику в renderRangeCols выше), но ручной ввод в поле эту проверку не
+    // применял — можно было вписать руками значение, ломающее соответствие
+    // (напр. "этаж" от 5 до 6, а потом руками вписать "этажей в доме" до 3).
+    // Применяем ту же корреляцию и к ручному вводу — если введённое число
+    // выходит за допустимую границу, поджимаем его к ближайшей валидной.
+    if(key === 'unit'){
+      const floorsTo = getNumAF(range.floors.to);
+      if(floorsTo != null && num > floorsTo) num = floorsTo;
+    }
+    if(key === 'floors' && side === 'to'){
+      const unitVals = [getNumAF(range.unit.from), getNumAF(range.unit.to)].filter(v => v != null);
+      if(unitVals.length){
+        const unitMax = Math.max(...unitVals);
+        if(num < unitMax) num = unitMax;
+      }
+    }
+    n = String(num);
+  }
   range[key][side] = n;
   document.getElementById(key + (side==='from'?'FromInput':'ToInput')).value = n;
   renderCorrelatedRangeCols();
