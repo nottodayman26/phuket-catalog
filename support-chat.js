@@ -667,9 +667,31 @@ window.floxSupportChat = {
         name: this._isStaff ? (chosen.c.agents?.full_name || 'Агент') : 'Техподдержка Агентов',
         sub: this._isStaff ? (chosen.c.agents?.agency || '—') : 'Ответим как можно скорее',
         isSupportIcon: !this._isStaff,
+        // 25.07.26 (снова): Илья хочет видеть в кружке ровно то фото, что
+        // загружено самому аккаунту поддержки через топбар — а не безликую
+        // иконку. agent_id тут для не-staff — это ОН САМ (владелец треда),
+        // поэтому для аватарки используем отдельное поле: реальный id
+        // аккаунта поддержки (staff_role='support'). У staff в этом поле —
+        // как и раньше, id конкретного агента-собеседника.
+        photoAgentId: this._isStaff ? chosen.c.agent_id : await this._getSupportStaffId(),
         ...chosen.meta,
       };
     }));
+  },
+
+  // 25.07.26: единственный настоящий аккаунт поддержки (staff_role='support')
+  // — его id нужен, чтобы показать ЕГО РЕАЛЬНОЕ фото (agents.avatar_url) в
+  // кружке "Техподдержка Агентов" у обычных агентов, вместо статичной иконки.
+  // Кешируем — это не меняется в рамках одной открытой вкладки.
+  _supportStaffId: undefined,
+  async _getSupportStaffId() {
+    if (this._supportStaffId !== undefined) return this._supportStaffId;
+    try {
+      const r = await fetch(`${SUPABASE_URL}/agents?staff_role=eq.support&select=id&limit=1`, {headers: SB});
+      const rows = await r.json();
+      this._supportStaffId = (Array.isArray(rows) && rows[0] && rows[0].id) || null;
+    } catch(e) { this._supportStaffId = null; }
+    return this._supportStaffId;
   },
 
   // ── Данные: переписка между агентами ──────────────────────────────────
@@ -679,12 +701,6 @@ window.floxSupportChat = {
     if (!Array.isArray(rows) || !rows.length) return [];
 
     const otherIds = [...new Set(rows.map(c => c.agent_a_id === this._agent.id ? c.agent_b_id : c.agent_a_id))];
-    // 27.07.26 (3), по факту "задвоения" у Ильи (см. лог из консоли): дело
-    // было не в дубле в базе, а в том, что личная переписка (agent_conversations)
-    // с агентом поддержки (staff_role='support') выглядит в списке ТОЧНО так
-    // же, как отдельный служебный тред поддержки — оба называются
-    // "Техподдержка Агентов". Добавили staff_role в этот запрос, чтобы можно
-    // было отличить такую переписку и обработать её отдельно (см. filter ниже).
     const namesR = await fetch(`${SUPABASE_URL}/agents?id=in.(${otherIds.join(',')})&select=id,full_name,agency,staff_role`, {headers: SB});
     const names = await namesR.json();
     const nameMap = {};
@@ -693,27 +709,32 @@ window.floxSupportChat = {
     const built = await Promise.all(rows.map(async c => {
       const otherId = c.agent_a_id === this._agent.id ? c.agent_b_id : c.agent_a_id;
       const other = nameMap[otherId] || {};
-      const isSupportStaff = other.staff_role === 'support';
+      const otherIsSupport = other.staff_role === 'support';
+      // 25.07.26 (снова, по прямой правке Ильи — "это нихуя не личные
+      // сообщения, это отправка в учётку поддержки, убери всё что в
+      // скобках"): личная переписка (agent_conversations) между обычным
+      // агентом и аккаунтом поддержки — это НЕ отдельный самостоятельный
+      // чат, это и есть тот же самый служебный тред поддержки (он уже
+      // показан через support_conversations, см. _loadSupportThreads).
+      // Прошлая правка только переименовывала такую личку и показывала
+      // ВТОРОЙ строкой, если в ней были сообщения — из-за этого и
+      // получалось "2 техподдержки"/"2 Ильи Коныгина" с обеих сторон. Теперь
+      // такие пары (ровно одна сторона — staff_role='support', другая нет)
+      // исключаем из списка целиком и безусловно, даже если в них уже есть
+      // сообщения — они больше никогда не показываются отдельной строкой,
+      // независимо от того, когда и как были созданы (включая уже
+      // существующие в базе "хвосты" от старого бага, без ручной чистки).
+      if (this._isStaff !== otherIsSupport) return null;
       const meta = await this._loadThreadMeta('dm', c.id);
       return {
         id: c.id, kind: 'dm', agent_id: otherId,
-        // Если это личка именно с аккаунтом поддержки — подписываем иначе,
-        // чтобы визуально не путалось с настоящим служебным треодом
-        // "Техподдержка Агентов" (тот у не-staff всегда называется именно
-        // так, см. _loadSupportThreads).
-        name: isSupportStaff ? `${other.full_name || 'Агент'} (личные сообщения)` : (other.full_name || 'Агент'),
+        name: other.full_name || 'Агент',
         sub: other.agency || '—',
         isSupportIcon: false,
-        _isStaffDM: isSupportStaff,
         ...meta,
       };
     }));
-    // Такую личку с поддержкой имеет смысл вообще скрывать, если в ней нет
-    // ни одного сообщения — это ровно тот случай из бага (пустой "двойник"
-    // созданный когда-то случайным кликом по агенту в поиске вместо перехода
-    // в настоящую поддержку). Если сообщения в ней всё же есть — не прячем,
-    // только переименовываем (см. name выше), чтобы не потерять историю.
-    return built.filter(t => !(t._isStaffDM && !t.last_at));
+    return built.filter(Boolean);
   },
 
   async _loadThreadMeta(kind, convId) {
@@ -1301,11 +1322,14 @@ window.floxSupportChat = {
     document.getElementById('fcChatSub').textContent = t.sub;
     // 27.07.26, по просьбе Ильи: если у собеседника загружено своё фото
     // (через topbar.js), показываем его в кружке шапки чата вместо
-    // инициалов. Не для isSupportIcon (там нет одного конкретного
-    // собеседника — со стороны агента это тред техподдержки в целом).
-    if (t.agent_id && !t.isSupportIcon) {
-      av.dataset.avatarFor = String(t.agent_id);
-      this._applyAvatarPhoto(av, t.agent_id);
+    // инициалов. 25.07.26: для isSupportIcon (тред техподдержки у обычного
+    // агента) это тоже применяется — только используем photoAgentId (id
+    // реального аккаунта поддержки), а не agent_id (тот у такого треда —
+    // это сам агент-владелец треда, а не собеседник).
+    const photoId = t.photoAgentId || t.agent_id;
+    if (photoId) {
+      av.dataset.avatarFor = String(photoId);
+      this._applyAvatarPhoto(av, photoId);
     } else {
       delete av.dataset.avatarFor;
     }
@@ -1477,7 +1501,7 @@ window.floxSupportChat = {
     } else {
       html += list.map(c => `
         <div class="fc-item ${c.id === this._activeThreadId && c.kind === this._activeThreadKind ? 'act' : ''}" data-id="${c.id}" data-kind="${c.kind}">
-          <div class="fc-avatar ${c.isSupportIcon ? 'fc-avatar-support' : ''}" data-avatar-for="${c.agent_id || ''}">${initials(c.name)}</div>
+          <div class="fc-avatar ${c.isSupportIcon ? 'fc-avatar-support' : ''}" data-avatar-for="${(c.photoAgentId || c.agent_id) || ''}">${initials(c.name)}</div>
           <div class="fc-item-body">
             <div class="fc-item-top"><span class="fc-item-name">${esc(c.name)}</span><span class="fc-item-time">${c.last_at ? fmtTime(c.last_at) : ''}</span></div>
             <div class="fc-item-msg">${c.last_body ? (c.last_from_me ? 'Вы: ' : '') + esc(c.last_body) : '<span style="opacity:.7">Напишите, если будут вопросы</span>'}</div>
@@ -1505,11 +1529,14 @@ window.floxSupportChat = {
     // 27.07.26 (5), баг у Ильи: фото собеседника подставлялось только в
     // шапку открытого чата (_updateActiveHeader), но не в сам кружок в
     // списке слева — теперь то же самое (best-effort, с кешем) применяем и
-    // к каждой строке списка, кроме служебной иконки "Техподдержка Агентов"
-    // (isSupportIcon) — там нет одного конкретного собеседника с фото.
+    // к каждой строке списка. 25.07.26: включая служебную иконку
+    // "Техподдержка Агентов" — там data-avatar-for уже указывает не на
+    // агента-владельца треда, а на реальный id аккаунта поддержки (см.
+    // photoAgentId в _loadSupportThreads), так что фото показывает именно
+    // то, что загружено самому аккаунту поддержки через топбар.
     el.querySelectorAll('.fc-avatar[data-avatar-for]').forEach(node => {
       const agentId = node.dataset.avatarFor;
-      if (agentId && !node.classList.contains('fc-avatar-support')) this._applyAvatarPhoto(node, agentId);
+      if (agentId) this._applyAvatarPhoto(node, agentId);
     });
     el.querySelectorAll('.fc-item[data-newagent]').forEach(node => {
       // 27.07.26 (3): если найденный в справочнике "агент" на самом деле
