@@ -245,7 +245,17 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-item{display:flex; gap:10px; padding:11px 16px; cursor:pointer;}
 .fc-item:hover,.fc-item.act{background:var(--surface-2);}
 .fc-avatar{width:40px;height:40px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--muted);flex-shrink:0;overflow:hidden;background-size:cover;background-position:center;}
-.fc-avatar.fc-avatar-support{background:var(--accent-soft);color:var(--accent);}
+/* 25.07.26: НАЙДЕН настоящий баг "чёрного кружка поддержки" — свойство
+   background это сокращённая запись, и оно неявно сбрасывает background-size/position
+   на значения по умолчанию (auto / левый верхний угол), если их явно не
+   повторить в этой же строке. Из-за этого более специфичное правило ниже
+   перебивало cover/center из базового .fc-avatar — реальное фото поддержки
+   показывалось не растянутым по центру, а обрезанным по левому верхнему
+   углу в натуральную величину (для крупной картинки это давало сплошной
+   тёмный кусок). Меняем на background-color — оно не трогает
+   background-size/position/image вообще, cover/center из базового правила
+   продолжают действовать как надо. */
+.fc-avatar.fc-avatar-support{background-color:var(--accent-soft);color:var(--accent);}
 .fc-item-body{flex:1;min-width:0;}
 .fc-item-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
 .fc-item-name{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
