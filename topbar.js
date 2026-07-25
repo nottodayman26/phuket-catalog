@@ -310,7 +310,18 @@ window.floxTopbar = {
       // ключ), что и вложения в support-chat.js (_uploadAttachment) — тот
       // же паттерн: POST файла напрямую как body, публичный URL по
       // предсказуемому пути.
-      const path = `${a.id}/${Date.now()}_${file.name}`.replace(/\s+/g, '_');
+      // 27.07.26 (6), НАЙДЕНО по консоли Ильи: Supabase Storage возвращал
+      // 400 "InvalidKey" — раньше в путь файла подставлялось оригинальное
+      // имя файла (${file.name}) почти как есть (только пробелы менялись на
+      // подчёркивания) — а Storage требует, чтобы ключ объекта состоял
+      // только из ASCII-символов. Если пользователь загружает файл с
+      // кириллицей в названии (например "логотип_2.png", как в консоли) —
+      // ключ получался невалидным и загрузка падала. Теперь путь строится
+      // только из ASCII-безопасных частей (id агента, timestamp, расширение
+      // файла) — оригинальное название файла в пути больше не участвует.
+      const extMatch = /\.([a-zA-Z0-9]+)$/.exec(file.name || '');
+      const ext = extMatch ? extMatch[1].toLowerCase() : ((file.type && file.type.split('/')[1]) || 'jpg').replace(/[^a-z0-9]/gi, '');
+      const path = `${a.id}/${Date.now()}.${ext || 'jpg'}`;
       const uploadResp = await fetch(`${SUPABASE_BASE}/storage/v1/object/agent-photos/${encodeURIComponent(path)}`, {
         method: 'POST',
         headers: {...SB, 'Content-Type': file.type || 'application/octet-stream'},

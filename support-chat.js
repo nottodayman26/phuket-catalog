@@ -617,49 +617,57 @@ window.floxSupportChat = {
     }
     if (!Array.isArray(convRows)) convRows = [];
 
-    // 26.07.26, по правке Ильи ("техподдержка всё ещё задваивается, нужна
-    // диагностика"): у обычного (не staff) агента тут по определению должен
-    // быть максимум ОДИН тред поддержки (project_code IS NULL) — если их
-    // почему-то несколько (баг, который частичный уникальный индекс должен
-    // был исключить на уровне базы, но по факту всё ещё воспроизводится),
-    // без этой защиты в списке показывались бы ОБА как отдельные "плашки"
-    // с одинаковым именем "Техподдержка Агентов" — ровно то, что видно на
-    // скриншоте Ильи. Показываем только ОДИН — тот, где реально есть хоть
-    // одно сообщение (если сообщения есть в нескольких — самый недавно
-    // активный; если ни в одном нет — самый старый по created_at), а про
-    // остальные явно предупреждаем в консоли с их id и датой создания, чтобы
-    // можно было найти и вручную объединить/удалить в самой базе.
-    if (!this._isStaff && convRows.length > 1) {
-      const withMeta = await Promise.all(convRows.map(async c => ({c, meta: await this._loadThreadMeta('support', c.id)})));
-      const withMsgs = withMeta.filter(x => !!x.meta.last_at);
-      let chosen;
-      if (withMsgs.length) {
-        withMsgs.sort((a, b) => new Date(b.meta.last_at) - new Date(a.meta.last_at));
-        chosen = withMsgs[0];
-      } else {
-        withMeta.sort((a, b) => new Date(a.c.created_at) - new Date(b.c.created_at));
-        chosen = withMeta[0];
-      }
-      console.warn('[floxSupportChat] показываем только один тред поддержки, остальные — задвоение (нужно почистить в базе вручную):', {
-        shown: chosen.c.id,
-        hidden: withMeta.filter(x => x.c.id !== chosen.c.id).map(x => x.c.id),
-      });
-      return [{
-        id: chosen.c.id, kind: 'support', agent_id: chosen.c.agent_id,
-        name: 'Техподдержка Агентов', sub: 'Ответим как можно скорее', isSupportIcon: true,
-        ...chosen.meta,
-      }];
-    }
+    // 27.07.26 (6), по новому скриншоту Ильи ("Илья Коныгин задвоился" —
+    // на этот раз со стороны СОТРУДНИКА поддержки, который видит чаты ВСЕХ
+    // агентов): предыдущая защита (см. историю ниже — "26.07.26") убирала
+    // задвоение только для СВОЕГО треда обычного (не staff) агента — условие
+    // было буквально `!this._isStaff && convRows.length > 1`. Если же
+    // задвоение сидит в самой таблице support_conversations (несколько строк
+    // с одним и тем же agent_id), у обычного агента это корректно
+    // схлопывалось (там в выборке и так только его собственные строки), а
+    // сотрудник поддержки, у которого в выборке ВСЕ агенты сразу, видел все
+    // задвоенные строки по отдельности — ровно то, что на новом скриншоте.
+    // Теперь дедуплицируем ПО agent_id одинаково для обоих случаев (группа
+    // из одной строки — просто показываем как есть, ничего не меняется по
+    // сравнению со старым поведением).
+    const groups = new Map();
+    convRows.forEach(c => {
+      if (!groups.has(c.agent_id)) groups.set(c.agent_id, []);
+      groups.get(c.agent_id).push(c);
+    });
 
-    return Promise.all(convRows.map(async c => {
-      const meta = await this._loadThreadMeta('support', c.id);
+    return Promise.all([...groups.values()].map(async rows => {
+      let chosen, hiddenIds = [];
+      if (rows.length === 1) {
+        chosen = { c: rows[0], meta: await this._loadThreadMeta('support', rows[0].id) };
+      } else {
+        // Несколько строк с одним и тем же agent_id — задвоение в самой
+        // базе. Показываем одну — ту, где реально есть хоть одно сообщение
+        // (если сообщения есть в нескольких — самый недавно активный; если
+        // ни в одном нет — самый старый по created_at), про остальные явно
+        // предупреждаем в консоли с их id и датой создания, чтобы можно было
+        // найти и вручную объединить/удалить в самой базе.
+        const withMeta = await Promise.all(rows.map(async c => ({c, meta: await this._loadThreadMeta('support', c.id)})));
+        const withMsgs = withMeta.filter(x => !!x.meta.last_at);
+        if (withMsgs.length) {
+          withMsgs.sort((a, b) => new Date(b.meta.last_at) - new Date(a.meta.last_at));
+          chosen = withMsgs[0];
+        } else {
+          withMeta.sort((a, b) => new Date(a.c.created_at) - new Date(b.c.created_at));
+          chosen = withMeta[0];
+        }
+        hiddenIds = withMeta.filter(x => x.c.id !== chosen.c.id).map(x => x.c.id);
+        console.warn('[floxSupportChat] показываем только один тред поддержки на agent_id, остальные — задвоение в support_conversations (нужно почистить в базе вручную):', {
+          agentId: rows[0].agent_id, shown: chosen.c.id, hidden: hiddenIds,
+        });
+      }
       return {
-        id: c.id, kind: 'support', agent_id: c.agent_id,
+        id: chosen.c.id, kind: 'support', agent_id: chosen.c.agent_id,
         // 25.07.26, по просьбе Ильи: раньше было "Поддержка Flox".
-        name: this._isStaff ? (c.agents?.full_name || 'Агент') : 'Техподдержка Агентов',
-        sub: this._isStaff ? (c.agents?.agency || '—') : 'Ответим как можно скорее',
+        name: this._isStaff ? (chosen.c.agents?.full_name || 'Агент') : 'Техподдержка Агентов',
+        sub: this._isStaff ? (chosen.c.agents?.agency || '—') : 'Ответим как можно скорее',
         isSupportIcon: !this._isStaff,
-        ...meta,
+        ...chosen.meta,
       };
     }));
   },
@@ -766,7 +774,16 @@ window.floxSupportChat = {
   },
 
   async _uploadAttachment(file) {
-    const path = `${this._agent.id}/${Date.now()}_${file.name}`.replace(/\s+/g,'_');
+    // 27.07.26 (6), тот же баг, что нашли в топбаре (см. topbar.js
+    // _onPhotoSelected): Supabase Storage требует ASCII-ключ, а название
+    // файла с кириллицей (или вообще произвольными символами) в пути
+    // приводило к ошибке 400 "InvalidKey" и вложение просто не грузилось.
+    // Оригинальное имя файла не участвует в самом ключе объекта — оно и так
+    // отдельно сохраняется в attachment_name (см. вызов ниже), только сам
+    // путь в Storage теперь целиком ASCII-безопасный.
+    const extMatch = /\.([a-zA-Z0-9]+)$/.exec(file.name || '');
+    const ext = extMatch ? extMatch[1].toLowerCase() : ((file.type && file.type.split('/')[1]) || 'bin').replace(/[^a-z0-9]/gi, '');
+    const path = `${this._agent.id}/${Date.now()}.${ext || 'bin'}`;
     await fetch(`${SUPABASE_BASE}/storage/v1/object/support-attachments/${encodeURIComponent(path)}`, {
       method: 'POST',
       headers: {...SB, 'Content-Type': file.type || 'application/octet-stream'},
@@ -1238,6 +1255,16 @@ window.floxSupportChat = {
     const t = this._threads.find(x => x.id === this._activeThreadId && x.kind === this._activeThreadKind);
     if (!t) return;
     const av = document.getElementById('fcChatAvatar');
+    // 27.07.26 (6), баг у Ильи ("при нажатии на Дмитрий фото Ильи остаётся
+    // в треде"): шапка чата — ОДИН и тот же DOM-элемент, переиспользуемый
+    // для любого открытого треда. Раньше при переключении треда старое
+    // фото (background-image) никогда явно не сбрасывалось — если у нового
+    // треда фото нет (или оно ещё не проверено), полосу с чужим старым фото
+    // было не видно за счёт того, что поверх встают только initials-текст,
+    // а backgroundImage остаётся тем же. Теперь при каждом обновлении шапки
+    // сначала сбрасываем и картинку, и метку "для какого агента она",
+    // и только потом (если нужно) запускаем новую попытку применить фото.
+    av.style.backgroundImage = '';
     av.textContent = initials(t.name);
     av.classList.toggle('fc-avatar-support', !!t.isSupportIcon);
     document.getElementById('fcChatTitle').textContent = t.name;
@@ -1246,7 +1273,12 @@ window.floxSupportChat = {
     // (через topbar.js), показываем его в кружке шапки чата вместо
     // инициалов. Не для isSupportIcon (там нет одного конкретного
     // собеседника — со стороны агента это тред техподдержки в целом).
-    if (t.agent_id && !t.isSupportIcon) this._applyAvatarPhoto(av, t.agent_id);
+    if (t.agent_id && !t.isSupportIcon) {
+      av.dataset.avatarFor = String(t.agent_id);
+      this._applyAvatarPhoto(av, t.agent_id);
+    } else {
+      delete av.dataset.avatarFor;
+    }
   },
 
   // 27.07.26: фото собеседника — отдельным best-effort запросом (не трогаем
@@ -1254,20 +1286,39 @@ window.floxSupportChat = {
   // agents ещё нет колонки avatar_url или у агента нет фото — просто тихо
   // ничего не делаем, кружок остаётся с инициалами как раньше.
   _photoCache: {},
+  // 27.07.26 (6): URL, которые уже один раз реально успешно загрузились —
+  // для них повторную проверку через new Image() больше не гоняем, а сразу
+  // применяем. Раньше даже уже проверенное фото при каждом переключении
+  // треда на секунду показывало инициалы, пока шла повторная проверка —
+  // это и была жалоба "на секунду мелькают инициалы вместо картинки".
+  _verifiedPhotoUrls: new Set(),
   // 27.07.26 (2), по факту бага у Ильи (кружок в топбаре опустел от битой
   // ссылки): applyPhotoIfLoads НЕ ставит фото по одному факту непустого
   // URL — сперва реально пробует загрузить картинку (new Image()), и только
   // при успехе стирает инициалы и подставляет фон. При ошибке — молча
   // остаётся с тем, что уже было в кружке (инициалы), вместо пустого места.
-  _applyPhotoIfLoads(el, url) {
+  // 27.07.26 (6): добавлена проверка `agentId` в момент применения — если к
+  // моменту завершения загрузки картинки элемент уже назначен ДРУГОМУ
+  // собеседнику (пользователь успел переключиться на другой чат/строку
+  // успела перерисоваться под другого агента), результат просто
+  // отбрасывается, а не подставляется поверх уже актуального содержимого.
+  _applyPhotoIfLoads(el, url, agentId) {
     if (!el || !url) return;
+    const stillWanted = () => agentId === undefined || el.dataset.avatarFor === undefined || el.dataset.avatarFor === String(agentId);
+    if (this._verifiedPhotoUrls.has(url)) {
+      if (stillWanted()) { el.style.backgroundImage = `url('${url}')`; el.textContent = ''; }
+      return;
+    }
     const probe = new Image();
-    probe.onload = () => { el.style.backgroundImage = `url('${url}')`; el.textContent = ''; };
+    probe.onload = () => {
+      this._verifiedPhotoUrls.add(url);
+      if (stillWanted()) { el.style.backgroundImage = `url('${url}')`; el.textContent = ''; }
+    };
     probe.src = url;
   },
   async _applyAvatarPhoto(el, agentId) {
     if (this._photoCache[agentId] !== undefined) {
-      this._applyPhotoIfLoads(el, this._photoCache[agentId]);
+      this._applyPhotoIfLoads(el, this._photoCache[agentId], agentId);
       return;
     }
     try {
@@ -1288,7 +1339,7 @@ window.floxSupportChat = {
       // шапка это или строка списка — а `el.isConnected` подстраховывает от
       // применения к уже удалённому из DOM элементу (список успел
       // перерисоваться, пока шёл запрос).
-      if (url && el && el.isConnected) this._applyPhotoIfLoads(el, url);
+      if (url && el && el.isConnected) this._applyPhotoIfLoads(el, url, agentId);
     } catch(e) { this._photoCache[agentId] = null; }
   },
 
