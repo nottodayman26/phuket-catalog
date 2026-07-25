@@ -223,8 +223,21 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-search input{border:none;background:none;outline:none;color:var(--text);font-size:13px;width:100%;font-family:inherit;}
 .fc-search input::placeholder{color:var(--muted);}
 .fc-tabs{display:flex; gap:4px; padding:0 12px 10px;}
-.fc-tab{font-size:11.5px; font-weight:600; color:var(--muted); padding:5px 10px; border-radius:20px; white-space:nowrap; cursor:pointer; border:none; background:none; font-family:inherit;}
+.fc-tab{position:relative; font-size:11.5px; font-weight:600; color:var(--muted); padding:5px 10px; border-radius:20px; white-space:nowrap; cursor:pointer; border:none; background:none; font-family:inherit;}
 .fc-tab.act{background:var(--accent-soft); color:var(--accent);}
+/* 25.07.26, по просьбе Ильи: счётчик непрочитанных над вкладкой
+   "Непрочитанные" — та же форма/поведение, что у бейджа на плавающей
+   кнопке саппорта (.fc-fab .fc-badge), только компактнее (чтобы поместиться
+   над узкой вкладкой) и фиолетовый (--accent), а не розовый — по прямой
+   правке Ильи. Виден, только пока есть непрочитанные — прячется
+   автоматически, когда все сообщения прочитаны. */
+.fc-tab-badge{
+  position:absolute; top:-6px; right:-4px; min-width:16px; height:16px; padding:0 4px;
+  background:var(--accent,#5E17EB); color:#fff; border-radius:8px; font-size:9.5px; font-weight:700;
+  display:none; align-items:center; justify-content:center; border:2px solid var(--surface);
+  line-height:1;
+}
+.fc-tab-badge.vis{display:flex;}
 .fc-list{flex:1; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--line-2) transparent;}
 .fc-list::-webkit-scrollbar{width:6px;}
 .fc-list::-webkit-scrollbar-track{background:transparent;}
@@ -689,8 +702,17 @@ window.floxSupportChat = {
     try {
       const r = await fetch(`${SUPABASE_URL}/agents?staff_role=eq.support&select=id&limit=1`, {headers: SB});
       const rows = await r.json();
-      this._supportStaffId = (Array.isArray(rows) && rows[0] && rows[0].id) || null;
-    } catch(e) { this._supportStaffId = null; }
+      const id = (Array.isArray(rows) && rows[0] && rows[0].id) || null;
+      // 25.07.26: кешируем только реальный успешный результат (найден id,
+      // или запрос честно вернул "таких строк нет"). Если запрос вообще
+      // упал (см. catch ниже) — id остаётся undefined и попробуем снова при
+      // следующем обращении, вместо того чтобы навсегда застрять на null
+      // из-за разовой сетевой ошибки.
+      this._supportStaffId = id;
+      if (!id) console.warn('[floxSupportChat] не нашёлся ни один агент со staff_role=support — фото поддержки показать нечем');
+    } catch(e) {
+      console.warn('[floxSupportChat] ошибка сети при поиске аккаунта поддержки:', e && e.message);
+    }
     return this._supportStaffId;
   },
 
@@ -976,7 +998,7 @@ window.floxSupportChat = {
         </div>
         <div class="fc-tabs">
           <button class="fc-tab act" id="fcTabAll">Все</button>
-          <button class="fc-tab" id="fcTabUnread">Непрочитанные</button>
+          <button class="fc-tab" id="fcTabUnread">Непрочитанные<span class="fc-tab-badge" id="fcTabBadge"></span></button>
         </div>
         <div class="fc-list" id="fcList"></div>
       </div>
@@ -1368,6 +1390,14 @@ window.floxSupportChat = {
       this._verifiedPhotoUrls.add(url);
       if (stillWanted()) { el.style.backgroundImage = `url('${url}')`; el.textContent = ''; }
     };
+    // 25.07.26: раньше ошибка загрузки картинки просто молча проглатывалась —
+    // если фото у кого-то не показывается, никак нельзя было отличить
+    // "avatar_url пустой" от "URL есть, но картинка не грузится" (битая
+    // ссылка, CORS, 404 и т.п.). Теперь при неудаче — предупреждение в
+    // консоль с самим URL, по нему сразу видно, в чём дело.
+    probe.onerror = () => {
+      console.warn('[floxSupportChat] фото не загрузилось (agentId=' + agentId + '), URL:', url);
+    };
     probe.src = url;
   },
   async _applyAvatarPhoto(el, agentId) {
@@ -1377,10 +1407,21 @@ window.floxSupportChat = {
     }
     try {
       const r = await fetch(`${SUPABASE_URL}/agents?id=eq.${agentId}&select=avatar_url`, {headers: SB});
-      if (!r.ok) { this._photoCache[agentId] = null; return; }
+      // 25.07.26: раньше при !r.ok (например, кратковременный сбой сети)
+      // результат кешировался как null НАВСЕГДА до перезагрузки страницы —
+      // фото для этого agentId уже никогда не пробовалось загрузить заново
+      // за всю сессию, даже если сбой был разовым. Теперь при ошибке ответа
+      // просто не кешируем ничего (следующий вызов попробует снова), и
+      // явно предупреждаем в консоль, с каким agentId и статусом это
+      // случилось — чтобы не гадать при следующей жалобе "фото не видно".
+      if (!r.ok) {
+        console.warn('[floxSupportChat] не удалось получить avatar_url (agentId=' + agentId + '), статус:', r.status);
+        return;
+      }
       const rows = await r.json();
       const url = (rows[0] && rows[0].avatar_url) || null;
       this._photoCache[agentId] = url;
+      if (!url) console.log('[floxSupportChat] у agentId=' + agentId + ' avatar_url пуст в базе');
       // 27.07.26 (5), баг у Ильи ("фото в шапке есть, а в списке слева
       // нет"): раньше тут ПОСЛЕ загрузки (когда фото ещё не было в кеше)
       // результат всегда применялся жёстко к #fcChatAvatar (шапка чата),
@@ -1394,7 +1435,9 @@ window.floxSupportChat = {
       // применения к уже удалённому из DOM элементу (список успел
       // перерисоваться, пока шёл запрос).
       if (url && el && el.isConnected) this._applyPhotoIfLoads(el, url, agentId);
-    } catch(e) { this._photoCache[agentId] = null; }
+    } catch(e) {
+      console.warn('[floxSupportChat] ошибка сети при получении avatar_url (agentId=' + agentId + '):', e && e.message);
+    }
   },
 
   _handleSend() {
@@ -1591,10 +1634,19 @@ window.floxSupportChat = {
 
   _updateBadge() {
     const total = this._threads.reduce((s,c) => s + (c.unread || 0), 0);
+    const label = total > 9 ? '9+' : String(total);
     const badge = document.getElementById('fcBadge');
-    if (!badge) return;
-    badge.textContent = total > 9 ? '9+' : String(total);
-    badge.classList.toggle('vis', total > 0);
+    if (badge) {
+      badge.textContent = label;
+      badge.classList.toggle('vis', total > 0);
+    }
+    // 25.07.26, по просьбе Ильи: тот же счётчик — но над вкладкой
+    // "Непрочитанные", тем же розовым кружком, что и на плавающей кнопке.
+    const tabBadge = document.getElementById('fcTabBadge');
+    if (tabBadge) {
+      tabBadge.textContent = label;
+      tabBadge.classList.toggle('vis', total > 0);
+    }
   },
 };
 
