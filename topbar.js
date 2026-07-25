@@ -294,7 +294,16 @@ window.floxTopbar = {
     if (!file) return;
     try {
       const a = JSON.parse(localStorage.getItem('flox-agent') || 'null');
-      if (!a || !a.id) return;
+      // 27.07.26 (5), баг у Ильи ("на аккаунте поддержки фото вообще не
+      // грузится, но никакой ошибки не видно"): раньше этот выход был
+      // ПОЛНОСТЬЮ молчаливым — если в localStorage нет 'flox-agent' или в
+      // нём нет поля id, ничего не логировалось, просто ничего не
+      // происходило. Добавили явную диагностику, чтобы в консоли было видно,
+      // что дело именно в этом (а не в Storage/базе), если это тот случай.
+      if (!a || !a.id) {
+        console.error('[floxTopbar] не удалось загрузить фото: в localStorage нет корректного flox-agent с полем id', a);
+        return;
+      }
       const av = document.getElementById('ftb-avatar');
       const initials = (a.full_name || '').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
       // Загрузка в тот же способ хранения (Supabase Storage, анонимный

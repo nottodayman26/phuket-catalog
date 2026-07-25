@@ -1276,10 +1276,19 @@ window.floxSupportChat = {
       const rows = await r.json();
       const url = (rows[0] && rows[0].avatar_url) || null;
       this._photoCache[agentId] = url;
-      if (url && this._activeThreadId) {
-        const stillActive = document.getElementById('fcChatAvatar');
-        this._applyPhotoIfLoads(stillActive, url);
-      }
+      // 27.07.26 (5), баг у Ильи ("фото в шапке есть, а в списке слева
+      // нет"): раньше тут ПОСЛЕ загрузки (когда фото ещё не было в кеше)
+      // результат всегда применялся жёстко к #fcChatAvatar (шапка чата),
+      // даже если этот вызов пришёл из рендера СПИСКА для строки другого
+      // собеседника — сама переданная сюда ссылка `el` игнорировалась. Из-за
+      // этого фото подставлялось в список только если оно уже было в кеше
+      // (например, после того как шапку уже открывали) — при первом же
+      // показе списка фото там не появлялось. Теперь применяем к тому
+      // элементу, который реально был передан в вызов, независимо от того,
+      // шапка это или строка списка — а `el.isConnected` подстраховывает от
+      // применения к уже удалённому из DOM элементу (список успел
+      // перерисоваться, пока шёл запрос).
+      if (url && el && el.isConnected) this._applyPhotoIfLoads(el, url);
     } catch(e) { this._photoCache[agentId] = null; }
   },
 
@@ -1325,7 +1334,18 @@ window.floxSupportChat = {
     // активного поиска такой тред должен быть находим, чтобы можно было
     // открыть уже существующую (пусть пустую) переписку вместо того, чтобы
     // человек упирался в пустоту.
-    if (!q) list = list.filter(c => c.kind === 'support' || !!c.last_at);
+    // 27.07.26 (5), баг у Ильи: раньше kind==='support' были ВСЕГДА видны
+    // без исключений — это было специально сделано для собственного (ещё
+    // пустого) треда поддержки самого агента, чтобы он не пропадал сразу
+    // после открытия панели (см. _ensureOwnConversation, создаётся ещё до
+    // первого сообщения). Но для СОТРУДНИКА поддержки, который видит ЧУЖИЕ
+    // support-треды (по одному на каждого агента), это же правило держало в
+    // списке даже полностью очищенные (все сообщения удалены) переписки —
+    // отсюда баг "переписка с Ильёй Коныгиным не исчезла после удаления всех
+    // сообщений". Теперь "всегда показывать" действует только для СВОЕГО
+    // собственного треда поддержки (agent_id === мой id), а чужие/просмотренные
+    // сотрудником — по общему правилу (есть хоть одно сообщение).
+    if (!q) list = list.filter(c => (c.kind === 'support' && String(c.agent_id) === String(this._agent.id)) || !!c.last_at);
     if (this._tab === 'unread') list = list.filter(c => c.unread > 0);
     if (q) list = list.filter(c => c.name.toLowerCase().includes(q));
 
@@ -1376,7 +1396,7 @@ window.floxSupportChat = {
     } else {
       html += list.map(c => `
         <div class="fc-item ${c.id === this._activeThreadId && c.kind === this._activeThreadKind ? 'act' : ''}" data-id="${c.id}" data-kind="${c.kind}">
-          <div class="fc-avatar ${c.isSupportIcon ? 'fc-avatar-support' : ''}">${initials(c.name)}</div>
+          <div class="fc-avatar ${c.isSupportIcon ? 'fc-avatar-support' : ''}" data-avatar-for="${c.agent_id || ''}">${initials(c.name)}</div>
           <div class="fc-item-body">
             <div class="fc-item-top"><span class="fc-item-name">${esc(c.name)}</span><span class="fc-item-time">${c.last_at ? fmtTime(c.last_at) : ''}</span></div>
             <div class="fc-item-msg">${c.last_body ? (c.last_from_me ? 'Вы: ' : '') + esc(c.last_body) : '<span style="opacity:.7">Напишите, если будут вопросы</span>'}</div>
@@ -1400,6 +1420,15 @@ window.floxSupportChat = {
     el.innerHTML = html;
     el.querySelectorAll('.fc-item[data-id]').forEach(node => {
       node.onclick = () => this._selectThread(node.dataset.id, node.dataset.kind);
+    });
+    // 27.07.26 (5), баг у Ильи: фото собеседника подставлялось только в
+    // шапку открытого чата (_updateActiveHeader), но не в сам кружок в
+    // списке слева — теперь то же самое (best-effort, с кешем) применяем и
+    // к каждой строке списка, кроме служебной иконки "Техподдержка Агентов"
+    // (isSupportIcon) — там нет одного конкретного собеседника с фото.
+    el.querySelectorAll('.fc-avatar[data-avatar-for]').forEach(node => {
+      const agentId = node.dataset.avatarFor;
+      if (agentId && !node.classList.contains('fc-avatar-support')) this._applyAvatarPhoto(node, agentId);
     });
     el.querySelectorAll('.fc-item[data-newagent]').forEach(node => {
       // 27.07.26 (3): если найденный в справочнике "агент" на самом деле
