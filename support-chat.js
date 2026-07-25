@@ -893,6 +893,36 @@ window.floxSupportChat = {
       if (created) this._selectThread(created.id, 'support');
       return;
     }
+    // 25.07.26, настоящая (третья) причина "задвоения", найденная по свежему
+    // скриншоту Ильи: два одинаковых пункта "Илья Коныгин" в списке у самого
+    // аккаунта поддержки — один настоящий служебный тред (support_conversations,
+    // "добрый день"), второй — личная переписка (agent_conversations,
+    // "паораорапоа"), случайно созданная потому, что ветка выше защищала
+    // только один из двух направлений: она не даёт ОБЫЧНОМУ агенту завести
+    // личку с поддержкой, но ничего не мешало САМОЙ ПОДДЕРЖКЕ завести личку с
+    // обычным агентом через поиск (вместо того, чтобы просто открыть его
+    // настоящий тред поддержки). Симметричный фикс: если пишет staff, и
+    // выбранный в поиске человек — обычный агент (не поддержка), никогда не
+    // создаём agent_conversations, а открываем/создаём его служебный тред.
+    if (this._isStaff) {
+      const existingSupport = this._threads.find(t => t.kind === 'support' && String(t.agent_id) === String(agentId));
+      if (existingSupport) { this._renderList(); this._selectThread(existingSupport.id, 'support'); return; }
+      try {
+        const cr = await fetch(`${SUPABASE_URL}/support_conversations`, {
+          method: 'POST',
+          headers: {...SB, 'Content-Type':'application/json', 'Prefer':'return=representation'},
+          body: JSON.stringify({agent_id: agentId, project_code: null}),
+        });
+        await cr.json();
+      } catch(e) {
+        console.warn('[floxSupportChat] _startDM (staff → агент): не удалось создать служебный тред, возможно гонка/уже существует', e && e.message);
+      }
+      await this._loadAllThreads();
+      this._renderList();
+      const created = this._threads.find(t => t.kind === 'support' && String(t.agent_id) === String(agentId));
+      if (created) this._selectThread(created.id, 'support');
+      return;
+    }
     // 24.07.26, фикс бага "чат задваивается": если чат с этим агентом уже
     // есть в списке, просто открываем его напрямую, без похода на сервер —
     // раньше в редком случае (гонка: поиск отработал раньше, чем успел
