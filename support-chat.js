@@ -671,23 +671,41 @@ window.floxSupportChat = {
     if (!Array.isArray(rows) || !rows.length) return [];
 
     const otherIds = [...new Set(rows.map(c => c.agent_a_id === this._agent.id ? c.agent_b_id : c.agent_a_id))];
-    const namesR = await fetch(`${SUPABASE_URL}/agents?id=in.(${otherIds.join(',')})&select=id,full_name,agency`, {headers: SB});
+    // 27.07.26 (3), по факту "задвоения" у Ильи (см. лог из консоли): дело
+    // было не в дубле в базе, а в том, что личная переписка (agent_conversations)
+    // с агентом поддержки (staff_role='support') выглядит в списке ТОЧНО так
+    // же, как отдельный служебный тред поддержки — оба называются
+    // "Техподдержка Агентов". Добавили staff_role в этот запрос, чтобы можно
+    // было отличить такую переписку и обработать её отдельно (см. filter ниже).
+    const namesR = await fetch(`${SUPABASE_URL}/agents?id=in.(${otherIds.join(',')})&select=id,full_name,agency,staff_role`, {headers: SB});
     const names = await namesR.json();
     const nameMap = {};
     (Array.isArray(names) ? names : []).forEach(a => { nameMap[a.id] = a; });
 
-    return Promise.all(rows.map(async c => {
+    const built = await Promise.all(rows.map(async c => {
       const otherId = c.agent_a_id === this._agent.id ? c.agent_b_id : c.agent_a_id;
       const other = nameMap[otherId] || {};
+      const isSupportStaff = other.staff_role === 'support';
       const meta = await this._loadThreadMeta('dm', c.id);
       return {
         id: c.id, kind: 'dm', agent_id: otherId,
-        name: other.full_name || 'Агент',
+        // Если это личка именно с аккаунтом поддержки — подписываем иначе,
+        // чтобы визуально не путалось с настоящим служебным треодом
+        // "Техподдержка Агентов" (тот у не-staff всегда называется именно
+        // так, см. _loadSupportThreads).
+        name: isSupportStaff ? `${other.full_name || 'Агент'} (личные сообщения)` : (other.full_name || 'Агент'),
         sub: other.agency || '—',
         isSupportIcon: false,
+        _isStaffDM: isSupportStaff,
         ...meta,
       };
     }));
+    // Такую личку с поддержкой имеет смысл вообще скрывать, если в ней нет
+    // ни одного сообщения — это ровно тот случай из бага (пустой "двойник"
+    // созданный когда-то случайным кликом по агенту в поиске вместо перехода
+    // в настоящую поддержку). Если сообщения в ней всё же есть — не прячем,
+    // только переименовываем (см. name выше), чтобы не потерять историю.
+    return built.filter(t => !(t._isStaffDM && !t.last_at));
   },
 
   async _loadThreadMeta(kind, convId) {
@@ -798,7 +816,7 @@ window.floxSupportChat = {
     // видно точную причину, а не гадать вслепую в четвёртый раз.
     const terms = (q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (!terms.length) { this._searchAgentsRaw = []; this._renderList(); return; }
-    const url = `${SUPABASE_URL}/agents?full_name=ilike.*${encodeURIComponent(terms[0])}*&id=neq.${this._agent.id}&select=id,full_name,agency&limit=30`;
+    const url = `${SUPABASE_URL}/agents?full_name=ilike.*${encodeURIComponent(terms[0])}*&id=neq.${this._agent.id}&select=id,full_name,agency,staff_role&limit=30`;
     try {
       const r = await fetch(url, {headers: SB});
       const text = await r.text();
@@ -835,9 +853,29 @@ window.floxSupportChat = {
     this._renderList();
   },
 
-  async _startDM(agentId, name, agency) {
+  async _startDM(agentId, name, agency, isSupportStaff) {
     document.getElementById('fcSearchInput').value = '';
     this._searchAgentsRaw = [];
+    // 27.07.26 (3), настоящая причина "задвоения" саппорта (найдено по
+    // логу из консоли): это не дублировавшаяся строка в базе, а личная
+    // переписка (agent_conversations), случайно начатая с самим аккаунтом
+    // поддержки через обычный поиск по агентам — она выглядит в списке
+    // ТОЧНО так же ("Техподдержка Агентов"), как и настоящий отдельный
+    // служебный чат поддержки. Поэтому теперь если найденный в поиске
+    // "агент" на самом деле staff_role='support' — личную переписку с ним
+    // вообще не создаём, а просто открываем настоящий тред поддержки.
+    if (isSupportStaff) {
+      const support = this._threads.find(t => t.kind === 'support' && !this._isStaff);
+      if (support) { this._renderList(); this._selectThread(support.id, 'support'); return; }
+      // На всякий случай, если своего треда поддержки ещё почему-то нет —
+      // создаём его (тот же путь, что и при обычной инициализации виджета).
+      await this._ensureOwnConversation();
+      await this._loadAllThreads();
+      this._renderList();
+      const created = this._threads.find(t => t.kind === 'support');
+      if (created) this._selectThread(created.id, 'support');
+      return;
+    }
     // 24.07.26, фикс бага "чат задваивается": если чат с этим агентом уже
     // есть в списке, просто открываем его напрямую, без похода на сервер —
     // раньше в редком случае (гонка: поиск отработал раньше, чем успел
@@ -1341,7 +1379,7 @@ window.floxSupportChat = {
     if (this._searchAgents.length) {
       html += `<div class="fc-list-section-title">Начать новый чат</div>`;
       html += this._searchAgents.map(a => `
-        <div class="fc-item" data-newagent="${a.id}" data-name="${esc(a.full_name)}" data-agency="${esc(a.agency || '')}">
+        <div class="fc-item" data-newagent="${a.id}" data-name="${esc(a.full_name)}" data-agency="${esc(a.agency || '')}" data-staffrole="${a.staff_role === 'support' ? '1' : ''}">
           <div class="fc-avatar">${initials(a.full_name)}</div>
           <div class="fc-item-body">
             <div class="fc-item-top"><span class="fc-item-name">${esc(a.full_name)}</span></div>
@@ -1355,7 +1393,11 @@ window.floxSupportChat = {
       node.onclick = () => this._selectThread(node.dataset.id, node.dataset.kind);
     });
     el.querySelectorAll('.fc-item[data-newagent]').forEach(node => {
-      node.onclick = () => this._startDM(node.dataset.newagent, node.dataset.name, node.dataset.agency);
+      // 27.07.26 (3): если найденный в справочнике "агент" на самом деле
+      // аккаунт поддержки (staff_role='support') — не создаём с ним личную
+      // переписку (это и было причиной визуального "задвоения" — см.
+      // _startDM ниже), а сразу открываем настоящий служебный чат поддержки.
+      node.onclick = () => this._startDM(node.dataset.newagent, node.dataset.name, node.dataset.agency, node.dataset.staffrole === '1');
     });
   },
 
