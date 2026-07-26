@@ -502,7 +502,10 @@ input,button{font-family:inherit;}
 /* Использует те же переменные, что и вся остальная страница, поэтому
    автоматически подстраивается под текущую тему (body.light переключает
    --surface/--line/--muted и т.д. сам по себе). */
-.ticker-wrap{border-bottom:0.5px solid var(--line);background:var(--surface-2);overflow:hidden;white-space:nowrap;padding:8px 0;}
+/* 26.07.26, по просьбе Ильи: убрана нижняя линия (border-bottom) под бегущей
+   строкой; фон сделан на тон темнее (surface-3 вместо surface-2), чтобы полоса
+   всё равно была чуть заметна на глаз без явной линии-разделителя. */
+.ticker-wrap{background:var(--surface-3);overflow:hidden;white-space:nowrap;padding:8px 0;}
 .ticker-track{display:inline-flex;gap:28px;animation:scrollTicker 32s linear infinite;padding-left:16px;will-change:transform;}
 .ticker-wrap:hover .ticker-track{animation-play-state:paused;}
 @keyframes scrollTicker{from{transform:translate3d(0,0,0);}to{transform:translate3d(-50%,0,0);}}

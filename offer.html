@@ -237,7 +237,12 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 /* ── бегущая строка "недавно продано" ── */
 /* Оффер всегда светлый, поэтому строка тут светлая без привязки к теме
    (в отличие от floxweb.html, где она подстраивается под тему сайта). */
-.ticker-wrap{border-top:0.5px solid var(--line);border-bottom:0.5px solid var(--line);background:#F8F7FB;overflow:hidden;white-space:nowrap;padding:8px 0;}
+/* 26.07.26, по просьбе Ильи: убраны обе линии (border-top/border-bottom) вокруг
+   бегущей строки; фон сделан на тон темнее (#F8F7FB → #EEECF6, в тон фиолетовому
+   акценту страницы), чтобы полоса всё равно была чуть заметна без линий. Тут нет
+   переключения тем (offer.html — фиксированная светлая клиентская страница), 
+   поэтому цвет просто зашит, а не через var(--surface-3), как в остальных файлах. */
+.ticker-wrap{background:#EEECF6;overflow:hidden;white-space:nowrap;padding:8px 0;}
 .ticker-track{display:inline-flex;gap:28px;animation:scrollTicker 32s linear infinite;padding-left:16px;will-change:transform;}
 .ticker-wrap:hover .ticker-track{animation-play-state:paused;}
 @keyframes scrollTicker{from{transform:translate3d(0,0,0);}to{transform:translate3d(-50%,0,0);}}

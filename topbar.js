@@ -15,7 +15,10 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const SB = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
 
 const CSS = `
-.flox-topbar{position:sticky;top:0;z-index:200;background:var(--surface);border-bottom:0.5px solid var(--line);display:flex;align-items:center;padding:0 24px;height:52px;gap:0;font-family:'Inter',system-ui,sans-serif;}
+/* 26.07.26, по просьбе Ильи: убрана верхняя линия под топбаром (border-bottom) —
+   вместе с фикс в .ticker-wrap ниже (в каждом файле отдельно) убирает обе линии
+   вокруг бегущей строки "недавно продано". */
+.flox-topbar{position:sticky;top:0;z-index:200;background:var(--surface);display:flex;align-items:center;padding:0 24px;height:52px;gap:0;font-family:'Inter',system-ui,sans-serif;}
 .flox-tb-logo{font-size:20px;font-weight:700;letter-spacing:-0.05em;color:var(--text);text-decoration:none;margin-right:32px;display:flex;align-items:center;overflow:hidden;max-width:120px;transition:opacity .25s ease,max-width .25s ease,margin-right .25s ease;}
 .flox-tb-logo.meeting-hidden{opacity:0;max-width:0;margin-right:0;pointer-events:none;}
 .flox-tb-logo-dot{width:6px;height:6px;border-radius:50%;background:#FF6B6B;margin-left:1px;margin-bottom:9px;flex-shrink:0;vertical-align:bottom;display:inline-block;}
