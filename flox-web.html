@@ -1236,7 +1236,10 @@ body.map-fake-fullscreen-active{overflow:hidden;}
   border:1px solid rgba(0,0,0,.06);
   display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
 }
-.bf-text{flex:1;font-size:14px;font-weight:600;line-height:1.5;color:var(--text);}
+/* 27.07.26 (2), по просьбе Ильи: max-width, чтобы текст не растягивался на
+   всю ширину плашки и не утаскивал кнопку "Написать" к самому правому краю —
+   ориентир по прямоугольнику, который Илья отметил на скриншоте. */
+.bf-text{flex:1;max-width:700px;font-size:14px;font-weight:600;line-height:1.5;color:var(--text);}
 /* 27.07.26, по просьбе Ильи: кнопка "Написать" рядом с текстом — нейтральная
    (не акцентная), без тени и обводки — открывает чат с поддержкой. Фон на
    тон темнее фона самой плашки (var(--surface-3) поверх var(--surface-2)

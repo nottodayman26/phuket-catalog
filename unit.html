@@ -532,7 +532,8 @@ body.light .ticker-wrap{background:#f0f0f4;}
   border:1px solid rgba(0,0,0,.06);
   display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
 }
-.bf-text{flex:1;font-size:14px;font-weight:600;line-height:1.5;color:var(--text);}
+/* 27.07.26 (2), по просьбе Ильи: та же правка, что в flox-web.html/project.html. */
+.bf-text{flex:1;max-width:700px;font-size:14px;font-weight:600;line-height:1.5;color:var(--text);}
 /* 27.07.26, по просьбе Ильи: та же кнопка "Написать", что и в flox-web.html/
    project.html — нейтральная, без тени и обводки, открывает чат поддержки. */
 .bf-write-btn{flex-shrink:0;padding:9px 18px;border-radius:10px;border:none;background:var(--surface-3);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s;}
@@ -637,8 +638,12 @@ body.light .ticker-wrap{background:#f0f0f4;}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 /* 27.07.26, по просьбе Ильи: без обводки, лёгкая серая заливка вместо неё
    (мокап согласован). */
-.act-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;background:var(--surface-2);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
-.act-btn:hover{background:var(--surface-3);color:var(--text)}
+/* 27.07.26 (2), по просьбе Ильи: var(--surface-2) в светлой теме почти не
+   отличался от фона страницы (#f0f0f4 против #F5F5F7 — разница в 5 единиц),
+   из-за чего таблетки сливались с фоном. var(--surface-3) — на тон темнее,
+   уже заметно отличается (#EBEBED). */
+.act-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;background:var(--surface-3);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.act-btn:hover{color:var(--text)}
 
 /* ── TWO-COL ── */
 /* Просто оборачивает планировку и блоки из проекта (#projectBlocksWrap)
