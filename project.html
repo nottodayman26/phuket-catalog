@@ -769,7 +769,11 @@ a { color: inherit; text-decoration: none; }
    (обычные блочные соседи, без flex/grid на родителе) итоговый отступ
    везде становится ровно 28px, независимо от того, какой margin-bottom
    был (или не был) у элемента перед заголовком. */
-.sec-title:not(:first-child) { margin-top: 28px; }
+/* 26.07.26 (2), по прямой просьбе Ильи: в прошлый раз поставил 28px
+   ("похоже, но не то же самое") — неверно, самовольное решение. Нужно
+   РОВНО то же расстояние, что и между блоками (.page-section:
+   24+28=52px), а не просто какое-то единообразное поменьше. */
+.sec-title:not(:first-child) { margin-top: 52px; }
 
 /* ── UNITS ─── */
 .units-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }

@@ -854,7 +854,9 @@ body.light .ticker-wrap{background:#f0f0f4;}
    отступ 28px перед каждым не-первым sec-title внутри блока (Описание →
    Инфраструктура → Детали проекта; Карта → Ближайшие локации), совпадающий
    с padding-bottom у .proj-block, вместо разных/отсутствующих значений. */
-.sec-title:not(:first-child){margin-top:28px}
+/* 26.07.26 (2), по прямой просьбе Ильи: та же правка, что в project.html —
+   52px вместо 28px, ровно то же расстояние, что и между блоками (.proj-block). */
+.sec-title:not(:first-child){margin-top:52px}
 
 .desc-text{font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px}
 .facilities-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px}
@@ -2203,7 +2205,7 @@ function renderUnit(u, proj, pd, allowedBlocks) {
       <span id="addBtnLabel">Добавить в презентацию</span>
     </button>
 
-    <button class="book-btn" onclick="return false">
+    <button class="book-btn" id="bookSupportBtn" type="button">
       <i class="ti ti-calendar-check" style="font-size:16px"></i>
       Забронировать
     </button>
@@ -2282,6 +2284,21 @@ function renderUnit(u, proj, pd, allowedBlocks) {
     });
   } else {
     initPresentation();
+    // 26.07.26, по просьбе Ильи: кнопка "Забронировать" в агентском формате
+    // раньше ничего не делала (onclick="return false" — заглушка). Теперь
+    // открывает чат с Техподдержкой Агентов (support-chat.js) и подставляет
+    // в поле готовый текст заявки на бронирование — агент сам проверяет
+    // текст и жмёт "Отправить", автоотправки нет.
+    document.getElementById('bookSupportBtn')?.addEventListener('click', () => {
+      let agentName = 'Агент';
+      try {
+        const a = JSON.parse(localStorage.getItem('flox-agent') || 'null');
+        if (a && a.full_name) agentName = a.full_name;
+      } catch (e) {}
+      const projName = proj.name || proj.code;
+      const draft = `Добрый день!\nЭто ${agentName}. Мы с клиентом готовы забронировать юнит ${u.room_no}, проект ${projName}.\nПодскажите пожалуйста, какие документы со стороны клиента необходимы для бронирования и сориентируйте по дальнейшим шагам сделки. Спасибо!`;
+      window.floxSupportChat?.openSupportWithDraft(draft);
+    });
   }
   alignSidebarToPlan();
   animateRewardAmount(u.selling_price, pct);

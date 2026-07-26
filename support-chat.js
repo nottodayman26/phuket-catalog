@@ -215,9 +215,13 @@ body.light{ --chat-pill-bg: #ffffff; }
 
 .fc-list-col{width:300px; border-right:1px solid var(--line); display:flex; flex-direction:column; background:var(--surface);}
 .fc-list-head{padding:16px 16px 12px;}
+/* 26.07.26, по просьбе Ильи: убрана рамка, фон — var(--surface-2) (не
+   --chat-pill-bg, который в светлой теме чисто белый и сливался с панелью),
+   скругление увеличено до 20px (как у самого поля ввода сообщения) —
+   согласованный мокап, вариант "заливка без рамки". */
 .fc-search{
-  display:flex; align-items:center; gap:8px; background:var(--chat-pill-bg); border:1px solid var(--line-2);
-  border-radius:10px; padding:9px 12px; color:var(--muted); font-size:13px;
+  display:flex; align-items:center; gap:8px; background:var(--surface-2);
+  border-radius:20px; padding:9px 14px; color:var(--muted); font-size:13px;
 }
 .fc-search svg{width:15px;height:15px;flex-shrink:0;opacity:.7;}
 .fc-search input{border:none;background:none;outline:none;color:var(--text);font-size:13px;width:100%;font-family:inherit;}
@@ -336,7 +340,10 @@ body.light{ --chat-pill-bg: #ffffff; }
 /* 26.07.26, по правке Ильи: серый круг при наведении убран — вместо него
    лёгкое увеличение (scale); смена цвета по наведению осталась как была
    ("Изменение цвета оставь как есть"). */
-.fc-icon-btn{width:28px;height:28px;border-radius:50%;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s cubic-bezier(.34,1.56,.64,1),color .15s;}
+/* 26.07.26, по просьбе Ильи: скрепка/эмодзи и отправка были разного
+   масштаба — кнопка 28px с иконкой 16px против кнопки 32px с иконкой 14px
+   у отправки. Уравниваем: все три кнопки теперь 32px, иконки 16px. */
+.fc-icon-btn{width:32px;height:32px;border-radius:50%;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s cubic-bezier(.34,1.56,.64,1),color .15s;}
 .fc-icon-btn:hover{background:none;color:var(--text);transform:scale(1.18);}
 .fc-icon-btn svg{width:16px;height:16px;}
 /* 26.07.26, по правке Ильи: раньше это был однострочный <input>, теперь —
@@ -356,7 +363,7 @@ body.light{ --chat-pill-bg: #ffffff; }
 .fc-input::placeholder{color:var(--muted);}
 .fc-send{width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s,background .15s;}
 .fc-send:hover{transform:scale(1.06);}
-.fc-send svg{width:14px;height:14px;}
+.fc-send svg{width:16px;height:16px;}
 .fc-send:disabled{opacity:.5;cursor:default;transform:none;}
 .fc-send.fc-send-delete{background:var(--sel-pink);}
 
@@ -535,6 +542,40 @@ window.floxSupportChat = {
       this._built = true;
     }
     this._onAgentReady();
+  },
+
+  // 26.07.26, по просьбе Ильи: кнопка "Забронировать" на странице юнита
+  // (агентский формат) должна открыть чат с Техподдержкой Агентов и
+  // подставить в поле готовый текст запроса на бронирование — сам агент
+  // ещё раз смотрит на текст и жмёт "Отправить" сам, автоотправки нет.
+  // Переиспользуем тот же путь поиска "своего" треда поддержки, что и
+  // остальной код виджета (см. _startDM выше, kind==='support' && !isStaff).
+  openSupportWithDraft(text) {
+    if (!this._agent) return Promise.resolve(); // агент не авторизован в саппорте — молча ничего не делаем
+    if (!this._isStaff) {
+      return this._ensureOwnConversation().then(() => this._loadAllThreads()).then(() => {
+        this._renderList();
+        const support = this._threads.find(t => t.kind === 'support' && !this._isStaff);
+        if (support) this._selectThread(support.id, 'support');
+        this._togglePanel(true);
+        this._fillInputDraft(text);
+      });
+    }
+    // Сотрудник поддержки этой кнопкой не пользуется, но на всякий случай
+    // не роняем страницу — просто открываем панель без выбора треда.
+    this._togglePanel(true);
+    return Promise.resolve();
+  },
+
+  // Вынесено отдельно — та же механика, что у вставки эмодзи (см.
+  // emojiBody click ниже): программная вставка не шлёт настоящее событие
+  // input, поэтому автоувеличение высоты textarea дозывается вручную.
+  _fillInputDraft(text) {
+    const input = document.getElementById('fcInput');
+    if (!input) return;
+    input.value = text;
+    input.focus();
+    if (this._autoResizeInput) this._autoResizeInput();
   },
 
   _onAgentReady() {
