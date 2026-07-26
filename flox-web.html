@@ -1587,6 +1587,37 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 </head>
 <body>
 
+<!-- 27.07.26, по просьбе Ильи: на телефоне сайт (flox-web.html — "официальный
+     сайт" из кнопки бота) выглядит плохо, специальной мобильной вёрстки нет
+     ни одной @media-точки во всём файле. Вместо доработки адаптива — та же
+     идея, что у коллег (sso.trend.tech): полноэкранная заглушка поверх всего,
+     которая отправляет обратно в каталог (Telegram WebApp, @phuket_proptech_bot
+     — там та же страница уже нормально смотрится и с телефона, и с ПК).
+     Определение "это телефон" — по user-agent + ширине экрана (см. скрипт
+     сразу после разметки), по умолчанию display:none, чтобы на десктопе не
+     мелькала и не занимала место в разметке. z-index выше всего на странице
+     (даже выше .fc-panel саппорта, 2147483001) — заглушка должна перекрывать
+     буквально всё. -->
+<div id="mobileRedirectStub" style="display:none;position:fixed;inset:0;z-index:2147483647;background:var(--surface);flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;text-align:center;">
+  <div style="font-size:20px;font-weight:500;color:var(--text);margin-bottom:32px;">flox<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#FF6B6B;margin-left:2px;vertical-align:top;"></span></div>
+  <div style="width:64px;height:64px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+    <i class="ti ti-device-mobile" style="font-size:28px;color:var(--accent);"></i>
+  </div>
+  <div style="font-size:18px;font-weight:500;color:var(--text);margin-bottom:10px;">Этот сайт создан для компьютера</div>
+  <div style="font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:28px;max-width:320px;">На телефоне удобнее и быстрее работать через каталог в Telegram</div>
+  <a href="https://t.me/phuket_proptech_bot" style="display:block;width:100%;max-width:320px;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;">Открыть каталог в Telegram</a>
+</div>
+<script>
+(function(){
+  var isMobileUA = /Android|iPhone|iPod|Windows Phone/i.test(navigator.userAgent);
+  var isNarrow = window.innerWidth <= 768;
+  if (isMobileUA || isNarrow) {
+    document.getElementById('mobileRedirectStub').style.display = 'flex';
+    document.documentElement.style.overflow = 'hidden';
+  }
+})();
+</script>
+
 <!-- TOPBAR -->
 <div id="flox-topbar" data-page="search"></div>
 
