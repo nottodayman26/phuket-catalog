@@ -357,7 +357,13 @@ body.light{ --chat-pill-bg: #ffffff; }
    убрать только тут, в самом поле ввода (там, где печатается текст) —
    поэтому выше список/сообщения/эмодзи вернули обратно с обычным тонким
    скроллом, а скрыт скролл теперь только у .fc-input. */
-.fc-input{flex:1;background:var(--chat-pill-bg);border:1px solid var(--line-2);border-radius:20px;padding:10px 16px;color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:none;overflow-y:auto;line-height:1.4;max-height:120px;
+/* 27.07.26, по просьбе Ильи: раньше речь была не (только) про поиск слева —
+   само поле ввода сообщения было заметно крупнее и с рамкой (белая таблетка
+   .fc-input поверх --chat-pill-bg + border), а скрепка/эмодзи/отправка уже
+   уменьшены до 32px — из-за этого масштаб не совпадал. Убрана рамка, фон —
+   var(--surface-2) (тот же приём, что и у .fc-search выше), паддинг уменьшен
+   так, чтобы однострочная высота поля совпадала с 32px кнопками рядом. */
+.fc-input{flex:1;background:var(--surface-2);border:none;border-radius:20px;padding:9px 14px;color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:none;overflow-y:auto;line-height:1.4;max-height:120px;
   scrollbar-width:none; -ms-overflow-style:none;}
 .fc-input::-webkit-scrollbar{display:none;}
 .fc-input::placeholder{color:var(--muted);}
