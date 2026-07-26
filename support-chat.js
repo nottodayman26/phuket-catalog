@@ -377,8 +377,12 @@ body.light{ --chat-pill-bg: #ffffff; }
    (набор эмодзи вырос — иначе попап рос бы бесконечно вниз/вверх и вылезал
    за рамки окна, что и было "вышли за рамку"). Ширина/позиция подобраны
    так, чтобы гарантированно не вылезать за правый край панели. */
+/* 27.07.26, по просьбе Ильи: кнопка эмодзи переехала со "справа у отправки"
+   на "слева у скрепки" (см. порядок элементов в .fc-input-row выше) — якорь
+   всплывающего окна подвинут с right на left, чтобы оно раскрывалось прямо
+   над кнопкой, а не через всю строку в стороне. */
 .fc-emoji-pop{
-  position:absolute; bottom:calc(100% + 8px); right:8px; width:350px; max-width:calc(100vw - 40px);
+  position:absolute; bottom:calc(100% + 8px); left:8px; width:350px; max-width:calc(100vw - 40px);
   max-height:min(360px, calc(100vh - 160px));
   background:var(--surface); border:none; border-radius:14px; box-shadow:0 4px 16px rgba(0,0,0,.16);
   padding:10px; display:none; flex-direction:column; z-index:10;
@@ -1070,13 +1074,17 @@ window.floxSupportChat = {
         </div>
         <div class="fc-msgs" id="fcMsgs"></div>
         <div class="fc-input-row">
+          <!-- 27.07.26, по просьбе Ильи: порядок элементов поменян на
+               скрепка → эмодзи → поле ввода → отправка (было: скрепка →
+               поле → эмодзи → отправка) — это и была настоящая причина
+               несовпадения с согласованным мокапом, а не размер/цвет. -->
           <button class="fc-icon-btn" id="fcAttachBtn" aria-label="Прикрепить файл">${SVG_CLIP}</button>
           <input type="file" id="fcFileInput" style="display:none">
-          <textarea class="fc-input" id="fcInput" rows="1" placeholder="Напишите сообщение…"></textarea>
           <button class="fc-icon-btn" id="fcEmojiBtn" aria-label="Эмодзи">${SVG_EMOJI}</button>
           <div class="fc-emoji-pop" id="fcEmojiPop">
             <div id="fcEmojiBody"></div>
           </div>
+          <textarea class="fc-input" id="fcInput" rows="1" placeholder="Напишите сообщение…"></textarea>
           <button class="fc-send" id="fcSendBtn" aria-label="Отправить">${SVG_SEND}</button>
         </div>
       </div>`;
