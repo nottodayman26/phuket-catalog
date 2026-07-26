@@ -16,22 +16,33 @@
 //    (safety-net на случай, если что-то в загрузке страницы сломалось) и
 //    сам скроется — так пользователь не застрянет за ним навсегда даже
 //    при ошибке.
-// 3. Цвета взяты как fallback-значения (var(--accent, #5E17EB) и т.д.),
-//    на случай если скрипт выполняется раньше, чем страница успела
-//    объявить свои CSS-переменные — тогда всё равно всё видно, просто
-//    напрямую нужными цветами, а не "прозрачным ничем".
+// 3. Цвета — НЕ через var(--surface)/var(--accent): эти переменные зависят
+//    от класса body.light, который навешивает topbar.js уже ПОЗЖЕ, при
+//    разборе <body> — к моменту показа лоадера (первый тег в <head>) его
+//    ещё нет, поэтому var(--surface) всегда резолвился в тёмное значение
+//    :root, даже у агента с сохранённой светлой темой (баг, который нашёл
+//    Илья: "лоадер по умолчанию должен быть в белой теме"). Читаем
+//    localStorage.flox-theme напрямую и синхронно (localStorage доступен
+//    мгновенно, никаких таймингов) — той же самой проверкой, что и в
+//    topbar.js (_applyTheme): dark = (flox-theme === 'dark'). По умолчанию
+//    (ничего не сохранено, свежий агент) — светлая тема, ровно как и должно
+//    быть; если тема была явно переключена на тёмную — лоадер сразу её
+//    подхватывает, без промежуточной вспышки светлым.
 (function () {
+  var isDark = localStorage.getItem('flox-theme') === 'dark';
+  var bg = isDark ? '#0d0d18' : '#fff';
+  var accent = '#5E17EB';
   var CSS =
     // 2147483646 — на единицу меньше, чем у мобильной заглушки в flox-web.html
     // (#mobileRedirectStub, z-index:2147483647) — если человек зашёл с
     // телефона, заглушка должна быть поверх этого лоадера гарантированно, а
     // не в зависимости от порядка отрисовки/момента вставки в DOM.
     '#floxPageLoader{position:fixed;inset:0;z-index:2147483646;' +
-    'background:var(--surface,#fff);display:flex;align-items:center;' +
+    'background:' + bg + ';display:flex;align-items:center;' +
     'justify-content:center;transition:opacity .25s ease;}' +
     '#floxPageLoader.flox-loader-hide{opacity:0;pointer-events:none;}' +
     '#floxPageLoader .flox-loader-dot{width:8px;height:8px;border-radius:50%;' +
-    'background:var(--accent,#5E17EB);animation:floxLoaderDot 1.1s ease-in-out infinite;}' +
+    'background:' + accent + ';animation:floxLoaderDot 1.1s ease-in-out infinite;}' +
     '#floxPageLoader .flox-loader-dot:nth-child(2){animation-delay:.15s;}' +
     '#floxPageLoader .flox-loader-dot:nth-child(3){animation-delay:.3s;background:#FF6B6B;}' +
     '@keyframes floxLoaderDot{0%,80%,100%{opacity:.3;transform:translateY(0);}' +

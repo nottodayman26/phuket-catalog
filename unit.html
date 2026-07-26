@@ -1295,6 +1295,18 @@ async function processUnit(u) {
 
   renderUnit(u, proj, projData, allowedBlocks);
   window.floxPageLoader?.hide();
+  // 27.07.26 (2), по вопросу Ильи ("не начинается ли анимация на странице,
+  // пока на экране лоадер?") — та же самая ошибка, что уже находили и
+  // чинили для loadUnitCount() в flox-web.html, только здесь для счётчика
+  // вознаграждения (animateRewardAmount). Раньше вызов был в самом конце
+  // renderUnit() — то есть анимация стартовала ДО того, как лоадер прятался.
+  // Вынесено сюда, после hide(), безусловно для обоих режимов — как и было
+  // раньше (в клиентском режиме сам блок вознаграждения скрыт через
+  // display:none в другом месте, так что это ничего не меняет визуально).
+  // pct пересчитан той же формулой, что внутри renderUnit() (см. reward там).
+  const reward = projData?.agent_reward || {};
+  const pct = (reward.percent_from && reward.percent_from > 0) ? reward.percent_from : 10;
+  animateRewardAmount(u.selling_price, pct);
 }
 
 function loadPlanImage(u, proj) {
@@ -2321,7 +2333,6 @@ function renderUnit(u, proj, pd, allowedBlocks) {
     });
   }
   alignSidebarToPlan();
-  animateRewardAmount(u.selling_price, pct);
 }
 
 // 20.07.26, по просьбе Ильи: анимация подсчёта замедлена (была 900мс) — тот
