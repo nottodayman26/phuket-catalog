@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<!-- 27.07.26, по просьбе Ильи: единый экран загрузки — подключается первым
+     тегом, чтобы появиться раньше любого мелькания контента (см. page-loader.js). -->
+<script src="page-loader.js?v=20260727"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Подборка — Пхукет</title>
@@ -1068,6 +1071,7 @@ async function init() {
   // друге (позиции пересчитаются, но структура/размер карточек уже готовы).
   layoutMasonry(true);
   stickyFooterFix();
+  window.floxPageLoader?.hide();
 
   // Загружаем слайды для каждого юнита — параллельно (Promise.all), а не
   // по очереди (было: for...of с await внутри цикла, т.е. проверка картинок
@@ -1105,6 +1109,7 @@ function showError(msg) {
     <div class="error-sub">${msg}</div>
   </div>`;
   stickyFooterFix();
+  window.floxPageLoader?.hide();
 }
 
 // ── Фикс "залипшей" карточки после возврата на страницу ─────────

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<!-- 27.07.26, по просьбе Ильи: единый экран загрузки — подключается первым
+     тегом, чтобы появиться раньше любого мелькания контента (см. page-loader.js). -->
+<script src="page-loader.js?v=20260727"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flox — Проект</title>
@@ -1754,8 +1757,10 @@ async function loadProject() {
     if (!res.ok) throw new Error();
     const data = await res.json();
     renderProject(data);
+    window.floxPageLoader?.hide();
   } catch(e) {
     document.getElementById('mainCol').innerHTML = `<div class="loading"><span>Проект не найден: ${pid}</span></div>`;
+    window.floxPageLoader?.hide();
   }
 }
 
