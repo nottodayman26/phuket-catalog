@@ -26,7 +26,10 @@
    (тёмная плашка-предупреждение), и этот белый отступ просто торчал под
    ней отдельной полосой. Убран — .footer-notice сама себе довольно
    отступа (padding) и является настоящим концом страницы. */
-html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
+/* 26.07.26, по просьбе Ильи: единый фон страницы для всего проекта — тот же
+   оттенок, что и var(--bg) в flox-web.html/project.html/unit.html (#F5F5F7).
+   В этом файле нет переключения тем, поэтому цвет просто зашит. */
+html,body{background:#F5F5F7;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
 /* 22.07.26 (2), по просьбе Ильи: JS-снимок высоты (разово досыпанный
    padding-bottom) оказался ненадёжным — если высота контента чуть менялась
    ПОСЛЕ момента вызова (например из-за того, что шрифт Inter догружался и
@@ -238,11 +241,11 @@ html,body{background:#fff;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E
 /* Оффер всегда светлый, поэтому строка тут светлая без привязки к теме
    (в отличие от floxweb.html, где она подстраивается под тему сайта). */
 /* 26.07.26, по просьбе Ильи: убраны обе линии (border-top/border-bottom) вокруг
-   бегущей строки; фон сделан на тон темнее (#F8F7FB → #EEECF6, в тон фиолетовому
-   акценту страницы), чтобы полоса всё равно была чуть заметна без линий. Тут нет
-   переключения тем (offer.html — фиксированная светлая клиентская страница), 
-   поэтому цвет просто зашит, а не через var(--surface-3), как в остальных файлах. */
-.ticker-wrap{background:#EEECF6;overflow:hidden;white-space:nowrap;padding:8px 0;}
+   бегущей строки; фон — тот же оттенок, что у var(--surface-2)/блока "Мы
+   заботимся о качестве платформы" в flox-web.html (#f0f0f4). Тут нет
+   переключения тем (offer.html — фиксированная светлая клиентская страница),
+   поэтому цвет просто зашит. */
+.ticker-wrap{background:#f0f0f4;overflow:hidden;white-space:nowrap;padding:8px 0;}
 .ticker-track{display:inline-flex;gap:28px;animation:scrollTicker 32s linear infinite;padding-left:16px;will-change:transform;}
 .ticker-wrap:hover .ticker-track{animation-play-state:paused;}
 @keyframes scrollTicker{from{transform:translate3d(0,0,0);}to{transform:translate3d(-50%,0,0);}}

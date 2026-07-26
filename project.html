@@ -1580,9 +1580,10 @@ body.map-fake-fullscreen-active { overflow: hidden; }
    знает, где заканчивается лента, и рисуется ниже, даже если сама лента
    ещё пустая (грузится). */
 /* 26.07.26, по просьбе Ильи: убрана нижняя линия (border-bottom) под бегущей
-   строкой; фон сделан на тон темнее (surface-3 вместо surface-2), чтобы полоса
-   всё равно была чуть заметна на глаз без явной линии-разделителя. */
-.ticker-wrap { background: var(--surface-3); overflow: hidden; white-space: nowrap; padding: 8px 0; min-height: 36px; box-sizing: border-box; }
+   строкой; фон — тот же var(--surface-2), что и у блока "Мы заботимся о
+   качестве платформы" (.bugfix-footer-wrap на flox-web.html), чтобы оба блока
+   были одного оттенка серого без явной линии-разделителя. */
+.ticker-wrap { background: var(--surface-2); overflow: hidden; white-space: nowrap; padding: 8px 0; min-height: 36px; box-sizing: border-box; }
 .ticker-track { display: inline-flex; gap: 28px; animation: scrollTicker 32s linear infinite; padding-left: 16px; will-change: transform; }
 .ticker-wrap:hover .ticker-track { animation-play-state: paused; }
 @keyframes scrollTicker { from { transform: translate3d(0,0,0); } to { transform: translate3d(-50%,0,0); } }

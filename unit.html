@@ -522,6 +522,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 /* см. пункт (3) выше — только светлая тема: --surface-2 тут равна --bg,
    переопределяем на тот же оттенок, что в flox-web.html/project.html. */
 body.light .bugfix-footer-wrap{background:#f0f0f4;}
+/* 26.07.26, по просьбе Ильи: та же самая история с --surface-2==--bg в
+   светлой теме — только для бегущей строки (.ticker-wrap), тем же оттенком. */
+body.light .ticker-wrap{background:#f0f0f4;}
 .bugfix-footer{max-width:1200px;margin:0 auto;padding:28px 20px 32px;}
 .bf-row{display:flex;align-items:center;gap:16px;}
 .bf-icon{
@@ -556,9 +559,13 @@ body.light .bugfix-footer-wrap{background:#f0f0f4;}
    тут просто используются обычные переменные — они уже разрешаются в
    светлые значения сами по себе. */
 /* 26.07.26, по просьбе Ильи: убрана нижняя линия (border-bottom) под бегущей
-   строкой; фон сделан на тон темнее (surface-3 вместо surface-2), чтобы полоса
-   всё равно была чуть заметна на глаз без явной линии-разделителя. */
-.ticker-wrap{background:var(--surface-3);overflow:hidden;white-space:nowrap;padding:8px 0;}
+   строкой; фон — var(--surface-2), тот же оттенок, что у блока "Мы заботимся
+   о качестве платформы" на flox-web.html. В тёмной теме --surface-2 в этом
+   файле и так совпадает с flox-web.html (#1a1a26) — работает как есть. Но в
+   светлой теме этого файла --surface-2 равна --bg (см. большой коммент у
+   .bugfix-footer-wrap ниже про этот же баг) — чиним точечным
+   переопределением тем же оттенком #f0f0f4, что и там. */
+.ticker-wrap{background:var(--surface-2);overflow:hidden;white-space:nowrap;padding:8px 0;}
 .ticker-track{display:inline-flex;gap:28px;animation:scrollTicker 32s linear infinite;padding-left:16px;will-change:transform;}
 .ticker-wrap:hover .ticker-track{animation-play-state:paused;}
 @keyframes scrollTicker{from{transform:translate3d(0,0,0);}to{transform:translate3d(-50%,0,0);}}
