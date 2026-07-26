@@ -82,7 +82,9 @@ html,body{background:#F5F5F7;font-family:'Inter',system-ui,sans-serif;color:#1C1
 /* 27.07.26, по просьбе Ильи: телефон вернули на правый край шапки (margin-
    left:auto внутри .top-bar-inner{display:flex}), отдельно от имени, с
    иконкой перед номером — раньше был мелкой строкой под именем. */
-.agent-phone{color:rgba(255,255,255,.8);font-size:12.5px;margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+/* 27.07.26 (2), по просьбе Ильи: цвет телефона теперь совпадает с именем
+   слева (.agent-name{color:#fff}) — было rgba(255,255,255,.8), чуть тусклее. */
+.agent-phone{color:#fff;font-size:12.5px;margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .agent-phone svg{width:13px;height:13px;flex-shrink:0;}
 
 /* ── вступление ── */
