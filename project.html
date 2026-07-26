@@ -759,6 +759,17 @@ a { color: inherit; text-decoration: none; }
   font-size: 13px; font-weight: 600; margin-bottom: 18px;
   color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
 }
+/* 26.07.26, по просьбе Ильи: раньше между под-заголовками ВНУТРИ одного
+   блока (Описание → Инфраструктура → Детали проекта; Карта → Ближайшие
+   локации) отступ либо отсутствовал, либо был меньше и не совпадал у
+   разных блоков (24px/24px/20px) — в отличие от отступа МЕЖДУ блоками
+   (page-section: 24+28=52px), который уже был единым и хорошим. Даём
+   каждому не-первому sec-title свой margin-top, равный padding-bottom
+   у .page-section (28px) — благодаря схлопыванию соседних margin'ов
+   (обычные блочные соседи, без flex/grid на родителе) итоговый отступ
+   везде становится ровно 28px, независимо от того, какой margin-bottom
+   был (или не был) у элемента перед заголовком. */
+.sec-title:not(:first-child) { margin-top: 28px; }
 
 /* ── UNITS ─── */
 .units-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }

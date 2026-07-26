@@ -850,6 +850,11 @@ body.light .ticker-wrap{background:#f0f0f4;}
 .proj-block{padding-top:24px;padding-bottom:28px}
 .proj-block:first-child{padding-top:0}
 .sec-title{font-size:13px;font-weight:600;margin-bottom:18px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+/* 26.07.26, по просьбе Ильи: та же правка, что и в project.html — единый
+   отступ 28px перед каждым не-первым sec-title внутри блока (Описание →
+   Инфраструктура → Детали проекта; Карта → Ближайшие локации), совпадающий
+   с padding-bottom у .proj-block, вместо разных/отсутствующих значений. */
+.sec-title:not(:first-child){margin-top:28px}
 
 .desc-text{font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px}
 .facilities-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px}

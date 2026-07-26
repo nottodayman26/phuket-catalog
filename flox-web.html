@@ -876,7 +876,8 @@ input,button{font-family:inherit;}
 .map-view-wrap{width:calc(100% + 40px);margin:16px -20px 0;display:none;position:relative;}
 .map-view-wrap.act{display:block;}
 .map-view-wrap .map-placement-bar{margin-left:20px;margin-right:20px;}
-#projectsMap{width:100%;min-height:320px;overflow:hidden;border-top:0.5px solid var(--line-2);position:relative;}
+/* 26.07.26, по просьбе Ильи: убрана верхняя линия над картой (border-top). */
+#projectsMap{width:100%;min-height:320px;overflow:hidden;position:relative;}
 
 /* 15.07.26 (15)-(18), 16.07.26 (четыре захода), 22.07.26 (финальный заход,
    по прямой просьбе Ильи после теста и сравнения со скринами конкурента):
@@ -5035,15 +5036,23 @@ async function loadActivity() {
     if (withTs !== null) return { rows: withTs, hasTs: true };
     return { rows: (await hArraySafe(urlNoTs)) || [], hasTs: false };
   }
-  function groupWithLatestTs(rows, keyField, hasTs) {
+  // 26.07.26, по просьбе Ильи: раньше все брони/лайки одной презентации/оффера
+  // схлопывались в ОДНУ карточку с самым свежим временем — если клиент
+  // забронировал один лот вчера, а другой сегодня, уведомление показывало
+  // "сегодня" сразу оба лота вместе. Теперь группируем по ДНЮ (тем же
+  // принципом, что уже был для просмотров чуть ниже) — у каждого дня своя
+  // карточка со своими лотами, а не общая на все дни разом.
+  function groupRoomsByDay(rows, keyField, hasTs) {
     const m = {};
     rows.forEach(row => {
       const id = row[keyField];
-      if (!m[id]) m[id] = { rooms: [], ts: null };
-      m[id].rooms.push(row.units?.room_no);
-      if (hasTs && row.created_at && (!m[id].ts || new Date(row.created_at) > new Date(m[id].ts))) {
-        m[id].ts = row.created_at;
-      }
+      const room = row.units?.room_no;
+      const ts = hasTs ? row.created_at : null;
+      const day = ts ? new Date(ts).toLocaleDateString('ru-RU', {day:'numeric',month:'long'}) : '—';
+      if (!m[id]) m[id] = {};
+      if (!m[id][day]) m[id][day] = { rooms: [], ts: null };
+      if (room) m[id][day].rooms.push(room);
+      if (ts && (!m[id][day].ts || new Date(ts) > new Date(m[id][day].ts))) m[id][day].ts = ts;
     });
     return m;
   }
@@ -5079,8 +5088,8 @@ async function loadActivity() {
     ]);
     const presViews = await pvRes.json();
 
-    const presBookMap = groupWithLatestTs(pbData.rows, 'presentation_id', pbData.hasTs);
-    const presLikesMap = groupWithLatestTs(plData.rows, 'presentation_id', plData.hasTs);
+    const presBookByDay = groupRoomsByDay(pbData.rows, 'presentation_id', pbData.hasTs);
+    const presLikesByDay = groupRoomsByDay(plData.rows, 'presentation_id', plData.hasTs);
     const presViewingMap = {};
     pvrData.rows.forEach(v => {
       (presViewingMap[v.presentation_id] = presViewingMap[v.presentation_id] || []).push({
@@ -5108,20 +5117,26 @@ async function loadActivity() {
           hadAny = true;
         });
       }
-      const bk = presBookMap[p.id];
-      if (bk && bk.rooms.length) {
-        pushItem(bk.ts || p.created_at, label, 'var(--red)', `Хочет забронировать: ${bk.rooms.join(', ')}`);
-        hadAny = true;
+      const bkDays = presBookByDay[p.id];
+      if (bkDays) {
+        Object.values(bkDays).forEach(info => {
+          if (!info.rooms.length) return;
+          pushItem(info.ts || p.created_at, label, 'var(--red)', `Хочет забронировать: ${info.rooms.join(', ')}`);
+          hadAny = true;
+        });
       }
       (presViewingMap[p.id] || []).forEach(r => {
         const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';
         pushItem(r.ts || p.created_at, label, 'var(--green)', `Запись на просмотр${r.room && r.room!=='—' ? ' — '+r.room : ''} — ${dateStr}`);
         hadAny = true;
       });
-      const lk = presLikesMap[p.id];
-      if (lk && lk.rooms.length) {
-        pushItem(lk.ts || p.created_at, label, '#dc2626', `Понравилась планировка: ${lk.rooms.join(', ')}`);
-        hadAny = true;
+      const lkDays = presLikesByDay[p.id];
+      if (lkDays) {
+        Object.values(lkDays).forEach(info => {
+          if (!info.rooms.length) return;
+          pushItem(info.ts || p.created_at, label, '#dc2626', `Понравилась планировка: ${info.rooms.join(', ')}`);
+          hadAny = true;
+        });
       }
       if (!hadAny) pushItem(p.created_at, label, 'var(--muted)', 'Отправлено, ещё не открыто');
     });
@@ -5143,7 +5158,7 @@ async function loadActivity() {
     ]);
     const views = await vr.json();
 
-    const bookMap = groupWithLatestTs(bData.rows, 'offer_id', bData.hasTs);
+    const bookByDay = groupRoomsByDay(bData.rows, 'offer_id', bData.hasTs);
     const vrUnitIds = [...new Set(vrData.rows.map(r=>r.unit_id).filter(Boolean))];
     let unitRoomMap = {};
     if (vrUnitIds.length) {
@@ -5176,10 +5191,13 @@ async function loadActivity() {
           hadAny = true;
         });
       }
-      const bk = bookMap[o.id];
-      if (bk && bk.rooms.length) {
-        pushItem(bk.ts || o.created_at, label, 'var(--red)', `Хочет забронировать: ${bk.rooms.join(', ')}`);
-        hadAny = true;
+      const bkDays = bookByDay[o.id];
+      if (bkDays) {
+        Object.values(bkDays).forEach(info => {
+          if (!info.rooms.length) return;
+          pushItem(info.ts || o.created_at, label, 'var(--red)', `Хочет забронировать: ${info.rooms.join(', ')}`);
+          hadAny = true;
+        });
       }
       (viewingMap[o.id] || []).forEach(r => {
         const dateStr = r.date ? new Date(r.date).toLocaleDateString('ru-RU') : '';

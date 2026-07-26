@@ -29,6 +29,11 @@
 /* 26.07.26, по просьбе Ильи: единый фон страницы для всего проекта — тот же
    оттенок, что и var(--bg) в flox-web.html/project.html/unit.html (#F5F5F7).
    В этом файле нет переключения тем, поэтому цвет просто зашит. */
+/* 26.07.26, по просьбе Ильи: скролл справа теперь виден всегда, даже когда
+   карточек мало (2-3) и страница короче экрана — без этого при переходе
+   между подборками разной длины контент чуть "прыгал" по горизонтали
+   (появление/исчезновение полосы прокрутки меняло доступную ширину). */
+html{overflow-y:scroll;}
 html,body{background:#F5F5F7;font-family:'Inter',system-ui,sans-serif;color:#1C1C2E;-webkit-tap-highlight-color:transparent;}
 /* 22.07.26 (2), по просьбе Ильи: JS-снимок высоты (разово досыпанный
    padding-bottom) оказался ненадёжным — если высота контента чуть менялась
@@ -110,7 +115,7 @@ html,body{background:#F5F5F7;font-family:'Inter',system-ui,sans-serif;color:#1C1
    наведении, как аналогичные карточки в project.html/floxweb.html.
    position:absolute — раскладку (left/top/width) выставляет JS. */
 .unit-card{
-  display:block;background:#fff;border-radius:16px;border:0.5px solid var(--line);
+  display:block;background:#fff;border-radius:16px;
   overflow:hidden;text-decoration:none;color:inherit;cursor:pointer;
   position:absolute;top:0;left:0;
   transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease;
@@ -1022,9 +1027,9 @@ async function init() {
         <span class="unit-badge ${isAvail ? 'badge-avail' : 'badge-sold'}">${isAvail ? `<span class="badge-dot" style="--dot-delay:${(Math.random()*1.8).toFixed(2)}s"></span>` : ''}${isAvail ? 'Свободен' : 'Продан'}</span>
       </div>
       <div class="unit-info">
-        <span class="unit-like" data-unit-id="${u.id || ''}" data-room="${u.room_no}" aria-label="Нравится">
+        ${isAvail ? `<span class="unit-like" data-unit-id="${u.id || ''}" data-room="${u.room_no}" aria-label="Нравится">
           <i class="ti ti-heart"></i>
-        </span>
+        </span>` : ''}
         <div class="unit-summary">
           <div class="unit-proj">${projName}</div>
           <div class="unit-num">${u.room_no}</div>
