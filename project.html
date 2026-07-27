@@ -3071,10 +3071,21 @@ function thSort(tblId, col, th) {
 function renderVisual(d) {
   const base = location.pathname.replace(/\/[^\/]*$/, "/");
   const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
-  const renders1 = local.slice(0, 9).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
-  const renders2 = local.slice(9, 15).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
-  const renders3 = local.slice(15, 19).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
-  const showroom = local.slice(19).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  // 27.07.26, по просьбе Ильи: границы вкладок экстерьер/интерьер/шоурум-рендеры
+  // раньше были захардкожены (9/6/4) под конкретный расклад фото у VIK — для
+  // проекта с другим количеством рендеров по категориям (напр. OLN: 7/6/5)
+  // это раскидывало фото не по тем вкладкам. Теперь границы можно задать через
+  // d.gallery.counts {ext,int,showroomRenders} в JSON проекта; если поле не
+  // задано — поведение как раньше (9/6/4), т.е. для VIK/KAT/BAN ничего не
+  // меняется.
+  const counts = (d.gallery && d.gallery.counts) || {};
+  const extEnd = counts.ext ?? 9;
+  const intEnd = extEnd + (counts.int ?? 6);
+  const srEnd = intEnd + (counts.showroomRenders ?? 4);
+  const renders1 = local.slice(0, extEnd).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const renders2 = local.slice(extEnd, intEnd).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const renders3 = local.slice(intEnd, srEnd).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const showroom = local.slice(srEnd).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
 
   window._visualSliders = {};
 
