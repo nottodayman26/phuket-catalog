@@ -153,7 +153,28 @@
     "payment_days": 30,
     "note": ""
   },
-  "files": [],
+  "files": [
+    {
+      "name": "EIA (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/EIA%20(ENG).pdf"
+    },
+    {
+      "name": "Title Deed (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/Title%20Deed%20(ENG).pdf"
+    },
+    {
+      "name": "О застройщике (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/%D0%9E%20%D0%B7%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%89%D0%B8%D0%BA%D0%B5%20(ENG).pdf"
+    },
+    {
+      "name": "Презентация (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/%D0%9F%D1%80%D0%B5%D0%B7%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F%20(ENG).pdf"
+    }
+  ],
   "drive_root": "https://drive.google.com",
   "floor_plans": [
     {
