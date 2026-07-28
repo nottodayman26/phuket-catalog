@@ -69,7 +69,8 @@
     "Парк для животных",
     "Детская зона",
     "Йога-зона",
-    "Парная"
+    "Парная",
+    "Зоны отдыха у воды"
   ],
   "nearby": [
     {
@@ -120,18 +121,18 @@
   ],
   "maintenance": {
     "common_fee": {
-      "amount": 850,
-      "unit": "THB/м²/мес"
+      "amount": 0,
+      "unit": "уточняется"
     },
     "sinking_fund": {
-      "amount": 85,
-      "unit": "THB/м² (разово)"
+      "amount": 0,
+      "unit": "уточняется"
     },
     "registration": {
       "freehold": "уточняется",
       "leasehold": "уточняется"
     },
-    "notes": "Common fee 850 THB/м²/мес · Sinking fund 85 THB/м²"
+    "notes": "Данные уточняются"
   },
   "agent_reward": {
     "percent_from": 10,
