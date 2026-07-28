@@ -90,6 +90,18 @@
       "icon": "🛍️",
       "time": "35 мин",
       "dist": "28 км"
+    },
+    {
+      "name": "Headstart Int. School",
+      "icon": "🏫",
+      "time": "30 мин",
+      "dist": "23 км"
+    },
+    {
+      "name": "Bangkok Hospital Phuket",
+      "icon": "🏥",
+      "time": "40 мин",
+      "dist": "33 км"
     }
   ],
   "payment_schedule": [
