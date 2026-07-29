@@ -1219,7 +1219,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ── ABOUT ─── */
-.desc-text { font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 24px; }
+.desc-text { font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 24px; white-space: pre-line; }
 .facilities-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px,1fr)); gap: 10px; margin-bottom: 24px; }
 .fac-item {
   background: var(--surface); border: 1px solid transparent;
@@ -3108,18 +3108,25 @@ function renderVisual(d) {
       </div>`;
   };
 
+  // 29.07.26, по просьбе Ильи: кнопка "Фото шоурума" показывается только если
+  // у проекта реально есть фото сверх ext/int/showroomRenders (напр. у OLN их
+  // нет — local.length ровно равен srEnd, showroom пустой) — раньше кнопка
+  // показывалась всегда, даже когда вкладка была пустой.
+  const showroomTab = showroom.length ? `
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom')">Фото шоурума</button>` : '';
+  const showroomPanel = showroom.length ? `
+    <div class="visual-panel" id="vp-showroom">${makeSlider(showroom, 'sl-showroom')}</div>` : '';
+
   return `
     <div class="sec-title">Рендеры и фото</div>
     <div class="visual-tabs">
       <button class="visual-tab visual-tab-ghost act" onclick="switchVisualTab(this,'vp-ext')">Рендеры: экстерьер</button>
       <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-int')">Рендеры: интерьер</button>
-      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom-r')">Рендеры: шоурум</button>
-      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom')">Фото шоурума</button>
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom-r')">Рендеры: шоурум</button>${showroomTab}
     </div>
     <div class="visual-panel act" id="vp-ext">${makeSlider(renders1, 'sl-ext')}</div>
     <div class="visual-panel" id="vp-int">${makeSlider(renders2, 'sl-int')}</div>
-    <div class="visual-panel" id="vp-showroom-r">${makeSlider(renders3, 'sl-showroom-r')}</div>
-    <div class="visual-panel" id="vp-showroom">${makeSlider(showroom, 'sl-showroom')}</div>`;
+    <div class="visual-panel" id="vp-showroom-r">${makeSlider(renders3, 'sl-showroom-r')}</div>${showroomPanel}`;
 }
 
 function switchVisualTab(btn, panelId) {
@@ -3737,6 +3744,13 @@ function renderPayment(d) {
     cum += p.percent;
     const offset = circ * (1 - cum / total); // для анимации — кумулятивный
     const label = stageRu[p.stage] || p.stage;
+    // 29.07.26, по просьбе Ильи: для этапов с фиксированной суммой (не % от
+    // цены, напр. бронирование в OLN) вместо анимированного "0%" справа
+    // выводим статичный текст из p.percent_label (напр. "fix") — задаётся
+    // в JSON проекта, percent при этом остаётся 0 и не ломает кумулятив.
+    const pctHtml = p.percent_label
+      ? `<div class="ps-pct">${p.percent_label}</div>`
+      : `<div class="ps-pct" data-target="${p.percent}">0%</div>`;
     return `
       <div class="ps-item">
         <div class="ps-circle-wrap">
@@ -3750,7 +3764,7 @@ function renderPayment(d) {
           <div class="ps-item-stage">${label}</div>
           ${p.note ? `<div class="ps-item-note">${p.note}</div>` : ''}
         </div>
-        <div class="ps-pct" data-target="${p.percent}">0%</div>
+        ${pctHtml}
       </div>`;
   }).join('');
 

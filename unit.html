@@ -874,7 +874,7 @@ body.light .ticker-wrap{background:#f0f0f4;}
    52px вместо 28px, ровно то же расстояние, что и между блоками (.proj-block). */
 .sec-title:not(:first-child){margin-top:52px}
 
-.desc-text{font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px}
+.desc-text{font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px;white-space:pre-line}
 .facilities-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px}
 /* 26.07.26, по правке Ильи: обводки в состоянии покоя нет (border:1px solid
    transparent — резервирует место под рамку, чтобы при наведении блок не
@@ -1520,14 +1520,41 @@ function renderDeveloperBlock(d) {
     </div>`;
 }
 
+// 29.07.26, по просьбе Ильи: раньше иконки инфраструктуры в юните подбирались
+// по подстроке (keyword-match) — из-за этого набор отличался от
+// project.html/flox-web.html (напр. другой значок у "Лобби", не было
+// "Йога-зона"/"Парная"/"Пространство для совместной кухни"). Теперь тот же
+// точный справочник FACILITIES_ICONS 1:1, что и в project.html (ЭТАЛОН) —
+// держать все три копии синхронно вручную при добавлении новых facilities.
+const FACILITIES_ICONS = {
+  'Бассейн': '🏊',
+  'Детский бассейн': '🐬',
+  'Джакузи': '♨️',
+  'Фитнес-центр': '💪',
+  'Лобби': '🛎️',
+  'Охрана': '🛡️',
+  'Лаундж': '🛋️',
+  'Парковка': '🅿️',
+  'Зоны отдыха у воды': '🌅',
+  'Сад': '🌿',
+  'Зона барбекю': '🔥',
+  'Коворкинг': '💻',
+  'Парк для животных': '🐾',
+  'Фонтан': '⛲',
+  'Детская зона': '👶',
+  'Прачечная': '🧺',
+  'Пространство для совместной кухни': '🍽️',
+  'Йога-зона': '🧘',
+  'Парная': '🧖',
+};
+
 function renderDescriptionBlock(d) {
-  const icons = { 'лагун':'🏖️','детский бассейн':'🐬','джакузи':'♨️','фитнес':'💪','лобби':'🏨','лаундж':'🛋️','парковка':'🅿️','сад':'🌿','барбекю':'🔥','коворкинг':'💻','животных':'🐾','фонтан':'⛲','детск':'👶','прачечная':'🧺','бассейн':'🏊','вода':'💧','охрана':'🔐','зона отдыха':'🌅','спорт':'🎾' };
-  const usedIcons = new Set();
+  const usedFallbacks = new Set();
+  const fallbacks = ['🏡','🌴','🎯','⭐','🔑','🌊','🎪','🏅','🌺','🍃'];
   const getIcon = f => {
-    const fl = f.toLowerCase();
-    for (const [k, v] of Object.entries(icons)) { if (fl.includes(k) && !usedIcons.has(v)) { usedIcons.add(v); return v; } }
-    const fallbacks = ['🏡','🌴','🎯','⭐','🔑','🌊','🎪','🏅','🌺','🍃'];
-    for (const f2 of fallbacks) { if (!usedIcons.has(f2)) { usedIcons.add(f2); return f2; } }
+    const canonKey = Object.keys(FACILITIES_ICONS).find(k => k.toLowerCase() === String(f).trim().toLowerCase());
+    if (canonKey) return FACILITIES_ICONS[canonKey];
+    for (const fb of fallbacks) { if (!usedFallbacks.has(fb)) { usedFallbacks.add(fb); return fb; } }
     return '•';
   };
   return `
@@ -1798,10 +1825,18 @@ document.addEventListener('click', (e) => {
 function renderGalleryBlock(d) {
   const base = location.pathname.replace(/\/[^\/]*$/, '/');
   const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
-  const renders1 = local.slice(0, 9).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
-  const renders2 = local.slice(9, 15).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
-  const renders3 = local.slice(15, 19).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
-  const showroom = local.slice(19).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  // 29.07.26, по просьбе Ильи: границы вкладок теперь берутся из
+  // d.gallery.counts {ext,int,showroomRenders}, синхронизировано с
+  // renderVisual в project.html (иначе для проектов с нестандартным раскладом
+  // фото, напр. OLN 7/6/5, тут раньше подставлялись старые хардкод 9/6/4).
+  const counts = (d.gallery && d.gallery.counts) || {};
+  const extEnd = counts.ext ?? 9;
+  const intEnd = extEnd + (counts.int ?? 6);
+  const srEnd = intEnd + (counts.showroomRenders ?? 4);
+  const renders1 = local.slice(0, extEnd).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const renders2 = local.slice(extEnd, intEnd).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const renders3 = local.slice(intEnd, srEnd).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
+  const showroom = local.slice(srEnd).map(f => f.startsWith('http') ? f : `${base}img/${d.id}/${f}`);
 
   const makeSlider = (photos, sliderId) => {
     if (!photos.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Фото появятся позже</div>`;
@@ -1822,18 +1857,23 @@ function renderGalleryBlock(d) {
       </div>`;
   };
 
+  // Кнопка "Фото шоурума" — только если фото реально есть (см. тот же
+  // комментарий в renderVisual, project.html).
+  const showroomTab = showroom.length ? `
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom')">Фото шоурума</button>` : '';
+  const showroomPanel = showroom.length ? `
+    <div class="visual-panel" id="vp-showroom">${makeSlider(showroom, 'sl-showroom')}</div>` : '';
+
   return `
     <div class="sec-title">Рендеры и фото</div>
     <div class="visual-tabs">
       <button class="visual-tab visual-tab-ghost act" onclick="switchVisualTab(this,'vp-ext')">Рендеры: экстерьер</button>
       <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-int')">Рендеры: интерьер</button>
-      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom-r')">Рендеры: шоурум</button>
-      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom')">Фото шоурума</button>
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom-r')">Рендеры: шоурум</button>${showroomTab}
     </div>
     <div class="visual-panel act" id="vp-ext">${makeSlider(renders1, 'sl-ext')}</div>
     <div class="visual-panel" id="vp-int">${makeSlider(renders2, 'sl-int')}</div>
-    <div class="visual-panel" id="vp-showroom-r">${makeSlider(renders3, 'sl-showroom-r')}</div>
-    <div class="visual-panel" id="vp-showroom">${makeSlider(showroom, 'sl-showroom')}</div>`;
+    <div class="visual-panel" id="vp-showroom-r">${makeSlider(renders3, 'sl-showroom-r')}</div>${showroomPanel}`;
 }
 
 function renderPaymentBlock(d) {
@@ -1860,6 +1900,12 @@ function renderPaymentBlock(d) {
     cum += p.percent;
     const offset = circ * (1 - cum / total);
     const label = stageRu[p.stage] || p.stage;
+    // 29.07.26: см. тот же комментарий в project.html/renderPayment —
+    // p.percent_label (напр. "fix") заменяет анимированный "0%" справа для
+    // этапов с фиксированной суммой.
+    const pctHtml = p.percent_label
+      ? `<div class="ps-pct">${p.percent_label}</div>`
+      : `<div class="ps-pct" data-target="${p.percent}">0%</div>`;
     return `
       <div class="ps-item">
         <div class="ps-circle-wrap">
@@ -1873,7 +1919,7 @@ function renderPaymentBlock(d) {
           <div class="ps-item-stage">${label}</div>
           ${p.note ? `<div class="ps-item-note">${p.note}</div>` : ''}
         </div>
-        <div class="ps-pct" data-target="${p.percent}">0%</div>
+        ${pctHtml}
       </div>`;
   }).join('');
 
