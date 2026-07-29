@@ -106,29 +106,30 @@
   ],
   "payment_schedule": [
     {
-      "stage": "Booking deposit",
+      "stage": "Бронирование 100-200 тыс THB",
       "percent": 0,
-      "note": "100,000 / 200,000 THB"
+      "percent_label": "fix",
+      "note": "При отправке документов застройщику"
     },
     {
-      "stage": "Contract payment",
+      "stage": "Договор SPA",
       "percent": 25,
-      "note": ""
+      "note": "В течение 30 дней"
     },
     {
-      "stage": "1st Installment",
+      "stage": "2 взнос",
       "percent": 25,
-      "note": ""
+      "note": "через 7 месяцев после SPA"
     },
     {
-      "stage": "2nd Installment",
+      "stage": "Конструкция",
       "percent": 25,
-      "note": ""
+      "note": "По завершении этапа строительства"
     },
     {
-      "stage": "Transfer of ownership",
+      "stage": "Ключи",
       "percent": 25,
-      "note": ""
+      "note": "При приемке квартиры"
     }
   ],
   "maintenance": {
@@ -155,6 +156,16 @@
   },
   "files": [
     {
+      "name": "Презентация (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/%D0%9F%D1%80%D0%B5%D0%B7%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F%20(ENG).pdf"
+    },
+    {
+      "name": "О застройщике (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/%D0%9E%20%D0%B7%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%89%D0%B8%D0%BA%D0%B5%20(ENG).pdf"
+    },
+    {
       "name": "EIA (ENG)",
       "type": "pdf",
       "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/EIA%20(ENG).pdf"
@@ -163,16 +174,6 @@
       "name": "Title Deed (ENG)",
       "type": "pdf",
       "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/Title%20Deed%20(ENG).pdf"
-    },
-    {
-      "name": "О застройщике (ENG)",
-      "type": "pdf",
-      "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/%D0%9E%20%D0%B7%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%89%D0%B8%D0%BA%D0%B5%20(ENG).pdf"
-    },
-    {
-      "name": "Презентация (ENG)",
-      "type": "pdf",
-      "url": "https://nottodayman26.github.io/phuket-catalog/files/OLN/%D0%9F%D1%80%D0%B5%D0%B7%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F%20(ENG).pdf"
     }
   ],
   "drive_root": "https://drive.google.com",
