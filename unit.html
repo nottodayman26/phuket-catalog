@@ -1315,11 +1315,23 @@ function loadPlanImage(u, proj, pd) {
   const slides = [];
 
   // Слайд 1: планировка юнита — {площадь}_{plan_code}.jpg
+  // 29.07.26, по просьбе Ильи: код плана из прайс-листа не всегда уникален
+  // между корпусами (у ОЛН, напр., "1BM1" при похожей площади встречается и
+  // в корпусе A, и в корпусе B, но это разные планировки) — из-за этого юнит
+  // корпуса B показывал картинку корпуса A с тем же именем файла. Сначала
+  // пробуем путь с подпапкой по корпусу (img/{code}/units/{tower}/...) —
+  // так новые файлы (сейчас — корпус B) можно грузить раздельно по корпусам;
+  // если такого файла нет — используем старый плоский путь
+  // (img/{code}/units/...), чтобы уже загруженные файлы (весь корпус A)
+  // не пришлось переименовывать или перезаливать.
   if (code && u.plan_code && u.area_sqm) {
     const areaStr = Number(u.area_sqm).toFixed(2);
     const fileName = `${areaStr}_${u.plan_code}.jpg`;
+    const planPaths = [];
+    if (u.tower) planPaths.push(`${base}img/${code}/units/${String(u.tower).toUpperCase()}/${encodeURIComponent(fileName)}`);
+    planPaths.push(`${base}img/${code}/units/${encodeURIComponent(fileName)}`);
     slides.push({
-      path: `${base}img/${code}/units/${encodeURIComponent(fileName)}`,
+      paths: planPaths,
       label: 'Планировка юнита',
       alt: `Планировка ${u.room_no}`
     });
@@ -1340,7 +1352,7 @@ function loadPlanImage(u, proj, pd) {
     const towerCyr = TOWER_CYR[String(u.tower).toUpperCase()] || String(u.tower).toLowerCase();
     const fileName = `${towerCyr}${Number(u.floor) + floorPlanOffset}.jpg`;
     slides.push({
-      path: `${base}img/${code}/floor-plans/${encodeURIComponent(fileName)}`,
+      paths: [`${base}img/${code}/floor-plans/${encodeURIComponent(fileName)}`],
       label: `Поэтажный план · Корпус ${u.tower} · Этаж ${u.floor}`,
       alt: `Поэтажный план, корпус ${u.tower}, этаж ${u.floor}`
     });
@@ -1352,7 +1364,7 @@ function loadPlanImage(u, proj, pd) {
     const pageNum = String(Number(u.floor) + 1).padStart(4, '0');
     const fileName = `мастер план_page-${pageNum}.jpg`;
     slides.push({
-      path: `${base}img/${code}/masterplan/${encodeURIComponent(fileName)}`,
+      paths: [`${base}img/${code}/masterplan/${encodeURIComponent(fileName)}`],
       label: `Мастер-план · Этаж ${u.floor}`,
       alt: `Мастер-план, этаж ${u.floor}`
     });
@@ -1360,17 +1372,29 @@ function loadPlanImage(u, proj, pd) {
 
   if (!slides.length) return; // нет данных вообще — плейсхолдер остаётся
 
-  // Проверяем существование каждого слайда параллельно, сохраняя порядок
-  Promise.all(slides.map(s => new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => resolve(s);
-    img.onerror = () => resolve(null);
-    img.src = s.path;
-  }))).then(results => {
-    const found = results.filter(Boolean);
-    if (!found.length) return; // ни один файл не нашёлся — плейсхолдер остаётся
-    renderPlanCarousel(found);
+  // Пробуем пути слайда по очереди (см. planPaths выше) и берём первый,
+  // который реально загрузился; остальные слайды (без альтернатив) ведут
+  // себя как раньше — единственный путь либо есть, либо слайд отбрасывается.
+  const tryPaths = paths => new Promise(resolve => {
+    let i = 0;
+    const attempt = () => {
+      if (i >= paths.length) { resolve(null); return; }
+      const img = new Image();
+      const p = paths[i++];
+      img.onload = () => resolve(p);
+      img.onerror = attempt;
+      img.src = p;
+    };
+    attempt();
   });
+
+  // Проверяем существование каждого слайда параллельно, сохраняя порядок
+  Promise.all(slides.map(s => tryPaths(s.paths).then(p => p ? { ...s, path: p } : null)))
+    .then(results => {
+      const found = results.filter(Boolean);
+      if (!found.length) return; // ни один файл не нашёлся — плейсхолдер остаётся
+      renderPlanCarousel(found);
+    });
 }
 
 function renderPlanCarousel(slides) {
