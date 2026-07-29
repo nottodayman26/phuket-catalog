@@ -1309,7 +1309,7 @@ async function processUnit(u) {
   animateRewardAmount(u.selling_price, pct);
 }
 
-function loadPlanImage(u, proj) {
+function loadPlanImage(u, proj, pd) {
   const code = proj.code || projectId || '';
   const base = location.pathname.replace(/\/[^\/]*$/, '/');
   const slides = [];
@@ -1327,10 +1327,18 @@ function loadPlanImage(u, proj) {
 
   // Слайд 2: поэтажный план — {корпус кириллицей}{этаж}.jpg, например с5.jpg
   // Соответствие латиница→кириллица: A→а, B→б, C→с, D→д
+  // 29.07.26, по просьбе Ильи: для ОЛН первый файл в поэтажных планах
+  // (а1.jpg/б1.jpg) — это страница-легенда, а не план 1-го этажа (в отличие
+  // от VIK, где легенда — отдельный файл "а.jpg", и а1.jpg уже сам план
+  // 1-го этажа) — из-за этого юнит на 4-м этаже показывал план 3-го.
+  // pd.floor_plans_offset (задаётся в JSON проекта, по умолчанию 0 —
+  // поведение для VIK/KAT/BAN не меняется) сдвигает номер файла относительно
+  // этажа — тот же приём, что уже используется для мастер-плана ниже.
   const TOWER_CYR = { A: 'а', B: 'б', C: 'с', D: 'д' };
+  const floorPlanOffset = Number(pd?.floor_plans_offset) || 0;
   if (code && u.tower && u.floor) {
     const towerCyr = TOWER_CYR[String(u.tower).toUpperCase()] || String(u.tower).toLowerCase();
-    const fileName = `${towerCyr}${u.floor}.jpg`;
+    const fileName = `${towerCyr}${Number(u.floor) + floorPlanOffset}.jpg`;
     slides.push({
       path: `${base}img/${code}/floor-plans/${encodeURIComponent(fileName)}`,
       label: `Поэтажный план · Корпус ${u.tower} · Этаж ${u.floor}`,
@@ -1616,7 +1624,7 @@ function initProjMapLazy(d) {
 function loadProjMap(d) {
   if (projMap || _projMapLoadAttempted) return;
   _projMapLoadAttempted = true;
-  const { lat, lng } = d.coords;
+  let { lat, lng } = d.coords;
 
   const showMapError = () => {
     const el = document.getElementById('projMap');
@@ -1627,29 +1635,44 @@ function loadProjMap(d) {
 
   loadLocations();
 
-  ymaps.ready(() => {
-    if (!document.getElementById('projMap')) return;
-    let pm;
-    try {
-      projMap = new ymaps.Map('projMap', { center: [lat, lng], zoom: 15, controls: [] });
+  // 29.07.26, по просьбе Ильи: тот же фикс, что и в project.html/loadProjMap
+  // — карта юнита раньше всегда брала статичный coords из projects/{id}.json
+  // и не видела точку, которую админ расставляет кликом в flox-web (она
+  // сохраняется только в Supabase, таблица projects). Подтягиваем актуальную
+  // координату перед отрисовкой; если в базе для проекта ничего не
+  // сохранено или запрос не удался — молча остаёмся на статичном coords.
+  fetch(`${SUPABASE_URL}/projects?select=lat,lng&code=eq.${d.id}`, { headers: SB })
+    .then(r => r.ok ? r.json() : [])
+    .then(rows => {
+      const row = rows && rows[0];
+      if (row && row.lat != null && row.lng != null) { lat = +row.lat; lng = +row.lng; }
+    })
+    .catch(() => {})
+    .then(() => {
+      ymaps.ready(() => {
+        if (!document.getElementById('projMap')) return;
+        let pm;
+        try {
+          projMap = new ymaps.Map('projMap', { center: [lat, lng], zoom: 15, controls: [] });
 
-      const base = location.pathname.replace(/\/[^\/]*$/, '/');
-      const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
-      const firstRender = local.length ? (local[0].startsWith('http') ? local[0] : `${base}img/${d.id}/${local[0]}`) : '';
-      const markerLayout = ymaps.templateLayoutFactory.createClass(
-        `<div class="map-marker" style="position:relative;transform:translate(-50%,-50%);">` +
-        (firstRender ? `<img src="${firstRender}" alt="">` : '') + `</div>`
-      );
-      pm = new ymaps.Placemark([lat, lng], {}, {
-        iconLayout: markerLayout,
-        iconShape: { type: 'Rectangle', coordinates: [[-22, -22], [22, 22]] },
-        hasBalloon: false,
+          const base = location.pathname.replace(/\/[^\/]*$/, '/');
+          const local = (d.gallery && d.gallery.local) ? d.gallery.local : [];
+          const firstRender = local.length ? (local[0].startsWith('http') ? local[0] : `${base}img/${d.id}/${local[0]}`) : '';
+          const markerLayout = ymaps.templateLayoutFactory.createClass(
+            `<div class="map-marker" style="position:relative;transform:translate(-50%,-50%);">` +
+            (firstRender ? `<img src="${firstRender}" alt="">` : '') + `</div>`
+          );
+          pm = new ymaps.Placemark([lat, lng], {}, {
+            iconLayout: markerLayout,
+            iconShape: { type: 'Rectangle', coordinates: [[-22, -22], [22, 22]] },
+            hasBalloon: false,
+          });
+          projMap.geoObjects.add(pm);
+        } catch (e) { showMapError(); return; }
+
+        addCustomProjMapControls(lat, lng, d.nearby);
       });
-      projMap.geoObjects.add(pm);
-    } catch (e) { showMapError(); return; }
-
-    addCustomProjMapControls(lat, lng, d.nearby);
-  });
+    });
 }
 
 function addCustomProjMapControls(lat, lng, nearby) {
@@ -2224,7 +2247,7 @@ function renderUnit(u, proj, pd, allowedBlocks) {
     </div>
   `;
 
-  loadPlanImage(u, proj);
+  loadPlanImage(u, proj, pd);
   initProjectPaymentAnimation();
   if (pd) { CURRENT_PROJECT_DATA = pd; initProjMapLazy(pd); }
 
