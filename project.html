@@ -2932,14 +2932,24 @@ function renderUnitRows(units) {
     const linkAttrs = isSold ? `href="#" onclick="return false"` : `href="${unitUrl}" target="_blank"`;
     // Миниатюра планировки — тот же файл, что показывает unit.html:
     // img/{проект}/units/{площадь с 2 знаками}_{plan_code}.jpg
+    // 29.07.26, по просьбе Ильи: код плана из прайс-листа не всегда уникален
+    // между корпусами (см. тот же фикс в unit.html/loadPlanImage) — сначала
+    // пробуем путь с подпапкой по корпусу (units/{tower}/...), и только если
+    // там файла нет — старый плоский путь (units/...). Раньше эта таблица
+    // проверяла только плоский путь, поэтому для юнитов корпуса B, чьи
+    // планировки лежат в units/B/, миниатюра не находилась и показывался "—",
+    // хотя на самой странице юнита (unit.html) картинка уже была видна.
     let planCell;
     if (projId && u.plan_code && u.area_sqm) {
       const fileName = `${Number(u.area_sqm).toFixed(2)}_${u.plan_code}.jpg`;
-      const planSrc = `${base}img/${projId}/units/${encodeURIComponent(fileName)}`;
+      const flatPath = `${base}img/${projId}/units/${encodeURIComponent(fileName)}`;
+      const towerPath = u.tower ? `${base}img/${projId}/units/${String(u.tower).toUpperCase()}/${encodeURIComponent(fileName)}` : '';
+      const planSrc = towerPath || flatPath;
+      const fallbackAttr = towerPath ? ` data-fallback-src="${flatPath}"` : '';
       planCell = `
         <a ${linkAttrs} class="ut-plan-link">
-          <img class="ut-plan-thumb" src="${planSrc}" alt="Планировка ${u.room_no}" loading="lazy"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+          <img class="ut-plan-thumb" src="${planSrc}" alt="Планировка ${u.room_no}" loading="lazy"${fallbackAttr}
+               onerror="planImgError(this)"
                onmouseenter="showPlanPreview(this)" onmouseleave="hidePlanPreview()">
           <span class="ut-plan-fallback">—</span>
         </a>`;
@@ -2979,6 +2989,19 @@ function renderUnitRows(units) {
 
 // ── Всплывающий предпросмотр планировки при наведении ──────────────────────
 let _planPreviewHideTimer = null;
+
+// 29.07.26: обработчик onerror миниатюры плана в таблице юнитов — сначала
+// пробуем плоский путь (data-fallback-src) один раз, и только если он тоже
+// не загрузился, скрываем картинку и показываем "—" (как было раньше).
+function planImgError(img) {
+  if (img.dataset.fallbackSrc && !img.dataset.fallbackTried) {
+    img.dataset.fallbackTried = '1';
+    img.src = img.dataset.fallbackSrc;
+    return;
+  }
+  img.style.display = 'none';
+  if (img.nextElementSibling) img.nextElementSibling.style.display = 'flex';
+}
 
 function showPlanPreview(imgEl) {
   const preview = document.getElementById('planHoverPreview');
