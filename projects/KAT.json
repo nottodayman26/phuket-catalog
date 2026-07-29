@@ -152,5 +152,19 @@
     "note": ""
   },
   "files": [],
-  "drive_root": "https://drive.google.com"
+  "drive_root": "https://drive.google.com",
+  "master_plan": {
+    "folder": "masterplan",
+    "files": [
+      "мастер план_page-0001.jpg",
+      "мастер план_page-0002.jpg",
+      "мастер план_page-0003.jpg",
+      "мастер план_page-0004.jpg",
+      "мастер план_page-0005.jpg",
+      "мастер план_page-0006.jpg",
+      "мастер план_page-0007.jpg",
+      "мастер план_page-0008.jpg",
+      "мастер план_page-0009.jpg"
+    ]
+  }
 }
