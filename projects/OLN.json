@@ -191,6 +191,7 @@
       "files": ["б1.jpg","б2.jpg","б3.jpg","б4.jpg","б5.jpg","б6.jpg","б7.jpg","б8.jpg","б9.jpg"]
     }
   ],
+  "floor_plans_offset": 1,
   "master_plan": {
     "folder": "masterplan",
     "files": ["мастер план_page-0001.jpg","мастер план_page-0002.jpg","мастер план_page-0003.jpg","мастер план_page-0004.jpg","мастер план_page-0005.jpg","мастер план_page-0006.jpg","мастер план_page-0007.jpg","мастер план_page-0008.jpg","мастер план_page-0009.jpg"]
