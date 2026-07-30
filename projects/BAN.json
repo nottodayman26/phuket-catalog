@@ -92,45 +92,46 @@
   ],
   "payment_schedule": [
     {
-      "stage": "Booking deposit",
+      "stage": "Бронирование 100-200 тыс THB",
       "percent": 0,
-      "note": "100,000 THB"
+      "percent_label": "fix",
+      "note": "При отправке документов застройщику"
     },
     {
-      "stage": "Contract payment",
+      "stage": "Договор SPA",
       "percent": 25,
-      "note": ""
+      "note": "В течение 30 дней"
     },
     {
-      "stage": "1st Installment",
+      "stage": "2 взнос",
       "percent": 25,
-      "note": ""
+      "note": "через 7 месяцев после SPA"
     },
     {
-      "stage": "2nd Installment",
+      "stage": "Конструкция",
       "percent": 25,
-      "note": ""
+      "note": "По завершении этапа строительства"
     },
     {
-      "stage": "Transfer of ownership",
+      "stage": "Ключи",
       "percent": 25,
-      "note": ""
+      "note": "При приемке квартиры"
     }
   ],
   "maintenance": {
     "common_fee": {
-      "amount": 85,
-      "unit": "THB/м²/мес"
+      "amount": 0,
+      "unit": "уточняется"
     },
     "sinking_fund": {
-      "amount": 850,
-      "unit": "THB/м² (разово)"
+      "amount": 0,
+      "unit": "уточняется"
     },
     "registration": {
       "freehold": "уточняется",
       "leasehold": "уточняется"
     },
-    "notes": "Common fee 85 THB/м²/мес · Sinking fund 850 THB/м²"
+    "notes": "Данные уточняются"
   },
   "agent_reward": {
     "percent_from": 10,

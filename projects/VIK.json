@@ -188,38 +188,29 @@
   ],
   "payment_schedule": [
     {
-      "stage": "Reservation",
-      "percent": 2,
+      "stage": "Бронирование 100-200 тыс THB",
+      "percent": 0,
+      "percent_label": "fix",
       "note": "При отправке документов застройщику"
     },
     {
-      "stage": "Sign Contract (SPA)",
-      "percent": 28,
+      "stage": "Договор SPA",
+      "percent": 25,
       "note": "В течение 30 дней"
     },
     {
-      "stage": "Foundation Complete",
-      "percent": 15,
+      "stage": "2 взнос",
+      "percent": 25,
+      "note": "через 7 месяцев после SPA"
+    },
+    {
+      "stage": "Конструкция",
+      "percent": 25,
       "note": "По завершении этапа строительства"
     },
     {
-      "stage": "Structure Complete",
-      "percent": 15,
-      "note": "По завершении этапа строительства"
-    },
-    {
-      "stage": "Rooftop Complete",
-      "percent": 10,
-      "note": "По завершении этапа строительства"
-    },
-    {
-      "stage": "Interior & Finishing",
-      "percent": 20,
-      "note": "По завершении этапа строительства"
-    },
-    {
-      "stage": "Transfer of Ownership",
-      "percent": 10,
+      "stage": "Ключи",
+      "percent": 25,
       "note": "При приемке квартиры"
     }
   ],
