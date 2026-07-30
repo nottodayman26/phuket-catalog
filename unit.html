@@ -888,6 +888,9 @@ body.light .ticker-wrap{background:#f0f0f4;}
 .info-row:hover{transform:translateX(4px)}
 .info-label{color:var(--muted)}
 .info-val{font-weight:600}
+/* 30.07.26, по просьбе Ильи: то же пояснение под "Корпуса", что и в
+   project.html — см. комментарий там, d.buildings_note в JSON проекта. */
+.info-note{padding:0 0 4px;font-size:11.5px;color:var(--muted);line-height:1.5}
 
 /* 20.07.26, по просьбе Ильи: та же карта Yandex JS API со своими кнопками
    зума/разворота/возврата/списка локаций, что и в project.html — см.
@@ -1354,7 +1357,15 @@ function loadPlanImage(u, proj, pd) {
   const floorPlanOffset = Number(pd?.floor_plans_offset) || 0;
   if (code && u.tower && u.floor) {
     const towerCyr = TOWER_CYR[String(u.tower).toUpperCase()] || String(u.tower).toLowerCase();
-    const fileName = `${towerCyr}${Number(u.floor) + floorPlanOffset}.jpg`;
+    // 30.07.26, по просьбе Ильи: расширение файла раньше было захардкожено
+    // как .jpg — у КатаБелло корпус H (х) реально залит как .png, из-за чего
+    // "Корпус х (H)" вообще не подгружался в юните. Теперь расширение берётся
+    // из первого файла соответствующего корпуса в pd.floor_plans (JSON
+    // проекта) — если там не найдётся, остаётся .jpg как раньше.
+    const fpEntry = (pd?.floor_plans || []).find(fp => String(fp.building).toUpperCase() === String(u.tower).toUpperCase());
+    const firstFile = fpEntry && fpEntry.files && fpEntry.files[0];
+    const ext = firstFile && firstFile.includes('.') ? firstFile.split('.').pop() : 'jpg';
+    const fileName = `${towerCyr}${Number(u.floor) + floorPlanOffset}.${ext}`;
     slides.push({
       paths: [`${base}img/${code}/floor-plans/${encodeURIComponent(fileName)}`],
       label: `Поэтажный план · Корпус ${u.tower} · Этаж ${u.floor}`,
@@ -1553,7 +1564,8 @@ function renderDeveloperBlock(d) {
       <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion || '—'}</span></div>
       <div class="info-row"><span class="info-label">Корпуса</span><span class="info-val">${(d.buildings && d.buildings.length) ? d.buildings.join(', ') : '—'}</span></div>
       <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors || '—'}</span></div>
-    </div>`;
+    </div>
+    ${d.buildings_note ? `<div class="info-note">${d.buildings_note}</div>` : ''}`;
 }
 
 // 29.07.26, по просьбе Ильи: раньше иконки инфраструктуры в юните подбирались

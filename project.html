@@ -1246,6 +1246,12 @@ a { color: inherit; text-decoration: none; }
 .info-row:hover { transform: translateX(4px); }
 .info-label { color: var(--muted); }
 .info-val { font-weight: 600; }
+/* 30.07.26, по просьбе Ильи: пояснение под "Корпуса" в "Деталях проекта" —
+   для проектов, где застройщик ещё не выставил юниты из части корпусов в
+   продажу (напр. КатаБелло), чтобы было явно видно, что корпус существует,
+   даже если сейчас в нём нет доступных юнитов. Задаётся d.buildings_note в
+   JSON проекта; если поля нет — строка просто не рендерится. */
+.info-note { padding: 0 0 4px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
 
 /* ── MAP ─── */
 /* 19.07.26, по просьбе Ильи: та же карта (Yandex JS API), что и в flox-web,
@@ -3295,7 +3301,8 @@ function renderAbout(d) {
       <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion}</span></div>
       <div class="info-row"><span class="info-label">Корпуса</span><span class="info-val">${d.buildings.join(', ')}</span></div>
       <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors}</span></div>
-    </div>`;
+    </div>
+    ${d.buildings_note ? `<div class="info-note">${d.buildings_note}</div>` : ''}`;
 }
 
 // 19.07.26: минимальный html-escape только для атрибута data-name ниже —
@@ -3649,7 +3656,7 @@ function renderFloors(d) {
         <div class="visual-slides" id="${sliderId}-slides">
           ${files.map((f, i) => `
             <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
-              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:contain;background:var(--surface-2)"/>
+              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:contain;background:#fff"/>
             </div>`).join('')}
         </div>
         <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>
@@ -3658,6 +3665,12 @@ function renderFloors(d) {
       </div>`;
   };
 
+  // 30.07.26, по просьбе Ильи: если картинка (планировка этажа/мастер-план)
+  // меньше рамки, в которой лежит — фон вокруг должен быть жёстко белым и не
+  // зависеть от темы (было var(--surface-2), в тёмной теме давало серый
+  // фон вместо белого). Правило касается только "Поэтажного плана" —
+  // renderConstruction ниже использует свою отдельную копию makeSlider и не
+  // затронут этой правкой.
   // Вкладки корпусов
   const fpBase = `${base}img/${d.id}/floor-plans/`;
   const floorTabs = (plans || []).map((p, i) =>
