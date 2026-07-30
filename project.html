@@ -3697,10 +3697,35 @@ function renderFloors(d) {
     ${floorPanels}${mpPanel}`;
 }
 
+// 30.07.26, по просьбе Ильи: вкладки "Этапы строительства" должны идти от
+// новых к старым слева направо (новее — левее и по умолчанию активна, т.к.
+// i===0 ниже) — раньше порядок был просто как в JSON проекта (пришлось бы
+// вручную переставлять при каждой новой съёмке). Парсим "Месяц ГГГГ" из
+// label и сортируем по убыванию; если хоть один label не распознался —
+// порядок не трогаем (безопасный фолбэк), чтобы не перемешать данные с
+// нестандартным форматом даты.
+const RU_MONTHS = {'январь':0,'февраль':1,'март':2,'апрель':3,'май':4,'июнь':5,'июль':6,'август':7,'сентябрь':8,'октябрь':9,'ноябрь':10,'декабрь':11};
+function stageDateKey(label) {
+  const m = String(label || '').toLowerCase().match(/([а-яё]+)\s+(\d{4})/);
+  if (!m || !(m[1] in RU_MONTHS)) return null;
+  return Number(m[2]) * 12 + RU_MONTHS[m[1]];
+}
+function sortStagesNewestFirst(stages) {
+  if (!stages || !stages.length) return stages;
+  const keys = stages.map(s => stageDateKey(s.label));
+  if (keys.some(k => k == null)) return stages;
+  return stages.map((s, i) => ({ s, k: keys[i] })).sort((a, b) => b.k - a.k).map(x => x.s);
+}
+
 function renderConstruction(d) {
-  const stages = d.construction_progress;
+  const stages = sortStagesNewestFirst(d.construction_progress);
   const base = location.pathname.replace(/\/[^\/]*$/, "/");
 
+  // 30.07.26, по просьбе Ильи: если у фото стройки остаются пустые поля
+  // (не заполняет рамку) — обрезать и приблизить (object-fit:cover), а не
+  // показывать как есть с полями (было object-fit:contain — сейчас это
+  // видно только у КатаБелло, но фото стройки в целом редко подгоняют под
+  // 16:9, так что cover безопаснее для всех проектов).
   const makeSlider = (files, sliderId, imgBase) => {
     if (!files || !files.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Фото появятся позже</div>`;
     return `
@@ -3711,7 +3736,7 @@ function renderConstruction(d) {
         <div class="visual-slides" id="${sliderId}-slides">
           ${files.map((f, i) => `
             <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
-              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:contain;background:var(--surface-2)"/>
+              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:cover"/>
             </div>`).join('')}
         </div>
         <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>

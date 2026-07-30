@@ -1997,10 +1997,29 @@ function renderPaymentBlock(d) {
 // "netetapov.png", если застройщик ещё не публиковал фото со стройки. Только
 // в агентском виде — см. show('construction') && !isClientMode в
 // renderProjectBlocks.
+// 30.07.26, по просьбе Ильи: то же самое, что и в project.html
+// (renderConstruction) — вкладки по датам сортируются от новых к старым,
+// см. комментарий там.
+const RU_MONTHS = {'январь':0,'февраль':1,'март':2,'апрель':3,'май':4,'июнь':5,'июль':6,'август':7,'сентябрь':8,'октябрь':9,'ноябрь':10,'декабрь':11};
+function stageDateKey(label) {
+  const m = String(label || '').toLowerCase().match(/([а-яё]+)\s+(\d{4})/);
+  if (!m || !(m[1] in RU_MONTHS)) return null;
+  return Number(m[2]) * 12 + RU_MONTHS[m[1]];
+}
+function sortStagesNewestFirst(stages) {
+  if (!stages || !stages.length) return stages;
+  const keys = stages.map(s => stageDateKey(s.label));
+  if (keys.some(k => k == null)) return stages;
+  return stages.map((s, i) => ({ s, k: keys[i] })).sort((a, b) => b.k - a.k).map(x => x.s);
+}
+
 function renderConstructionBlock(d) {
-  const stages = d.construction_progress;
+  const stages = sortStagesNewestFirst(d.construction_progress);
   const base = location.pathname.replace(/\/[^\/]*$/, '/');
 
+  // 30.07.26, по просьбе Ильи: см. комментарий в project.html — cover вместо
+  // contain, чтобы фото стройки без подходящих пропорций заполняли рамку
+  // целиком (обрезкой), а не показывались с пустыми полями.
   const makeSlider = (files, sliderId, imgBase) => {
     if (!files || !files.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Фото появятся позже</div>`;
     return `
@@ -2011,7 +2030,7 @@ function renderConstructionBlock(d) {
         <div class="visual-slides" id="${sliderId}-slides">
           ${files.map((f, i) => `
             <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
-              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:contain;background:var(--surface-2)"/>
+              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:cover"/>
             </div>`).join('')}
         </div>
         <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>
