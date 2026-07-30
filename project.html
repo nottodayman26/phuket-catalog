@@ -3800,7 +3800,9 @@ function renderMaint(d) {
   const m = d.maintenance;
   const cfAmt = m.common_fee.amount === 0 ? 'уточняется' : `${m.common_fee.amount} ${m.common_fee.unit}`;
   const sfAmt = m.sinking_fund.amount === 0 ? 'уточняется' : `${m.sinking_fund.amount} ${m.sinking_fund.unit}`;
-  const noteHtml = (m.notes && m.notes !== 'Данные уточняются') ? `<div class="maint-note">${m.notes}</div>` : '';
+  // 30.07.26, по просьбе Ильи: фиолетовая плашка с notes убрана насовсем —
+  // раньше показывалась, когда notes не равнялось "Данные уточняются", но
+  // Илья решил, что она больше не нужна вообще никогда, ни для одного проекта.
   return `
     <div class="sec-title">Обслуживание</div>
     <div class="maint-list">
@@ -3808,7 +3810,6 @@ function renderMaint(d) {
       <div class="maint-row"><span class="maint-icon">🏦</span><span class="maint-label">Sinking fund / Резервный фонд</span><span class="maint-val">${sfAmt}</span></div>
       <div class="maint-row"><span class="maint-icon">🏠</span><span class="maint-label">Регистрация — Фрихолд</span><span class="maint-val">${m.registration.freehold}</span></div>
       <div class="maint-row"><span class="maint-icon">📜</span><span class="maint-label">Регистрация — Лизхолд</span><span class="maint-val">${m.registration.leasehold}</span></div>
-      ${noteHtml}
     </div>`;
 }
 

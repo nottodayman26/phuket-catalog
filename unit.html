@@ -1346,7 +1346,11 @@ function loadPlanImage(u, proj, pd) {
   // pd.floor_plans_offset (задаётся в JSON проекта, по умолчанию 0 —
   // поведение для VIK/KAT/BAN не меняется) сдвигает номер файла относительно
   // этажа — тот же приём, что уже используется для мастер-плана ниже.
-  const TOWER_CYR = { A: 'а', B: 'б', C: 'с', D: 'д' };
+  // 30.07.26, по просьбе Ильи: расширено с A-D до полного A-H (карта латиница→
+  // кириллица для корпусов, которую он дал явно) — раньше КатаБелло (корпуса
+  // C, F, G, H) для F/G/H попадал в фолбэк (String(u.tower).toLowerCase()),
+  // из-за чего часть корпусов не находила свои файлы планировок в юните.
+  const TOWER_CYR = { A: 'а', B: 'б', C: 'с', D: 'д', E: 'е', F: 'ф', G: 'г', H: 'х' };
   const floorPlanOffset = Number(pd?.floor_plans_offset) || 0;
   if (code && u.tower && u.floor) {
     const towerCyr = TOWER_CYR[String(u.tower).toUpperCase()] || String(u.tower).toLowerCase();
@@ -2032,7 +2036,9 @@ function renderMaintBlock(d) {
   const m = d.maintenance;
   const cfAmt = m.common_fee.amount === 0 ? 'уточняется' : `${m.common_fee.amount} ${m.common_fee.unit}`;
   const sfAmt = m.sinking_fund.amount === 0 ? 'уточняется' : `${m.sinking_fund.amount} ${m.sinking_fund.unit}`;
-  const noteHtml = (m.notes && m.notes !== 'Данные уточняются') ? `<div class="maint-note">${m.notes}</div>` : '';
+  // 30.07.26, по просьбе Ильи: фиолетовая плашка с notes убрана насовсем —
+  // раньше показывалась, когда notes не равнялось "Данные уточняется", но
+  // Илья решил, что она больше не нужна вообще никогда, ни для одного проекта.
   return `
     <div class="sec-title">Обслуживание</div>
     <div class="maint-list">
@@ -2040,7 +2046,6 @@ function renderMaintBlock(d) {
       <div class="maint-row"><span class="maint-icon">🏦</span><span class="maint-label">Sinking fund / Резервный фонд</span><span class="maint-val">${sfAmt}</span></div>
       <div class="maint-row"><span class="maint-icon">🏠</span><span class="maint-label">Регистрация — Фрихолд</span><span class="maint-val">${m.registration.freehold}</span></div>
       <div class="maint-row"><span class="maint-icon">📜</span><span class="maint-label">Регистрация — Лизхолд</span><span class="maint-val">${m.registration.leasehold}</span></div>
-      ${noteHtml}
     </div>`;
 }
 
