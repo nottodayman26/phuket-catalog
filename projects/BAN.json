@@ -1,6 +1,6 @@
 {
   "id": "BAN",
-  "name": "Balcony Naiyang",
+  "name": "The Balcony",
   "color": "#6B9BC2",
   "developer": "Rhom Bho Property PLC",
   "district": "Nai Yang",
@@ -59,10 +59,11 @@
     }
   ],
   "gallery": {
-    "local": [],
-    "sections": []
+    "local": ["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg","7.jpeg","8.jpeg","9.jpeg","10.jpeg","11.jpeg","12.jpeg","13.jpeg","14.jpeg","15.jpeg","16.jpeg","17.jpeg","18.jpeg","19.jpeg","20.jpeg","21.jpeg","22.jpeg","23.jpeg","24.jpeg","25.jpeg","26.jpeg","27.jpeg","28.jpeg","29.jpeg","30.jpeg","31.jpeg","32.jpeg","33.jpeg","34.jpeg","35.jpeg","36.jpeg","37.jpeg"],
+    "sections": [],
+    "counts": { "ext": 6, "int": 0, "showroomRenders": 0 }
   },
-  "description": "The Balcony Naiyang — кондоминиум в районе Най Янг от Rhom Bho Property PLC. Расположен рядом с пляжем Най Янг и международным аэропортом Пхукета. 9 корпусов, 5 этажей.",
+  "description": "The Balcony — кондоминиум в районе Най Янг от Rhom Bho Property PLC. Расположен рядом с пляжем Най Янг и международным аэропортом Пхукета. 9 корпусов, 5 этажей.",
   "facilities": [
     "Бассейн",
     "Фитнес-центр",
@@ -140,6 +141,12 @@
     "payment_days": 30,
     "note": ""
   },
+  "construction_progress": [
+    {
+      "label": "Июль 2026",
+      "files": ["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg"]
+    }
+  ],
   "files": [],
   "drive_root": "https://drive.google.com"
 }
