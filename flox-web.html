@@ -2142,7 +2142,7 @@ const PROJECTS = [
   { id:'BAN', name:'The Balcony', nameEn:'The Balcony', developer:'Rhom Bho Property PLC', district:'Nai Yang', amphoe:'Amphoe Thalang', districtRu:'Най Янг', color:'#6B9BC2', type:'condo', priceFrom:5800000, priceTo:12000000, completion:'Q4 2026', completionYear:2026, completionQ:4, status:'Under Construction', commission:10,
     unitTypes:[{name:'1 спальня',price:5800000},{name:'1 спальня+',price:7400000},{name:'2 спальни',price:8400000}],
     photos:['1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','6.jpg'],
-    floors:5,
+    floors:5, floorsMin:4, floorsMax:5, // 31.07.26: корпуса C/D/E/F — 4 этажа, остальные — 5 (см. фильтр "Этажей в доме")
     facilities:['Бассейн','Фитнес-центр','Парковка','Охрана','Лобби','Детский бассейн','Джакузи','Сад','Боксерский ринг','Зоны отдыха у воды','Детская зона','Йога-зона','Коворкинг','Парная'],
     seaTier:'w5', // до 5 минут пешком
     url:'project.html?id=BAN' },
@@ -2826,9 +2826,20 @@ function applyFilters(list) {
     // непроверенные проекты молча просачивались бы во все выдачи.
     if (filters.floors) {
       const { from, to } = filters.floors;
-      if (p.floors == null) return false;
-      if (from != null && p.floors < from) return false;
-      if (to != null && p.floors > to) return false;
+      // 31.07.26, по просьбе Ильи: у Balcony Naiyang разные корпуса разной
+      // этажности (4/5) — раньше сравнение шло по одному числу p.floors, из-за
+      // чего проект с корпусами "до 4 этажей" не находился фильтром "до 4
+      // этажей", хотя часть корпусов ему подходит. Теперь сравниваем диапазон
+      // проекта [floorsMin,floorsMax] (для проектов с одной этажностью —
+      // просто floors/floors, ничего не меняется) с диапазоном фильтра: проект
+      // подходит, если диапазоны хоть как-то пересекаются (т.е. подходит ЛЮБОЙ
+      // его корпус) — какие именно корпуса покажутся при переходе, решает уже
+      // project.html (см. applyURLFilters/buildingFloorFrom-To там).
+      const pMin = p.floorsMin ?? p.floors;
+      const pMax = p.floorsMax ?? p.floors;
+      if (pMin == null || pMax == null) return false;
+      if (from != null && pMax < from) return false;
+      if (to != null && pMin > to) return false;
     }
     if (filters.seaTier != null) {
       if (!seaTierMatches(p.seaTier, filters.seaTier)) return false;
@@ -3082,6 +3093,18 @@ function projectUrlWithFilters(p) {
   if (filters.unitFloor) {
     if (filters.unitFloor.from != null) params.set('floorFrom', filters.unitFloor.from);
     if (filters.unitFloor.to != null) params.set('floorTo', filters.unitFloor.to);
+  }
+  // 31.07.26, по просьбе Ильи: "Этажей в доме" ("Все фильтры") — фильтр по
+  // этажности САМОГО КОРПУСА (не путать с floorFrom/floorTo юнита выше). Для
+  // проектов с одинаковой этажностью у всех корпусов (большинство) это ничего
+  // не меняет — project.html просто не найдёт разных корпусов. Но у Balcony
+  // Naiyang корпуса разной этажности (4/5): если клиент искал "до 4 этажей",
+  // в проекте должны остаться видны только подходящие корпуса (C/D/E/F) — имя
+  // параметра нарочно другое (buildingFloorFrom/To), чтобы не путать с
+  // floorFrom/floorTo юнита.
+  if (filters.floors) {
+    if (filters.floors.from != null) params.set('buildingFloorFrom', filters.floors.from);
+    if (filters.floors.to != null) params.set('buildingFloorTo', filters.floors.to);
   }
   const query = params.toString();
   return query ? `${p.url}&${query}` : p.url;

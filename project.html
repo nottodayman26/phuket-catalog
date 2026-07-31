@@ -2319,8 +2319,12 @@ function renderUnitsTree(d, units) {
 
     // 19.07.26, по просьбе Ильи: корпус без юнитов теперь не показывается
     // вообще (раньше оставался заголовок "Корпус X · Нет юнитов").
+    // 31.07.26, по просьбе Ильи: то же самое, если пришёл фильтр "Этажей в
+    // доме" из flox-web.html и этажность ЭТОГО корпуса ему не соответствует
+    // (см. buildingMatchesFloorFilter выше) — у Balcony Naiyang, например,
+    // корпуса C/D/E/F 4-этажные, остальные 5-этажные.
     const sec = document.getElementById('bsec-' + bi);
-    if (sec) sec.classList.toggle('hidden', !bUnits.length);
+    if (sec) sec.classList.toggle('hidden', !bUnits.length || !buildingMatchesFloorFilter(d, b));
   });
 }
 
@@ -2522,6 +2526,35 @@ let _statusTouched = false;
 // flox-web.html).
 let _filterFloorFrom = 0;
 let _filterFloorTo = Infinity;
+
+// 31.07.26, по просьбе Ильи: "Этажей в доме" (этажность КОРПУСА), переданная
+// из "Все фильтры" в flox-web.html как buildingFloorFrom/To (см.
+// projectUrlWithFilters там) — НЕ то же самое, что _filterFloorFrom/To выше
+// (это этаж самого юнита внутри корпуса). У большинства проектов этажность
+// одинакова у всех корпусов, так что фильтр ничего не меняет — но у Balcony
+// Naiyang корпуса разной этажности (4/5), и если клиент искал "до 4 этажей",
+// в списке юнитов должны остаться видны только подходящие корпуса (см.
+// buildingMatchesFloorFilter/renderUnitsTree). null — фильтр не задан,
+// показываем все корпуса как раньше.
+let _filterBuildingFloorFrom = null;
+let _filterBuildingFloorTo = null;
+
+// Этажность конкретного корпуса — из d.floor_plans (поле floors у нужного
+// building), если задано; если нет данных по корпусу — не фильтруем его
+// (считаем подходящим), чтобы не спрятать корпус там, где эта информация
+// просто не размечена.
+function buildingFloorsCount(d, b) {
+  const fp = (d.floor_plans || []).find(x => String(x.building).toUpperCase() === String(b).toUpperCase());
+  return fp && fp.floors != null ? fp.floors : null;
+}
+function buildingMatchesFloorFilter(d, b) {
+  if (_filterBuildingFloorFrom == null && _filterBuildingFloorTo == null) return true;
+  const n = buildingFloorsCount(d, b);
+  if (n == null) return true; // нет данных по корпусу — не скрываем
+  if (_filterBuildingFloorFrom != null && n < _filterBuildingFloorFrom) return false;
+  if (_filterBuildingFloorTo != null && n > _filterBuildingFloorTo) return false;
+  return true;
+}
 
 // ── Дропдауны ─────────────────────────────────────────────────────────────
 function toggleDropdown(id) {
@@ -3318,7 +3351,7 @@ function renderAbout(d) {
       <div class="info-row"><span class="info-label">Район</span><span class="info-val">${d.district}, ${d.amphoe}</span></div>
       <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion}</span></div>
       <div class="info-row"><span class="info-label">Корпуса</span><span class="info-val">${d.buildings.join(', ')}</span></div>
-      <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors}</span></div>
+      <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${(d.floors_min != null && d.floors_max != null && d.floors_min !== d.floors_max) ? `${d.floors_min}-${d.floors_max}` : d.floors}</span></div>
     </div>
     ${d.buildings_note ? `<div class="info-note">${d.buildings_note}</div>` : ''}`;
 }
@@ -3929,7 +3962,7 @@ function renderSidebar(d) {
         <div class="info-row"><span class="info-label">Район</span><span class="info-val">${d.district}</span></div>
         <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion}</span></div>
         <div class="info-row"><span class="info-label">Корпусов</span><span class="info-val">${d.buildings.length}</span></div>
-        <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors}</span></div>
+        <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${(d.floors_min != null && d.floors_max != null && d.floors_min !== d.floors_max) ? `${d.floors_min}-${d.floors_max}` : d.floors}</span></div>
       </div>
     </div>
   `;
@@ -4046,6 +4079,17 @@ function applyURLFilters() {
     if (el) el.value = _filterFloorTo;
   }
   if (floorFrom || floorTo) { buildFloorHints(); updateFloorLabel(); }
+
+  // 31.07.26, по просьбе Ильи: "Этажей в доме" из flox-web.html — этажность
+  // самого КОРПУСА (buildingFloorFrom/To), не путать с floorFrom/floorTo юнита
+  // выше. Сохраняем в _filterBuildingFloorFrom/To — renderUnitsTree сам
+  // спрячет корпуса, чья этажность (d.floor_plans[].floors) не попадает в
+  // диапазон, если единожды загруженные юниты уже отрисованы к этому моменту
+  // (иначе применится при следующей отрисовке — см. renderUnitsTree).
+  const buildingFloorFrom = params.get('buildingFloorFrom');
+  const buildingFloorTo = params.get('buildingFloorTo');
+  if (buildingFloorFrom != null) _filterBuildingFloorFrom = parseInt(buildingFloorFrom);
+  if (buildingFloorTo != null) _filterBuildingFloorTo = parseInt(buildingFloorTo);
 
   updateResetVisibility();
 }

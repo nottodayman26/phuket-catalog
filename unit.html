@@ -1568,7 +1568,7 @@ function renderDeveloperBlock(d) {
       <div class="info-row"><span class="info-label">Район</span><span class="info-val">${[d.district, d.amphoe].filter(Boolean).join(', ') || '—'}</span></div>
       <div class="info-row"><span class="info-label">Сдача</span><span class="info-val">${d.completion || '—'}</span></div>
       <div class="info-row"><span class="info-label">Корпуса</span><span class="info-val">${(d.buildings && d.buildings.length) ? d.buildings.join(', ') : '—'}</span></div>
-      <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${d.floors || '—'}</span></div>
+      <div class="info-row"><span class="info-label">Этажей</span><span class="info-val">${(d.floors_min != null && d.floors_max != null && d.floors_min !== d.floors_max) ? `${d.floors_min}-${d.floors_max}` : (d.floors || '—')}</span></div>
     </div>
     ${d.buildings_note ? `<div class="info-note">${d.buildings_note}</div>` : ''}`;
 }
