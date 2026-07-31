@@ -1353,7 +1353,12 @@ function loadPlanImage(u, proj, pd) {
   // кириллица для корпусов, которую он дал явно) — раньше КатаБелло (корпуса
   // C, F, G, H) для F/G/H попадал в фолбэк (String(u.tower).toLowerCase()),
   // из-за чего часть корпусов не находила свои файлы планировок в юните.
-  const TOWER_CYR = { A: 'а', B: 'б', C: 'с', D: 'д', E: 'е', F: 'ф', G: 'г', H: 'х' };
+  // 31.07.26: у Balcony Naiyang корпус I — единственный, у которого нет
+  // кириллической буквы в этой карте (застройщик так и назвал файлы
+  // латиницей, i.jpg/i1.jpg.../i5.jpg — проверено в репозитории). Раньше это
+  // просто совпадало с фолбэком (.toLowerCase()) ниже, теперь прописано явно,
+  // чтобы не зависеть от фолбэка молча.
+  const TOWER_CYR = { A: 'а', B: 'б', C: 'с', D: 'д', E: 'е', F: 'ф', G: 'г', H: 'х', I: 'i' };
   const floorPlanOffset = Number(pd?.floor_plans_offset) || 0;
   if (code && u.tower && u.floor) {
     const towerCyr = TOWER_CYR[String(u.tower).toUpperCase()] || String(u.tower).toLowerCase();
