@@ -3146,16 +3146,26 @@ function renderVisual(d) {
   const showroomPanel = showroom.length ? `
     <div class="visual-panel" id="vp-showroom">${makeSlider(showroom, 'sl-showroom')}</div>` : '';
 
+  // 30.07.26, по просьбе Ильи: "Рендеры: интерьер" и "Рендеры: шоурум" — та же
+  // логика, что и "Фото шоурума" выше — показываются только если для них
+  // реально есть фото (d.gallery.counts.int/showroomRenders > 0). У Balcony
+  // Naiyang нет ни интерьерных, ни шоурум-рендеров вообще (только экстерьер +
+  // фото шоурума), раньше эти две вкладки показывались всегда, даже пустыми.
+  const intTab = renders2.length ? `
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-int')">Рендеры: интерьер</button>` : '';
+  const intPanel = renders2.length ? `
+    <div class="visual-panel" id="vp-int">${makeSlider(renders2, 'sl-int')}</div>` : '';
+  const srTab = renders3.length ? `
+      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom-r')">Рендеры: шоурум</button>` : '';
+  const srPanel = renders3.length ? `
+    <div class="visual-panel" id="vp-showroom-r">${makeSlider(renders3, 'sl-showroom-r')}</div>` : '';
+
   return `
     <div class="sec-title">Рендеры и фото</div>
     <div class="visual-tabs">
-      <button class="visual-tab visual-tab-ghost act" onclick="switchVisualTab(this,'vp-ext')">Рендеры: экстерьер</button>
-      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-int')">Рендеры: интерьер</button>
-      <button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'vp-showroom-r')">Рендеры: шоурум</button>${showroomTab}
+      <button class="visual-tab visual-tab-ghost act" onclick="switchVisualTab(this,'vp-ext')">Рендеры: экстерьер</button>${intTab}${srTab}${showroomTab}
     </div>
-    <div class="visual-panel act" id="vp-ext">${makeSlider(renders1, 'sl-ext')}</div>
-    <div class="visual-panel" id="vp-int">${makeSlider(renders2, 'sl-int')}</div>
-    <div class="visual-panel" id="vp-showroom-r">${makeSlider(renders3, 'sl-showroom-r')}</div>${showroomPanel}`;
+    <div class="visual-panel act" id="vp-ext">${makeSlider(renders1, 'sl-ext')}</div>${intPanel}${srPanel}${showroomPanel}`;
 }
 
 function switchVisualTab(btn, panelId) {
