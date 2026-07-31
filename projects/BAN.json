@@ -69,7 +69,16 @@
     "Фитнес-центр",
     "Парковка",
     "Охрана",
-    "Лобби"
+    "Лобби",
+    "Детский бассейн",
+    "Джакузи",
+    "Сад",
+    "Боксерский ринг",
+    "Зоны отдыха у воды",
+    "Детская зона",
+    "Йога-зона",
+    "Коворкинг",
+    "Парная"
   ],
   "nearby": [
     {
@@ -147,6 +156,74 @@
       "files": ["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg"]
     }
   ],
-  "files": [],
-  "drive_root": "https://drive.google.com"
+  "files": [
+    {
+      "name": "Презентация (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/BAN/%D0%9F%D1%80%D0%B5%D0%B7%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F%20(ENG).pdf"
+    },
+    {
+      "name": "О застройщике (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/BAN/%D0%9E%20%D0%B7%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%89%D0%B8%D0%BA%D0%B5%20(ENG).pdf"
+    },
+    {
+      "name": "О застройщике 2 (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/BAN/%D0%9E%20%D0%B7%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%89%D0%B8%D0%BA%D0%B5%202%20(ENG).pdf"
+    },
+    {
+      "name": "Title Deed (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/BAN/Title%20Deed%20(ENG).pdf"
+    }
+  ],
+  "drive_root": "https://drive.google.com",
+  "floor_plans": [
+    {
+      "building": "A",
+      "label": "Корпус A",
+      "files": ["а.jpg","а1.jpg","а2.jpg","а3.jpg","а4.jpg","а5.jpg"]
+    },
+    {
+      "building": "B",
+      "label": "Корпус B",
+      "files": ["б.jpg","б1.jpg","б2.jpg","б3.jpg","б4.jpg","б5.jpg"]
+    },
+    {
+      "building": "C",
+      "label": "Корпус C",
+      "files": ["с.jpg","с1.jpg","с2.jpg","с3.jpg","с4.jpg","с5.jpg"]
+    },
+    {
+      "building": "D",
+      "label": "Корпус D",
+      "files": ["д.jpg","д1.jpg","д2.jpg","д3.jpg","д4.jpg","д5.jpg"]
+    },
+    {
+      "building": "E",
+      "label": "Корпус E",
+      "files": ["е.jpg","е1.jpg","е2.jpg","е3.jpg","е4.jpg","е5.jpg"]
+    },
+    {
+      "building": "F",
+      "label": "Корпус F",
+      "files": ["ф.jpg","ф1.jpg","ф2.jpg","ф3.jpg","ф4.jpg","ф5.jpg"]
+    },
+    {
+      "building": "G",
+      "label": "Корпус G",
+      "files": ["г.jpg","г1.jpg","г2.jpg","г3.jpg","г4.jpg","г5.jpg"]
+    },
+    {
+      "building": "H",
+      "label": "Корпус H",
+      "files": ["х.jpg","х1.jpg","х2.jpg","х3.jpg","х4.jpg","х5.jpg"]
+    },
+    {
+      "building": "I",
+      "label": "Корпус I",
+      "files": ["i.jpg","i1.jpg","i2.jpg","i3.jpg","i4.jpg","i5.jpg"]
+    }
+  ]
 }
