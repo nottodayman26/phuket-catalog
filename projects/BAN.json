@@ -14,6 +14,8 @@
   "price_to": 11950300,
   "currency": "THB",
   "floors": 5,
+  "floors_min": 4,
+  "floors_max": 5,
   "buildings": [
     "A",
     "B",
@@ -63,7 +65,7 @@
     "sections": [],
     "counts": { "ext": 6, "int": 0, "showroomRenders": 0 }
   },
-  "description": "The Balcony — кондоминиум в районе Най Янг от Rhom Bho Property PLC. Расположен рядом с пляжем Най Янг и международным аэропортом Пхукета. 9 корпусов, 5 этажей.",
+  "description": "The Balcony — кондоминиум в районе Най Янг от Rhom Bho Property PLC. Расположен рядом с пляжем Най Янг и международным аэропортом Пхукета. 9 корпусов, 4-5 этажей.",
   "facilities": [
     "Бассейн",
     "Фитнес-центр",
@@ -183,47 +185,67 @@
     {
       "building": "A",
       "label": "Корпус A",
+      "floors": 5,
       "files": ["а.jpg","а1.jpg","а2.jpg","а3.jpg","а4.jpg","а5.jpg"]
     },
     {
       "building": "B",
       "label": "Корпус B",
+      "floors": 5,
       "files": ["б.jpg","б1.jpg","б2.jpg","б3.jpg","б4.jpg","б5.jpg"]
     },
     {
       "building": "C",
       "label": "Корпус C",
-      "files": ["с.jpg","с1.jpg","с2.jpg","с3.jpg","с4.jpg","с5.jpg"]
+      "floors": 4,
+      "files": ["с.jpg","с1.jpg","с2.jpg","с3.jpg","с4.jpg"]
     },
     {
       "building": "D",
       "label": "Корпус D",
-      "files": ["д.jpg","д1.jpg","д2.jpg","д3.jpg","д4.jpg","д5.jpg"]
+      "floors": 4,
+      "files": ["д.jpg","д1.jpg","д2.jpg","д3.jpg","д4.jpg"]
     },
     {
       "building": "E",
       "label": "Корпус E",
-      "files": ["е.jpg","е1.jpg","е2.jpg","е3.jpg","е4.jpg","е5.jpg"]
+      "floors": 4,
+      "files": ["е.jpg","е1.jpg","е2.jpg","е3.jpg","е4.jpg"]
     },
     {
       "building": "F",
       "label": "Корпус F",
-      "files": ["ф.jpg","ф1.jpg","ф2.jpg","ф3.jpg","ф4.jpg","ф5.jpg"]
+      "floors": 4,
+      "files": ["ф.jpg","ф1.jpg","ф2.jpg","ф3.jpg","ф4.jpg"]
     },
     {
       "building": "G",
       "label": "Корпус G",
+      "floors": 5,
       "files": ["г.jpg","г1.jpg","г2.jpg","г3.jpg","г4.jpg","г5.jpg"]
     },
     {
       "building": "H",
       "label": "Корпус H",
+      "floors": 5,
       "files": ["х.jpg","х1.jpg","х2.jpg","х3.jpg","х4.jpg","х5.jpg"]
     },
     {
       "building": "I",
       "label": "Корпус I",
+      "floors": 5,
       "files": ["i.jpg","i1.jpg","i2.jpg","i3.jpg","i4.jpg","i5.jpg"]
     }
-  ]
+  ],
+  "master_plan": {
+    "folder": "masterplan",
+    "files": [
+      "мастер план_page-0001.jpg",
+      "мастер план_page-0002.jpg",
+      "мастер план_page-0003.jpg",
+      "мастер план_page-0004.jpg",
+      "мастер план_page-0005.jpg",
+      "мастер план_page-0006.jpg"
+    ]
+  }
 }
