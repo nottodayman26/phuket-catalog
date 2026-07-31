@@ -3697,7 +3697,8 @@ function renderFloors(d) {
   const plans = d.floor_plans;
   const base = location.pathname.replace(/\/[^\/]*$/, "/");
 
-  const makeSlider = (files, sliderId, imgBase) => {
+  const makeSlider = (files, sliderId, imgBase, opts) => {
+    opts = opts || {};
     if (!files || !files.length) return `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Планы появятся позже</div>`;
     return `
       <div class="visual-slider" id="${sliderId}"
@@ -3707,7 +3708,7 @@ function renderFloors(d) {
         <div class="visual-slides" id="${sliderId}-slides">
           ${files.map((f, i) => `
             <div class="visual-slide" onclick="sliderClick('${sliderId}',${i})">
-              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:contain;background:#fff"/>
+              <img src="${i < 2 ? imgBase+f : ''}" data-src="${imgBase+f}" alt="${i+1}" style="object-fit:${(opts.coverFirst && i === 0) ? 'cover' : 'contain'};background:#fff"/>
             </div>`).join('')}
         </div>
         <button class="visual-arrow prev" onclick="sliderNav('${sliderId}',-1);event.stopPropagation()">‹</button>
@@ -3735,7 +3736,13 @@ function renderFloors(d) {
   const mp = d.master_plan;
   const mpBase = mp ? `${base}img/${d.id}/${mp.folder}/` : '';
   const mpTab = mp ? `<button class="visual-tab visual-tab-ghost" onclick="switchVisualTab(this,'fp-master')">Мастер план</button>` : '';
-  const mpPanel = mp ? `<div class="visual-panel" id="fp-master">${makeSlider(mp.files, 'fsl-master', mpBase)}</div>` : '';
+  // 31.07.26, по просьбе Ильи: первый слайд мастер-плана — легенда — часто
+  // мельче рамки (даже с жёстко белым фоном видны пустые поля вокруг), в
+  // отличие от самих страниц с планами этажей, где обрезать нежелательно
+  // (может срезать нужную часть плана). Поэтому только у легенды (i===0)
+  // включаем cover (обрезка, приближение вместо полей) — остальные страницы
+  // мастер-плана и все вкладки поэтажного плана остаются на contain.
+  const mpPanel = mp ? `<div class="visual-panel" id="fp-master">${makeSlider(mp.files, 'fsl-master', mpBase, { coverFirst: true })}</div>` : '';
 
   const hasFloors = plans && plans.length;
   if (!hasFloors && !mp) return `
