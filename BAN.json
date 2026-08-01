@@ -1,0 +1,253 @@
+{
+  "id": "BAN",
+  "name": "The Balcony",
+  "color": "#6B9BC2",
+  "developer": "Rhom Bho Property PLC",
+  "district": "Nai Yang",
+  "amphoe": "Amphoe Thalang",
+  "districtRu": "Най Янг",
+  "status": "Under Construction",
+  "completion": "Q4 2026",
+  "completionYear": 2026,
+  "completionQ": 4,
+  "price_from": 5794300,
+  "price_to": 11950300,
+  "currency": "THB",
+  "floors": 5,
+  "floors_min": 4,
+  "floors_max": 5,
+  "buildings": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I"
+  ],
+  "coords": {
+    "lat": 8.1847,
+    "lng": 98.3003
+  },
+  "unit_types": [
+    {
+      "type": "1 спальня",
+      "bedrooms": 1,
+      "area_from": 33,
+      "area_to": 50,
+      "price_from": 5728900,
+      "price_to": 9636700,
+      "color": "#5E17EB"
+    },
+    {
+      "type": "1 спальня+",
+      "bedrooms": 1,
+      "area_from": 44,
+      "area_to": 45,
+      "price_from": 7391700,
+      "price_to": 8439600,
+      "color": "#4ECDC4"
+    },
+    {
+      "type": "2 спальни",
+      "bedrooms": 2,
+      "area_from": 50,
+      "area_to": 66,
+      "price_from": 8367300,
+      "price_to": 11950300,
+      "color": "#E88FB4"
+    }
+  ],
+  "gallery": {
+    "local": ["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg","7.jpeg","8.jpeg","9.jpeg","10.jpeg","11.jpeg","12.jpeg","13.jpeg","14.jpeg","15.jpeg","16.jpeg","17.jpeg","18.jpeg","19.jpeg","20.jpeg","21.jpeg","22.jpeg","23.jpeg","24.jpeg","25.jpeg","26.jpeg","27.jpeg","28.jpeg","29.jpeg","30.jpeg","31.jpeg","32.jpeg","33.jpeg","34.jpeg","35.jpeg","36.jpeg","37.jpeg"],
+    "sections": [],
+    "counts": { "ext": 6, "int": 0, "showroomRenders": 0 }
+  },
+  "description": "The Balcony — курортная недвижимость в Най Янге, одном из самых спокойных и при этом стабильно востребованных прибрежных районов Пхукета. Проект от лидирующего по объёму строительства застройщика Rhom Bho Property PLC. Идея The Balcony состоит в неспешности, в днях, которые неторопливо перетекают от тихого утра к закату. Пляж Nai Yang располагается всего в 5 минутах пешком, а международный аэропорт Пхукета — всего в 10 минутах, что делает The Balcony одинаково удобным как для жизни людей, ищущих спокойствие, так и для тех, кому ближе частые перелеты, сервисность и инфраструктура.\n\nЖизнь на территории ощущается как приватный оазис: благоустроенные дорожки для прогулок, террасы для загара и беседки для неспешных разговоров с соседями и друзьями. Комплекс состоит из 9 корпусов (A–I) высотой от 4 до 5 этажей — камерный масштаб застройки создаёт ощущение спокойного клубного посёлка.\n\nРезидентам доступен целый ряд бассейнов разного характера — для полноценного заплыва и отдельно для детей, — а также джакузи, йога-зона, детская зона и парк для домашних животных — комплекс одинаково удобен и для семей с детьми, и для владельцев питомцев. Среди других удобств стоит выделить фитнес-центр, парную, коворкинг, боксёрский ринг, лаундж-зону, сад с зонами отдыха у воды.\n\nВ продаже имеются предложения от компактных апартаментов с 1 спальней (33–50 м²) до вариантов с 1 спальней+ (44–45 м²) и двухспальных юнитов (50–66 м²), стоимостью от 5,7 до 12 млн THB. Курортная репутация Най Янга и близость к аэропорту делают The Balcony интересным вариантом не только для собственного проживания, но и для инвестиции с расчётом на стабильный спрос на аренду.",
+  "facilities": [
+    "Бассейн",
+    "Фитнес-центр",
+    "Парковка",
+    "Охрана",
+    "Лобби",
+    "Детский бассейн",
+    "Джакузи",
+    "Сад",
+    "Боксерский ринг",
+    "Зоны отдыха у воды",
+    "Детская зона",
+    "Йога-зона",
+    "Коворкинг",
+    "Парная",
+    "Парк для животных",
+    "Лаундж"
+  ],
+  "nearby": [
+    {
+      "name": "Nai Yang Beach",
+      "icon": "🏖️",
+      "time": "5 мин",
+      "dist": "600 м"
+    },
+    {
+      "name": "Phuket International Airport",
+      "icon": "✈️",
+      "time": "10 мин",
+      "dist": "6 км"
+    },
+    {
+      "name": "Central Phuket",
+      "icon": "🛍️",
+      "time": "35 мин",
+      "dist": "28 км"
+    }
+  ],
+  "payment_schedule": [
+    {
+      "stage": "Бронирование 100-200 тыс THB",
+      "percent": 0,
+      "percent_label": "fix",
+      "note": "При отправке документов застройщику"
+    },
+    {
+      "stage": "Договор SPA",
+      "percent": 25,
+      "note": "В течение 30 дней"
+    },
+    {
+      "stage": "2 взнос",
+      "percent": 25,
+      "note": "через 7 месяцев после SPA"
+    },
+    {
+      "stage": "Конструкция",
+      "percent": 25,
+      "note": "По завершении этапа строительства"
+    },
+    {
+      "stage": "Ключи",
+      "percent": 25,
+      "note": "При приемке квартиры"
+    }
+  ],
+  "maintenance": {
+    "common_fee": {
+      "amount": 0,
+      "unit": "уточняется"
+    },
+    "sinking_fund": {
+      "amount": 0,
+      "unit": "уточняется"
+    },
+    "registration": {
+      "freehold": "уточняется",
+      "leasehold": "уточняется"
+    },
+    "notes": "Данные уточняются"
+  },
+  "agent_reward": {
+    "percent_from": 10,
+    "percent_to": 10,
+    "scale": "Фикс",
+    "payment_days": 30,
+    "note": ""
+  },
+  "construction_progress": [
+    {
+      "label": "Июль 2026",
+      "files": ["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg"]
+    }
+  ],
+  "files": [
+    {
+      "name": "Презентация (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/BAN/%D0%9F%D1%80%D0%B5%D0%B7%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F%20(ENG).pdf"
+    },
+    {
+      "name": "О застройщике (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/BAN/%D0%9E%20%D0%B7%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%89%D0%B8%D0%BA%D0%B5%20(ENG).pdf"
+    },
+    {
+      "name": "О застройщике 2 (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/BAN/%D0%9E%20%D0%B7%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%89%D0%B8%D0%BA%D0%B5%202%20(ENG).pdf"
+    },
+    {
+      "name": "Title Deed (ENG)",
+      "type": "pdf",
+      "url": "https://nottodayman26.github.io/phuket-catalog/files/BAN/Title%20Deed%20(ENG).pdf"
+    }
+  ],
+  "drive_root": "https://drive.google.com",
+  "floor_plans": [
+    {
+      "building": "A",
+      "label": "Корпус A",
+      "floors": 5,
+      "files": ["а.jpg","а1.jpg","а2.jpg","а3.jpg","а4.jpg","а5.jpg"]
+    },
+    {
+      "building": "B",
+      "label": "Корпус B",
+      "floors": 5,
+      "files": ["б.jpg","б1.jpg","б2.jpg","б3.jpg","б4.jpg","б5.jpg"]
+    },
+    {
+      "building": "C",
+      "label": "Корпус C",
+      "floors": 4,
+      "files": ["с.jpg","с1.jpg","с2.jpg","с3.jpg","с4.jpg"]
+    },
+    {
+      "building": "D",
+      "label": "Корпус D",
+      "floors": 4,
+      "files": ["д.jpg","д1.jpg","д2.jpg","д3.jpg","д4.jpg"]
+    },
+    {
+      "building": "E",
+      "label": "Корпус E",
+      "floors": 4,
+      "files": ["е.jpg","е1.jpg","е2.jpg","е3.jpg","е4.jpg"]
+    },
+    {
+      "building": "F",
+      "label": "Корпус F",
+      "floors": 4,
+      "files": ["ф.jpg","ф1.jpg","ф2.jpg","ф3.jpg","ф4.jpg"]
+    },
+    {
+      "building": "G",
+      "label": "Корпус G",
+      "floors": 5,
+      "files": ["г.jpg","г1.jpg","г2.jpg","г3.jpg","г4.jpg","г5.jpg"]
+    },
+    {
+      "building": "H",
+      "label": "Корпус H",
+      "floors": 5,
+      "files": ["х.jpg","х1.jpg","х2.jpg","х3.jpg","х4.jpg","х5.jpg"]
+    },
+    {
+      "building": "I",
+      "label": "Корпус I",
+      "floors": 5,
+      "files": ["i.jpg","i1.jpg","i2.jpg","i3.jpg","i4.jpg","i5.jpg"]
+    }
+  ],
+  "master_plan": {
+    "folder": "masterplan",
+    "files": [
+      "мастер план_page-0001.jpg",
+      "мастер план_page-0002.jpg",
+      "мастер план_page-0003.jpg",
+      "мастер план_page-0004.jpg",
+      "мастер план_page-0005.jpg",
+      "мастер план_page-0006.jpg"
+    ]
+  }
+}
