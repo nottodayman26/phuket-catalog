@@ -1044,7 +1044,7 @@ async function init() {
           <div class="unit-price-exact">${exactPrice}</div>
           <div class="unit-full-rows">
             <div class="unit-full-row"><span>Корпус</span><b>${u.tower || '—'}</b></div>
-            <div class="unit-full-row"><span>Этаж</span><b>${u.floor}${proj?.floors ? ' / '+proj.floors : ''}</b></div>
+            <div class="unit-full-row"><span>Этаж</span><b>${u.floor}${(() => { const tf = proj?.floor_plans?.find(fp => fp.building === u.tower)?.floors ?? proj?.floors; return tf ? ' / '+tf : ''; })()}</b></div>
             <div class="unit-full-row"><span>Тип</span><b>${cat}</b></div>
             <div class="unit-full-row"><span>Площадь</span><b>${u.area_sqm} м²</b></div>
             <div class="unit-full-row"><span>За м²</span><b>${pricePerSqm}</b></div>
