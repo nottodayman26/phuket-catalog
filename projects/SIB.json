@@ -3,7 +3,7 @@
   "name": "The Title Sierra",
   "name_short": "The Title Sierra",
   "color": "#3A6EA5",
-  "developer": "AssetWise / Rhom Bho Property",
+  "developer": "Rhom Bho Property PLC",
   "developer_logo": "",
   "district": "Choeng Thale",
   "amphoe": "Amphoe Thalang",
@@ -27,8 +27,8 @@
     {
       "type": "Студия",
       "bedrooms": 0,
-      "area_from": 28.4,
-      "area_to": 28.4,
+      "area_from": 28.40,
+      "area_to": 28.40,
       "price_from": 2906700,
       "price_to": 4074700,
       "color": "#E1A38E"
@@ -36,8 +36,8 @@
     {
       "type": "1 спальня",
       "bedrooms": 1,
-      "area_from": 30.3,
-      "area_to": 38.4,
+      "area_from": 30.30,
+      "area_to": 38.40,
       "price_from": 3312400,
       "price_to": 4526100,
       "color": "#A8BBB7"
@@ -45,8 +45,8 @@
     {
       "type": "1 спальня+",
       "bedrooms": 1,
-      "area_from": 44,
-      "area_to": 59.7,
+      "area_from": 44.00,
+      "area_to": 59.70,
       "price_from": 5350800,
       "price_to": 7112100,
       "color": "#E8D7C3"
@@ -54,8 +54,8 @@
     {
       "type": "2 спальни",
       "bedrooms": 2,
-      "area_from": 55.7,
-      "area_to": 62.9,
+      "area_from": 55.70,
+      "area_to": 62.90,
       "price_from": 6523800,
       "price_to": 7880200,
       "color": "#215E7D"
@@ -81,10 +81,10 @@
     "notes": "Данные уточняются"
   },
   "agent_reward": {
-    "percent_from": 0,
-    "percent_to": 0,
-    "scale": "уточняется",
-    "payment_days": 0,
+    "percent_from": 10,
+    "percent_to": 10,
+    "scale": "Фикс",
+    "payment_days": 30,
     "note": ""
   },
   "construction_progress": [],
