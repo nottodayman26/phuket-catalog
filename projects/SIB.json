@@ -1,0 +1,146 @@
+{
+  "id": "SIB",
+  "name": "The Title Sierra",
+  "name_short": "The Title Sierra",
+  "color": "#3A6EA5",
+  "developer": "AssetWise / Rhom Bho Property",
+  "developer_logo": "",
+  "district": "Choeng Thale",
+  "amphoe": "Amphoe Thalang",
+  "status": "Under Construction",
+  "completion": "уточняется",
+  "price_from": 2906700,
+  "price_to": 7880200,
+  "currency": "THB",
+  "total_units": 300,
+  "floors": 8,
+  "buildings": [
+    "A",
+    "B",
+    "C"
+  ],
+  "coords": {
+    "lat": 7.988673,
+    "lng": 98.3100235
+  },
+  "unit_types": [
+    {
+      "type": "Студия",
+      "bedrooms": 0,
+      "area_from": 28.4,
+      "area_to": 28.4,
+      "price_from": 2906700,
+      "price_to": 4074700,
+      "color": "#E1A38E"
+    },
+    {
+      "type": "1 спальня",
+      "bedrooms": 1,
+      "area_from": 30.3,
+      "area_to": 38.4,
+      "price_from": 3312400,
+      "price_to": 4526100,
+      "color": "#A8BBB7"
+    },
+    {
+      "type": "1 спальня+",
+      "bedrooms": 1,
+      "area_from": 44,
+      "area_to": 59.7,
+      "price_from": 5350800,
+      "price_to": 7112100,
+      "color": "#E8D7C3"
+    },
+    {
+      "type": "2 спальни",
+      "bedrooms": 2,
+      "area_from": 55.7,
+      "area_to": 62.9,
+      "price_from": 6523800,
+      "price_to": 7880200,
+      "color": "#215E7D"
+    }
+  ],
+  "description": "Описание проекта уточняется.",
+  "facilities": [],
+  "nearby": [],
+  "payment_schedule": [],
+  "maintenance": {
+    "common_fee": {
+      "amount": 0,
+      "unit": "уточняется"
+    },
+    "sinking_fund": {
+      "amount": 0,
+      "unit": "уточняется"
+    },
+    "registration": {
+      "freehold": "уточняется",
+      "leasehold": "уточняется"
+    },
+    "notes": "Данные уточняются"
+  },
+  "agent_reward": {
+    "percent_from": 0,
+    "percent_to": 0,
+    "scale": "уточняется",
+    "payment_days": 0,
+    "note": ""
+  },
+  "construction_progress": [],
+  "files": [],
+  "gallery": {
+    "local": [],
+    "sections": []
+  },
+  "drive_root": "https://drive.google.com/drive/folders/1DiifH_dclfxph1e1ENASMXMtdu3oxYpw",
+  "floor_plans": [
+    {
+      "building": "A",
+      "label": "Корпус A",
+      "floors": 8,
+      "files": [
+        "а2.jpg",
+        "а3.jpg",
+        "а4.jpg",
+        "а5.jpg",
+        "а6.jpg",
+        "а7.jpg",
+        "а8.jpg"
+      ]
+    },
+    {
+      "building": "C",
+      "label": "Корпус C",
+      "floors": 8,
+      "files": [
+        "с2.jpg",
+        "с3.jpg",
+        "с4.jpg",
+        "с5.jpg",
+        "с6.jpg",
+        "с7.jpg",
+        "с8.jpg"
+      ]
+    },
+    {
+      "building": "B",
+      "label": "Корпус B",
+      "floors": 8,
+      "files": []
+    }
+  ],
+  "master_plan": {
+    "folder": "masterplan",
+    "files": [
+      "мастер план_page-0002.jpg",
+      "мастер план_page-0003.jpg",
+      "мастер план_page-0004.jpg",
+      "мастер план_page-0005.jpg",
+      "мастер план_page-0006.jpg",
+      "мастер план_page-0007.jpg",
+      "мастер план_page-0008.jpg",
+      "мастер план_page-0009.jpg"
+    ]
+  }
+}
