@@ -25,6 +25,7 @@
     --kat:#7BAF6E;
     --ban:#6B9BC2;
     --oln:#8FAB5F;
+    --sib:#3A6EA5;
     --radius:14px;
   }
   body.light{
@@ -44,6 +45,7 @@
     --kat:#7BAF6E;
     --ban:#6B9BC2;
     --oln:#8FAB5F;
+    --sib:#3A6EA5;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
@@ -134,6 +136,7 @@
   .chip.active.proj-KAT{background:var(--kat);border-color:var(--kat);}
   .chip.active.proj-BAN{background:var(--ban);border-color:var(--ban);}
   .chip.active.proj-OLN{background:var(--oln);border-color:var(--oln);}
+  .chip.active.proj-SIB{background:var(--sib);border-color:var(--sib);}
   .sort-btn{margin-left:auto;display:flex;align-items:center;gap:4px;}
   .row2{display:flex;align-items:center;padding:0 16px;gap:7px;}
   .count-line{
@@ -505,8 +508,8 @@ async function loadUnitsFromSupabase(attempt = 1){
   }));
 }
 
-const PROJ_LABEL = {VIK:'Vivana Kamala',KAT:'KataBello',BAN:'Balcony Naiyang',OLN:'Olive Naiyang'};
-const PROJ_VAR = {VIK:'var(--vik)',KAT:'var(--kat)',BAN:'var(--ban)',OLN:'var(--oln)'};
+const PROJ_LABEL = {VIK:'Vivana Kamala',KAT:'KataBello',BAN:'Balcony Naiyang',OLN:'Olive Naiyang',SIB:'The Title Sierra'};
+const PROJ_VAR = {VIK:'var(--vik)',KAT:'var(--kat)',BAN:'var(--ban)',OLN:'var(--oln)',SIB:'var(--sib)'};
 
 const SB_HEADERS = {
   apikey: SUPABASE_ANON_KEY,
@@ -666,7 +669,7 @@ setInterval(()=>{ if(UNITS.length) buildTicker(); }, 60000); // держим "N 
 // ── фильтры (чипы) ──────────────────────────────────────────
 function buildProjChips(){
   const wrap = document.getElementById('projChips');
-  const all = ['ALL','VIK','KAT','BAN','OLN'];
+  const all = ['ALL','VIK','KAT','BAN','OLN','SIB'];
   wrap.innerHTML = all.map(p=>{
     const label = p==='ALL' ? 'Все проекты' : PROJ_LABEL[p];
     const sw = p==='ALL' ? '' : `<span class="sw" style="background:${PROJ_VAR[p]}"></span>`;
@@ -906,6 +909,7 @@ const MAP_PROJECTS = [
   {code:'BAN', name:'The Balcony Naiyang', lat:8.1814, lng:98.2971, units:138, color:'var(--ban)'},
   {code:'VIK', name:'Vivana Kamala',       lat:7.9729, lng:98.2948, units:194, color:'var(--vik)'},
   {code:'KAT', name:'KataBello',           lat:7.8267, lng:98.3068, units:188, color:'var(--kat)'},
+  {code:'SIB', name:'The Title Sierra',    lat:7.9887, lng:98.3100, units:300, color:'var(--sib)'},
 ];
 
 const mapSheetBg = document.getElementById('mapSheetBg');
@@ -921,7 +925,7 @@ document.getElementById('mapIcon').onclick = ()=>{
       <div class="mp-cnt">${p.units} юн.</div>
     </div>
   `).join('');
-  // центр карты — между всеми 4 проектами
+  // центр карты — между всеми проектами
   const avgLat = MAP_PROJECTS.reduce((s,p)=>s+p.lat,0)/MAP_PROJECTS.length;
   const avgLng = MAP_PROJECTS.reduce((s,p)=>s+p.lng,0)/MAP_PROJECTS.length;
   document.getElementById('mapEmbed').src =
