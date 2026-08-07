@@ -100,13 +100,13 @@
       "label": "Корпус A",
       "floors": 8,
       "files": [
-        "а2.jpg",
-        "а3.jpg",
-        "а4.jpg",
-        "а5.jpg",
-        "а6.jpg",
-        "а7.jpg",
-        "а8.jpg"
+        "a2.jpg",
+        "a3.jpg",
+        "a4.jpg",
+        "a5.jpg",
+        "a6.jpg",
+        "a7.jpg",
+        "a8.jpg"
       ]
     },
     {
@@ -114,13 +114,13 @@
       "label": "Корпус C",
       "floors": 8,
       "files": [
-        "с2.jpg",
-        "с3.jpg",
-        "с4.jpg",
-        "с5.jpg",
-        "с6.jpg",
-        "с7.jpg",
-        "с8.jpg"
+        "c2.jpg",
+        "c3.jpg",
+        "c4.jpg",
+        "c5.jpg",
+        "c6.jpg",
+        "c7.jpg",
+        "c8.jpg"
       ]
     },
     {
@@ -133,14 +133,14 @@
   "master_plan": {
     "folder": "masterplan",
     "files": [
-      "мастер план_page-0002.jpg",
-      "мастер план_page-0003.jpg",
-      "мастер план_page-0004.jpg",
-      "мастер план_page-0005.jpg",
-      "мастер план_page-0006.jpg",
-      "мастер план_page-0007.jpg",
-      "мастер план_page-0008.jpg",
-      "мастер план_page-0009.jpg"
+      "masterplan_page-0002.jpg",
+      "masterplan_page-0003.jpg",
+      "masterplan_page-0004.jpg",
+      "masterplan_page-0005.jpg",
+      "masterplan_page-0006.jpg",
+      "masterplan_page-0007.jpg",
+      "masterplan_page-0008.jpg",
+      "masterplan_page-0009.jpg"
     ]
   }
 }
