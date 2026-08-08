@@ -62,9 +62,53 @@
     }
   ],
   "description": "Описание проекта уточняется.",
-  "facilities": [],
+  "facilities": [
+    "Бассейн",
+    "Детский бассейн",
+    "Фитнес-центр",
+    "Охрана",
+    "Лобби",
+    "Лаундж",
+    "Парковка",
+    "Коворкинг",
+    "Переговорная комната",
+    "Парк для животных",
+    "Йога-зона",
+    "Детская зона",
+    "Кинотеатр",
+    "Парная",
+    "Бар",
+    "Ресторан"
+  ],
   "nearby": [],
-  "payment_schedule": [],
+  "payment_schedule": [
+    {
+      "stage": "Бронирование 100-200 тыс THB",
+      "percent": 0,
+      "percent_label": "fix",
+      "note": "При отправке документов застройщику"
+    },
+    {
+      "stage": "Договор SPA",
+      "percent": 25,
+      "note": "В течение 30 дней"
+    },
+    {
+      "stage": "2 взнос",
+      "percent": 25,
+      "note": "через 7 месяцев после SPA"
+    },
+    {
+      "stage": "Конструкция",
+      "percent": 25,
+      "note": "По завершении этапа строительства"
+    },
+    {
+      "stage": "Ключи",
+      "percent": 25,
+      "note": "При приемке квартиры"
+    }
+  ],
   "maintenance": {
     "common_fee": {
       "amount": 0,
@@ -90,7 +134,16 @@
   "construction_progress": [],
   "files": [],
   "gallery": {
-    "local": [],
+    "local": [
+      "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg", "8.jpg",
+      "9.jpg", "10.jpg", "11.jpg", "12.jpg", "13.jpg", "14.jpg", "15.jpg",
+      "16.jpg", "17.jpg", "18.jpg",
+      "19.jpg", "20.jpg", "21.jpg", "22.jpg", "23.jpg",
+      "24.jpg", "25.jpg", "26.jpg", "27.jpg", "28.jpg", "29.jpg", "30.jpg",
+      "31.jpg", "32.jpg", "33.jpg", "34.jpg", "35.jpg", "36.jpg", "37.jpg",
+      "38.jpg", "39.jpg"
+    ],
+    "counts": { "ext": 18, "int": 5, "showroomRenders": 0 },
     "sections": []
   },
   "drive_root": "https://drive.google.com/drive/folders/1DiifH_dclfxph1e1ENASMXMtdu3oxYpw",
@@ -110,6 +163,12 @@
       ]
     },
     {
+      "building": "B",
+      "label": "Корпус B",
+      "floors": 8,
+      "files": []
+    },
+    {
       "building": "C",
       "label": "Корпус C",
       "floors": 8,
@@ -122,12 +181,6 @@
         "c7.jpg",
         "c8.jpg"
       ]
-    },
-    {
-      "building": "B",
-      "label": "Корпус B",
-      "floors": 8,
-      "files": []
     }
   ],
   "master_plan": {
