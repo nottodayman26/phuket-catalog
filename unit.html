@@ -1336,7 +1336,8 @@ function loadPlanImage(u, proj, pd) {
     slides.push({
       paths: planPaths,
       label: 'Планировка юнита',
-      alt: `Планировка ${u.room_no}`
+      alt: `Планировка ${u.room_no}`,
+      type: 'unit' // 08.08.26: если файла нет — покажем netunits.png, см. ниже
     });
   }
 
@@ -1374,7 +1375,8 @@ function loadPlanImage(u, proj, pd) {
     slides.push({
       paths: [`${base}img/${code}/floor-plans/${encodeURIComponent(fileName)}`],
       label: `Поэтажный план · Корпус ${u.tower} · Этаж ${u.floor}`,
-      alt: `Поэтажный план, корпус ${u.tower}, этаж ${u.floor}`
+      alt: `Поэтажный план, корпус ${u.tower}, этаж ${u.floor}`,
+      type: 'floor' // 08.08.26: если файла нет — покажем netflorplans.png, см. ниже
     });
   }
 
@@ -1408,8 +1410,24 @@ function loadPlanImage(u, proj, pd) {
     attempt();
   });
 
+  // 08.08.26, по просьбе Ильи: раньше отсутствующий файл просто убирал слайд
+  // из карусели (юнит без своей планировки показывал только поэтажный/мастер
+  // план, без намёка на то, что планировки нет). Теперь для типов 'unit' и
+  // 'floor' отсутствующий файл заменяется общей заглушкой (netunits.png /
+  // netflorplans.png из img/common — та же папка, что и у "нет этапов
+  // строительства" в project.html) — слайд остаётся на месте. Мастер-план
+  // (type не задан) ведёт себя как раньше — просто пропускается.
+  const TYPE_PLACEHOLDER = {
+    unit: `${base}img/common/netunits.png`,
+    floor: `${base}img/common/netflorplans.png`
+  };
+
   // Проверяем существование каждого слайда параллельно, сохраняя порядок
-  Promise.all(slides.map(s => tryPaths(s.paths).then(p => p ? { ...s, path: p } : null)))
+  Promise.all(slides.map(s => tryPaths(s.paths).then(p => {
+    if (p) return { ...s, path: p };
+    const ph = TYPE_PLACEHOLDER[s.type];
+    return ph ? { ...s, path: ph, isPlaceholder: true } : null;
+  })))
     .then(results => {
       const found = results.filter(Boolean);
       if (!found.length) return; // ни один файл не нашёлся — плейсхолдер остаётся
@@ -1607,6 +1625,11 @@ const FACILITIES_ICONS = {
   'Боксерский ринг': '🥊',
   'Библиотека': '📚',
   'Кинотеатр': '🎬',
+  // 08.08.26, по просьбе Ильи: "Бар" и "Ресторан" — уникальная для The Title
+  // Sierra инфраструктура (та же карта 1:1 продублирована в project.html и
+  // flox-web.html — держать синхронно).
+  'Бар': '🍸',
+  'Ресторан': '🍴',
 };
 
 function renderDescriptionBlock(d) {

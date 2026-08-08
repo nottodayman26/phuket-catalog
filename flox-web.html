@@ -2156,9 +2156,9 @@ const PROJECTS = [
   { id:'SIB', name:'The Title Sierra', nameEn:'The Title Sierra', developer:'Rhom Bho Property PLC', district:'Choeng Thale', amphoe:'Amphoe Thalang', districtRu:'Чоенг Тале', color:'#3A6EA5', type:'condo', priceFrom:2906700, priceTo:7880200, completion:'уточняется', status:'Under Construction', commission:10,
     seaTier:'t10', // до 10 минут транспортом (подтверждено Ильёй 06.08.26)
     unitTypes:[{name:'Студия',price:2906700},{name:'1 спальня',price:3312400},{name:'1 спальня+',price:5350800},{name:'2 спальни',price:6523800}],
-    photos:[], // реальных рендеров/фото пока нет — застройщик не прислал (см. "Фото появятся позже" на project.html)
+    photos:['1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','6.jpg'], // 08.08.26: рендеры экстерьера загружены (img/SIB/1-18.jpg)
     floors:8,
-    facilities:[],
+    facilities:['Бассейн','Детский бассейн','Фитнес-центр','Охрана','Лобби','Лаундж','Парковка','Коворкинг','Переговорная комната','Парк для животных','Йога-зона','Детская зона','Кинотеатр','Парная','Бар','Ресторан'],
     url:'project.html?id=SIB' },
 ];
 
@@ -2294,6 +2294,11 @@ const FACILITIES_ICONS = {
   'Боксерский ринг': '🥊',
   'Библиотека': '📚',
   'Кинотеатр': '🎬',
+  // 08.08.26, по просьбе Ильи: "Бар" и "Ресторан" — уникальная для The Title
+  // Sierra инфраструктура, добавлены сразу как фильтр (та же карта 1:1
+  // продублирована в project.html и unit.html — держать синхронно).
+  'Бар': '🍸',
+  'Ресторан': '🍴',
 };
 
 // ── STATE ─────────────────────────────────
