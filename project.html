@@ -2123,10 +2123,13 @@ function renderUnits(d) {
                  одинаковый для всех проектов. Теперь список строится из d.unit_types
                  конкретного проекта (TYPE_ORDER задаёт только порядок) — если в
                  проекте есть только 1 и 2 спальни (как у SIB), фильтр предложит
-                 только их. -->
+                 только их. Цвет точки — ВСЕГДА из общего TYPE_COLORS (эталон, тот
+                 же, что и в таблице юнитов ниже, см. cat/TYPE_COLORS в loadUnits),
+                 а не из "color" в JSON проекта — там могут быть случайные значения
+                 (как было у SIB), из-за которых точки не совпадали с остальными
+                 проектами. -->
             ${TYPE_ORDER.filter(t => (d.unit_types || []).some(u => u.type === t)).map(t => {
-              const ut = (d.unit_types || []).find(u => u.type === t);
-              const color = (ut && ut.color) || TYPE_COLORS[t] || '#888';
+              const color = TYPE_COLORS[t] || '#888';
               return `<div class="fd-row" data-val="${t}" onclick="selectType(this)">
               <div class="fd-checkbox"></div><span class="fd-row-dot" style="background:${color}"></span><span class="fd-row-label">${t}</span>
             </div>`;
