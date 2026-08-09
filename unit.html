@@ -1363,6 +1363,17 @@ function loadPlanImage(u, proj, pd) {
   const floorPlanOffset = Number(pd?.floor_plans_offset) || 0;
   if (code && u.tower && u.floor) {
     const towerCyr = TOWER_CYR[String(u.tower).toUpperCase()] || String(u.tower).toLowerCase();
+    // 09.08.26, по просьбе Ильи: с SIB имена файлов поэтажных планов перешли
+    // на латиницу (a2.jpg, c8.jpg — см. PIPELINE_INSTRUCTIONS.md, "имена файлов
+    // только латиница"), а этот код по-прежнему строил ТОЛЬКО кириллическое
+    // имя (а2.jpg) — из-за этого у SIB юнит вообще не находил свой поэтажный
+    // план (project.html не ловил эту проблему, потому что там имена файлов
+    // читаются напрямую из floor_plans[].files в JSON, а не собираются с нуля,
+    // как здесь). Пробуем оба варианта имени — старый кириллический (VIK/KAT/
+    // BAN/OLN) и новый латинский (SIB и все проекты после неё) — какой
+    // реально существует, тот и загрузится (см. tryPaths ниже, он уже умеет
+    // перебирать несколько путей на слайд).
+    const towerLat = String(u.tower).toLowerCase();
     // 30.07.26, по просьбе Ильи: расширение файла раньше было захардкожено
     // как .jpg — у КатаБелло корпус H (х) реально залит как .png, из-за чего
     // "Корпус х (H)" вообще не подгружался в юните. Теперь расширение берётся
@@ -1371,9 +1382,13 @@ function loadPlanImage(u, proj, pd) {
     const fpEntry = (pd?.floor_plans || []).find(fp => String(fp.building).toUpperCase() === String(u.tower).toUpperCase());
     const firstFile = fpEntry && fpEntry.files && fpEntry.files[0];
     const ext = firstFile && firstFile.includes('.') ? firstFile.split('.').pop() : 'jpg';
-    const fileName = `${towerCyr}${Number(u.floor) + floorPlanOffset}.${ext}`;
+    const floorNum = Number(u.floor) + floorPlanOffset;
+    const fileNameCyr = `${towerCyr}${floorNum}.${ext}`;
+    const fileNameLat = `${towerLat}${floorNum}.${ext}`;
+    const floorPaths = [`${base}img/${code}/floor-plans/${encodeURIComponent(fileNameCyr)}`];
+    if (fileNameLat !== fileNameCyr) floorPaths.push(`${base}img/${code}/floor-plans/${encodeURIComponent(fileNameLat)}`);
     slides.push({
-      paths: [`${base}img/${code}/floor-plans/${encodeURIComponent(fileName)}`],
+      paths: floorPaths,
       label: `Поэтажный план · Корпус ${u.tower} · Этаж ${u.floor}`,
       alt: `Поэтажный план, корпус ${u.tower}, этаж ${u.floor}`,
       type: 'floor' // 08.08.26: если файла нет — покажем netflorplans.png, см. ниже
@@ -1384,9 +1399,16 @@ function loadPlanImage(u, proj, pd) {
   // этаж 1 → page-0002, этаж 8 → page-0009
   if (code && u.floor) {
     const pageNum = String(Number(u.floor) + 1).padStart(4, '0');
-    const fileName = `мастер план_page-${pageNum}.jpg`;
+    // 09.08.26, по просьбе Ильи: та же проблема, что и с поэтажным планом
+    // выше — старые проекты называют файл "мастер план_page-XXXX.jpg"
+    // (кириллица, с пробелом), а SIB и все проекты после неё —
+    // "masterplan_page-XXXX.jpg" (латиница, без пробела, см.
+    // PIPELINE_INSTRUCTIONS.md). Пробуем оба варианта.
     slides.push({
-      paths: [`${base}img/${code}/masterplan/${encodeURIComponent(fileName)}`],
+      paths: [
+        `${base}img/${code}/masterplan/${encodeURIComponent(`мастер план_page-${pageNum}.jpg`)}`,
+        `${base}img/${code}/masterplan/${encodeURIComponent(`masterplan_page-${pageNum}.jpg`)}`
+      ],
       label: `Мастер-план · Этаж ${u.floor}`,
       alt: `Мастер-план, этаж ${u.floor}`
     });
