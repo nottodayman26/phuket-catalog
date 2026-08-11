@@ -1085,11 +1085,21 @@ body.map-fake-fullscreen-active .map-pins-btn{
   justify-content:center;cursor:pointer;font-size:12px;transition:background .15s;
 }
 .mic-close:hover{background:rgba(0,0,0,0.6);}
-.mic-body{padding:13px 15px 14px;}
-.mic-name{font-size:14.5px;font-weight:600;margin-bottom:2px;}
-.mic-sub{font-size:12px;color:var(--muted);margin-bottom:11px;}
-.mic-types{display:flex;flex-direction:column;gap:6px;margin-bottom:11px;}
-.mic-footer{display:flex;justify-content:space-between;align-items:center;}
+/* 11.08.26, по просьбе Ильи: та же правка "стандартный размер карточки",
+   что у .project-card/.pc-* в списке (см. комментарий там) — раньше
+   .mic-body был обычным блоком без своей высоты и растягивался под число
+   типов юнитов, из-за чего плашка на карте была разного размера у разных
+   проектов. Теперь высота тела фиксирована, а .mic-types скроллится сам
+   при нехватке места (min-height:0 обязателен — см. тот же комментарий у
+   .pc-types). */
+.mic-body{padding:13px 15px 14px;height:170px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;}
+.mic-name{font-size:14.5px;font-weight:600;margin-bottom:2px;flex-shrink:0;}
+.mic-sub{font-size:12px;color:var(--muted);margin-bottom:11px;flex-shrink:0;}
+.mic-types{display:flex;flex-direction:column;gap:6px;margin-bottom:11px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;}
+.mic-types::-webkit-scrollbar{width:4px;}
+.mic-types::-webkit-scrollbar-track{background:transparent;}
+.mic-types::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;}
+.mic-footer{display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 .mic-from{font-size:12px;color:var(--muted);}
 .mic-from b{font-size:14px;font-weight:700;color:#5E17EB;}
 /* 16.07.26, по просьбе Ильи: кнопка разворота на весь экран у него на
@@ -1266,6 +1276,16 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .project-cards{display:flex;flex-direction:column;gap:12px;}
 .project-card{
   display:grid;grid-template-columns:240px 1fr;
+  /* 11.08.26, по просьбе Ильи: карточки в списке были разной высоты —
+     .pc-body раньше не имел фиксированной высоты и просто растягивался под
+     контент (число строк в .pc-types зависит от того, сколько типов юнитов
+     у проекта — от 2 до 4), из-за чего соседние карточки в списке "прыгали"
+     по высоте. Теперь высота карточки фиксирована — картинка (.pc-img) и
+     тело (.pc-body) растягиваются на всю эту высоту через height:100%
+     (см. правки ниже), а .pc-types, если типов юнитов больше, чем
+     помещается, скроллится внутри своей области, а не раздувает карточку
+     (см. min-height:0/overflow-y:auto у .pc-types). */
+  height:230px;
   /* 17.07.26, по просьбе Ильи: убрали серую обводку карточки в обычном
      состоянии — граница остаётся прозрачной (border не убран целиком, а
      только сделан невидимым), чтобы при ховере фиолетовая обводка не
@@ -1279,8 +1299,13 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .project-card:hover{border-color:#5E17EB;transform:translateY(-2px);}
 
 /* Фото */
-.pc-img-wrap{padding:10px 0 10px 10px;}
-.pc-img{position:relative;width:100%;height:172px;border-radius:10px;overflow:hidden;background:var(--surface-2);}
+/* 11.08.26, по просьбе Ильи: раньше .pc-img была жёстко 172px, а
+   .project-card — без своей высоты, так что при более длинном .pc-body
+   (больше типов юнитов) вокруг картинки просто появлялось пустое
+   пространство снизу. Теперь и обёртка, и сама картинка растягиваются на
+   всю высоту фиксированной по высоте карточки (см. .project-card выше). */
+.pc-img-wrap{padding:10px 0 10px 10px;height:100%;box-sizing:border-box;}
+.pc-img{position:relative;width:100%;height:100%;border-radius:10px;overflow:hidden;background:var(--surface-2);}
 /* 17.07.26, по просьбе Ильи: перешли с кросс-фейда (прозрачность) на
    "плёнку" фото, которая физически едет по горизонтали — тот же приём, что
    в присланном offer.html (.unit-track/.unit-slide + goTo() через
@@ -1320,18 +1345,32 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pc-nav-prev,.pc-nav-next{flex:1;}
 
 /* Тело */
-.pc-body{padding:14px 18px;display:flex;flex-direction:column;}
-.pc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:3px;}
+/* 11.08.26, по просьбе Ильи: тело теперь тоже растянуто на всю
+   фиксированную высоту карточки (height:100%) и не может вылезти за неё —
+   overflow:hidden на самом .pc-body ловит любой редкий пограничный случай,
+   а .pc-types ниже скроллится сам, до того как до этого overflow вообще
+   дойдёт (см. min-height:0/overflow-y:auto у .pc-types). */
+.pc-body{padding:14px 18px;display:flex;flex-direction:column;height:100%;box-sizing:border-box;overflow:hidden;}
+.pc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:3px;flex-shrink:0;}
 .pc-name{font-size:15px;font-weight:600;}
 .pc-name-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .pc-q{font-size:10px;font-weight:500;color:var(--muted);background:var(--surface-3);padding:3px 9px;border-radius:20px;white-space:nowrap;}
-.pc-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
-.pc-types{display:flex;flex-direction:column;gap:6px;flex:1;}
-.pc-type-row{display:flex;justify-content:space-between;align-items:center;}
+.pc-sub{font-size:12px;color:var(--muted);margin-bottom:14px;flex-shrink:0;}
+/* 11.08.26, по просьбе Ильи: у проектов с 4 типами юнитов (напр. KataBello)
+   список раньше просто раздувал карточку — теперь при нехватке места сам
+   список типов скроллится (тонкий скролл, тот же приём, что у
+   .uf-price-col/.fd-price-col), а высота карточки остаётся одинаковой у
+   всех проектов. min-height:0 обязателен — без него flex-элемент не
+   сжимается меньше высоты своего контента, и overflow-y:auto не сработает. */
+.pc-types{display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;}
+.pc-types::-webkit-scrollbar{width:4px;}
+.pc-types::-webkit-scrollbar-track{background:transparent;}
+.pc-types::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;}
+.pc-type-row{display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 .pc-type-name{font-size:12px;color:var(--muted);}
 .pc-type-price{font-size:12px;font-weight:600;color:#5E17EB;}
 /* 17.07.26, по просьбе Ильи: убрали серую разделительную линию над "от X млн ฿" */
-.pc-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;}
+.pc-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;flex-shrink:0;}
 .pc-from{font-size:12px;color:var(--muted);}
 .pc-from b{font-size:14px;font-weight:700;color:#5E17EB;}
 .pc-comm{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--text);transition:opacity .2s;}
@@ -1432,6 +1471,16 @@ body.map-fake-fullscreen-active{overflow:hidden;}
 .pres-card-remove{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.45);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;border:none;z-index:2;}
 .pres-card.selected{border:1.5px solid rgba(94,23,235,0.65);box-shadow:0 0 0 2px rgba(94,23,235,0.18);}
 .pres-card.sold{opacity:0.45;}
+/* 11.08.26, по прямой политике Ильи: проданный юнит нельзя открыть из
+   презентации по клику на превью — раньше это работало для любого статуса
+   одинаково (window.open на unit.html прямо в разметке карточки, см.
+   renderPresCards), из-за чего клиентская страница проданного юнита
+   оставалась доступна из "Презентаций". pointer-events:none полностью
+   убирает клик по превью у .sold-карточки (сам onclick в разметке никогда
+   не срабатывает), выбор карточки (клик по остальной части, .pres-card-body)
+   по-прежнему работает — агенту всё ещё нужно уметь выделить/удалить
+   проданный юнит из подборки. */
+.pres-card.sold .pres-card-img{pointer-events:none;cursor:default;}
 .pres-card-img{background:#ffffff;height:160px;display:flex;align-items:center;justify-content:center;border-bottom:0.5px solid var(--line-2);overflow:hidden;position:relative;cursor:pointer;}
 .pres-card-body-wrap{cursor:default;}
 /* 27.07.26, по просьбе Ильи: полупрозрачная красная заливка вместо обводки
@@ -2007,7 +2056,7 @@ body.map-fake-fullscreen-active{overflow:hidden;}
       <div class="pres-actions" id="presActions" style="display:none">
         <button class="pres-delete-btn" id="presDeleteBtn" onclick="deleteSelectedUnits()">Удалить</button>
         <button class="pres-clear-btn" onclick="confirmClearPresentation()">Очистить всё</button>
-        <button class="pres-share-btn" onclick="sharePresentation()"><i class="ti ti-link"></i> Сформировать ссылку</button>
+        <button class="pres-share-btn" id="presShareBtn" onclick="sharePresentation()"><i class="ti ti-link"></i> Сформировать ссылку</button>
       </div>
     </div>
     <div id="presEmpty" class="pres-empty">
@@ -6085,6 +6134,7 @@ function renderPresCards(units, raw, projMap) {
       </div>
     </div>`;
   }).join('');
+  updatePresShareBtnState(); // свежий рендер — выделения сброшены/не сброшены, пересчитываем состояние кнопки
 }
 
 function renderPresBlocks(projectIds, projMap) {
@@ -6134,6 +6184,39 @@ function togglePresCardSelect(roomNo) {
   card.classList.toggle('selected');
   const anySelected = document.querySelectorAll('.pres-card.selected').length > 0;
   document.getElementById('presDeleteBtn').style.display = anySelected ? 'block' : 'none';
+  updatePresShareBtnState();
+}
+
+// 11.08.26, по прямой политике Ильи (жёсткое правило, одинаковое для всех
+// проектов): "Сформировать ссылку" должна быть недоступна (disabled), если
+// среди ЯВНО выделенных карточек есть хоть один проданный юнит — или если
+// выделены только проданные. Раньше проданные юниты просто молча
+// выпадали из отправляемой ссылки (см. sharePresentation) даже если агент
+// выделил именно их — кнопка при этом выглядела рабочей, что и создавало
+// путаницу ("почему в презентации не то, что я выбрал"). Если агент вообще
+// ничего не выделяет — кнопка остаётся рабочей, а проданные тихо
+// пропускаются при формировании (см. sharePresentation) — это единственный
+// случай, когда автоматический пропуск ещё уместен.
+function updatePresShareBtnState() {
+  const btn = document.getElementById('presShareBtn');
+  if (!btn) return;
+  const selectedCards = [...document.querySelectorAll('.pres-card.selected')];
+  const soldRoomNos = new Set(
+    (presState.unitsData || []).filter(u => u.status !== 'available').map(u => u.room_no)
+  );
+  const hasSoldSelected = selectedCards.some(c => soldRoomNos.has(c.id.replace('pc-', '')));
+  // Ничего не выделено, но во ВСЕЙ подборке нет ни одного доступного юнита —
+  // отправлять уже нечего, кнопку тоже блокируем, а не открываем шторку с
+  // пустым списком.
+  const nothingToSendAtAll = !selectedCards.length && (presState.units || []).length > 0
+    && (presState.units || []).every(u => soldRoomNos.has(u.room_no));
+  const disabled = hasSoldSelected || nothingToSendAtAll;
+  btn.disabled = disabled;
+  btn.title = disabled
+    ? (hasSoldSelected
+        ? 'В выборке есть проданные юниты — уберите их, чтобы сформировать ссылку'
+        : 'В подборке нет ни одного доступного юнита')
+    : '';
 }
 
 function deleteSelectedUnits() {
@@ -6148,6 +6231,7 @@ function deleteSelectedUnits() {
   selected.forEach(r => document.getElementById(`pc-${r}`)?.remove());
   document.getElementById('presDeleteBtn').style.display = 'none';
   presState.currentId = null; // сброс — изменился состав
+  updatePresShareBtnState(); // после удаления выделенных проданных кнопка могла разблокироваться
   if (!raw.length) loadPresentation();
 }
 
@@ -6158,6 +6242,7 @@ function removeFromPresentation(roomNo) {
   presState.units = raw; // 14.07.26: тот же фикс, что и в deleteSelectedUnits — держим
   // presState.units в актуальном состоянии, иначе "Блоки о проектах" считает по старому составу
   document.getElementById(`pc-${roomNo}`)?.remove();
+  updatePresShareBtnState();
   if (!raw.length) loadPresentation();
 }
 
@@ -6176,20 +6261,26 @@ function clearPresentation() {
 }
 
 function sharePresentation() {
-  // Если есть выбранные карточки — берём только их, иначе все
-  const selectedCards = [...document.querySelectorAll('.pres-card.selected')];
-  let unitsToSend = selectedCards.length
-    ? presState.units.filter(u => selectedCards.some(c => c.id === `pc-${u.room_no}`))
-    : presState.units;
-
-  // 20.07.26, по просьбе Ильи: проданный юнит не должен попадать в
-  // формируемую ссылку (оффер), даже если он остался выбранным в подборке —
-  // сверяем с живым статусом из Supabase (presState.unitsData, см.
-  // loadPresentation), а не с локальным кешем "flox-presentation".
+  // 11.08.26: кнопка вызывающая эту функцию теперь сама блокируется
+  // (disabled), если среди выделенных карточек есть проданный юнит — см.
+  // updatePresShareBtnState. Нативно задизейбленная кнопка клик не
+  // пропускает, но подстраховываемся тем же условием и здесь на случай
+  // вызова функции не из клика по самой кнопке.
   const soldRoomNos = new Set(
     (presState.unitsData || []).filter(u => u.status !== 'available').map(u => u.room_no)
   );
-  unitsToSend = unitsToSend.filter(u => !soldRoomNos.has(u.room_no));
+
+  // Если есть выбранные карточки — берём ТОЛЬКО их (и среди них не должно
+  // быть проданных — это гарантирует disabled-состояние кнопки выше). Если
+  // явного выбора нет — берём всю подборку, но проданные из неё пропускаем
+  // молча (20.07.26, по просьбе Ильи) — единственный случай автопропуска.
+  const selectedCards = [...document.querySelectorAll('.pres-card.selected')];
+  if (selectedCards.some(c => soldRoomNos.has(c.id.replace('pc-', '')))) return;
+
+  let unitsToSend = selectedCards.length
+    ? presState.units.filter(u => selectedCards.some(c => c.id === `pc-${u.room_no}`))
+    : presState.units.filter(u => !soldRoomNos.has(u.room_no));
+  if (!unitsToSend.length) return; // нечего отправлять (см. updatePresShareBtnState)
   presState.unitsToSend = unitsToSend;
 
   const projectIds = [...new Set(unitsToSend.map(u => u.project))];

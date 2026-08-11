@@ -1929,7 +1929,20 @@ function renderProject(d) {
   function onScrollSpy() {
     if (_spyTicking) return;
     _spyTicking = true;
-    requestAnimationFrame(updateActiveTab);
+    requestAnimationFrame(() => {
+      updateActiveTab();
+      // 11.08.26, по просьбе Ильи: шторки фильтров юнитов (Тип/Цена/Статус/
+      // Все фильтры) открываются по наведению и закрываются только через
+      // mouseleave-таймер — сам по себе скролл их не трогает. При скролле
+      // колесом/трекпадом курсор часто не двигается, поэтому mouseleave не
+      // срабатывает, и открытая шторка остаётся висеть поверх страницы, пока
+      // сама лента поиска (не sticky) уже укатилась наверх — визуально
+      // шторка "налезает" на прилипшую ленту вкладок/топбар. Раз и навсегда
+      // не бывает открытой шторки поверх скролла — закрываем все шторки
+      // сразу же, как только страница вообще сдвинулась. Проверка isConnected
+      // не нужна — .uf-dropdown.open ищется в live DOM каждый раз.
+      if (document.querySelector('.uf-dropdown.open')) closeAllDropdowns();
+    });
   }
   window.addEventListener('scroll', onScrollSpy, { passive: true });
   window.addEventListener('resize', onScrollSpy);
@@ -2596,6 +2609,7 @@ function toggleDropdown(id) {
 function closeAllDropdowns() {
   document.querySelectorAll('.uf-dropdown').forEach(d => d.classList.remove('open'));
   document.querySelectorAll('.usf-btn').forEach(b => b.classList.remove('open'));
+  document.getElementById('uf-floor-collapsible')?.classList.remove('open');
   const ov = document.getElementById('uf-overlay');
   if (ov) ov.classList.remove('open');
 }
