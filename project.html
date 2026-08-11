@@ -2082,6 +2082,32 @@ let _sortCol = 'selling_price', _sortDir = 1;
 const TYPE_ORDER = ['Студия','1 спальня','1 спальня+','2 спальни','Пентхаус'];
 const TYPE_COLORS = {'1 спальня':'#5E17EB','1 спальня+':'#4ECDC4','2 спальни':'#E88FB4','Пентхаус':'#C9A84C','Студия':'#888'};
 
+// 11.08.26, по просьбе Ильи: список типов в фильтре "Тип" считаем ЖИВЬЁМ по
+// реально загруженным юнитам из Supabase, а не по ручному полю unit_types в
+// JSON проекта — то поле нужно было отдельно поддерживать в актуальном
+// состоянии и оно расходилось с реальностью (баг KAT: "Студия" реально была
+// в продаже, но отсутствовала в unit_types, а "2 спальни" была в unit_types,
+// хотя все юниты этой категории уже проданы). Показываем только категории,
+// у которых есть хотя бы один юнит со status='available' — если категория
+// распродана полностью, она пропадает из фильтра сама, без ручного вмешательства.
+function computeAvailableTypeList(units) {
+  const present = new Set(
+    (units || []).filter(u => u.status === 'available').map(u => mapRoomType(u.room_type))
+  );
+  return TYPE_ORDER.filter(t => present.has(t));
+}
+
+function renderTypeFilterRows(types) {
+  const wrap = document.getElementById('uf-type-dd');
+  if (!wrap) return;
+  wrap.innerHTML = types.map(t => {
+    const color = TYPE_COLORS[t] || '#888';
+    return `<div class="fd-row" data-val="${t}" onclick="selectType(this)">
+      <div class="fd-checkbox"></div><span class="fd-row-dot" style="background:${color}"></span><span class="fd-row-label">${t}</span>
+    </div>`;
+  }).join('');
+}
+
 function renderUnits(d) {
   window._currentProjectData = d;
   setTimeout(() => loadUnits(d), 50);
@@ -2118,22 +2144,11 @@ function renderUnits(d) {
             <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4l4 4 4-4"/></svg>
           </button>
           <div class="uf-dropdown" id="uf-type-dd" onmouseenter="cancelUfClose('uf-type-dd')" onmouseleave="scheduleUfClose('uf-type-dd','uf-type-btn')">
-            <!-- 08.08.26, по просьбе Ильи: раньше тут был захардкожен фиксированный
-                 набор типов (1 спальня/1 спальня+/2 спальни/Пентхаус, без Студии) —
-                 одинаковый для всех проектов. Теперь список строится из d.unit_types
-                 конкретного проекта (TYPE_ORDER задаёт только порядок) — если в
-                 проекте есть только 1 и 2 спальни (как у SIB), фильтр предложит
-                 только их. Цвет точки — ВСЕГДА из общего TYPE_COLORS (эталон, тот
-                 же, что и в таблице юнитов ниже, см. cat/TYPE_COLORS в loadUnits),
-                 а не из "color" в JSON проекта — там могут быть случайные значения
-                 (как было у SIB), из-за которых точки не совпадали с остальными
-                 проектами. -->
-            ${TYPE_ORDER.filter(t => (d.unit_types || []).some(u => u.type === t)).map(t => {
-              const color = TYPE_COLORS[t] || '#888';
-              return `<div class="fd-row" data-val="${t}" onclick="selectType(this)">
-              <div class="fd-checkbox"></div><span class="fd-row-dot" style="background:${color}"></span><span class="fd-row-label">${t}</span>
-            </div>`;
-            }).join('')}
+            <!-- 11.08.26, по просьбе Ильи: список типов больше не строится из
+                 d.unit_types (ручное поле в JSON проекта, см. комментарий у
+                 computeAvailableTypeList/renderTypeFilterRows выше) — тут
+                 остаётся пусто до загрузки юнитов, заполняется в loadUnits()
+                 сразу как только реальные данные приходят из Supabase. -->
           </div>
         </div>
 
@@ -2244,6 +2259,8 @@ async function loadUnits(d) {
       u._pricePerSqm = (u.price_per_sqm != null) ? u.price_per_sqm
         : ((u.area_sqm && parseFloat(u.area_sqm) > 0) ? u.selling_price / parseFloat(u.area_sqm) : null);
     });
+
+    renderTypeFilterRows(computeAvailableTypeList(_allUnits));
 
     document.getElementById('units-filters-wrap').style.display = 'block';
     buildPriceHints(_allUnits);
